@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Catch Records{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Catch Records</h2>
+    <a href="{{ url_for('download_csv') }}" class="btn btn-pf btn-sm">
+      <i class="bi bi-download me-1"></i>Download CSV
+    </a>
+  </div>
+
+  {# Filter form #}
+  <form method="GET" class="row g-2 mb-4">
+    <div class="col-auto">
+      <select name="line_id" class="form-select form-select-sm">
+        <option value="">All Lines</option>
+        {# TODO: populate from lines list #}
+      </select>
+    </div>
+    <div class="col-auto">
+      <select name="species_id" class="form-select form-select-sm">
+        <option value="">All Species</option>
+        {# TODO: populate from species list #}
+      </select>
+    </div>
+    <div class="col-auto">
+      <input type="date" name="date_from" class="form-control form-control-sm"
+             value="{{ request.args.get('date_from', '') }}">
+    </div>
+    <div class="col-auto">
+      <input type="date" name="date_to" class="form-control form-control-sm"
+             value="{{ request.args.get('date_to', '') }}">
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
+      <a href="{{ url_for('catch_records') }}" class="btn btn-link btn-sm">Clear</a>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th>Trap Code</th><th>Date</th><th>Line</th><th>Species</th>
+          <th>Status</th><th>Strikes</th><th>Rebaited</th>
+          <th>Bait Type</th><th>Condition</th><th>Recorded By</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+          <tr>
+            <td><strong>{{ r.code }}</strong></td>
+            <td>{{ r.date | nz_datetime }}</td>
+            <td>{{ r.line_name }}</td>
+            <td>{{ r.species_name }}</td>
+            <td>{{ r.status_name }}</td>
+            <td>{{ r.strikes }}</td>
+            <td>{{ r.rebaited }}</td>
+            <td>{{ r.bait_name }}</td>
+            <td>{{ r.condition_name }}</td>
+            <td>{{ r.recorded_by_name }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="10" class="text-center text-muted py-3">
+              No records found.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

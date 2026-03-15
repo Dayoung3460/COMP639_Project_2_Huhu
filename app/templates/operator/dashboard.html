@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Operator Dashboard{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Operator Dashboard</h2>
+    <a href="{{ url_for('add_catch') }}" class="btn btn-pf btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>Add Catch Record
+    </a>
+  </div>
+
+  {% if assigned_lines %}
+    <div class="alert alert-success">
+      <i class="bi bi-check-circle me-2"></i>
+      You are assigned to
+      <strong>{{ assigned_lines | length }} line(s)</strong>:
+      {{ assigned_lines | map(attribute='name') | join(', ') }}.
+    </div>
+  {% else %}
+    <div class="alert alert-warning">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      You are not assigned to any trap lines. Contact an Admin.
+    </div>
+  {% endif %}
+
+  {# TODO: stat cards, assigned lines detail, recent catch records #}
+  <p class="text-muted">Dashboard content — TODO</p>
+</div>
+{% endblock %}

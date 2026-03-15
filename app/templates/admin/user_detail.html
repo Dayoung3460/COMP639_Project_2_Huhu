@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}User Detail{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:680px;">
+  <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-secondary mb-3">
+    &larr; Back to Users
+  </a>
+
+  {% if user %}
+    <h2 class="mb-1">{{ user.first_name }} {{ user.last_name }}</h2>
+    <p class="text-muted small mb-4">@{{ user.username }} &mdash; {{ user.role_name }}</p>
+
+    <table class="table table-bordered mb-4">
+      <tr><th>Email</th><td>{{ user.email }}</td></tr>
+      <tr><th>Contact Info</th><td>{{ user.contact_info or '—' }}</td></tr>
+      <tr><th>Emergency Contact</th><td>{{ user.emergency_contact or '—' }}</td></tr>
+      <tr>
+        <th>Status</th>
+        <td>
+          {% if user.is_active %}
+            <span class="badge bg-success">Active</span>
+          {% else %}
+            <span class="badge bg-secondary">Inactive</span>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+
+    {# Change role form #}
+    <div class="card mb-3">
+      <div class="card-header">Change Role</div>
+      <div class="card-body">
+        <form method="POST"
+              action="{{ url_for('change_role', user_id=user.user_id) }}"
+              class="row g-2 align-items-end">
+          <div class="col-auto">
+            <select name="new_role" class="form-select form-select-sm">
+              <option {{ 'selected' if user.role_name == 'Observer' }}>Observer</option>
+              <option {{ 'selected' if user.role_name == 'Operator' }}>Operator</option>
+              <option {{ 'selected' if user.role_name == 'Admin' }}>Admin</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-pf btn-sm">Update Role</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {# Toggle active #}
+    <form method="POST"
+          action="{{ url_for('toggle_active', user_id=user.user_id) }}"
+          class="d-inline">
+      <button type="submit"
+              class="btn btn-sm {{ 'btn-outline-warning' if user.is_active else 'btn-outline-success' }}">
+        {{ 'Deactivate Account' if user.is_active else 'Activate Account' }}
+      </button>
+    </form>
+
+  {% else %}
+    <p class="text-muted">User not found.</p>
+  {% endif %}
+</div>
+{% endblock %}

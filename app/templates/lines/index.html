@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Trap Lines{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Trap Lines</h2>
+    {% if session.get('role') == 'Admin' %}
+      <a href="{{ url_for('new_line') }}" class="btn btn-pf btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>New Line
+      </a>
+    {% endif %}
+  </div>
+
+  {% for line in lines %}
+    <div class="card mb-3">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-1">{{ line.name }}</h5>
+          <small class="text-muted">
+            {{ line.type }} &mdash;
+            {{ line.trap_count | default(0) }} traps &mdash;
+            {{ line.operator_count | default(0) }} operators
+          </small>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          {% if line.is_retired %}
+            <span class="badge bg-secondary">Retired</span>
+          {% else %}
+            <span class="badge bg-success">Active</span>
+          {% endif %}
+          <a href="{{ url_for('line_detail', line_id=line.line_id) }}"
+             class="btn btn-sm btn-outline-secondary">View</a>
+          {% if session.get('role') == 'Admin' and not line.is_retired %}
+            <a href="{{ url_for('edit_line', line_id=line.line_id) }}"
+               class="btn btn-sm btn-outline-secondary">Edit</a>
+            <form method="POST"
+                  action="{{ url_for('retire_line', line_id=line.line_id) }}"
+                  class="d-inline">
+              <button type="submit" class="btn btn-sm btn-outline-danger"
+                      onclick="return confirm('Retire this line?')">
+                Retire
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-muted">No trap lines found.</p>
+  {% endfor %}
+</div>
+{% endblock %}

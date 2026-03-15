@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+  <h1 class="display-5 fw-bold">🌿 Predator Free Lincoln University</h1>
+  <p class="lead text-muted mb-4">
+    Monitoring and reporting system for campus predator traps.
+  </p>
+  <div class="d-flex gap-3 justify-content-center">
+    <a href="{{ url_for('login') }}" class="btn btn-pf btn-lg">Log In</a>
+    <a href="{{ url_for('register') }}" class="btn btn-outline-pf btn-lg">Register</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:580px;">
+  <h2 class="mb-4">My Profile</h2>
+  <form method="POST" action="{{ url_for('profile') }}">
+    <div class="row g-3">
+      <div class="col-6">
+        <label class="form-label">First Name</label>
+        <input type="text" class="form-control" name="first_name"
+               value="{{ user.first_name if user else '' }}">
+      </div>
+      <div class="col-6">
+        <label class="form-label">Last Name</label>
+        <input type="text" class="form-control" name="last_name"
+               value="{{ user.last_name if user else '' }}">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" name="email"
+               value="{{ user.email if user else '' }}">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Contact Info</label>
+        <input type="text" class="form-control" name="contact_info"
+               value="{{ user.contact_info if user else '' }}">
+      </div>
+      <div class="col-6">
+        <label class="form-label">Emergency Contact Name</label>
+        <input type="text" class="form-control" name="emergency_name" value="">
+      </div>
+      <div class="col-6">
+        <label class="form-label">Emergency Contact Phone</label>
+        <input type="text" class="form-control" name="emergency_phone" value="">
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-pf">Save Changes</button>
+      <a href="{{ url_for('change_password') }}" class="btn btn-outline-secondary">
+        Change Password
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

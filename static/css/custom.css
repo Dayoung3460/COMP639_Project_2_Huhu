@@ -1,0 +1,71 @@
+/*
+ * static/css/custom.css
+ * PF-LU custom styles — minimal overrides on top of Bootstrap 5.
+ */
+
+/* ── Colour variables ─────────────────────────────────────────── */
+:root {
+  --pf-900: #0d2b1a;
+  --pf-800: #1a5c38;
+  --pf-700: #236b43;
+  --pf-600: #2d7a4f;
+  --pf-500: #3d9b67;
+  --pf-400: #6ab98a;
+  --pf-100: #e6f4ec;
+  --pf-50:  #f4faf6;
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
+body {
+  background-color: var(--pf-50);
+}
+
+/* ── Navbar ───────────────────────────────────────────────────── */
+.bg-pf {
+  background-color: var(--pf-800) !important;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+.btn-pf {
+  background-color: var(--pf-700);
+  color: #fff;
+  border: none;
+}
+.btn-pf:hover {
+  background-color: var(--pf-800);
+  color: #fff;
+}
+.btn-outline-pf {
+  color: var(--pf-700);
+  border-color: var(--pf-700);
+  background: transparent;
+}
+.btn-outline-pf:hover {
+  background-color: var(--pf-100);
+  color: var(--pf-800);
+}
+
+/* ── Table headers ────────────────────────────────────────────── */
+.table thead th {
+  background-color: var(--pf-800);
+  color: #fff;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-color: var(--pf-700);
+}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+.footer {
+  background-color: var(--pf-900);
+  color: #a3d4b5;
+}
+
+/* ── Cards ────────────────────────────────────────────────────── */
+.card {
+  border-color: #dde8e2;
+}
+.card-header {
+  background-color: var(--pf-50);
+  border-bottom-color: #dde8e2;
+}

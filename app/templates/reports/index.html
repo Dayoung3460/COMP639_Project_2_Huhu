@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="mb-0">Reports &amp; Charts</h2>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width:auto;">
+        <option>All Lines</option>
+        {# TODO: populate from lines #}
+      </select>
+      <a href="{{ url_for('download_csv') }}" class="btn btn-pf btn-sm">
+        <i class="bi bi-download me-1"></i>Export CSV
+      </a>
+    </div>
+  </div>
+
+  {# TODO: stat cards #}
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header fw-semibold">Catch Trend Over Time</div>
+        <div class="card-body">
+          <canvas id="trendChart" height="100"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header fw-semibold">Captures by Species</div>
+        <div class="card-body">
+          <canvas id="speciesChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header fw-semibold">Catches by Line</div>
+        <div class="card-body">
+          <canvas id="lineChart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // TODO: fetch data from /reports/data/species, /reports/data/by-line,
+  //       /reports/data/trend and render Chart.js charts.
+  // Example:
+  // fetch('/reports/data/species')
+  //   .then(r => r.json())
+  //   .then(data => {
+  //     new Chart(document.getElementById('speciesChart'), {
+  //       type: 'pie',
+  //       data: { labels: data.labels, datasets: [{ data: data.values }] }
+  //     });
+  //   });
+</script>
+{% endblock %}

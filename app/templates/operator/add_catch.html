@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Add Catch Record{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:720px;">
+  <h2 class="mb-4">Add Catch Record</h2>
+
+  <form method="POST" action="{{ url_for('add_catch') }}">
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-geo-alt me-2"></i>Trap Details
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Trap Line <span class="text-danger">*</span></label>
+            <select name="line_id" class="form-select" required id="lineSelect">
+              <option value="">— select line —</option>
+              {% for line in assigned_lines %}
+                <option value="{{ line.line_id }}">{{ line.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Trap Code <span class="text-danger">*</span></label>
+            <select name="trap_id" class="form-select" required>
+              <option value="">— select trap —</option>
+              {# TODO: populate via JS based on selected line, or query all assigned traps #}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Date &amp; Time <span class="text-danger">*</span></label>
+            <input type="datetime-local" class="form-control" name="date" required>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Recorded By</label>
+            <input type="text" class="form-control"
+                   value="{{ session.get('username') }}" readonly>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-bug me-2"></i>Catch Details
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Species Caught <span class="text-danger">*</span></label>
+            <select name="species_id" class="form-select" required>
+              <option value="">— select —</option>
+              {% for s in species_list %}
+                <option value="{{ s.species_id }}">{{ s.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Use "None" when strikes = 0</div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Strikes <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="strikes"
+                   min="0" value="0" required>
+            <div class="form-text">0 = no catch</div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Sex</label>
+            <select name="sex" class="form-select">
+              <option value="">— optional —</option>
+              <option>Male</option>
+              <option>Female</option>
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Maturity</label>
+            <select name="maturity" class="form-select">
+              <option value="">— optional —</option>
+              <option>Adult</option>
+              <option>Juvenile</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-clipboard2-check me-2"></i>Trap Status &amp; Condition
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            <select name="status_id" class="form-select" required>
+              <option value="">— select —</option>
+              {% for s in status_list %}
+                <option value="{{ s.status_id }}">{{ s.status_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Trap Condition <span class="text-danger">*</span></label>
+            <select name="condition_id" class="form-select" required>
+              <option value="">— select —</option>
+              {% for c in condition_list %}
+                <option value="{{ c.condition_id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-basket me-2"></i>Bait
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Rebaited? <span class="text-danger">*</span></label>
+            <select name="rebaited" class="form-select" required>
+              <option value="">— select —</option>
+              <option>Yes</option>
+              <option>No</option>
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Bait Type <span class="text-danger">*</span></label>
+            <select name="bait_type_id" class="form-select" required>
+              <option value="">— select —</option>
+              {% for b in bait_list %}
+                <option value="{{ b.bait_type_id }}">{{ b.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Use "None" when Rebaited = No</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-sticky me-2"></i>Notes
+      </div>
+      <div class="card-body">
+        <textarea class="form-control" name="notes" rows="3"
+                  placeholder="Optional notes about this trap check..."></textarea>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-pf">
+        <i class="bi bi-check-lg me-1"></i>Save Record
+      </button>
+      <a href="{{ url_for('operator_dashboard') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+    <p class="small text-muted mt-2"><span class="text-danger">*</span> Required fields</p>
+
+  </form>
+</div>
+{% endblock %}
