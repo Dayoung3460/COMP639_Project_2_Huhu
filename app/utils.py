@@ -97,11 +97,11 @@ def redirect_by_role():
     """
     role = session.get('role')
     if role == 'Admin':
-        return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('admin_dashboard'))
     elif role == 'Operator':
-        return redirect(url_for('operator.dashboard'))
+        return redirect(url_for('operator_dashboard'))
     else:
-        return redirect(url_for('observer.dashboard'))
+        return redirect(url_for('observer_dashboard'))
 
 
 # ── Before request check ──────────────────────────────────────────────────────

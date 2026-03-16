@@ -204,6 +204,8 @@ cython_debug/
 # Local secrets
 app/connect.py
 
+instructions.txt
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
