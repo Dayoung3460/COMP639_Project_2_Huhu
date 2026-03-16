@@ -13,17 +13,6 @@ def observer_dashboard():
     # TODO: query stats and recent records
     return render_template('observer/dashboard.html')
 
-
-@app.route('/catch-records')
-@role_required()
-def catch_records():
-    """Browse and filter all trap catch records."""
-    # TODO: get filter params from request.args
-    # TODO: query catch records with JOINs to trap, line, species, operator
-    records = []
-    return render_template('observer/catch_records.html', records=records)
-
-
 @app.route('/observations')
 @role_required()
 def observations():

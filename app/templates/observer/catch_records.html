@@ -10,30 +10,74 @@
   </div>
 
   {# Filter form #}
-  <form method="GET" class="row g-2 mb-4">
+  <form method="GET" action="{{ url_for('catch_records') }}" class="row g-2 mb-4 align-items-end">
+    
     <div class="col-auto">
-      <select name="line_id" class="form-select form-select-sm">
+      <select name="trap_code" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Trap Codes</option>
+        {% for code in filter_data.trap_codes %}
+          <option value="{{ code }}" {% if selected_filters.trap_code == code %}selected{% endif %}>{{ code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-auto">
+      <select name="line_id" class="form-select form-select-sm" onchange="this.form.submit()">
         <option value="">All Lines</option>
-        {# TODO: populate from lines list #}
+        {% for line in filter_data.lines %}
+          <option value="{{ line.line_id }}" {% if selected_filters.line_id|string == line.line_id|string %}selected{% endif %}>{{ line.name }}</option>
+        {% endfor %}
       </select>
     </div>
+
     <div class="col-auto">
-      <select name="species_id" class="form-select form-select-sm">
+      <select name="species_caught" class="form-select form-select-sm" onchange="this.form.submit()">
         <option value="">All Species</option>
-        {# TODO: populate from species list #}
+        {% for sp in filter_data.species %}
+          <option value="{{ sp }}" {% if selected_filters.species_caught == sp %}selected{% endif %}>{{ sp }}</option>
+        {% endfor %}
       </select>
     </div>
+
     <div class="col-auto">
-      <input type="date" name="date_from" class="form-control form-control-sm"
-             value="{{ request.args.get('date_from', '') }}">
+      <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        {% for st in filter_data.statuses %}
+          <option value="{{ st }}" {% if selected_filters.status == st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
     </div>
+
     <div class="col-auto">
-      <input type="date" name="date_to" class="form-control form-control-sm"
-             value="{{ request.args.get('date_to', '') }}">
+      <select name="trap_condition" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Conditions</option>
+        {% for cond in filter_data.conditions %}
+          <option value="{{ cond }}" {% if selected_filters.trap_condition == cond %}selected{% endif %}>{{ cond }}</option>
+        {% endfor %}
+      </select>
     </div>
+
     <div class="col-auto">
-      <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-      <a href="{{ url_for('catch_records') }}" class="btn btn-link btn-sm">Clear</a>
+      <select name="recorded_by_id" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Recorders</option>
+        {% for rec in filter_data.recorders %}
+          <option value="{{ rec.user_id }}" {% if selected_filters.recorded_by_id|string == rec.user_id|string %}selected{% endif %}>{{ rec.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-auto">
+      <input type="date" id="date_from" name="date_from" class="form-control form-control-sm"
+             value="{{ selected_filters.date_from or '' }}" onchange="this.form.submit()">
+    </div>
+    
+    <div class="col-auto">
+      <input type="date" id="date_to" name="date_to" class="form-control form-control-sm"
+             value="{{ selected_filters.date_to or '' }}" onchange="this.form.submit()">
+    </div>
+
+    <div class="col-auto">
+      <a href="{{ url_for('catch_records') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
     </div>
   </form>
 
@@ -41,7 +85,7 @@
     <table class="table table-striped table-hover">
       <thead>
         <tr>
-          <th>Trap Code</th><th>Date</th><th>Line</th><th>Species</th>
+          <th>Trap Code</th><th>Trap Type</th><th>Date</th><th>Line</th><th>Species</th>
           <th>Status</th><th>Strikes</th><th>Rebaited</th>
           <th>Bait Type</th><th>Condition</th><th>Recorded By</th>
         </tr>
@@ -49,20 +93,21 @@
       <tbody>
         {% for r in records %}
           <tr>
-            <td><strong>{{ r.code }}</strong></td>
+            <td><strong>{{ r.trap_code }}</strong></td>
+            <td>{{ r.trap_type }}</td>
             <td>{{ r.date | nz_datetime }}</td>
             <td>{{ r.line_name }}</td>
-            <td>{{ r.species_name }}</td>
-            <td>{{ r.status_name }}</td>
+            <td>{{ r.species_caught }}</td>
+            <td>{{ r.status }}</td>
             <td>{{ r.strikes }}</td>
             <td>{{ r.rebaited }}</td>
-            <td>{{ r.bait_name }}</td>
-            <td>{{ r.condition_name }}</td>
-            <td>{{ r.recorded_by_name }}</td>
+            <td>{{ r.bait_type }}</td>
+            <td>{{ r.trap_condition }}</td>
+            <td>{{ r.recorded_by }}</td>
           </tr>
         {% else %}
           <tr>
-            <td colspan="10" class="text-center text-muted py-3">
+            <td colspan="11" class="text-center text-muted py-3">
               No records found.
             </td>
           </tr>

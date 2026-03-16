@@ -79,6 +79,7 @@ pflu/
 │   ├── connect.py           ← DB credentials (not committed)
 │   ├── db.py                ← psycopg2 connection helpers
 │   ├── utils.py             ← role_required, password validation
+│   ├── general.py           ← Routes accessible by multiple roles
 │   ├── home.py
 │   ├── auth.py
 │   ├── observer.py
