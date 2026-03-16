@@ -36,10 +36,10 @@ def role_required(*roles):
         def decorated_function(*args, **kwargs):
             if 'user_id' not in session:
                 flash('Please log in to access this page.', 'danger')
-                return redirect(url_for('auth.login'))
+                return redirect(url_for('login'))
             if roles and session.get('role') not in roles:
                 flash('You do not have permission to access that page.', 'danger')
-                return redirect(url_for('home.index'))
+                return redirect(url_for('index'))
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -97,11 +97,11 @@ def redirect_by_role():
     """
     role = session.get('role')
     if role == 'Admin':
-        return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('admin_dashboard'))
     elif role == 'Operator':
-        return redirect(url_for('operator.dashboard'))
+        return redirect(url_for('operator_dashboard'))
     else:
-        return redirect(url_for('observer.dashboard'))
+        return redirect(url_for('observer_dashboard'))
 
 
 # ── Before request check ──────────────────────────────────────────────────────
@@ -114,7 +114,8 @@ def check_user_status():
 
     Excludes public routes and static files.
     """
-    excluded_routes = ['auth.login', 'auth.register', 'home.index', 'static']
+    # Route function names (not blueprint.route) — matches our flat route structure
+    excluded_routes = ['login', 'register', 'index', 'static']
 
     if request.endpoint in excluded_routes:
         return
@@ -122,12 +123,13 @@ def check_user_status():
     if 'user_id' in session:
         from app import db
         with db.get_cursor() as cursor:
+            # No more is_active boolean or "user" table
             cursor.execute(
-                'SELECT is_active FROM "user" WHERE user_id = %s',
+                'SELECT account_status FROM users WHERE user_id = %s',
                 (session['user_id'],)
             )
             user = cursor.fetchone()
-            if user and not user['is_active']:
+            if user and user['account_status'] != 'active':
                 session.clear()
                 flash('Your account has been deactivated. Please contact an administrator.', 'danger')
-                return redirect(url_for('auth.login'))
+                return redirect(url_for('login'))

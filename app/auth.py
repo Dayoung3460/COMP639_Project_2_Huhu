@@ -9,16 +9,16 @@ from app.utils import is_valid_password, redirect_by_role
 def register():
     """Register a new Observer account."""
     if request.method == 'POST':
-        username         = request.form.get('username', '').strip()
-        email            = request.form.get('email', '').strip()
-        password         = request.form.get('password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        first_name       = request.form.get('first_name', '').strip()
-        last_name        = request.form.get('last_name', '').strip()
-        contact_info     = request.form.get('contact_info', '').strip()
-        emergency_name   = request.form.get('emergency_name', '').strip()
-        emergency_phone  = request.form.get('emergency_phone', '').strip()
-        emergency_contact = f"{emergency_name} — {emergency_phone}" if emergency_name else None
+        username          = request.form.get('username', '').strip()
+        email             = request.form.get('email', '').strip()
+        password          = request.form.get('password', '')
+        confirm_password  = request.form.get('confirm_password', '')
+        first_name        = request.form.get('first_name', '').strip()
+        last_name         = request.form.get('last_name', '').strip()
+        contact_info      = request.form.get('contact_info', '').strip()
+        emergency_name    = request.form.get('emergency_name', '').strip()
+        emergency_phone   = request.form.get('emergency_phone', '').strip()
+        emergency_contact = f"{emergency_name} — {emergency_phone}" if emergency_name else ''
 
         # Validation
         if not all([username, email, password, confirm_password, first_name, last_name]):
@@ -35,20 +35,23 @@ def register():
 
         with db.get_cursor() as cursor:
             # Check username/email not already taken
-            cursor.execute('SELECT user_id FROM "user" WHERE username = %s OR email = %s',
-                           (username, email))
+            cursor.execute(
+                'SELECT user_id FROM users WHERE username = %s OR email = %s',
+                (username, email)
+            )
             if cursor.fetchone():
                 flash('Username or email is already in use.', 'danger')
                 return render_template('auth/register.html')
 
             password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
+            # role and account_status are ENUMs — insert value directly, no lookup table
             cursor.execute('''
-                INSERT INTO "user"
+                INSERT INTO users
                     (username, email, password_hash, first_name, last_name,
-                     contact_info, emergency_contact, role_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s,
-                    (SELECT role_id FROM role WHERE role_name = 'Observer'))
+                     contact_information, emergency_contact_information,
+                     role, account_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'Observer', 'active')
             ''', (username, email, password_hash, first_name, last_name,
                   contact_info, emergency_contact))
 
@@ -66,12 +69,12 @@ def login():
         password = request.form.get('password', '')
 
         with db.get_cursor() as cursor:
+            # role is an ENUM directly on users — no JOIN to a role table needed
             cursor.execute('''
-                SELECT u.user_id, u.username, u.password_hash,
-                       u.is_active, r.role_name
-                FROM "user" u
-                JOIN role r ON u.role_id = r.role_id
-                WHERE u.username = %s
+                SELECT user_id, username, password_hash,
+                       account_status, role
+                FROM users
+                WHERE username = %s
             ''', (username,))
             user = cursor.fetchone()
 
@@ -79,13 +82,13 @@ def login():
             flash('Incorrect username or password.', 'danger')
             return render_template('auth/login.html', username=username)
 
-        if not user['is_active']:
+        if user['account_status'] != 'active':
             flash('Your account has been deactivated. Please contact an administrator.', 'danger')
             return render_template('auth/login.html', username=username)
 
         session['user_id']  = user['user_id']
         session['username'] = user['username']
-        session['role']     = user['role_name']
+        session['role']     = user['role']
 
         flash(f"Welcome back, {user['username']}!", 'success')
         return redirect_by_role()
@@ -113,8 +116,10 @@ def change_password():
         confirm_password = request.form.get('confirm_password', '')
 
         with db.get_cursor() as cursor:
-            cursor.execute('SELECT password_hash FROM "user" WHERE user_id = %s',
-                           (session['user_id'],))
+            cursor.execute(
+                'SELECT password_hash FROM users WHERE user_id = %s',
+                (session['user_id'],)
+            )
             user = cursor.fetchone()
 
         if not bcrypt.check_password_hash(user['password_hash'], current_password):
@@ -135,8 +140,10 @@ def change_password():
 
         new_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
         with db.get_cursor() as cursor:
-            cursor.execute('UPDATE "user" SET password_hash = %s WHERE user_id = %s',
-                           (new_hash, session['user_id']))
+            cursor.execute(
+                'UPDATE users SET password_hash = %s WHERE user_id = %s',
+                (new_hash, session['user_id'])
+            )
 
         flash('Password updated successfully.', 'success')
         return redirect(url_for('profile'))
@@ -151,19 +158,22 @@ def profile():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        first_name      = request.form.get('first_name', '').strip()
-        last_name       = request.form.get('last_name', '').strip()
-        email           = request.form.get('email', '').strip()
-        contact_info    = request.form.get('contact_info', '').strip()
-        emergency_name  = request.form.get('emergency_name', '').strip()
-        emergency_phone = request.form.get('emergency_phone', '').strip()
-        emergency_contact = f"{emergency_name} — {emergency_phone}" if emergency_name else None
+        first_name        = request.form.get('first_name', '').strip()
+        last_name         = request.form.get('last_name', '').strip()
+        email             = request.form.get('email', '').strip()
+        contact_info      = request.form.get('contact_info', '').strip()
+        emergency_name    = request.form.get('emergency_name', '').strip()
+        emergency_phone   = request.form.get('emergency_phone', '').strip()
+        emergency_contact = f"{emergency_name} — {emergency_phone}" if emergency_name else ''
 
         with db.get_cursor() as cursor:
             cursor.execute('''
-                UPDATE "user"
-                SET first_name = %s, last_name = %s, email = %s,
-                    contact_info = %s, emergency_contact = %s
+                UPDATE users
+                SET first_name = %s,
+                    last_name = %s,
+                    email = %s,
+                    contact_information = %s,
+                    emergency_contact_information = %s
                 WHERE user_id = %s
             ''', (first_name, last_name, email, contact_info,
                   emergency_contact, session['user_id']))
@@ -172,8 +182,10 @@ def profile():
         return redirect(url_for('profile'))
 
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT * FROM "user" WHERE user_id = %s',
-                       (session['user_id'],))
+        cursor.execute(
+            'SELECT * FROM users WHERE user_id = %s',
+            (session['user_id'],)
+        )
         user = cursor.fetchone()
 
     return render_template('auth/profile.html', user=user)
