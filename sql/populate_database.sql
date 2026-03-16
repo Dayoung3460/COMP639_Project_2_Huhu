@@ -2,21 +2,13 @@
 -- populate_database.sql — PF-LU Seed Data
 -- COMP639 Group Project 1 — Semester 1, 2026
 --
--- Run AFTER create_tables.sql
+-- Run AFTER create_database.sql (Sun's schema)
 --
--- IMPORTANT: Replace placeholder password hashes before use.
--- Generate real hashes with:
---   python -c "from flask_bcrypt import generate_password_hash; \
---              print(generate_password_hash('Password1!').decode())"
+-- All passwords are bcrypt hashes of: Password1!
 -- =============================================================
 
--- ── Roles ─────────────────────────────────────────────────────
-INSERT INTO role (role_name) VALUES
-    ('Observer'),
-    ('Operator'),
-    ('Admin');
-
--- ── Species ───────────────────────────────────────────────────
+-- ── Species (lookup table — VARCHAR PRIMARY KEY) ──────────────
+-- Full list from the project brief
 INSERT INTO species (name) VALUES
     ('None'),
     ('Ferret'),
@@ -30,8 +22,10 @@ INSERT INTO species (name) VALUES
     ('Weasel'),
     ('Unspecified');
 
--- ── Trap statuses ─────────────────────────────────────────────
-INSERT INTO trap_status (status_name) VALUES
+-- ── Trap statuses (lookup table — VARCHAR PRIMARY KEY) ────────
+-- Full list from the project brief
+-- NOTE: "Still set, bait OK/bad/missing" are each ONE status entry
+INSERT INTO trap_statuses (name) VALUES
     ('Initial set'),
     ('Removed for Repair'),
     ('Sprung'),
@@ -42,80 +36,187 @@ INSERT INTO trap_status (status_name) VALUES
     ('Trap gone'),
     ('Trap interfered with');
 
--- ── Trap conditions ───────────────────────────────────────────
-INSERT INTO trap_condition (name) VALUES
-    ('OK'),
-    ('Needs maintenance'),
-    ('Repaired'),
-    ('Regassed'),
-    ('Recurred'),
-    ('Battery charge');
-
--- ── Bait types ────────────────────────────────────────────────
--- Add remaining values from the project brief as needed
-INSERT INTO bait_type (name) VALUES
+-- ── Bait types (lookup table — VARCHAR PRIMARY KEY) ───────────
+-- Full list from the project brief
+INSERT INTO bait_types (name) VALUES
     ('None'),
-    ('Peanut butter'),
-    ('Egg'),
-    ('Goodnature Nut Butter'),
-    ('Goodnature Chocolate'),
-    ('Goodnature Blood'),
-    ('Salmon'),
-    ('Dehydrated Rabbit'),
-    ('Fresh Possum'),
-    ('Fresh Rabbit'),
-    ('Nutella'),
     ('Carrot'),
+    ('Cereal'),
     ('Cheese'),
     ('Chocolate'),
+    ('Dehydrated Rabbit'),
+    ('Dried fruit'),
+    ('Ferret bedding'),
     ('Fish'),
-    ('Other (please specify)');
+    ('Fresh Possum'),
+    ('Fresh Rabbit'),
+    ('Fresh fruit'),
+    ('Fresh meat'),
+    ('Golf ball'),
+    ('Good Nature Chocolate'),
+    ('Good Nature Meat Lovers'),
+    ('Goodnature Blood'),
+    ('Goodnature Cinnamon pre feed'),
+    ('Goodnature Nut Butter'),
+    ('Lure'),
+    ('Lure-it Salmon Spray'),
+    ('Mayo'),
+    ('Mustelid and Cat Lure'),
+    ('NARA Blocks'),
+    ('NZAT Lure - Original'),
+    ('Nut'),
+    ('Nutella'),
+    ('Other (please specify)'),
+    ('Peanut butter'),
+    ('PoaUku'),
+    ('Possum Dough'),
+    ('Rabbit oil'),
+    ('Rat and Possum Lure'),
+    ('Rat oil'),
+    ('Salmon'),
+    ('Salmon oil'),
+    ('Salted Possum'),
+    ('Salted Rabbit'),
+    ('Salted meat'),
+    ('Smooth'),
+    ('Terracotta Lures'),
+    ('Tinned Sardines'),
+    ('Whole egg');
 
 -- ── Admin accounts (2 required) ───────────────────────────────
-INSERT INTO "user"
-    (username, email, password_hash, first_name, last_name, role_id)
+-- role uses ENUM role_type: 'Observer' | 'Operator' | 'Admin'
+-- account_status uses ENUM account_status_type: 'active' | 'inactive'
+INSERT INTO users
+    (username, email, password_hash, first_name, last_name,
+     contact_information, emergency_contact_information,
+     role, account_status)
 VALUES
     ('admin1', 'admin1@pflu.ac.nz',
-     '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
      'Admin', 'One',
-     (SELECT role_id FROM role WHERE role_name = 'Admin')),
+     '021 000 0001', 'Emergency One — 021 000 0099',
+     'Admin', 'active'),
+
     ('admin2', 'admin2@pflu.ac.nz',
-     '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
      'Admin', 'Two',
-     (SELECT role_id FROM role WHERE role_name = 'Admin'));
+     '021 000 0002', 'Emergency Two — 021 000 0098',
+     'Admin', 'active');
 
 -- ── Operator accounts (10 required) ───────────────────────────
-INSERT INTO "user"
-    (username, email, password_hash, first_name, last_name, role_id)
+INSERT INTO users
+    (username, email, password_hash, first_name, last_name,
+     contact_information, emergency_contact_information,
+     role, account_status)
 VALUES
-    ('operator1',  'op1@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'James',  'Ruane',    (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator2',  'op2@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Aroha',  'Kahu',     (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator3',  'op3@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Tom',    'Walker',   (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator4',  'op4@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Nina',   'Brown',    (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator5',  'op5@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Liam',   'Chen',     (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator6',  'op6@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Mei',    'Zhang',    (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator7',  'op7@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Sam',    'Wilson',   (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator8',  'op8@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Priya',  'Patel',    (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator9',  'op9@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Carlos', 'Rivera',   (SELECT role_id FROM role WHERE role_name = 'Operator')),
-    ('operator10', 'op10@pflu.ac.nz', '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Fiona',  'McDonald', (SELECT role_id FROM role WHERE role_name = 'Operator'));
+    ('operator1', 'op1@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'James', 'Ruane', '021 100 0001', 'James Emergency — 021 100 0091',
+     'Operator', 'active'),
+
+    ('operator2', 'op2@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Aroha', 'Kahu', '021 100 0002', 'Aroha Emergency — 021 100 0092',
+     'Operator', 'active'),
+
+    ('operator3', 'op3@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Tom', 'Walker', '021 100 0003', 'Tom Emergency — 021 100 0093',
+     'Operator', 'active'),
+
+    ('operator4', 'op4@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Nina', 'Brown', '021 100 0004', 'Nina Emergency — 021 100 0094',
+     'Operator', 'active'),
+
+    ('operator5', 'op5@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Liam', 'Chen', '021 100 0005', 'Liam Emergency — 021 100 0095',
+     'Operator', 'active'),
+
+    ('operator6', 'op6@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Mei', 'Zhang', '021 100 0006', 'Mei Emergency — 021 100 0096',
+     'Operator', 'active'),
+
+    ('operator7', 'op7@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Sam', 'Wilson', '021 100 0007', 'Sam Emergency — 021 100 0087',
+     'Operator', 'active'),
+
+    ('operator8', 'op8@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Priya', 'Patel', '021 100 0008', 'Priya Emergency — 021 100 0088',
+     'Operator', 'active'),
+
+    ('operator9', 'op9@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Carlos', 'Rivera', '021 100 0009', 'Carlos Emergency — 021 100 0089',
+     'Operator', 'active'),
+
+    ('operator10', 'op10@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Fiona', 'McDonald', '021 100 0010', 'Fiona Emergency — 021 100 0080',
+     'Operator', 'active');
 
 -- ── Observer accounts (10 required) ───────────────────────────
-INSERT INTO "user"
-    (username, email, password_hash, first_name, last_name, role_id)
+INSERT INTO users
+    (username, email, password_hash, first_name, last_name,
+     contact_information, emergency_contact_information,
+     role, account_status)
 VALUES
-    ('observer1',  'obs1@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Sarah',  'Thompson', (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer2',  'obs2@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Mike',   'Jones',    (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer3',  'obs3@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Ella',   'Davis',    (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer4',  'obs4@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Noah',   'Martin',   (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer5',  'obs5@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Isla',   'White',    (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer6',  'obs6@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Jack',   'Harris',   (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer7',  'obs7@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Chloe',  'Clark',    (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer8',  'obs8@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Oliver', 'Lewis',    (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer9',  'obs9@pflu.ac.nz',  '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Grace',  'Hall',     (SELECT role_id FROM role WHERE role_name = 'Observer')),
-    ('observer10', 'obs10@pflu.ac.nz', '$2b$12$DSNt3QbdOpc7a6dVMHo8iO0Do6v6sAnIye6Bb8SvuIlQRk7TSCG6G', 'Henry',  'Young',    (SELECT role_id FROM role WHERE role_name = 'Observer'));
+    ('observer1', 'obs1@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Sarah', 'Thompson', '021 200 0001', 'Sarah Emergency — 021 200 0091',
+     'Observer', 'active'),
+
+    ('observer2', 'obs2@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Mike', 'Jones', '021 200 0002', 'Mike Emergency — 021 200 0092',
+     'Observer', 'active'),
+
+    ('observer3', 'obs3@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Ella', 'Davis', '021 200 0003', 'Ella Emergency — 021 200 0093',
+     'Observer', 'active'),
+
+    ('observer4', 'obs4@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Noah', 'Martin', '021 200 0004', 'Noah Emergency — 021 200 0094',
+     'Observer', 'active'),
+
+    ('observer5', 'obs5@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Isla', 'White', '021 200 0005', 'Isla Emergency — 021 200 0095',
+     'Observer', 'active'),
+
+    ('observer6', 'obs6@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Jack', 'Harris', '021 200 0006', 'Jack Emergency — 021 200 0096',
+     'Observer', 'active'),
+
+    ('observer7', 'obs7@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Chloe', 'Clark', '021 200 0007', 'Chloe Emergency — 021 200 0097',
+     'Observer', 'active'),
+
+    ('observer8', 'obs8@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Oliver', 'Lewis', '021 200 0008', 'Oliver Emergency — 021 200 0098',
+     'Observer', 'active'),
+
+    ('observer9', 'obs9@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Grace', 'Hall', '021 200 0009', 'Grace Emergency — 021 200 0099',
+     'Observer', 'active'),
+
+    ('observer10', 'obs10@pflu.ac.nz',
+     '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
+     'Henry', 'Young', '021 200 0010', 'Henry Emergency — 021 200 0080',
+     'Observer', 'active');
 
 -- ── Trap lines (5 required) ───────────────────────────────────
-INSERT INTO line (name, type) VALUES
+INSERT INTO lines (name, type) VALUES
     ('North Line',   'Trap'),
     ('Lake Route',   'Trap'),
     ('East Track',   'Trap'),
@@ -123,113 +224,262 @@ INSERT INTO line (name, type) VALUES
     ('Central Line', 'Trap');
 
 -- ── Assign operators to lines ─────────────────────────────────
-INSERT INTO operator_line (operator_id, line_id) VALUES
-    ((SELECT user_id FROM "user" WHERE username = 'operator1'),
-     (SELECT line_id  FROM line  WHERE name     = 'North Line')),
-    ((SELECT user_id FROM "user" WHERE username = 'operator1'),
-     (SELECT line_id  FROM line  WHERE name     = 'Lake Route')),
-    ((SELECT user_id FROM "user" WHERE username = 'operator2'),
-     (SELECT line_id  FROM line  WHERE name     = 'East Track')),
-    ((SELECT user_id FROM "user" WHERE username = 'operator2'),
-     (SELECT line_id  FROM line  WHERE name     = 'West Loop')),
-    ((SELECT user_id FROM "user" WHERE username = 'operator3'),
-     (SELECT line_id  FROM line  WHERE name     = 'Central Line'));
+INSERT INTO operator_lines (operator_id, line_id) VALUES
+    ((SELECT user_id FROM users WHERE username = 'operator1'),
+     (SELECT line_id  FROM lines WHERE name    = 'North Line')),
+    ((SELECT user_id FROM users WHERE username = 'operator1'),
+     (SELECT line_id  FROM lines WHERE name    = 'Lake Route')),
+    ((SELECT user_id FROM users WHERE username = 'operator2'),
+     (SELECT line_id  FROM lines WHERE name    = 'East Track')),
+    ((SELECT user_id FROM users WHERE username = 'operator2'),
+     (SELECT line_id  FROM lines WHERE name    = 'West Loop')),
+    ((SELECT user_id FROM users WHERE username = 'operator3'),
+     (SELECT line_id  FROM lines WHERE name    = 'Central Line')),
+    ((SELECT user_id FROM users WHERE username = 'operator4'),
+     (SELECT line_id  FROM lines WHERE name    = 'North Line')),
+    ((SELECT user_id FROM users WHERE username = 'operator5'),
+     (SELECT line_id  FROM lines WHERE name    = 'Lake Route'));
 
--- ── Traps — 5 per line ────────────────────────────────────────
+-- ── Traps — 5 per line (trap_type uses ENUM trap_type_enum) ───
 
 -- North Line
-INSERT INTO trap (code, trap_type, line_id, latitude, longitude) VALUES
-    ('NL-01', 'DOC 150',        (SELECT line_id FROM line WHERE name = 'North Line'), -43.6450, 172.4720),
-    ('NL-02', 'T-Rex Rat Trap', (SELECT line_id FROM line WHERE name = 'North Line'), -43.6452, 172.4730),
-    ('NL-03', 'DOC 200',        (SELECT line_id FROM line WHERE name = 'North Line'), -43.6455, 172.4740),
-    ('NL-04', 'Trapinator',     (SELECT line_id FROM line WHERE name = 'North Line'), -43.6458, 172.4750),
-    ('NL-05', 'Victor',         (SELECT line_id FROM line WHERE name = 'North Line'), -43.6460, 172.4760);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
+    ('NL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645000, 172.472000),
+    ('NL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645200, 172.473000),
+    ('NL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645500, 172.474000),
+    ('NL-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645800, 172.475000),
+    ('NL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'North Line'), -43.646000, 172.476000);
 
 -- Lake Route
-INSERT INTO trap (code, trap_type, line_id, latitude, longitude) VALUES
-    ('LR-01', 'DOC 150',    (SELECT line_id FROM line WHERE name = 'Lake Route'), -43.6480, 172.4700),
-    ('LR-02', 'Trapinator', (SELECT line_id FROM line WHERE name = 'Lake Route'), -43.6485, 172.4710),
-    ('LR-03', 'A24',        (SELECT line_id FROM line WHERE name = 'Lake Route'), -43.6490, 172.4720),
-    ('LR-04', 'Victor',     (SELECT line_id FROM line WHERE name = 'Lake Route'), -43.6495, 172.4730),
-    ('LR-05', 'DOC 250',    (SELECT line_id FROM line WHERE name = 'Lake Route'), -43.6500, 172.4740);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
+    ('LR-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648000, 172.470000),
+    ('LR-02', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648500, 172.471000),
+    ('LR-03', 'A24',            (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649000, 172.472000),
+    ('LR-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649500, 172.473000),
+    ('LR-05', 'DOC 250',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.650000, 172.474000);
 
 -- East Track
-INSERT INTO trap (code, trap_type, line_id, latitude, longitude) VALUES
-    ('ET-01', 'DOC 150',        (SELECT line_id FROM line WHERE name = 'East Track'), -43.6430, 172.4800),
-    ('ET-02', 'DOC 200',        (SELECT line_id FROM line WHERE name = 'East Track'), -43.6432, 172.4810),
-    ('ET-03', 'T-Rex Rat Trap', (SELECT line_id FROM line WHERE name = 'East Track'), -43.6435, 172.4820),
-    ('ET-04', 'Trapinator',     (SELECT line_id FROM line WHERE name = 'East Track'), -43.6438, 172.4830),
-    ('ET-05', 'Victor',         (SELECT line_id FROM line WHERE name = 'East Track'), -43.6440, 172.4840);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
+    ('ET-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643000, 172.480000),
+    ('ET-02', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643200, 172.481000),
+    ('ET-03', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643500, 172.482000),
+    ('ET-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643800, 172.483000),
+    ('ET-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'East Track'), -43.644000, 172.484000);
 
 -- West Loop
-INSERT INTO trap (code, trap_type, line_id, latitude, longitude) VALUES
-    ('WL-01', 'A24',        (SELECT line_id FROM line WHERE name = 'West Loop'), -43.6470, 172.4660),
-    ('WL-02', 'DOC 150',    (SELECT line_id FROM line WHERE name = 'West Loop'), -43.6475, 172.4650),
-    ('WL-03', 'DOC 200',    (SELECT line_id FROM line WHERE name = 'West Loop'), -43.6480, 172.4640),
-    ('WL-04', 'Victor',     (SELECT line_id FROM line WHERE name = 'West Loop'), -43.6485, 172.4630),
-    ('WL-05', 'Trapinator', (SELECT line_id FROM line WHERE name = 'West Loop'), -43.6490, 172.4620);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
+    ('WL-01', 'A24',            (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647000, 172.466000),
+    ('WL-02', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647500, 172.465000),
+    ('WL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648000, 172.464000),
+    ('WL-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648500, 172.463000),
+    ('WL-05', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.649000, 172.462000);
 
 -- Central Line
-INSERT INTO trap (code, trap_type, line_id, latitude, longitude) VALUES
-    ('CL-01', 'DOC 150',        (SELECT line_id FROM line WHERE name = 'Central Line'), -43.6440, 172.4750),
-    ('CL-02', 'T-Rex Rat Trap', (SELECT line_id FROM line WHERE name = 'Central Line'), -43.6442, 172.4760),
-    ('CL-03', 'DOC 200',        (SELECT line_id FROM line WHERE name = 'Central Line'), -43.6445, 172.4770),
-    ('CL-04', 'A24',            (SELECT line_id FROM line WHERE name = 'Central Line'), -43.6448, 172.4780),
-    ('CL-05', 'Victor',         (SELECT line_id FROM line WHERE name = 'Central Line'), -43.6450, 172.4790);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
+    ('CL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644000, 172.475000),
+    ('CL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644200, 172.476000),
+    ('CL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644500, 172.477000),
+    ('CL-04', 'A24',            (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644800, 172.478000),
+    ('CL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.645000, 172.479000);
 
 -- ── Catch records — 5 per line ────────────────────────────────
+-- Sun's column names: recorded_by_id, species_caught, status, bait_type
+-- sex/maturity/rebaited are ENUMs — use exact ENUM values
+-- trap_condition is ENUM trap_condition_type
+-- CHECK: strikes = 0 requires species_caught = 'None'
+-- CHECK: rebaited = 'No' requires bait_type = 'None'
 
--- North Line
-INSERT INTO trap_catch
-    (trap_id, date, recorded_by, species_id, sex, maturity,
-     status_id, rebaited, bait_type_id, condition_id, strikes)
+-- North Line catches
+INSERT INTO trap_catches
+    (trap_id, date, recorded_by_id, species_caught, sex, maturity,
+     status, rebaited, bait_type, trap_condition, strikes)
 VALUES
-    ((SELECT trap_id FROM trap WHERE code = 'NL-01'), '2026-03-10 08:30',
-     (SELECT user_id FROM "user" WHERE username = 'operator1'),
-     (SELECT species_id FROM species WHERE name = 'Stoat'), 'Male', 'Adult',
-     (SELECT status_id FROM trap_status WHERE status_name = 'Sprung'), 'Yes',
-     (SELECT bait_type_id FROM bait_type WHERE name = 'Goodnature Nut Butter'),
-     (SELECT condition_id FROM trap_condition WHERE name = 'OK'), 1),
+    ((SELECT trap_id FROM traps WHERE code = 'NL-01'), '2026-03-10 08:30',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'Stoat', 'Male', 'Adult',
+     'Sprung', 'Yes', 'Goodnature Nut Butter', 'OK', 1),
 
-    ((SELECT trap_id FROM trap WHERE code = 'NL-02'), '2026-03-10 08:45',
-     (SELECT user_id FROM "user" WHERE username = 'operator1'),
-     (SELECT species_id FROM species WHERE name = 'None'), NULL, NULL,
-     (SELECT status_id FROM trap_status WHERE status_name = 'Still set, bait OK'), 'No',
-     (SELECT bait_type_id FROM bait_type WHERE name = 'None'),
-     (SELECT condition_id FROM trap_condition WHERE name = 'OK'), 0),
+    ((SELECT trap_id FROM traps WHERE code = 'NL-02'), '2026-03-10 08:45',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'None', NULL, NULL,
+     'Still set, bait OK', 'No', 'None', 'OK', 0),
 
-    ((SELECT trap_id FROM trap WHERE code = 'NL-03'), '2026-03-10 09:00',
-     (SELECT user_id FROM "user" WHERE username = 'operator1'),
-     (SELECT species_id FROM species WHERE name = 'Ship Rat'), 'Female', 'Adult',
-     (SELECT status_id FROM trap_status WHERE status_name = 'Sprung'), 'Yes',
-     (SELECT bait_type_id FROM bait_type WHERE name = 'Peanut butter'),
-     (SELECT condition_id FROM trap_condition WHERE name = 'OK'), 1),
+    ((SELECT trap_id FROM traps WHERE code = 'NL-03'), '2026-03-10 09:00',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'Ship Rat', 'Female', 'Adult',
+     'Sprung', 'Yes', 'Peanut butter', 'OK', 1),
 
-    ((SELECT trap_id FROM trap WHERE code = 'NL-04'), '2026-03-10 09:15',
-     (SELECT user_id FROM "user" WHERE username = 'operator1'),
-     (SELECT species_id FROM species WHERE name = 'None'), NULL, NULL,
-     (SELECT status_id FROM trap_status WHERE status_name = 'Still set, bait OK'), 'No',
-     (SELECT bait_type_id FROM bait_type WHERE name = 'None'),
-     (SELECT condition_id FROM trap_condition WHERE name = 'OK'), 0),
+    ((SELECT trap_id FROM traps WHERE code = 'NL-04'), '2026-03-10 09:15',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'None', NULL, NULL,
+     'Still set, bait bad', 'Yes', 'Peanut butter', 'Needs maintenance', 0),
 
-    ((SELECT trap_id FROM trap WHERE code = 'NL-05'), '2026-03-10 09:30',
-     (SELECT user_id FROM "user" WHERE username = 'operator1'),
-     (SELECT species_id FROM species WHERE name = 'Possum'), 'Male', 'Adult',
-     (SELECT status_id FROM trap_status WHERE status_name = 'Sprung'), 'Yes',
-     (SELECT bait_type_id FROM bait_type WHERE name = 'Egg'),
-     (SELECT condition_id FROM trap_condition WHERE name = 'OK'), 1);
+    ((SELECT trap_id FROM traps WHERE code = 'NL-05'), '2026-03-10 09:30',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'Possum', 'Male', 'Adult',
+     'Sprung', 'Yes', 'Whole egg', 'OK', 1);
 
--- TODO: Add 5 catch records each for Lake Route, East Track, West Loop, Central Line
---       Follow the same pattern as North Line above.
+-- Lake Route catches
+INSERT INTO trap_catches
+    (trap_id, date, recorded_by_id, species_caught, sex, maturity,
+     status, rebaited, bait_type, trap_condition, strikes)
+VALUES
+    ((SELECT trap_id FROM traps WHERE code = 'LR-01'), '2026-03-11 08:30',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'None', NULL, NULL,
+     'Still set, bait OK', 'No', 'None', 'OK', 0),
 
--- ── Observations ──────────────────────────────────────────────
-INSERT INTO observation (operator_id, obs_date, obs_type, location, notes) VALUES
-    ((SELECT user_id FROM "user" WHERE username = 'operator1'),
-     '2026-03-10 10:00', 'Bird sighting', 'North Line near NL-03',
-     'Kereru observed in canopy'),
-    ((SELECT user_id FROM "user" WHERE username = 'operator2'),
-     '2026-03-11 09:00', 'Predator tracks', 'East Track junction',
-     'Possum footprints in mud near ET-02'),
-    ((SELECT user_id FROM "user" WHERE username = 'operator3'),
-     '2026-03-12 08:30', 'Native species sign', 'Central Line south end',
-     'Waxeye nest observed in flax');
+    ((SELECT trap_id FROM traps WHERE code = 'LR-02'), '2026-03-11 08:50',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'Possum', 'Female', 'Adult',
+     'Sprung', 'Yes', 'Goodnature Nut Butter', 'OK', 1),
+
+    ((SELECT trap_id FROM traps WHERE code = 'LR-03'), '2026-03-11 09:10',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'None', NULL, NULL,
+     'Still set, bait missing', 'Yes', 'Peanut butter', 'OK', 0),
+
+    ((SELECT trap_id FROM traps WHERE code = 'LR-04'), '2026-03-11 09:25',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'Kiore Rat', 'Male', 'Juvenile',
+     'Sprung', 'Yes', 'Peanut butter', 'OK', 2),
+
+    ((SELECT trap_id FROM traps WHERE code = 'LR-05'), '2026-03-11 09:40',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'None', NULL, NULL,
+     'Still set, bait OK', 'No', 'None', 'Needs maintenance', 0);
+
+-- East Track catches
+INSERT INTO trap_catches
+    (trap_id, date, recorded_by_id, species_caught, sex, maturity,
+     status, rebaited, bait_type, trap_condition, strikes)
+VALUES
+    ((SELECT trap_id FROM traps WHERE code = 'ET-01'), '2026-03-12 08:00',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'Ferret', 'Male', 'Adult',
+     'Sprung', 'Yes', 'Dehydrated Rabbit', 'OK', 1),
+
+    ((SELECT trap_id FROM traps WHERE code = 'ET-02'), '2026-03-12 08:20',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'None', NULL, NULL,
+     'Still set, bait OK', 'No', 'None', 'OK', 0),
+
+    ((SELECT trap_id FROM traps WHERE code = 'ET-03'), '2026-03-12 08:40',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'Norway Rat', 'Female', 'Adult',
+     'Sprung', 'Yes', 'Peanut butter', 'OK', 1),
+
+    ((SELECT trap_id FROM traps WHERE code = 'ET-04'), '2026-03-12 09:00',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'None', NULL, NULL,
+     'Still set, bait bad', 'Yes', 'Goodnature Nut Butter', 'Repaired', 0),
+
+    ((SELECT trap_id FROM traps WHERE code = 'ET-05'), '2026-03-12 09:20',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'Stoat', 'Male', 'Adult',
+     'Sprung', 'Yes', 'Goodnature Blood', 'OK', 1);
+
+-- West Loop catches
+INSERT INTO trap_catches
+    (trap_id, date, recorded_by_id, species_caught, sex, maturity,
+     status, rebaited, bait_type, trap_condition, strikes)
+VALUES
+    ((SELECT trap_id FROM traps WHERE code = 'WL-01'), '2026-03-13 08:00',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'None', NULL, NULL,
+     'Initial set', 'Yes', 'Peanut butter', 'OK', 0),
+
+    ((SELECT trap_id FROM traps WHERE code = 'WL-02'), '2026-03-13 08:20',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'Ship Rat', 'Male', 'Adult',
+     'Sprung', 'Yes', 'Peanut butter', 'OK', 1),
+
+    ((SELECT trap_id FROM traps WHERE code = 'WL-03'), '2026-03-13 08:40',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'None', NULL, NULL,
+     'Still set, bait OK', 'No', 'None', 'OK', 0),
+
+    ((SELECT trap_id FROM traps WHERE code = 'WL-04'), '2026-03-13 09:00',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'Weasel', 'Female', 'Adult',
+     'Sprung', 'Yes', 'Salmon', 'OK', 1),
+
+    ((SELECT trap_id FROM traps WHERE code = 'WL-05'), '2026-03-13 09:20',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'None', NULL, NULL,
+     'Still set, bait missing', 'Yes', 'Peanut butter', 'Needs maintenance', 0);
+
+-- Central Line catches
+INSERT INTO trap_catches
+    (trap_id, date, recorded_by_id, species_caught, sex, maturity,
+     status, rebaited, bait_type, trap_condition, strikes)
+VALUES
+    ((SELECT trap_id FROM traps WHERE code = 'CL-01'), '2026-03-14 08:00',
+     (SELECT user_id FROM users WHERE username = 'operator3'),
+     'Possum', 'Female', 'Adult',
+     'Sprung', 'Yes', 'Whole egg', 'OK', 1),
+
+    ((SELECT trap_id FROM traps WHERE code = 'CL-02'), '2026-03-14 08:20',
+     (SELECT user_id FROM users WHERE username = 'operator3'),
+     'None', NULL, NULL,
+     'Still set, bait OK', 'No', 'None', 'OK', 0),
+
+    ((SELECT trap_id FROM traps WHERE code = 'CL-03'), '2026-03-14 08:40',
+     (SELECT user_id FROM users WHERE username = 'operator3'),
+     'Kiore Rat', 'Male', 'Juvenile',
+     'Sprung', 'Yes', 'Peanut butter', 'OK', 1),
+
+    ((SELECT trap_id FROM traps WHERE code = 'CL-04'), '2026-03-14 09:00',
+     (SELECT user_id FROM users WHERE username = 'operator3'),
+     'None', NULL, NULL,
+     'Still set, bait bad', 'Yes', 'Goodnature Nut Butter', 'OK', 0),
+
+    ((SELECT trap_id FROM traps WHERE code = 'CL-05'), '2026-03-14 09:20',
+     (SELECT user_id FROM users WHERE username = 'operator3'),
+     'Stoat', 'Female', 'Adult',
+     'Sprung', 'Yes', 'Dehydrated Rabbit', 'Repaired', 1);
+
+-- ── Incidental observations ───────────────────────────────────
+-- Sun's schema includes: latitude, longitude, line_id, trap_id (all optional)
+INSERT INTO incidental_observations
+    (date, operator_id, observation_type, notes, latitude, longitude, line_id, trap_id)
+VALUES
+    ('2026-03-10 10:00',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'Bird sighting',
+     'Kereru observed in canopy above North Line near NL-02',
+     -43.645300, 172.473500,
+     (SELECT line_id FROM lines WHERE name = 'North Line'),
+     (SELECT trap_id FROM traps WHERE code  = 'NL-02')),
+
+    ('2026-03-11 09:45',
+     (SELECT user_id FROM users WHERE username = 'operator1'),
+     'Predator tracks',
+     'Possum footprints in mud near Lake Route trap LR-03',
+     -43.648800, 172.471500,
+     (SELECT line_id FROM lines WHERE name = 'Lake Route'),
+     (SELECT trap_id FROM traps WHERE code  = 'LR-03')),
+
+    ('2026-03-12 09:30',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'Native species sign',
+     'Waxeye nest observed in flax at East Track south end',
+     -43.644100, 172.484200,
+     (SELECT line_id FROM lines WHERE name = 'East Track'),
+     NULL),
+
+    ('2026-03-13 09:35',
+     (SELECT user_id FROM users WHERE username = 'operator2'),
+     'Predator sighting',
+     'Stoat observed crossing track near West Loop trap WL-04',
+     -43.648700, 172.463500,
+     (SELECT line_id FROM lines WHERE name = 'West Loop'),
+     (SELECT trap_id FROM traps WHERE code  = 'WL-04')),
+
+    ('2026-03-14 09:30',
+     (SELECT user_id FROM users WHERE username = 'operator3'),
+     'Bird sighting',
+     'Fantail pair seen foraging near Central Line traps',
+     -43.644600, 172.477200,
+     (SELECT line_id FROM lines WHERE name = 'Central Line'),
+     NULL);

@@ -1,120 +1,134 @@
--- =============================================================
--- create_tables.sql — PF-LU Database Schema
--- COMP639 Group Project 1 — Semester 1, 2026
---
--- Run this first, then run populate_database.sql
--- =============================================================
+DROP TABLE IF EXISTS incidental_observations CASCADE;
+DROP TABLE IF EXISTS trap_catches CASCADE;
+DROP TABLE IF EXISTS operator_lines CASCADE;
+DROP TABLE IF EXISTS traps CASCADE;
+DROP TABLE IF EXISTS lines CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS species CASCADE;
+DROP TABLE IF EXISTS trap_statuses CASCADE;
+DROP TABLE IF EXISTS bait_types CASCADE;
 
--- Drop tables in safe order (children before parents)
-DROP TABLE IF EXISTS observation     CASCADE;
-DROP TABLE IF EXISTS trap_catch      CASCADE;
-DROP TABLE IF EXISTS operator_line   CASCADE;
-DROP TABLE IF EXISTS trap            CASCADE;
-DROP TABLE IF EXISTS line            CASCADE;
-DROP TABLE IF EXISTS "user"          CASCADE;
-DROP TABLE IF EXISTS role            CASCADE;
-DROP TABLE IF EXISTS trap_condition  CASCADE;
-DROP TABLE IF EXISTS bait_type       CASCADE;
-DROP TABLE IF EXISTS trap_status     CASCADE;
-DROP TABLE IF EXISTS species         CASCADE;
+DROP TYPE IF EXISTS role_type CASCADE;
+DROP TYPE IF EXISTS account_status_type CASCADE;
+DROP TYPE IF EXISTS trap_type_enum CASCADE;
+DROP TYPE IF EXISTS sex_type CASCADE;
+DROP TYPE IF EXISTS maturity_type CASCADE;
+DROP TYPE IF EXISTS rebaited_type CASCADE;
+DROP TYPE IF EXISTS trap_condition_type CASCADE;
 
--- ── Lookup tables ─────────────────────────────────────────────
+-- ==============================================================================
+-- 1. ENUMs for non-changeable types (Static lists defined in instructions)
+-- ==============================================================================
+CREATE TYPE role_type AS ENUM ('Observer', 'Operator', 'Admin');
+CREATE TYPE account_status_type AS ENUM ('active', 'inactive');
 
--- User roles
-CREATE TABLE role (
-    role_id   SERIAL PRIMARY KEY,
-    role_name VARCHAR(20) NOT NULL UNIQUE  -- Observer | Operator | Admin
+CREATE TYPE trap_type_enum AS ENUM (
+    'A24',
+    'DOC 150',
+    'DOC 200',
+    'DOC 250',
+    'Flipping Timmy',
+    'Rat trap',
+    'T-Rex Rat Trap',
+    'Trapinator',
+    'Victor'
 );
 
--- Species caught in traps
+CREATE TYPE sex_type AS ENUM ('Male', 'Female');
+CREATE TYPE maturity_type AS ENUM ('Juvenile', 'Adult');
+CREATE TYPE rebaited_type AS ENUM ('Yes', 'No');
+
+CREATE TYPE trap_condition_type AS ENUM (
+    'OK',
+    'Needs maintenance',
+    'Repaired',
+    'Regassed',
+    'Recurred',
+    'Battery charge'
+);
+
+-- ==============================================================================
+-- 2. Lookup tables for Admin-manageable lists (User Stories 18, 19, 20)
+-- We use VARCHAR PRIMARY KEY to allow easy and readable CHECK constraints on trap_catches
+-- ==============================================================================
 CREATE TABLE species (
-    species_id SERIAL PRIMARY KEY,
-    name       VARCHAR(50) NOT NULL UNIQUE
+    name VARCHAR(100) PRIMARY KEY
 );
 
--- Trap check statuses
-CREATE TABLE trap_status (
-    status_id   SERIAL PRIMARY KEY,
-    status_name VARCHAR(60) NOT NULL UNIQUE
+CREATE TABLE trap_statuses (
+    name VARCHAR(100) PRIMARY KEY
 );
 
--- Bait types
-CREATE TABLE bait_type (
-    bait_type_id SERIAL PRIMARY KEY,
-    name         VARCHAR(80) NOT NULL UNIQUE
+CREATE TABLE bait_types (
+    name VARCHAR(100) PRIMARY KEY
 );
 
--- Trap condition values
-CREATE TABLE trap_condition (
-    condition_id SERIAL PRIMARY KEY,
-    name         VARCHAR(50) NOT NULL UNIQUE
+-- ==============================================================================
+-- 3. Core Entities
+-- ==============================================================================
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    contact_information TEXT NOT NULL,
+    emergency_contact_information TEXT NOT NULL,
+    role role_type NOT NULL,
+    account_status account_status_type NOT NULL DEFAULT 'active'
 );
 
--- ── Core tables ───────────────────────────────────────────────
-
--- Users (all roles stored in same table)
-CREATE TABLE "user" (
-    user_id           SERIAL PRIMARY KEY,
-    username          VARCHAR(50)  NOT NULL UNIQUE,
-    email             VARCHAR(100) NOT NULL UNIQUE,
-    password_hash     VARCHAR(255) NOT NULL,
-    first_name        VARCHAR(50)  NOT NULL,
-    last_name         VARCHAR(50)  NOT NULL,
-    contact_info      TEXT,
-    emergency_contact TEXT,
-    role_id           INTEGER NOT NULL REFERENCES role(role_id),
-    is_active         BOOLEAN NOT NULL DEFAULT TRUE
-);
-
--- Trap lines
-CREATE TABLE line (
-    line_id    SERIAL PRIMARY KEY,
-    name       VARCHAR(100) NOT NULL UNIQUE,
-    type       VARCHAR(50)  NOT NULL DEFAULT 'Trap',
+CREATE TABLE lines (
+    line_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    type VARCHAR(255) NOT NULL,
     is_retired BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- Individual traps — each belongs to exactly one line
-CREATE TABLE trap (
-    trap_id    SERIAL PRIMARY KEY,
-    code       VARCHAR(50)  NOT NULL UNIQUE,
-    trap_type  VARCHAR(50)  NOT NULL,
-    line_id    INTEGER NOT NULL REFERENCES line(line_id),
-    latitude   DECIMAL(9,6) NOT NULL,
-    longitude  DECIMAL(9,6) NOT NULL,
+CREATE TABLE traps (
+    trap_id SERIAL PRIMARY KEY,
+    code VARCHAR(255) NOT NULL UNIQUE,
+    trap_type trap_type_enum NOT NULL,
+    line_id INTEGER NOT NULL REFERENCES lines(line_id),
+    latitude NUMERIC(9, 6) NOT NULL,
+    longitude NUMERIC(9, 6) NOT NULL,
     is_retired BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- Many-to-many: Operators assigned to Lines
-CREATE TABLE operator_line (
-    operator_id INTEGER NOT NULL REFERENCES "user"(user_id),
-    line_id     INTEGER NOT NULL REFERENCES line(line_id),
+CREATE TABLE operator_lines (
+    operator_id INTEGER NOT NULL REFERENCES users(user_id),
+    line_id INTEGER NOT NULL REFERENCES lines(line_id),
     PRIMARY KEY (operator_id, line_id)
 );
 
--- Trap catch records
-CREATE TABLE trap_catch (
-    catch_id     SERIAL PRIMARY KEY,
-    trap_id      INTEGER   NOT NULL REFERENCES trap(trap_id),
-    date         TIMESTAMP NOT NULL,
-    recorded_by  INTEGER   REFERENCES "user"(user_id),
-    species_id   INTEGER   NOT NULL REFERENCES species(species_id),
-    sex          VARCHAR(10),        -- Male | Female | NULL
-    maturity     VARCHAR(10),        -- Adult | Juvenile | NULL
-    status_id    INTEGER   NOT NULL REFERENCES trap_status(status_id),
-    rebaited     VARCHAR(3) NOT NULL, -- Yes | No
-    bait_type_id INTEGER   NOT NULL REFERENCES bait_type(bait_type_id),
-    condition_id INTEGER   NOT NULL REFERENCES trap_condition(condition_id),
-    strikes      INTEGER   NOT NULL CHECK (strikes >= 0),
-    notes        TEXT
+CREATE TABLE trap_catches (
+    catch_id SERIAL PRIMARY KEY,
+    trap_id INTEGER NOT NULL REFERENCES traps(trap_id),
+    date TIMESTAMP NOT NULL,
+    recorded_by_id INTEGER REFERENCES users(user_id),
+    species_caught VARCHAR(100) NOT NULL REFERENCES species(name) ON UPDATE CASCADE,
+    sex sex_type,
+    maturity maturity_type,
+    status VARCHAR(100) NOT NULL REFERENCES trap_statuses(name) ON UPDATE CASCADE,
+    rebaited rebaited_type NOT NULL,
+    bait_type VARCHAR(100) NOT NULL REFERENCES bait_types(name) ON UPDATE CASCADE,
+    bait_details TEXT,
+    trap_condition trap_condition_type NOT NULL,
+    strikes INTEGER NOT NULL CHECK (strikes >= 0),
+    notes TEXT,
+    CHECK ((strikes = 0 AND species_caught = 'None') OR strikes >= 1),
+    CHECK ((rebaited = 'No' AND bait_type = 'None') OR rebaited = 'Yes')
 );
 
--- Incidental observations
-CREATE TABLE observation (
-    obs_id      SERIAL PRIMARY KEY,
-    operator_id INTEGER   NOT NULL REFERENCES "user"(user_id),
-    obs_date    TIMESTAMP NOT NULL,
-    obs_type    VARCHAR(50),
-    location    TEXT,
-    notes       TEXT
+CREATE TABLE incidental_observations (
+    observation_id SERIAL PRIMARY KEY,
+    date TIMESTAMP NOT NULL,
+    operator_id INTEGER NOT NULL REFERENCES users(user_id),
+    observation_type VARCHAR(255) NOT NULL,
+    notes TEXT,
+    latitude NUMERIC(9, 6),
+    longitude NUMERIC(9, 6),
+    line_id INTEGER REFERENCES lines(line_id),
+    trap_id INTEGER REFERENCES traps(trap_id)
 );
