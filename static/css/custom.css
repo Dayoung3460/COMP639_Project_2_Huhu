@@ -408,7 +408,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .auth-card {
   background: #fff; border: 1px solid #dde7e1;
   border-radius: 16px; overflow: hidden;
-  width: 100%; max-width: 420px;
+  width: 100%;
   box-shadow: 0 4px 24px rgba(0,0,0,0.06);
 }
 .auth-card-header {

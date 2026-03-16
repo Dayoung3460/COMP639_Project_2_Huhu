@@ -1,55 +1,155 @@
-{% extends 'base.html' %}
-{% block title %}Register{% endblock %}
+{# templates/auth/register.html
+   Route: GET/POST /register  →  register()
+   Extends base_auth.html — no navbar or footer.
+#}
+{% extends 'base_auth.html' %}
+{% block title %}Create Account{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:520px;">
-  <h2 class="mb-1">Create Account</h2>
-  <p class="text-muted small mb-4">
-    You will be registered as an Observer. An Admin can upgrade your role.
-  </p>
-  <form method="POST" action="{{ url_for('register') }}">
-    <div class="row g-3">
-      <div class="col-12">
-        <label class="form-label">Username <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" name="username" required>
+<div class="auth-page" style="padding-top:24px;">
+  <div style="width:100%; max-width:560px;">
+
+    <div class="auth-card">
+
+      {# ── Card header ── #}
+      <div class="auth-card-header">
+        <div class="brand-circle">🌿</div>
+        <h4>Create Account</h4>
+        <p>Register as an Observer — an Admin can upgrade your role later</p>
       </div>
-      <div class="col-12">
-        <label class="form-label">Email <span class="text-danger">*</span></label>
-        <input type="email" class="form-control" name="email" required>
+
+      {# ── Card body ── #}
+      <div class="auth-card-body">
+
+        {# Flash messages inside the card #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'error' else category }}
+                          alert-dismissible fade show mb-3"
+                   style="font-size:13px; border-radius:8px;">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('register') }}">
+
+          {# ── Account Details ── #}
+          <div class="form-section-label">Account Details</div>
+          <div class="row g-2">
+            <div class="col-12 field-group">
+              <label class="form-label">
+                Username <span class="required-star">*</span>
+              </label>
+              <input type="text" class="form-control" name="username"
+                     placeholder="Choose a unique username"
+                     value="{{ request.form.get('username', '') }}"
+                     required autofocus>
+            </div>
+            <div class="col-12 field-group">
+              <label class="form-label">
+                Email Address <span class="required-star">*</span>
+              </label>
+              <input type="email" class="form-control" name="email"
+                     placeholder="your.email@example.com"
+                     value="{{ request.form.get('email', '') }}"
+                     required>
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">
+                Password <span class="required-star">*</span>
+              </label>
+              <input type="password" class="form-control" name="password"
+                     placeholder="Min. 8 characters"
+                     required>
+              <div class="form-hint">
+                Must contain letters, numbers, and a special character
+              </div>
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">
+                Confirm Password <span class="required-star">*</span>
+              </label>
+              <input type="password" class="form-control" name="confirm_password"
+                     placeholder="Re-enter password"
+                     required>
+            </div>
+          </div>
+
+          <hr class="form-section-divider">
+
+          {# ── Personal Information ── #}
+          <div class="form-section-label">Personal Information</div>
+          <div class="row g-2">
+            <div class="col-6 field-group">
+              <label class="form-label">
+                First Name <span class="required-star">*</span>
+              </label>
+              <input type="text" class="form-control" name="first_name"
+                     placeholder="First name"
+                     value="{{ request.form.get('first_name', '') }}"
+                     required>
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">
+                Last Name <span class="required-star">*</span>
+              </label>
+              <input type="text" class="form-control" name="last_name"
+                     placeholder="Last name"
+                     value="{{ request.form.get('last_name', '') }}"
+                     required>
+            </div>
+            <div class="col-12 field-group">
+              <label class="form-label">Phone / Contact Info</label>
+              <input type="text" class="form-control" name="contact_info"
+                     placeholder="e.g. 021 123 4567"
+                     value="{{ request.form.get('contact_info', '') }}">
+            </div>
+          </div>
+
+          <hr class="form-section-divider">
+
+          {# ── Emergency Contact ── #}
+          <div class="form-section-label">Emergency Contact</div>
+          <div class="row g-2">
+            <div class="col-6 field-group">
+              <label class="form-label">Contact Name</label>
+              <input type="text" class="form-control" name="emergency_name"
+                     placeholder="Full name"
+                     value="{{ request.form.get('emergency_name', '') }}">
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">Contact Phone</label>
+              <input type="text" class="form-control" name="emergency_phone"
+                     placeholder="Phone number"
+                     value="{{ request.form.get('emergency_phone', '') }}">
+            </div>
+          </div>
+
+          {# ── Submit ── #}
+          <button type="submit" class="btn-pf-full mt-2">
+            <i class="bi bi-person-plus me-2"></i>Create Account
+          </button>
+
+        </form>
+
+        <div class="auth-footer-link">
+          Already have an account? <a href="{{ url_for('login') }}">Log In</a>
+        </div>
+
       </div>
-      <div class="col-6">
-        <label class="form-label">Password <span class="text-danger">*</span></label>
-        <input type="password" class="form-control" name="password" required>
-        <div class="form-text">Min 8 chars, mixed types</div>
-      </div>
-      <div class="col-6">
-        <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
-        <input type="password" class="form-control" name="confirm_password" required>
-      </div>
-      <div class="col-6">
-        <label class="form-label">First Name <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" name="first_name" required>
-      </div>
-      <div class="col-6">
-        <label class="form-label">Last Name <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" name="last_name" required>
-      </div>
-      <div class="col-12">
-        <label class="form-label">Phone / Contact Info</label>
-        <input type="text" class="form-control" name="contact_info">
-      </div>
-      <div class="col-6">
-        <label class="form-label">Emergency Contact Name</label>
-        <input type="text" class="form-control" name="emergency_name">
-      </div>
-      <div class="col-6">
-        <label class="form-label">Emergency Contact Phone</label>
-        <input type="text" class="form-control" name="emergency_phone">
-      </div>
+      {# End card body #}
+
     </div>
-    <button type="submit" class="btn btn-pf w-100 mt-4">Create Account</button>
-  </form>
-  <p class="text-center mt-3 small">
-    Already have an account? <a href="{{ url_for('login') }}">Log In</a>
-  </p>
+    {# End auth-card #}
+
+    <p class="text-center mt-3" style="font-size:11px; color:#8a9e93;">
+      PF-LU System — COMP639 Group Project 1
+    </p>
+
+  </div>
 </div>
 {% endblock %}
