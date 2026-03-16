@@ -1,0 +1,16 @@
+<type>/ <subject>
+
+# Types:
+# feat     a new feature
+# fix      a bug fix
+# docs     documentation changes (README, assignment notes, etc.)
+# style    formatting/style-only changes (no logic changes)
+# refactor code changes that neither fix a bug nor add a feature
+# test     adding or updating tests
+# chore    build/config/dependency/maintenance tasks
+
+# Subject rules:
+# - use imperative mood (e.g., "Add observer role to database")
+# - start with uppercase
+# - no trailing period
+# - keep it within 72 characters
