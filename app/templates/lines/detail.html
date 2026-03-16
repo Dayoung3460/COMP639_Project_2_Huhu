@@ -2,7 +2,7 @@
 {% block title %}{{ line.name if line else 'Line Detail' }}{% endblock %}
 {% block content %}
 <div class="container py-4">
-  <a href="{{ url_for('lines_index') }}" class="btn btn-sm btn-outline-secondary mb-3">
+  <a href="{{ url_for('lines_index', show_retired=1 if show_retired else None) }}" class="btn btn-sm btn-outline-secondary mb-3">
     &larr; Back to Lines
   </a>
 
@@ -12,8 +12,16 @@
         <h2 class="mb-0">{{ line.name }}</h2>
         <small class="text-muted">{{ line.type }}</small>
       </div>
-      {% if session.get('role') == 'Admin' %}
-        <div class="d-flex gap-2">
+      <div class="d-flex gap-2 align-items-center">
+        <a href="{{ url_for('line_detail', line_id=line.line_id, show_retired=1 if not show_retired else None) }}"
+           class="btn btn-sm {{ 'btn-outline-secondary' if show_retired else 'btn-outline-dark' }}">
+          {% if show_retired %}
+            Hide retired
+          {% else %}
+            Show retired
+          {% endif %}
+        </a>
+        {% if session.get('role') == 'Admin' %}
           <a href="{{ url_for('new_trap', line_id=line.line_id) }}"
              class="btn btn-pf btn-sm">
             <i class="bi bi-plus-lg me-1"></i>Add Trap
@@ -22,8 +30,19 @@
              class="btn btn-outline-secondary btn-sm">
             Assign Operators
           </a>
-        </div>
-      {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="mb-3">Trap map</h5>
+        <div id="line-map" style="height: 420px; border-radius: 10px;"></div>
+        <script id="trap-markers-data" type="application/json">{{ trap_markers|tojson }}</script>
+        <p class="text-muted small mb-0 mt-2">
+          Basemap tiles by LINZ Basemaps.
+        </p>
+      </div>
     </div>
 
     {# Traps table #}
@@ -95,4 +114,46 @@
     <p class="text-muted">Line not found.</p>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  {% if line %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+      (function () {
+        const markersElement = document.getElementById('trap-markers-data');
+        const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
+        const map = L.map('line-map');
+
+        const tileUrl = 'https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=d01k2zz584sk064m4gagxmwbyk6';
+
+        L.tileLayer(tileUrl, {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
+        }).addTo(map);
+
+        if (markers.length > 0) {
+          const latlngs = [];
+          markers.forEach((trap) => {
+            const marker = L.marker([trap.latitude, trap.longitude]).addTo(map);
+            const statusBadge = trap.is_retired
+              ? '<span class="badge bg-secondary">Retired</span>'
+              : '<span class="badge bg-success">Active</span>';
+            marker.bindPopup(
+              `<strong>${trap.code}</strong><br>${trap.trap_type}<br>${statusBadge}`
+            );
+            latlngs.push([trap.latitude, trap.longitude]);
+          });
+          map.fitBounds(latlngs, { padding: [30, 30] });
+        } else {
+          // Fallback: Lincoln University area
+          map.setView([-43.6409, 172.4678], 13);
+        }
+      })();
+    </script>
+  {% endif %}
 {% endblock %}
