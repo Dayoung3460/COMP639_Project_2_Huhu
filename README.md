@@ -1,6 +1,7 @@
 # PF-LU — Predator Free Lincoln University
 ### COMP639 Studio Project — Group Project 1 — Semester 1, 2026
 
+[Live URL](https://pflu.pythonanywhere.com/)
 A Flask web application for monitoring and reporting predator trap activity across Lincoln University campus.
 
 ---
