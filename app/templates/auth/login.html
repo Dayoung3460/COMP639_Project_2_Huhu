@@ -1,22 +1,125 @@
-{% extends 'base.html' %}
+{# templates/auth/login.html
+   Extends base.html — no sidebar (public page, not logged in).
+   self.content() in base.html handles the public layout.
+   Route: GET/POST /login  →  login()
+#}
+{% extends 'base_auth.html' %}
 {% block title %}Log In{% endblock %}
+
 {% block content %}
-<div class="container py-5" style="max-width:420px;">
-  <h2 class="mb-4">Log In</h2>
-  <form method="POST" action="{{ url_for('login') }}">
-    <div class="mb-3">
-      <label class="form-label">Username</label>
-      <input type="text" class="form-control" name="username"
-             value="{{ username if username else '' }}" required autofocus>
+<div class="auth-page">
+  <div style="width:100%; max-width:420px;">
+
+    <div class="auth-card">
+
+      {# ── Card header ── #}
+      <div class="auth-card-header">
+        <div class="brand-circle">🌿</div>
+        <h4>Welcome Back</h4>
+        <p>Log in to access the PF-LU system</p>
+      </div>
+
+      {# ── Card body ── #}
+      <div class="auth-card-body">
+
+        {# Flash messages — shown inside the card #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'error' else category }}
+                          alert-dismissible fade show mb-3"
+                   style="font-size:13px; border-radius:8px;">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {# Info notice #}
+        <div class="notice green mb-3">
+          <i class="bi bi-info-circle"></i>
+          <span>You will be redirected to the dashboard for your role after login.</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('login') }}">
+
+          {# Username #}
+          <div class="field-group">
+            <label class="form-label">Username</label>
+            <input type="text"
+                   class="form-control"
+                   name="username"
+                   placeholder="Enter your username"
+                   value="{{ username if username else '' }}"
+                   required
+                   autofocus>
+          </div>
+
+          {# Password with show/hide toggle #}
+          <div class="field-group">
+            <label class="form-label">Password</label>
+            <div style="position:relative;">
+              <input type="password"
+                     class="form-control"
+                     name="password"
+                     id="passwordInput"
+                     placeholder="Enter your password"
+                     required
+                     style="padding-right:40px;">
+              <button type="button"
+                      id="togglePassword"
+                      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                             background:none;border:none;color:#6b7c72;cursor:pointer;">
+                <i class="bi bi-eye" id="toggleIcon"></i>
+              </button>
+            </div>
+          </div>
+
+          {# Submit #}
+          <button type="submit" class="btn-pf-full mt-3">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+          </button>
+
+        </form>
+
+        {# Footer links #}
+        <div class="auth-footer-link">
+          Don't have an account?
+          <a href="{{ url_for('register') }}">Register as Observer</a>
+        </div>
+        <div class="auth-footer-link" style="margin-top:6px;">
+          <a href="{{ url_for('change_password') }}" style="color:#6b7c72;">
+            Forgot your password?
+          </a>
+        </div>
+
+      </div>
+      {# End card body #}
+
     </div>
-    <div class="mb-3">
-      <label class="form-label">Password</label>
-      <input type="password" class="form-control" name="password" required>
-    </div>
-    <button type="submit" class="btn btn-pf w-100">Log In</button>
-  </form>
-  <p class="text-center mt-3 small">
-    No account? <a href="{{ url_for('register') }}">Register</a>
-  </p>
+    {# End auth-card #}
+
+    <p class="text-center mt-3" style="font-size:11px; color:#8a9e93;">
+      PF-LU System — COMP639 Group Project 1
+    </p>
+
+  </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Password show/hide toggle
+  const input  = document.getElementById('passwordInput');
+  const btn    = document.getElementById('togglePassword');
+  const icon   = document.getElementById('toggleIcon');
+
+  btn.addEventListener('click', function () {
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    icon.classList.toggle('bi-eye',      !isPassword);
+    icon.classList.toggle('bi-eye-slash', isPassword);
+  });
+</script>
 {% endblock %}
