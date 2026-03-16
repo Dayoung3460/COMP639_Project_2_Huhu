@@ -1,3 +1,15 @@
+{#
+  base.html — PF-LU Master Layout Template
+  COMP639 Group Project 1 — Semester 1, 2026
+
+  Blocks:
+    title          — page <title> text
+    content        — main page content
+    page_title     — heading in content-header (dashboard pages)
+    breadcrumb     — breadcrumb inside content-header
+    header_actions — buttons in top-right of content-header
+    scripts        — extra scripts at end of body
+#}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,160 +18,295 @@
   <title>{% block title %}{{ site_name }}{% endblock %} | {{ site_tagline }}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-pf sticky-top">
-    <div class="container">
-      <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
-        🌿 {{ site_name }}
+{# ══════════════════════════════════════════════════════ #}
+{# NAVBAR                                                 #}
+{# ══════════════════════════════════════════════════════ #}
+<nav class="pf-navbar">
+  <a class="brand" href="{{ url_for('index') }}">
+    <div class="brand-icon">🌿</div>
+    <div>
+      <div class="brand-name">PF-LU</div>
+      <div class="brand-tagline">Predator Free Lincoln University</div>
+    </div>
+  </a>
+
+  {% if not session.get('user_id') %}
+    {# Public nav #}
+    <div class="nav-links d-none d-md-block">
+      <a href="{{ url_for('index') }}#about">About</a>
+      <a href="{{ url_for('index') }}#how-it-works">How It Works</a>
+      <a href="{{ url_for('index') }}#contact">Contact</a>
+    </div>
+    <div class="nav-actions">
+      <a href="{{ url_for('login') }}" class="btn-pf-outline">Log In</a>
+      <a href="{{ url_for('register') }}" class="btn-pf">Register</a>
+    </div>
+
+  {% else %}
+    {# Logged-in nav #}
+    <div class="nav-actions">
+      <span style="font-size:12px; color:var(--pf-300); margin-right:4px;">
+        {{ session.get('username') }}
+      </span>
+      {% if session.get('role') == 'Admin' %}
+        <span class="badge-role-admin">Admin</span>
+      {% elif session.get('role') == 'Operator' %}
+        <span class="badge-role-operator">Operator</span>
+      {% else %}
+        <span class="badge-role-observer">Observer</span>
+      {% endif %}
+      <a href="{{ url_for('profile') }}"
+         class="btn-pf-outline ms-1"
+         style="font-size:12px; padding:4px 10px;">
+        <i class="bi bi-person"></i>
       </a>
+      <a href="{{ url_for('logout') }}"
+         class="btn-pf-outline"
+         style="font-size:12px; padding:4px 12px;">
+        <i class="bi bi-box-arrow-right me-1"></i>Logout
+      </a>
+    </div>
+  {% endif %}
+</nav>
 
-      <button class="navbar-toggler" type="button"
-              data-bs-toggle="collapse" data-bs-target="#mainNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+{# ══════════════════════════════════════════════════════ #}
+{# FLASH MESSAGES                                         #}
+{# ══════════════════════════════════════════════════════ #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% if session.get('user_id') %}
+      <div style="padding: 16px 28px 0; flex-basis:100%;">
+    {% else %}
+      <div class="container mt-3">
+    {% endif %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+             role="alert" style="font-size:13px; border-radius:8px;">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
-      <div class="collapse navbar-collapse" id="mainNav">
+{# ══════════════════════════════════════════════════════ #}
+{# LAYOUT — sidebar when logged in, plain when public     #}
+{# ══════════════════════════════════════════════════════ #}
+{% if session.get('user_id') %}
 
-        {% if not session.get('user_id') %}
-          <!-- Public nav -->
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('login') }}">Log In</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-            </li>
-          </ul>
+  <div class="app-layout">
 
+    {# ── Sidebar ── #}
+    <aside class="sidebar">
+      <div class="sidebar-user">
+        <div class="user-avatar">
+          {{ session.get('username', 'U')[:2].upper() }}
+        </div>
+        <div>
+          <div class="user-name">{{ session.get('username') }}</div>
+          <div class="user-role">{{ session.get('role') }}</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+
+        {# Overview #}
+        <div class="sidebar-section-label">Overview</div>
+        {% if session.get('role') == 'Admin' %}
+          <a href="{{ url_for('admin_dashboard') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
+        {% elif session.get('role') == 'Operator' %}
+          <a href="{{ url_for('operator_dashboard') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'operator_dashboard' }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
         {% else %}
-          <!-- Logged-in nav -->
-          <ul class="navbar-nav me-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('lines_index') }}">Trap Lines</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('catch_records') }}">Catch Records</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('reports') }}">Reports</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('download_csv') }}">
-                <i class="bi bi-download"></i> CSV
-              </a>
-            </li>
-
-            {% if session.get('role') in ['Operator', 'Admin'] %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('add_catch') }}">Add Record</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('add_observation') }}">Add Observation</a>
-              </li>
-            {% endif %}
-
-            {% if session.get('role') == 'Admin' %}
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                  Admin
-                </a>
-                <ul class="dropdown-menu">
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
-                      Dashboard
-                    </a>
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('admin_users') }}">
-                      Manage Users
-                    </a>
-                  </li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('new_line') }}">
-                      New Trap Line
-                    </a>
-                  </li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('manage_species') }}">
-                      Species
-                    </a>
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('manage_statuses') }}">
-                      Statuses
-                    </a>
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('manage_bait_types') }}">
-                      Bait Types
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            {% endif %}
-          </ul>
-
-          <!-- User info + logout -->
-          <ul class="navbar-nav ms-auto align-items-center">
-            <li class="nav-item me-2">
-              <span class="badge bg-light text-dark">
-                {{ session.get('username') }} &mdash; {{ session.get('role') }}
-              </span>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('profile') }}">
-                <i class="bi bi-person-circle"></i>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('logout') }}">
-                <i class="bi bi-box-arrow-right"></i> Logout
-              </a>
-            </li>
-          </ul>
+          <a href="{{ url_for('observer_dashboard') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'observer_dashboard' }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
         {% endif %}
 
-      </div>
-    </div>
-  </nav>
+        {# Operator / Admin work #}
+        {% if session.get('role') in ['Operator', 'Admin'] %}
+          <div class="sidebar-section-label">My Work</div>
+          <a href="{{ url_for('add_catch') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'add_catch' }}">
+            <i class="bi bi-plus-circle"></i> Add Catch Record
+          </a>
+          <a href="{{ url_for('my_records') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
+            <i class="bi bi-pencil-square"></i> My Catch Records
+          </a>
+          <a href="{{ url_for('add_observation') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'add_observation' }}">
+            <i class="bi bi-binoculars"></i> Add Observation
+          </a>
+        {% endif %}
 
-  <!-- Flash messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="container mt-3">
-        {% for category, message in messages %}
-          <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        {# View data — all roles #}
+        <div class="sidebar-section-label">Data</div>
+        <a href="{{ url_for('lines_index') }}"
+           class="sidebar-link {{ 'active' if request.endpoint in ['lines_index','line_detail'] }}">
+          <i class="bi bi-geo-alt"></i> Trap Lines
+        </a>
+        <a href="{{ url_for('catch_records') }}"
+           class="sidebar-link {{ 'active' if request.endpoint == 'catch_records' }}">
+          <i class="bi bi-table"></i> Catch Records
+        </a>
+        <a href="{{ url_for('observations') }}"
+           class="sidebar-link {{ 'active' if request.endpoint == 'observations' }}">
+          <i class="bi bi-binoculars"></i> Observations
+        </a>
+
+        {# Reports — all roles #}
+        <div class="sidebar-section-label">Reports</div>
+        <a href="{{ url_for('reports') }}"
+           class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
+          <i class="bi bi-graph-up"></i> Reports &amp; Charts
+        </a>
+        <a href="{{ url_for('download_csv') }}"
+           class="sidebar-link {{ 'active' if request.endpoint == 'download_csv' }}">
+          <i class="bi bi-download"></i> Download CSV
+        </a>
+
+        {# Admin-only system links #}
+        {% if session.get('role') == 'Admin' %}
+          <div class="sidebar-section-label">System</div>
+          <a href="{{ url_for('admin_users') }}"
+             class="sidebar-link {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
+            <i class="bi bi-people"></i> User Management
+          </a>
+          <a href="{{ url_for('new_line') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'new_line' }}">
+            <i class="bi bi-plus-circle-dotted"></i> New Trap Line
+          </a>
+          <div class="sidebar-section-label">Manage Lists</div>
+          <a href="{{ url_for('manage_species') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'manage_species' }}">
+            <i class="bi bi-bug"></i> Species
+          </a>
+          <a href="{{ url_for('manage_statuses') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'manage_statuses' }}">
+            <i class="bi bi-tags"></i> Statuses
+          </a>
+          <a href="{{ url_for('manage_bait_types') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'manage_bait_types' }}">
+            <i class="bi bi-basket"></i> Bait Types
+          </a>
+        {% endif %}
+
+        {# Account — all roles #}
+        <div class="sidebar-section-label">Account</div>
+        <a href="{{ url_for('profile') }}"
+           class="sidebar-link {{ 'active' if request.endpoint == 'profile' }}">
+          <i class="bi bi-person"></i> My Profile
+        </a>
+        <a href="{{ url_for('change_password') }}"
+           class="sidebar-link {{ 'active' if request.endpoint == 'change_password' }}">
+          <i class="bi bi-key"></i> Change Password
+        </a>
+
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="{{ url_for('logout') }}">
+          <i class="bi bi-box-arrow-right"></i> Log Out
+        </a>
+      </div>
+    </aside>
+    {# End sidebar #}
+
+    {# ── Main content ── #}
+    <main class="main-content">
+
+      {# Content header — only shown when child template fills in page_title block #}
+      {% if self.page_title() | trim %}
+      <div class="content-header">
+        <div>
+          <div class="page-title">{% block page_title %}{% endblock %}</div>
+          {% block breadcrumb %}{% endblock %}
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          {% block header_actions %}{% endblock %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="content-body">
+        {% block content %}{% endblock %}
+      </div>
+
+    </main>
+
+  </div>
+  {# End app-layout #}
+
+{% else %}
+
+  {# ── Public layout — no sidebar ── #}
+  {# self.content() renders the child block without redefining it — fixes "block defined twice" #}
+  {{ self.content() }}
+
+  {# Footer — public pages only #}
+  <footer class="pf-footer">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div style="background:var(--pf-600);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;">🌿</div>
+            <div style="font-family:'Cabin',sans-serif;font-size:16px;font-weight:700;color:#fff;">PF-LU</div>
           </div>
-        {% endfor %}
+          <p style="font-size:12px;line-height:1.6;color:var(--pf-400);">
+            Predator Free Lincoln University trap monitoring and reporting system.
+            Inspired by the national Predator Free 2050 movement.
+          </p>
+        </div>
+        <div class="col-md-2">
+          <h6>System</h6>
+          <a href="{{ url_for('login') }}">Login</a>
+          <a href="{{ url_for('register') }}">Register</a>
+        </div>
+        <div class="col-md-2">
+          <h6>Information</h6>
+          <a href="{{ url_for('index') }}#about">About PF-LU</a>
+          <a href="{{ url_for('index') }}#how-it-works">How It Works</a>
+          <a href="{{ url_for('index') }}#contact">Contact</a>
+        </div>
+        <div class="col-md-4">
+          <h6>Compatibility</h6>
+          <p style="font-size:12px;color:var(--pf-400);line-height:1.6;">
+            Data fields are aligned with
+            <a href="https://trap.nz" style="color:var(--pf-300);" target="_blank">trap.nz</a>
+            CSV import format — supporting national predator-control data standards.
+          </p>
+        </div>
       </div>
-    {% endif %}
-  {% endwith %}
-
-  <!-- Page content -->
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-
-  <!-- Footer -->
-  <footer class="footer mt-5 py-3">
-    <div class="container text-center">
-      <small class="text-muted">
-        &copy; 2026 {{ site_name }} &mdash; {{ site_tagline }} |
-        COMP639 Group Project 1
-      </small>
+      <hr class="footer-divider">
+      <div class="footer-bottom">
+        <div style="font-size:11px;color:var(--pf-500);">&copy; 2026 PF-LU System — COMP639 Group Project 1</div>
+        <div style="font-size:11px;color:var(--pf-600);">Built with Flask + PostgreSQL + Bootstrap</div>
+      </div>
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-  {% block scripts %}{% endblock %}
+{% endif %}
+
+{# ══════════════════════════════════════════════════════ #}
+{# SCRIPTS                                                #}
+{# ══════════════════════════════════════════════════════ #}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+
 </body>
 </html>
