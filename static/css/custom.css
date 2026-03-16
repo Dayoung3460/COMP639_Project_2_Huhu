@@ -230,6 +230,68 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .sidebar-footer a:hover { color: #fff; }
 
+/* ── Sidebar toggle button ───────────────────── */
+.sidebar-toggle {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px;
+  width: calc(100% - 24px);
+  margin: 8px 12px 4px;
+  padding: 8px 0;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--pf-700);
+  border-radius: 8px;
+  color: var(--pf-300); cursor: pointer; font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.sidebar-toggle:hover { background: var(--pf-700); color: #fff; border-color: var(--pf-600); }
+.sidebar-toggle .toggle-label { font-size: 12px; }
+
+/* ── Sidebar transition ──────────────────────── */
+.sidebar { transition: width 0.2s ease; overflow: hidden; }
+
+/* ── Collapsed state ─────────────────────────── */
+.sidebar.collapsed { width: 52px; }
+
+/* Hide text elements when collapsed */
+.sidebar.collapsed .user-name,
+.sidebar.collapsed .user-role,
+.sidebar.collapsed .sidebar-section-label,
+.sidebar.collapsed .link-text,
+.sidebar.collapsed .badge-count,
+.sidebar.collapsed .toggle-label,
+.sidebar.collapsed .sidebar-footer a span { display: none; }
+
+/* Centre avatar when collapsed */
+.sidebar.collapsed .sidebar-user {
+  justify-content: center;
+  padding: 12px 0;
+}
+.sidebar.collapsed .sidebar-user > div:last-child { display: none; }
+
+/* Centre icons when collapsed */
+.sidebar.collapsed .sidebar-link {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+.sidebar.collapsed .sidebar-link i { font-size: 17px; width: auto; }
+
+/* Centre toggle and footer when collapsed */
+.sidebar.collapsed .sidebar-toggle {
+  width: 36px; height: 36px;
+  margin: 8px auto 4px;
+  padding: 0; border-radius: 8px;
+}
+.sidebar.collapsed .sidebar-footer {
+  padding: 8px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.sidebar.collapsed .sidebar-footer a {
+  justify-content: center;
+  padding: 8px 0; gap: 0;
+}
+
 /* ═══════════════════════════════════════════════
    Main Content Area
    ═══════════════════════════════════════════════ */
