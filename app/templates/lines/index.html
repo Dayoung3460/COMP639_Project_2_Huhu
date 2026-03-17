@@ -8,9 +8,9 @@
       <a href="{{ url_for('lines_index', show_retired=1 if not show_retired else None) }}"
          class="btn btn-sm {{ 'btn-outline-secondary' if show_retired else 'btn-outline-dark' }}">
         {% if show_retired %}
-          Hide retired lines
+          Hide retired lines and traps
         {% else %}
-          Show retired lines
+          Show retired lines and traps
         {% endif %}
       </a>
       {% if session.get('role') == 'Admin' %}
