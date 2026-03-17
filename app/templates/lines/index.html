@@ -31,9 +31,15 @@
            data-linz-api-key="{{ linz_api_key }}"
            style="height: 430px; border-radius: 10px;"></div>
       <script id="lines-overview-traps-data" type="application/json">{{ map_traps|tojson }}</script>
-      <div class="mt-2 d-flex gap-3 flex-wrap small text-muted">
-        <span><span class="badge bg-success"> </span> Active trap</span>
-        <span><span class="badge bg-secondary"> </span> Retired trap</span>
+      <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
+        <span class="d-inline-flex align-items-center gap-1">
+          <span class="map-legend-line map-legend-line-retired"></span>
+          Retired line
+        </span>
+        <span class="d-inline-flex align-items-center gap-1">
+          <span class="map-legend-dot map-legend-dot-retired"></span>
+          Retired trap
+        </span>
       </div>
       <p class="text-muted small mb-0 mt-2">Basemap tiles by LINZ Basemaps.</p>
     </div>

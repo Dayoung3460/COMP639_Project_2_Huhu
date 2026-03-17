@@ -33,7 +33,10 @@ document.addEventListener('DOMContentLoaded', function () {
     '#dc3545', '#0dcaf0', '#ffc107', '#6c757d', '#1982c4', '#8ac926', '#ff595e',
     '#ff924c', '#9b5de5', '#2ec4b6', '#e71d36', '#3a86ff', '#8338ec'
   ];
+  const retiredColor = '#343a40';
+  const retiredFillColor = '#adb5bd';
   const markersByLine = {};
+  const lineRetiredById = {};
   const allLatLngs = [];
 
   function getLineColor(lineId) {
@@ -55,34 +58,44 @@ document.addEventListener('DOMContentLoaded', function () {
   traps.forEach(function (trap) {
     const lineId = String(trap.line_id);
     const latLng = [trap.latitude, trap.longitude];
+    const isRetiredVisual = Boolean(trap.trap_is_retired || trap.line_is_retired);
 
     if (!markersByLine[lineId]) {
       markersByLine[lineId] = [];
     }
+    lineRetiredById[lineId] = Boolean(trap.line_is_retired);
 
     const lineColor = getLineColor(lineId);
-    const markerColor = trap.trap_is_retired ? '#6c757d' : lineColor;
-    const marker = L.circleMarker(latLng, {
-      radius: 7,
-      color: markerColor,
-      fillColor: markerColor,
-      fillOpacity: 0.9,
-      weight: 1
-    }).addTo(map);
+    const marker = L.circleMarker(latLng, isRetiredVisual
+      ? {
+          radius: 8,
+          color: retiredColor,
+          fillColor: retiredFillColor,
+          fillOpacity: 0.15,
+          weight: 3
+        }
+      : {
+          radius: 7,
+          color: lineColor,
+          fillColor: lineColor,
+          fillOpacity: 0.9,
+          weight: 1.5
+        }
+    ).addTo(map);
 
-    const statusBadge = trap.trap_is_retired
-      ? '<span class="badge bg-secondary">Retired</span>'
-      : '<span class="badge bg-success">Active</span>';
+    const lineStatusBadge = trap.line_is_retired
+      ? '<span class="badge bg-dark">Retired line</span>'
+      : '<span class="badge bg-success">Active line</span>';
+    const trapStatusBadge = trap.trap_is_retired
+      ? '<span class="badge bg-secondary">Retired trap</span>'
+      : '<span class="badge bg-success">Active trap</span>';
 
     marker.bindPopup(
-      `<strong>${trap.line_name} · ${trap.code}</strong><br>` +
-      `${trap.trap_type}<br>${statusBadge}<br>` +
+      `<strong>Line:</strong> ${trap.line_name}<br>` +
+      `<div class="mb-1"><strong>Trap Code:</strong> ${trap.code}</div>` +
+      `${lineStatusBadge} ${trapStatusBadge}<br>` +
       `<a href="${trap.detail_url}" class="small">View line details</a>`
     );
-
-    marker.on('click', function () {
-      highlightLineCard(lineId);
-    });
 
     markersByLine[lineId].push({ marker: marker, latLng: latLng });
     allLatLngs.push(latLng);
@@ -96,9 +109,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (linePoints.length < 2) return;
 
     L.polyline(linePoints, {
-      color: getLineColor(lineId),
-      weight: 3,
-      opacity: 0.75
+      color: lineRetiredById[lineId] ? retiredColor : getLineColor(lineId),
+      weight: lineRetiredById[lineId] ? 4 : 3,
+      opacity: lineRetiredById[lineId] ? 0.95 : 0.8,
+      dashArray: lineRetiredById[lineId] ? '8 6' : null
     }).addTo(map);
   });
 
