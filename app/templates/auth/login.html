@@ -1,7 +1,6 @@
 {# templates/auth/login.html
-   Extends base.html — no sidebar (public page, not logged in).
-   self.content() in base.html handles the public layout.
    Route: GET/POST /login  →  login()
+   Extends base_auth.html — no navbar or footer.
 #}
 {% extends 'base_auth.html' %}
 {% block title %}Log In{% endblock %}
@@ -22,7 +21,7 @@
       {# ── Card body ── #}
       <div class="auth-card-body">
 
-        {# Flash messages — shown inside the card #}
+        {# Flash messages inside the card #}
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -52,8 +51,7 @@
                    name="username"
                    placeholder="Enter your username"
                    value="{{ username if username else '' }}"
-                   required
-                   autofocus>
+                   required autofocus>
           </div>
 
           {# Password with show/hide toggle #}
@@ -69,8 +67,9 @@
                      style="padding-right:40px;">
               <button type="button"
                       id="togglePassword"
-                      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
-                             background:none;border:none;color:#6b7c72;cursor:pointer;">
+                      style="position:absolute;right:10px;top:50%;
+                             transform:translateY(-50%);background:none;
+                             border:none;color:#6b7c72;cursor:pointer;">
                 <i class="bi bi-eye" id="toggleIcon"></i>
               </button>
             </div>
@@ -84,21 +83,25 @@
         </form>
 
         {# Footer links #}
-        <div class="auth-footer-link">
+        <div class="auth-footer-link mt-3">
           Don't have an account?
           <a href="{{ url_for('register') }}">Register as Observer</a>
         </div>
+
         <div class="auth-footer-link" style="margin-top:6px;">
-          <a href="{{ url_for('change_password') }}" style="color:#6b7c72;">
-            Forgot your password?
+          <a href="{{ url_for('forgot_password') }}" style="color:#6b7c72;">
+            <i class="bi bi-key me-1"></i>Lost your password?
+          </a>
+        </div>
+
+        <div class="auth-footer-link" style="margin-top:6px;">
+          <a href="{{ url_for('index') }}" style="color:#6b7c72;">
+            <i class="bi bi-arrow-left me-1"></i>Back to Home
           </a>
         </div>
 
       </div>
-      {# End card body #}
-
     </div>
-    {# End auth-card #}
 
     <p class="text-center mt-3" style="font-size:11px; color:#8a9e93;">
       PF-LU System — COMP639 Group Project 1
@@ -110,16 +113,15 @@
 
 {% block scripts %}
 <script>
-  // Password show/hide toggle
-  const input  = document.getElementById('passwordInput');
-  const btn    = document.getElementById('togglePassword');
-  const icon   = document.getElementById('toggleIcon');
+  const input = document.getElementById('passwordInput');
+  const btn   = document.getElementById('togglePassword');
+  const icon  = document.getElementById('toggleIcon');
 
   btn.addEventListener('click', function () {
     const isPassword = input.type === 'password';
     input.type = isPassword ? 'text' : 'password';
-    icon.classList.toggle('bi-eye',      !isPassword);
-    icon.classList.toggle('bi-eye-slash', isPassword);
+    icon.classList.toggle('bi-eye',       !isPassword);
+    icon.classList.toggle('bi-eye-slash',  isPassword);
   });
 </script>
 {% endblock %}

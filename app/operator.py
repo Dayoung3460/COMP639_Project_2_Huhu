@@ -16,7 +16,7 @@ def operator_dashboard():
 
 
 @app.route('/operator/add-catch', methods=['GET', 'POST'])
-@role_required('Operator', 'Admin')
+@role_required('Operator')
 def add_catch():
     """Add a new trap catch record for an assigned line."""
     if request.method == 'POST':
@@ -57,7 +57,7 @@ def my_records():
 
 
 @app.route('/operator/add-observation', methods=['GET', 'POST'])
-@role_required('Operator', 'Admin')
+@role_required('Operator')
 def add_observation():
     """Record an incidental observation."""
     if request.method == 'POST':

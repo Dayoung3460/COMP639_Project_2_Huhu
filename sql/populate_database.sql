@@ -2,7 +2,7 @@
 -- populate_database.sql — PF-LU Seed Data
 -- COMP639 Group Project 1 — Semester 1, 2026
 --
--- Run AFTER create_database.sql (Sun's schema)
+-- Run AFTER create_database.sql
 --
 -- All passwords are bcrypt hashes of: Password1!
 -- =============================================================
@@ -88,131 +88,151 @@ INSERT INTO bait_types (name) VALUES
 -- account_status uses ENUM account_status_type: 'active' | 'inactive'
 INSERT INTO users
     (username, email, password_hash, first_name, last_name,
-     contact_information, emergency_contact_information,
+     phone, emergency_contact_name, emergency_contact_phone,
      role, account_status)
 VALUES
     ('admin1', 'admin1@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
      'Admin', 'One',
-     '021 000 0001', 'Emergency One — 021 000 0099',
+     '021 000 0001', 'Emergency One', '021 000 0099',
      'Admin', 'active'),
 
     ('admin2', 'admin2@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
      'Admin', 'Two',
-     '021 000 0002', 'Emergency Two — 021 000 0098',
+     '021 000 0002', 'Emergency Two', '021 000 0098',
      'Admin', 'active');
 
 -- ── Operator accounts (10 required) ───────────────────────────
 INSERT INTO users
     (username, email, password_hash, first_name, last_name,
-     contact_information, emergency_contact_information,
+     phone, emergency_contact_name, emergency_contact_phone,
      role, account_status)
 VALUES
     ('operator1', 'op1@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'James', 'Ruane', '021 100 0001', 'James Emergency — 021 100 0091',
+     'James', 'Ruane',
+     '021 100 0001', 'James Emergency', '021 100 0091',
      'Operator', 'active'),
 
     ('operator2', 'op2@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Aroha', 'Kahu', '021 100 0002', 'Aroha Emergency — 021 100 0092',
+     'Aroha', 'Kahu',
+     '021 100 0002', 'Aroha Emergency', '021 100 0092',
      'Operator', 'active'),
 
     ('operator3', 'op3@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Tom', 'Walker', '021 100 0003', 'Tom Emergency — 021 100 0093',
+     'Tom', 'Walker',
+     '021 100 0003', 'Tom Emergency', '021 100 0093',
      'Operator', 'active'),
 
     ('operator4', 'op4@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Nina', 'Brown', '021 100 0004', 'Nina Emergency — 021 100 0094',
+     'Nina', 'Brown',
+     '021 100 0004', 'Nina Emergency', '021 100 0094',
      'Operator', 'active'),
 
     ('operator5', 'op5@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Liam', 'Chen', '021 100 0005', 'Liam Emergency — 021 100 0095',
+     'Liam', 'Chen',
+     '021 100 0005', 'Liam Emergency', '021 100 0095',
      'Operator', 'active'),
 
     ('operator6', 'op6@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Mei', 'Zhang', '021 100 0006', 'Mei Emergency — 021 100 0096',
+     'Mei', 'Zhang',
+     '021 100 0006', 'Mei Emergency', '021 100 0096',
      'Operator', 'active'),
 
     ('operator7', 'op7@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Sam', 'Wilson', '021 100 0007', 'Sam Emergency — 021 100 0087',
+     'Sam', 'Wilson',
+     '021 100 0007', 'Sam Emergency', '021 100 0087',
      'Operator', 'active'),
 
     ('operator8', 'op8@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Priya', 'Patel', '021 100 0008', 'Priya Emergency — 021 100 0088',
+     'Priya', 'Patel',
+     '021 100 0008', 'Priya Emergency', '021 100 0088',
      'Operator', 'active'),
 
     ('operator9', 'op9@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Carlos', 'Rivera', '021 100 0009', 'Carlos Emergency — 021 100 0089',
+     'Carlos', 'Rivera',
+     '021 100 0009', 'Carlos Emergency', '021 100 0089',
      'Operator', 'active'),
 
     ('operator10', 'op10@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Fiona', 'McDonald', '021 100 0010', 'Fiona Emergency — 021 100 0080',
+     'Fiona', 'McDonald',
+     '021 100 0010', 'Fiona Emergency', '021 100 0080',
      'Operator', 'active');
 
 -- ── Observer accounts (10 required) ───────────────────────────
 INSERT INTO users
     (username, email, password_hash, first_name, last_name,
-     contact_information, emergency_contact_information,
+     phone, emergency_contact_name, emergency_contact_phone,
      role, account_status)
 VALUES
     ('observer1', 'obs1@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Sarah', 'Thompson', '021 200 0001', 'Sarah Emergency — 021 200 0091',
+     'Sarah', 'Thompson',
+     '021 200 0001', 'Sarah Emergency', '021 200 0091',
      'Observer', 'active'),
 
     ('observer2', 'obs2@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Mike', 'Jones', '021 200 0002', 'Mike Emergency — 021 200 0092',
+     'Mike', 'Jones',
+     '021 200 0002', 'Mike Emergency', '021 200 0092',
      'Observer', 'active'),
 
     ('observer3', 'obs3@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Ella', 'Davis', '021 200 0003', 'Ella Emergency — 021 200 0093',
+     'Ella', 'Davis',
+     '021 200 0003', 'Ella Emergency', '021 200 0093',
      'Observer', 'active'),
 
     ('observer4', 'obs4@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Noah', 'Martin', '021 200 0004', 'Noah Emergency — 021 200 0094',
+     'Noah', 'Martin',
+     '021 200 0004', 'Noah Emergency', '021 200 0094',
      'Observer', 'active'),
 
     ('observer5', 'obs5@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Isla', 'White', '021 200 0005', 'Isla Emergency — 021 200 0095',
+     'Isla', 'White',
+     '021 200 0005', 'Isla Emergency', '021 200 0095',
      'Observer', 'active'),
 
     ('observer6', 'obs6@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Jack', 'Harris', '021 200 0006', 'Jack Emergency — 021 200 0096',
+     'Jack', 'Harris',
+     '021 200 0006', 'Jack Emergency', '021 200 0096',
      'Observer', 'active'),
 
     ('observer7', 'obs7@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Chloe', 'Clark', '021 200 0007', 'Chloe Emergency — 021 200 0097',
+     'Chloe', 'Clark',
+     '021 200 0007', 'Chloe Emergency', '021 200 0097',
      'Observer', 'active'),
 
     ('observer8', 'obs8@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Oliver', 'Lewis', '021 200 0008', 'Oliver Emergency — 021 200 0098',
+     'Oliver', 'Lewis',
+     '021 200 0008', 'Oliver Emergency', '021 200 0098',
      'Observer', 'active'),
 
     ('observer9', 'obs9@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Grace', 'Hall', '021 200 0009', 'Grace Emergency — 021 200 0099',
+     'Grace', 'Hall',
+     '021 200 0009', 'Grace Emergency', '021 200 0099',
      'Observer', 'active'),
 
     ('observer10', 'obs10@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Henry', 'Young', '021 200 0010', 'Henry Emergency — 021 200 0080',
+     'Henry', 'Young',
+     '021 200 0010', 'Henry Emergency', '021 200 0080',
      'Observer', 'active');
 
 -- ── Trap lines (5 required) ───────────────────────────────────

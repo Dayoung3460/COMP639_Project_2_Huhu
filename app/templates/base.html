@@ -63,8 +63,7 @@
       <a href="{{ url_for('profile') }}"
          class="btn-pf-outline ms-1"
          style="font-size:12px; padding:4px 10px;">
-        <i class="bi bi-person"></i>
-      </a>
+        <i class="bi bi-person"></i></a>
       <a href="{{ url_for('logout') }}"
          class="btn-pf-outline"
          style="font-size:12px; padding:4px 12px;">
@@ -103,7 +102,7 @@
   <div class="app-layout">
 
     {# ── Sidebar ── #}
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-user">
         <div class="user-avatar">
           {{ session.get('username', 'U')[:2].upper() }}
@@ -121,34 +120,119 @@
         {% if session.get('role') == 'Admin' %}
           <a href="{{ url_for('admin_dashboard') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
-            <i class="bi bi-house"></i> Dashboard
+            <i class="bi bi-house"></i> <span class="link-text">Dashboard</span>
           </a>
         {% elif session.get('role') == 'Operator' %}
           <a href="{{ url_for('operator_dashboard') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'operator_dashboard' }}">
-            <i class="bi bi-house"></i> Dashboard
+            <i class="bi bi-house"></i> <span class="link-text">Dashboard</span>
           </a>
         {% else %}
-          <a href="{{ url_for('observer_dashboard') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'observer_dashboard' }}">
-            <i class="bi bi-house"></i> Dashboard
-          </a>
+          <!-- Logged-in nav -->
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('lines_index') }}">Trap Lines</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('catch_records') }}">Catch Records</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('reports') }}">Reports</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('download_csv') }}">
+                <i class="bi bi-download"></i> CSV
+              </a>
+            </li>
+
+            {% if session.get('role') =='Operator' %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('add_catch') }}">Add Record</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('add_observation') }}">Add Observation</a>
+              </li>
+            {% endif %}
+
+            {% if session.get('role') == 'Admin' %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  Admin
+                </a>
+                <ul class="dropdown-menu">
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                      Dashboard
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('admin_users') }}">
+                      Manage Users
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('new_line') }}">
+                      New Trap Line
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('manage_species') }}">
+                      Species
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('manage_statuses') }}">
+                      Statuses
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('manage_bait_types') }}">
+                      Bait Types
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            {% endif %}
+          </ul>
+
+          <!-- User info + logout -->
+          <ul class="navbar-nav ms-auto align-items-center">
+            <li class="nav-item me-2">
+              <span class="badge bg-light text-dark">
+                {{ session.get('username') }} &mdash; {{ session.get('role') }}
+              </span>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('profile') }}">
+                <i class="bi bi-person-circle"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('logout') }}">
+                <i class="bi bi-box-arrow-right"></i> Logout
+              </a>
+            </li>
+          </ul>
         {% endif %}
 
         {# Operator / Admin work #}
         {% if session.get('role') in ['Operator', 'Admin'] %}
           <div class="sidebar-section-label">My Work</div>
+          {% if session.get('role') == 'Operator' %}
           <a href="{{ url_for('add_catch') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'add_catch' }}">
-            <i class="bi bi-plus-circle"></i> Add Catch Record
-          </a>
-          <a href="{{ url_for('my_records') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
-            <i class="bi bi-pencil-square"></i> My Catch Records
+            <i class="bi bi-plus-circle"></i> <span class="link-text">Add Catch Record</span>
           </a>
           <a href="{{ url_for('add_observation') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'add_observation' }}">
-            <i class="bi bi-binoculars"></i> Add Observation
+            <i class="bi bi-binoculars"></i> <span class="link-text">Add Observation</span>
+          </a>
+          {% endif %}
+          <a href="{{ url_for('my_records') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
+            <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
           </a>
         {% endif %}
 
@@ -156,26 +240,26 @@
         <div class="sidebar-section-label">Data</div>
         <a href="{{ url_for('lines_index') }}"
            class="sidebar-link {{ 'active' if request.endpoint in ['lines_index','line_detail'] }}">
-          <i class="bi bi-geo-alt"></i> Trap Lines
+          <i class="bi bi-geo-alt"></i> <span class="link-text">Trap Lines</span>
         </a>
         <a href="{{ url_for('catch_records') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'catch_records' }}">
-          <i class="bi bi-table"></i> Catch Records
+          <i class="bi bi-table"></i> <span class="link-text">Catch Records</span>
         </a>
         <a href="{{ url_for('observations') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'observations' }}">
-          <i class="bi bi-binoculars"></i> Observations
+          <i class="bi bi-binoculars"></i> <span class="link-text">Observations</span>
         </a>
 
         {# Reports — all roles #}
         <div class="sidebar-section-label">Reports</div>
         <a href="{{ url_for('reports') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
-          <i class="bi bi-graph-up"></i> Reports &amp; Charts
+          <i class="bi bi-graph-up"></i> <span class="link-text">Reports &amp; Charts</span>
         </a>
         <a href="{{ url_for('download_csv') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'download_csv' }}">
-          <i class="bi bi-download"></i> Download CSV
+          <i class="bi bi-download"></i> <span class="link-text">Download CSV</span>
         </a>
 
         {# Admin-only system links #}
@@ -183,24 +267,24 @@
           <div class="sidebar-section-label">System</div>
           <a href="{{ url_for('admin_users') }}"
              class="sidebar-link {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
-            <i class="bi bi-people"></i> User Management
+            <i class="bi bi-people"></i> <span class="link-text">User Management</span>
           </a>
           <a href="{{ url_for('new_line') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'new_line' }}">
-            <i class="bi bi-plus-circle-dotted"></i> New Trap Line
+            <i class="bi bi-plus-circle-dotted"></i> <span class="link-text">New Trap Line</span>
           </a>
           <div class="sidebar-section-label">Manage Lists</div>
           <a href="{{ url_for('manage_species') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'manage_species' }}">
-            <i class="bi bi-bug"></i> Species
+            <i class="bi bi-bug"></i> <span class="link-text">Species</span>
           </a>
           <a href="{{ url_for('manage_statuses') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'manage_statuses' }}">
-            <i class="bi bi-tags"></i> Statuses
+            <i class="bi bi-tags"></i> <span class="link-text">Statuses</span>
           </a>
           <a href="{{ url_for('manage_bait_types') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'manage_bait_types' }}">
-            <i class="bi bi-basket"></i> Bait Types
+            <i class="bi bi-basket"></i> <span class="link-text">Bait Types</span>
           </a>
         {% endif %}
 
@@ -208,19 +292,24 @@
         <div class="sidebar-section-label">Account</div>
         <a href="{{ url_for('profile') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'profile' }}">
-          <i class="bi bi-person"></i> My Profile
+          <i class="bi bi-person"></i> <span class="link-text">My Profile</span>
         </a>
         <a href="{{ url_for('change_password') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'change_password' }}">
-          <i class="bi bi-key"></i> Change Password
+          <i class="bi bi-key"></i> <span class="link-text">Change Password</span>
         </a>
 
       </nav>
 
       <div class="sidebar-footer">
         <a href="{{ url_for('logout') }}">
-          <i class="bi bi-box-arrow-right"></i> Log Out
+          <i class="bi bi-box-arrow-right"></i>
+          <span class="link-text">Log Out</span>
         </a>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar">
+          <i class="bi bi-layout-sidebar-reverse" id="sidebarToggleIcon"></i>
+          <span class="toggle-label" id="sidebarToggleLabel">Collapse</span>
+        </button>
       </div>
     </aside>
     {# End sidebar #}
@@ -306,6 +395,35 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+  // ── Sidebar collapse toggle ──────────────────────────────
+  (function () {
+    const sidebar = document.getElementById('sidebar');
+    const btn     = document.getElementById('sidebarToggle');
+    const icon    = document.getElementById('sidebarToggleIcon');
+    const label   = document.getElementById('sidebarToggleLabel');
+
+    if (!sidebar || !btn) return;
+
+    function applyState(collapsed) {
+      sidebar.classList.toggle('collapsed', collapsed);
+      icon.className  = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-reverse';
+      if (label) label.textContent = collapsed ? '' : 'Collapse';
+      btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    }
+
+    // Restore saved state on load
+    applyState(localStorage.getItem('sidebarCollapsed') === 'true');
+
+    btn.addEventListener('click', function () {
+      const collapsed = !sidebar.classList.contains('collapsed');
+      applyState(collapsed);
+      localStorage.setItem('sidebarCollapsed', collapsed);
+    });
+  })();
+</script>
+
 {% block scripts %}{% endblock %}
 
 </body>
