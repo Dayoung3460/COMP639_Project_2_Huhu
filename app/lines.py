@@ -3,6 +3,7 @@
 from flask import render_template, request
 from app import app, db
 from app.utils import role_required
+from app.connect import api_key as linz_api_key
 
 
 @app.route('/lines')
@@ -112,5 +113,6 @@ def line_detail(line_id):
         traps=traps,
         operators=operators,
         show_retired=show_retired,
-        trap_markers=trap_markers
+        trap_markers=trap_markers,
+        linz_api_key=linz_api_key
     )

@@ -129,7 +129,7 @@
         const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
         const map = L.map('line-map');
 
-        const tileUrl = 'https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=d01k2zz584sk064m4gagxmwbyk6';
+        const tileUrl = 'https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api={{ linz_api_key }}';
 
         L.tileLayer(tileUrl, {
           maxZoom: 19,
