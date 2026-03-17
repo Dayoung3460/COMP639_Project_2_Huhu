@@ -216,12 +216,12 @@ VALUES
      'Observer', 'active');
 
 -- ── Trap lines (5 required) ───────────────────────────────────
-INSERT INTO lines (name, type) VALUES
-    ('North Line',   'Trap'),
-    ('Lake Route',   'Trap'),
-    ('East Track',   'Trap'),
-    ('West Loop',    'Trap'),
-    ('Central Line', 'Trap');
+INSERT INTO lines (name, type, is_retired) VALUES
+    ('North Line',   'Trap', TRUE),
+    ('Lake Route',   'Trap', TRUE),
+    ('East Track',   'Trap', FALSE),
+    ('West Loop',    'Trap', FALSE),
+    ('Central Line', 'Trap', FALSE);
 
 -- ── Assign operators to lines ─────────────────────────────────
 INSERT INTO operator_lines (operator_id, line_id) VALUES
@@ -243,44 +243,44 @@ INSERT INTO operator_lines (operator_id, line_id) VALUES
 -- ── Traps — 5 per line (trap_type uses ENUM trap_type_enum) ───
 
 -- North Line
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('NL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645000, 172.472000),
-    ('NL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645200, 172.473000),
-    ('NL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645500, 172.474000),
-    ('NL-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645800, 172.475000),
-    ('NL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'North Line'), -43.646000, 172.476000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('NL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645000, 172.472000, TRUE),
+    ('NL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645200, 172.473000, FALSE),
+    ('NL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645500, 172.474000, FALSE),
+    ('NL-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645800, 172.475000, TRUE),
+    ('NL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'North Line'), -43.646000, 172.476000, FALSE);
 
 -- Lake Route
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('LR-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648000, 172.470000),
-    ('LR-02', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648500, 172.471000),
-    ('LR-03', 'A24',            (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649000, 172.472000),
-    ('LR-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649500, 172.473000),
-    ('LR-05', 'DOC 250',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.650000, 172.474000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('LR-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648000, 172.470000, FALSE),
+    ('LR-02', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648500, 172.471000, FALSE),
+    ('LR-03', 'A24',            (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649000, 172.472000, FALSE),
+    ('LR-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649500, 172.473000, TRUE),
+    ('LR-05', 'DOC 250',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.650000, 172.474000, TRUE);
 
 -- East Track
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('ET-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643000, 172.480000),
-    ('ET-02', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643200, 172.481000),
-    ('ET-03', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643500, 172.482000),
-    ('ET-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643800, 172.483000),
-    ('ET-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'East Track'), -43.644000, 172.484000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('ET-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643000, 172.480000, FALSE),
+    ('ET-02', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643200, 172.481000, FALSE),
+    ('ET-03', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643500, 172.482000, FALSE),
+    ('ET-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643800, 172.483000, FALSE),
+    ('ET-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'East Track'), -43.644000, 172.484000, TRUE);
 
 -- West Loop
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('WL-01', 'A24',            (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647000, 172.466000),
-    ('WL-02', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647500, 172.465000),
-    ('WL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648000, 172.464000),
-    ('WL-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648500, 172.463000),
-    ('WL-05', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.649000, 172.462000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('WL-01', 'A24',            (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647000, 172.466000, FALSE),
+    ('WL-02', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647500, 172.465000, TRUE),
+    ('WL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648000, 172.464000, FALSE),
+    ('WL-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648500, 172.463000, FALSE),
+    ('WL-05', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.649000, 172.462000, TRUE);
 
 -- Central Line
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('CL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644000, 172.475000),
-    ('CL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644200, 172.476000),
-    ('CL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644500, 172.477000),
-    ('CL-04', 'A24',            (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644800, 172.478000),
-    ('CL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.645000, 172.479000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('CL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644000, 172.475000, FALSE),
+    ('CL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644200, 172.476000, FALSE),
+    ('CL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644500, 172.477000, FALSE),
+    ('CL-04', 'A24',            (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644800, 172.478000, FALSE),
+    ('CL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.645000, 172.479000, TRUE);
 
 -- ── Catch records — 5 per line ────────────────────────────────
 -- Sun's column names: recorded_by_id, species_caught, status, bait_type

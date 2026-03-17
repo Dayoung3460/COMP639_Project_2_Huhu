@@ -40,6 +40,14 @@ document.addEventListener('DOMContentLoaded', function () {
       latlngs.push([trap.latitude, trap.longitude]);
     });
 
+    if (latlngs.length >= 2) {
+      L.polyline(latlngs, {
+        color: '#0d6efd',
+        weight: 3,
+        opacity: 0.8
+      }).addTo(map);
+    }
+
     map.fitBounds(latlngs, { padding: [30, 30] });
   } else {
     // Fallback: Lincoln University area
