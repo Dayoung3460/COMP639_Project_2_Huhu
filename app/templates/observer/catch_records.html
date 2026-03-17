@@ -10,7 +10,7 @@
   </div>
 
   {# Filter form #}
-  <form method="GET" action="{{ url_for('catch_records') }}" class="row g-2 mb-4 align-items-end">
+  <form method="GET" action="{{ url_for('catch_records') }}" class="row g-2 mb-4 align-items-center">
     
     <div class="col-auto">
       <select name="trap_code" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -58,22 +58,26 @@
     </div>
 
     <div class="col-auto">
-      <select name="recorded_by_id" class="form-select form-select-sm" onchange="this.form.submit()">
-        <option value="">All Recorders</option>
-        {% for rec in filter_data.recorders %}
-          <option value="{{ rec.user_id }}" {% if selected_filters.recorded_by_id|string == rec.user_id|string %}selected{% endif %}>{{ rec.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col-auto">
-      <input type="date" id="date_from" name="date_from" class="form-control form-control-sm"
-             value="{{ selected_filters.date_from or '' }}" onchange="this.form.submit()">
+      <div class="d-flex align-items-center">
+        <label for="date_from" class="form-label mb-0 me-2" style="font-size: 0.875rem; white-space: nowrap;">Start Date</label>
+        <input type="date" id="date_from" name="date_from" class="form-control form-control-sm"
+               value="{{ selected_filters.date_from or '' }}" onchange="this.form.submit()">
+      </div>
     </div>
     
     <div class="col-auto">
-      <input type="date" id="date_to" name="date_to" class="form-control form-control-sm"
-             value="{{ selected_filters.date_to or '' }}" onchange="this.form.submit()">
+      <div class="d-flex align-items-center">
+        <label for="date_to" class="form-label mb-0 me-2" style="font-size: 0.875rem; white-space: nowrap;">End Date</label>
+        <input type="date" id="date_to" name="date_to" class="form-control form-control-sm"
+               value="{{ selected_filters.date_to or '' }}" onchange="this.form.submit()">
+      </div>
+    </div>
+
+    <div class="col-auto">
+      <select name="sort_date" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="desc" {% if selected_filters.sort_date == 'desc' or not selected_filters.sort_date %}selected{% endif %}>Sort: Date (Newest)</option>
+        <option value="asc" {% if selected_filters.sort_date == 'asc' %}selected{% endif %}>Sort: Date (Oldest)</option>
+      </select>
     </div>
 
     <div class="col-auto">
@@ -87,7 +91,7 @@
         <tr>
           <th>Trap Code</th><th>Trap Type</th><th>Date</th><th>Line</th><th>Species</th>
           <th>Status</th><th>Strikes</th><th>Rebaited</th>
-          <th>Bait Type</th><th>Condition</th><th>Recorded By</th>
+          <th>Bait Type</th><th>Condition</th>
         </tr>
       </thead>
       <tbody>
@@ -103,11 +107,10 @@
             <td>{{ r.rebaited }}</td>
             <td>{{ r.bait_type }}</td>
             <td>{{ r.trap_condition }}</td>
-            <td>{{ r.recorded_by }}</td>
           </tr>
         {% else %}
           <tr>
-            <td colspan="11" class="text-center text-muted py-3">
+            <td colspan="10" class="text-center text-muted py-3">
               No records found.
             </td>
           </tr>

@@ -1,3 +1,4 @@
 flask
 flask-bcrypt
 psycopg2-binary
+livereload==2.7.1

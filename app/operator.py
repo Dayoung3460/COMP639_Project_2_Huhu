@@ -3,6 +3,8 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 from app.utils import role_required
+from app.helpers.trapCatchHelper import validate_all_catch_record_fields
+from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data
 
 
 @app.route('/operator/dashboard')
@@ -16,19 +18,24 @@ def operator_dashboard():
 
 
 @app.route('/operator/add-catch', methods=['GET', 'POST'])
-@role_required('Operator', 'Admin')
+@role_required('Operator')
 def add_catch():
     """Add a new trap catch record for an assigned line."""
     if request.method == 'POST':
-        # TODO: get all form fields
-        # TODO: verify selected line is in operator's assigned lines
-        # TODO: validate all required fields (strikes >= 0, species/bait None rules)
-        # TODO: INSERT into trap_catch
+        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'])
+        
+        if not pass_check:
+            lines = fetch_operator_lines(db, session['user_id'])
+            return render_template('operator/add_catch.html', errors=errors, data=request.form, lines=lines, lookup=lookup)
+        
+        insert_catch_record(db, request.form, session['user_id'])
         flash('Catch record added successfully.', 'success')
         return redirect(url_for('operator_dashboard'))
 
-    # TODO: query assigned lines, species, statuses, bait_types, conditions
-    return render_template('operator/add_catch.html')
+    else:
+        lookup = fetch_lookup_data(db)
+        lines = fetch_operator_lines(db, session['user_id'])
+        return render_template('operator/add_catch.html', lines=lines, data={}, lookup=lookup)
 
 
 @app.route('/operator/edit-catch/<int:catch_id>', methods=['GET', 'POST'])
@@ -57,7 +64,7 @@ def my_records():
 
 
 @app.route('/operator/add-observation', methods=['GET', 'POST'])
-@role_required('Operator', 'Admin')
+@role_required('Operator')
 def add_observation():
     """Record an incidental observation."""
     if request.method == 'POST':

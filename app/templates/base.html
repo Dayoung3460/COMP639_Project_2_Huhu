@@ -128,26 +128,111 @@
             <i class="bi bi-house"></i> <span class="link-text">Dashboard</span>
           </a>
         {% else %}
-          <a href="{{ url_for('observer_dashboard') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'observer_dashboard' }}">
-            <i class="bi bi-house"></i> <span class="link-text">Dashboard</span>
-          </a>
+          <!-- Logged-in nav -->
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('lines_index') }}">Trap Lines</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('catch_records') }}">Catch Records</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('reports') }}">Reports</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('download_csv') }}">
+                <i class="bi bi-download"></i> CSV
+              </a>
+            </li>
+
+            {% if session.get('role') =='Operator' %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('add_catch') }}">Add Record</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('add_observation') }}">Add Observation</a>
+              </li>
+            {% endif %}
+
+            {% if session.get('role') == 'Admin' %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  Admin
+                </a>
+                <ul class="dropdown-menu">
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                      Dashboard
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('admin_users') }}">
+                      Manage Users
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('new_line') }}">
+                      New Trap Line
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('manage_species') }}">
+                      Species
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('manage_statuses') }}">
+                      Statuses
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('manage_bait_types') }}">
+                      Bait Types
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            {% endif %}
+          </ul>
+
+          <!-- User info + logout -->
+          <ul class="navbar-nav ms-auto align-items-center">
+            <li class="nav-item me-2">
+              <span class="badge bg-light text-dark">
+                {{ session.get('username') }} &mdash; {{ session.get('role') }}
+              </span>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('profile') }}">
+                <i class="bi bi-person-circle"></i>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('logout') }}">
+                <i class="bi bi-box-arrow-right"></i> Logout
+              </a>
+            </li>
+          </ul>
         {% endif %}
 
         {# Operator / Admin work #}
         {% if session.get('role') in ['Operator', 'Admin'] %}
           <div class="sidebar-section-label">My Work</div>
+          {% if session.get('role') == 'Operator' %}
           <a href="{{ url_for('add_catch') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'add_catch' }}">
             <i class="bi bi-plus-circle"></i> <span class="link-text">Add Catch Record</span>
           </a>
-          <a href="{{ url_for('my_records') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
-            <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
-          </a>
           <a href="{{ url_for('add_observation') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'add_observation' }}">
             <i class="bi bi-binoculars"></i> <span class="link-text">Add Observation</span>
+          </a>
+          {% endif %}
+          <a href="{{ url_for('my_records') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
+            <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
           </a>
         {% endif %}
 
