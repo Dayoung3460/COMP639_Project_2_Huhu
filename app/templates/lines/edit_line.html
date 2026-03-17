@@ -3,8 +3,19 @@
 {% block content %}
 <div class="container py-4" style="max-width:560px;">
   <h2 class="mb-4">Edit Line</h2>
-  {# TODO: build form #}
-  <p class="text-muted">Edit Line form — TODO</p>
-  <a href="{{ url_for('lines_index') }}" class="btn btn-secondary">Cancel</a>
+
+  <form method="POST" action="{{ url_for('edit_line', line_id=line_id) }}">
+    <div class="mb-3">
+      <label for="lineName" class="form-label">Line Name</label>
+      <input type="text" class="form-control" id="lineName" name="line_name" value="{{ line.name }}" required>
+    </div>
+    <div class="mb-3">
+      <label for="lineType" class="form-label">Line Type</label>
+      <input type="text" class="form-control" id="lineType" name="line_type" value="{{ line.type }}" required>
+    </div>
+
+    <a href="{{ url_for('lines_index') }}" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+  </form>
 </div>
 {% endblock %}
