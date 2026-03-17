@@ -21,8 +21,32 @@
     </div>
   </div>
 
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">All Lines & Traps Map</h5>
+        <small class="text-muted">Click a marker to view trap and line details</small>
+      </div>
+      <div id="lines-overview-map"
+           data-linz-api-key="{{ linz_api_key }}"
+           style="height: 430px; border-radius: 10px;"></div>
+      <script id="lines-overview-traps-data" type="application/json">{{ map_traps|tojson }}</script>
+      <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
+        <span class="d-inline-flex align-items-center gap-1">
+          <span class="map-legend-line map-legend-line-retired"></span>
+          Retired line
+        </span>
+        <span class="d-inline-flex align-items-center gap-1">
+          <span class="map-legend-dot map-legend-dot-retired"></span>
+          Retired trap
+        </span>
+      </div>
+      <p class="text-muted small mb-0 mt-2">Basemap tiles by LINZ Basemaps.</p>
+    </div>
+  </div>
+
   {% for line in lines %}
-    <div class="card mb-3">
+    <div class="card mb-3 js-line-card" data-line-id="{{ line.line_id }}" id="line-card-{{ line.line_id }}">
       <div class="card-body d-flex justify-content-between align-items-center">
         <div>
           <h5 class="mb-1">{{ line.name }}</h5>
@@ -45,9 +69,8 @@
                class="btn btn-sm btn-outline-secondary">Edit</a>
             <form method="POST"
                   action="{{ url_for('retire_line', line_id=line.line_id) }}"
-                  class="d-inline">
-              <button type="submit" class="btn btn-sm btn-outline-danger"
-                      onclick="return confirm('Retire this line?')">
+                  class="d-inline js-confirm-retire-line-form">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
                 Retire
               </button>
             </form>
@@ -59,4 +82,13 @@
     <p class="text-muted">No trap lines found.</p>
   {% endfor %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="{{ url_for('static', filename='js/lines-index.js') }}"></script>
 {% endblock %}

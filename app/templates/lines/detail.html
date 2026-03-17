@@ -37,7 +37,9 @@
     <div class="card mb-4">
       <div class="card-body">
         <h5 class="mb-3">Trap map</h5>
-        <div id="line-map" style="height: 420px; border-radius: 10px;"></div>
+        <div id="line-map"
+             data-linz-api-key="{{ linz_api_key }}"
+             style="height: 420px; border-radius: 10px;"></div>
         <script id="trap-markers-data" type="application/json">{{ trap_markers|tojson }}</script>
         <p class="text-muted small mb-0 mt-2">
           Basemap tiles by LINZ Basemaps.
@@ -75,9 +77,8 @@
                      class="btn btn-sm btn-outline-secondary">Edit</a>
                   <form method="POST"
                         action="{{ url_for('retire_trap', trap_id=trap.trap_id) }}"
-                        class="d-inline">
-                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                            onclick="return confirm('Retire this trap?')">
+                        class="d-inline js-confirm-retire-trap-form">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
                       Retire
                     </button>
                   </form>
@@ -123,37 +124,6 @@
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script>
-      (function () {
-        const markersElement = document.getElementById('trap-markers-data');
-        const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
-        const map = L.map('line-map');
-
-        const tileUrl = 'https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=d01k2zz584sk064m4gagxmwbyk6';
-
-        L.tileLayer(tileUrl, {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
-        }).addTo(map);
-
-        if (markers.length > 0) {
-          const latlngs = [];
-          markers.forEach((trap) => {
-            const marker = L.marker([trap.latitude, trap.longitude]).addTo(map);
-            const statusBadge = trap.is_retired
-              ? '<span class="badge bg-secondary">Retired</span>'
-              : '<span class="badge bg-success">Active</span>';
-            marker.bindPopup(
-              `<strong>${trap.code}</strong><br>${trap.trap_type}<br>${statusBadge}`
-            );
-            latlngs.push([trap.latitude, trap.longitude]);
-          });
-          map.fitBounds(latlngs, { padding: [30, 30] });
-        } else {
-          // Fallback: Lincoln University area
-          map.setView([-43.6409, 172.4678], 13);
-        }
-      })();
-    </script>
+    <script src="{{ url_for('static', filename='js/lines-detail.js') }}"></script>
   {% endif %}
 {% endblock %}
