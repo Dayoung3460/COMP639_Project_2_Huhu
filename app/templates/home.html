@@ -1,14 +1,354 @@
+{# templates/home.html
+   Public home page — extends base.html (public layout, no sidebar).
+   Route: GET /  →  index()
+   Shown only to logged-out users — logged-in users are redirected to their dashboard.
+#}
 {% extends 'base.html' %}
 {% block title %}Home{% endblock %}
+
 {% block content %}
-<div class="container py-5 text-center">
-  <h1 class="display-5 fw-bold">🌿 Predator Free Lincoln University</h1>
-  <p class="lead text-muted mb-4">
-    Monitoring and reporting system for campus predator traps.
-  </p>
-  <div class="d-flex gap-3 justify-content-center">
-    <a href="{{ url_for('login') }}" class="btn btn-pf btn-lg">Log In</a>
-    <a href="{{ url_for('register') }}" class="btn btn-outline-pf btn-lg">Register</a>
+
+{# ═══════════════════════════════════════════════
+   HERO
+   ═══════════════════════════════════════════════ #}
+<section class="hero" id="about">
+  <div class="container position-relative">
+    <div class="row align-items-center">
+
+      {# Left — headline + stats #}
+      <div class="col-lg-7">
+        <div class="hero-badge">🌿 Conservation Technology</div>
+        <h1>Protecting Native Wildlife<br>Across Campus</h1>
+        <p>
+          A digital platform for Predator Free Lincoln University to monitor
+          trap activity, record captures, and generate reports — replacing
+          paper forms with accurate, shareable data.
+        </p>
+        <div class="d-flex gap-3 mt-4 flex-wrap">
+          {% if session.get('user_id') %}
+            {% if session.get('role') == 'Admin' %}
+              <a href="{{ url_for('admin_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
+            {% elif session.get('role') == 'Operator' %}
+              <a href="{{ url_for('operator_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
+            {% else %}
+              <a href="{{ url_for('observer_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
+            {% endif %}
+          {% else %}
+            <a href="{{ url_for('register') }}"
+               class="btn-pf"
+               style="padding:10px 24px; font-size:14px;">
+              Get Started
+            </a>
+            <a href="{{ url_for('login') }}"
+               class="btn-pf-outline"
+               style="padding:10px 24px; font-size:14px;">
+              Log In
+            </a>
+          {% endif %}
+          <a href="#how-it-works"
+             class="btn-pf-outline"
+             style="padding:10px 24px; font-size:14px;">
+            Learn More
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="num">5+</div>
+            <div class="lbl">Trap Lines</div>
+          </div>
+          <div class="hero-stat">
+            <div class="num">25+</div>
+            <div class="lbl">Active Traps</div>
+          </div>
+          <div class="hero-stat">
+            <div class="num">3</div>
+            <div class="lbl">User Roles</div>
+          </div>
+          <div class="hero-stat">
+            <div class="num">trap.nz</div>
+            <div class="lbl">Compatible</div>
+          </div>
+        </div>
+      </div>
+
+      {# Right — recent catch activity card #}
+      <div class="col-lg-5 d-none d-lg-flex justify-content-end">
+        <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+                    border-radius:16px; padding:24px; width:280px;">
+          <div style="font-size:11px; color:var(--pf-300); text-transform:uppercase;
+                      letter-spacing:1px; margin-bottom:14px;">
+            Recent Catch Activity
+          </div>
+
+          <div style="background:rgba(255,255,255,0.08); border-radius:8px;
+                      padding:10px 12px; margin-bottom:8px;
+                      display:flex; align-items:center; gap:10px;">
+            <div style="width:8px; height:8px; border-radius:50%;
+                        background:#e84a3a; flex-shrink:0;"></div>
+            <div style="flex:1;">
+              <div style="font-size:12px; color:#fff;">Stoat — North Line Trap 04</div>
+              <div style="font-size:10px; color:var(--pf-400);">Sprung • Rebaited • Today 08:42</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.08); border-radius:8px;
+                      padding:10px 12px; margin-bottom:8px;
+                      display:flex; align-items:center; gap:10px;">
+            <div style="width:8px; height:8px; border-radius:50%;
+                        background:#e84a3a; flex-shrink:0;"></div>
+            <div style="flex:1;">
+              <div style="font-size:12px; color:#fff;">Possum — Lake Route Trap 02</div>
+              <div style="font-size:10px; color:var(--pf-400);">Sprung • Rebaited • Yesterday</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.08); border-radius:8px;
+                      padding:10px 12px; margin-bottom:8px;
+                      display:flex; align-items:center; gap:10px;">
+            <div style="width:8px; height:8px; border-radius:50%;
+                        background:var(--pf-400); flex-shrink:0;"></div>
+            <div style="flex:1;">
+              <div style="font-size:12px; color:#fff;">No catch — East Track Trap 01</div>
+              <div style="font-size:10px; color:var(--pf-400);">Still set, bait OK • Yesterday</div>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid rgba(255,255,255,0.1); margin-top:14px;
+                      padding-top:12px; display:flex; justify-content:space-between;">
+            <div style="font-size:11px; color:var(--pf-300);">This week</div>
+            <div style="font-size:11px; color:#fff; font-weight:600;">14 checks · 6 catches</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
-</div>
+</section>
+
+{# ═══════════════════════════════════════════════
+   FEATURES
+   ═══════════════════════════════════════════════ #}
+<section class="section" style="background:#fff;">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="section-label">What It Does</div>
+      <div class="section-title">Everything PF-LU Needs in One Place</div>
+      <p class="section-sub mx-auto">
+        From field recording to admin reporting — all roles, all features, one system.
+      </p>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-4 col-sm-6">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-geo-alt"></i></div>
+          <h5>Trap Network Management</h5>
+          <p>Admins create and manage trap lines and individual traps with GPS coordinates, aligned to the trap.nz format.</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-clipboard2-check"></i></div>
+          <h5>Field Data Entry</h5>
+          <p>Operators log trap check results including species caught, trap status, bait type, and condition directly from the field.</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-graph-up"></i></div>
+          <h5>Reporting &amp; Analytics</h5>
+          <p>Visual charts and filterable tables give everyone a clear view of predator activity trends across all trap lines.</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-download"></i></div>
+          <h5>CSV Export</h5>
+          <p>Download all catch record data as a CSV file — formatted to be compatible with trap.nz's import requirements.</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-people"></i></div>
+          <h5>Role-Based Access</h5>
+          <p>Three roles — Observer, Operator, and Admin — each with the right level of access for their responsibilities.</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-phone"></i></div>
+          <h5>Mobile Friendly</h5>
+          <p>Fully responsive design so field operators can log data directly from their phones while checking traps on campus.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════
+   HOW IT WORKS
+   ═══════════════════════════════════════════════ #}
+<section class="section" id="how-it-works" style="background:var(--pf-50);">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="section-label">How It Works</div>
+      <div class="section-title">Simple for Everyone in the Field</div>
+    </div>
+    <div class="row align-items-start">
+      <div class="col-md-3">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h5>Register &amp; Log In</h5>
+          <p>Create an account as an Observer. An Admin upgrades your role to Operator if you're doing fieldwork.</p>
+        </div>
+      </div>
+      <div class="col-md-1 d-none d-md-flex">
+        <div class="step-connector"><i class="bi bi-chevron-right"></i></div>
+      </div>
+      <div class="col-md-3">
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h5>Check Your Assigned Line</h5>
+          <p>Operators are assigned to specific trap lines by the Admin. Head out, check each trap along your route.</p>
+        </div>
+      </div>
+      <div class="col-md-1 d-none d-md-flex">
+        <div class="step-connector"><i class="bi bi-chevron-right"></i></div>
+      </div>
+      <div class="col-md-3">
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h5>Log the Results</h5>
+          <p>Record what you found — species caught, trap status, bait used, condition. Data goes straight to the database.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════
+   ROLES
+   ═══════════════════════════════════════════════ #}
+<section class="section" style="background:#fff;">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="section-label">Access Levels</div>
+      <div class="section-title">Three Roles, One System</div>
+    </div>
+    <div class="row g-3">
+
+      {# Observer #}
+      <div class="col-md-4">
+        <div class="role-card">
+          <div class="role-card-header">
+            <span class="role-badge"
+                  style="background:var(--pf-100); color:var(--pf-800);">
+              👁 Observer
+            </span>
+          </div>
+          <div class="role-card-body">
+            <p style="font-size:12px; color:#6b7c72; margin-bottom:12px;">
+              Volunteer, trainee, or visitor
+            </p>
+            <ul class="list-unstyled">
+              <li>✅ View trap lines and traps</li>
+              <li>✅ Browse catch records</li>
+              <li>✅ Download CSV data</li>
+              <li>✅ View charts and reports</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {# Operator — highlighted #}
+      <div class="col-md-4">
+        <div class="role-card"
+             style="border-color:var(--pf-400); border-width:2px;">
+          <div class="role-card-header" style="background:var(--pf-50);">
+            <span class="role-badge"
+                  style="background:var(--blue-light); color:var(--blue);">
+              🔧 Operator
+            </span>
+            <span style="font-size:11px; background:var(--pf-100);
+                         color:var(--pf-700); padding:2px 8px;
+                         border-radius:10px; font-weight:600;">
+              Field Worker
+            </span>
+          </div>
+          <div class="role-card-body">
+            <p style="font-size:12px; color:#6b7c72; margin-bottom:12px;">
+              Field worker, ranger, or employee
+            </p>
+            <ul class="list-unstyled">
+              <li>✅ Everything Observers can do</li>
+              <li>✅ Add new catch records</li>
+              <li>✅ Edit own catch records</li>
+              <li>✅ Record incidental observations</li>
+              <li>✅ View assigned lines</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {# Admin #}
+      <div class="col-md-4">
+        <div class="role-card">
+          <div class="role-card-header">
+            <span class="role-badge"
+                  style="background:#f3e8ff; color:#5b21b6;">
+              ⚙️ Admin
+            </span>
+          </div>
+          <div class="role-card-body">
+            <p style="font-size:12px; color:#6b7c72; margin-bottom:12px;">
+              System administrator
+            </p>
+            <ul class="list-unstyled">
+              <li>✅ Everything Operators can do</li>
+              <li>✅ Create &amp; manage trap lines/traps</li>
+              <li>✅ Assign Operators to lines</li>
+              <li>✅ Manage all users &amp; roles</li>
+              <li>✅ Manage lookup data</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════
+   CONTACT
+   ═══════════════════════════════════════════════ #}
+<section class="section" id="contact" style="background:var(--pf-50);">
+  <div class="container">
+    <div class="contact-card">
+      <h3>Get in Touch</h3>
+      <p>Questions about the system or the Predator Free Lincoln University initiative?</p>
+      <a href="mailto:pflu@lincoln.ac.nz"
+         class="btn-pf"
+         style="padding:10px 28px; font-size:14px;">
+        Contact Us
+      </a>
+      <div class="contact-info">
+        <div class="contact-item">
+          <div class="icon"><i class="bi bi-envelope"></i></div>
+          <div class="label">Email</div>
+          <div class="value">pflu@lincoln.ac.nz</div>
+        </div>
+        <div class="contact-item">
+          <div class="icon"><i class="bi bi-geo-alt"></i></div>
+          <div class="label">Location</div>
+          <div class="value">Lincoln University Campus</div>
+        </div>
+        <div class="contact-item">
+          <div class="icon"><i class="bi bi-globe"></i></div>
+          <div class="label">Data Standard</div>
+          <div class="value">trap.nz Compatible</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 {% endblock %}
