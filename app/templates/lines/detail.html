@@ -73,7 +73,7 @@
               </td>
               <td>
                 {% if session.get('role') == 'Admin' and not trap.is_retired %}
-                  <a href="{{ url_for('edit_trap', trap_id=trap.trap_id) }}"
+                  <a href="{{ url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id) }}"
                      class="btn btn-sm btn-outline-secondary">Edit</a>
                   <form method="POST"
                         action="{{ url_for('retire_trap', trap_id=trap.trap_id) }}"

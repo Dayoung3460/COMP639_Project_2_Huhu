@@ -72,13 +72,67 @@ def new_line():
 @role_required('Admin')
 def edit_line(line_id):
     """Edit an existing trap line."""
+    line = None
+
     if request.method == 'POST':
-        # TODO: validate and UPDATE line
+        
+        name = request.form.get('line_name')
+        type = request.form.get('line_type')
+
+        # Basic validation
+        if not name or not type:
+            flash('Line Name and Line Type are required.', 'danger')
+            return redirect(url_for('edit_line', line_id=line_id))
+        
+        # Check for unique line name (excluding current line)
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT line_id
+                FROM lines
+                WHERE name = %s AND line_id != %s
+                """,
+                (name, line_id)
+            )
+            existing_line = cursor.fetchone()
+            if existing_line:
+                flash(f'Line Name "{name}" has already been taken. Please choose a different name.', 'danger')
+                return redirect(url_for('edit_line', line_id=line_id))
+
+        # Update line in database
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE lines
+                SET name = %s, type = %s
+                WHERE line_id = %s
+                """,
+                (name, type, line_id)
+            )
+
         flash('Trap line updated.', 'success')
         return redirect(url_for('lines_index'))
-    # TODO: query line by line_id
-    line = None
-    return render_template('lines/edit_line.html', line=line)
+
+    # Query line details for pre-filling the form
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT line_id, name, type
+            FROM lines
+            WHERE line_id = %s
+            """,
+            (line_id,)
+        )
+        line = cursor.fetchone()
+        if not line:
+            flash('Trap line not found.', 'danger')
+            return redirect(url_for('lines_index'))
+
+    return render_template(
+        'lines/edit_line.html',
+        line=line,
+        line_id=line_id
+    )
 
 
 @app.route('/admin/lines/<int:line_id>/retire', methods=['POST'])
@@ -105,17 +159,70 @@ def new_trap(line_id):
     return render_template('lines/new_trap.html', line=line)
 
 
-@app.route('/admin/traps/<int:trap_id>/edit', methods=['GET', 'POST'])
+@app.route('/admin/traps/<int:line_id>/<int:trap_id>/edit', methods=['GET', 'POST'])
 @role_required('Admin')
-def edit_trap(trap_id):
+def edit_trap(line_id, trap_id):
     """Edit an existing trap."""
-    if request.method == 'POST':
-        # TODO: UPDATE trap
-        flash('Trap updated.', 'success')
-        return redirect(url_for('lines_index'))
-    # TODO: query trap
+    # For the trap type dropdown, we can hardcode the options since they are a fixed set of known values.
+    trap_types = ["A24", "DOC 150", "DOC 200", "DOC 250", "Flipping Timmy", "Rat trap", "T-Rex Rat Trap", "Trapinator", "Victor"]
     trap = None
-    return render_template('lines/edit_trap.html', trap=trap)
+
+    if request.method == 'POST':
+        code = request.form.get('trap_code')
+        trap_type = request.form.get('trap_type')
+        latitude = request.form.get('trap_latitude')
+        longitude = request.form.get('trap_longitude')
+
+        # Basic validation
+        if not code or not trap_type or not latitude or not longitude:
+            flash('All fields are required.', 'danger')
+            return redirect(url_for('edit_trap', line_id=line_id, trap_id=trap_id))
+
+        # Check for unique trap code (excluding current trap)
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT trap_id
+                FROM traps
+                WHERE code = %s AND trap_id != %s
+                """,
+                (code, trap_id)
+            )
+            existing_trap = cursor.fetchone()
+            if existing_trap:
+                flash(f'Trap Code "{code}" has already been taken. Please choose a different code.', 'danger')
+                return redirect(url_for('edit_trap', line_id=line_id, trap_id=trap_id))
+            
+        # Update trap in database
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE traps
+                SET code = %s, trap_type = %s, latitude = %s, longitude = %s
+                WHERE trap_id = %s
+                """,
+                (code, trap_type, latitude, longitude, trap_id)
+            )
+
+        flash('Trap updated.', 'success')
+        return redirect(url_for('line_detail', line_id=line_id))
+
+    # Query trap details for pre-filling the form
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT trap_id, line_id, code, trap_type, latitude, longitude, is_retired
+            FROM traps
+            WHERE trap_id = %s
+            """,
+            (trap_id,)
+        )
+        trap = cursor.fetchone()
+        if not trap:
+            flash('Trap not found.', 'danger')
+            return redirect(url_for('lines_index'))
+
+    return render_template('lines/edit_trap.html', trap=trap, trap_types=trap_types, line_id=line_id)
 
 
 @app.route('/admin/traps/<int:trap_id>/retire', methods=['POST'])
