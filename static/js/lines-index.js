@@ -87,8 +87,8 @@ document.addEventListener('DOMContentLoaded', function () {
       ? '<span class="badge bg-dark">Retired line</span>'
       : '<span class="badge bg-success">Active line</span>';
     const trapStatusBadge = trap.trap_is_retired
-      ? '<span class="badge bg-secondary">Retired trap</span>'
-      : '<span class="badge bg-success">Active trap</span>';
+      ? '<span class="trap-status-badge trap-status-retired">Retired trap</span>'
+      : '<span class="trap-status-badge trap-status-active">Active trap</span>';
 
     marker.bindPopup(
       `<strong>Line:</strong> ${trap.line_name}<br>` +
