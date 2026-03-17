@@ -2,9 +2,41 @@
 {% block title %}New Line{% endblock %}
 {% block content %}
 <div class="container py-4" style="max-width:560px;">
-  <h2 class="mb-4">New Line</h2>
-  {# TODO: build form #}
-  <p class="text-muted">New Line form — TODO</p>
-  <a href="{{ url_for('lines_index') }}" class="btn btn-secondary">Cancel</a>
+  <h2 class="mb-4">New Trap Line</h2>
+  
+  <form method="POST" action="{{ url_for('new_line') }}">
+    <input type="hidden" name="type" value="Trap">
+    <div class="mb-3">
+      <label for="name" class="form-label">Line Name <span class="text-danger">*</span></label>
+      <input type="text" class="form-control" id="name" name="name" value="{{ name | default('') }}" required pattern=".*\S+.*" autofocus>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-pf">Create Line</button>
+      <a href="{{ url_for('lines_index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    const nameInput = document.getElementById('name');
+    if (nameInput) {
+      const updateValidity = function(e) {
+        e.target.setCustomValidity(''); // Clear first to let the browser check the pattern
+        if (e.target.validity.patternMismatch) {
+          e.target.setCustomValidity('Name cannot be empty or just spaces');
+        }
+      };
+
+      // Apply the custom message immediately and force the browser to display it
+      nameInput.addEventListener('input', function(e) {
+        updateValidity(e);
+        e.target.reportValidity();
+      });
+      nameInput.addEventListener('invalid', updateValidity);
+    }
+  </script>
 {% endblock %}
