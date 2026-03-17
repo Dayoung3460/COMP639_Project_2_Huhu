@@ -3,6 +3,7 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 from app.utils import role_required
+from app.helpers.dbHelper import fetch_enum_values
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -163,8 +164,8 @@ def new_trap(line_id):
 @role_required('Admin')
 def edit_trap(line_id, trap_id):
     """Edit an existing trap."""
-    # For the trap type dropdown, we can hardcode the options since they are a fixed set of known values.
-    trap_types = ["A24", "DOC 150", "DOC 200", "DOC 250", "Flipping Timmy", "Rat trap", "T-Rex Rat Trap", "Trapinator", "Victor"]
+    # get trap types for dropdown
+    trap_types = fetch_enum_values(db, 'trap_type_enum')
     trap = None
 
     if request.method == 'POST':
