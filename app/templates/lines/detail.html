@@ -16,9 +16,9 @@
         <a href="{{ url_for('line_detail', line_id=line.line_id, show_retired=1 if not show_retired else None) }}"
            class="btn btn-sm {{ 'btn-outline-secondary' if show_retired else 'btn-outline-dark' }}">
           {% if show_retired %}
-            Hide retired
+            Hide retired traps
           {% else %}
-            Show retired
+            Show retired traps
           {% endif %}
         </a>
         {% if session.get('role') == 'Admin' %}
@@ -33,6 +33,12 @@
         {% endif %}
       </div>
     </div>
+
+    {% if line.is_retired and not show_retired %}
+      <div class="alert alert-secondary" role="alert">
+        This line is retired. Retired traps are currently hidden.
+      </div>
+    {% endif %}
 
     <div class="card mb-4">
       <div class="card-body">

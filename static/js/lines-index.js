@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
   traps.forEach(function (trap) {
     const lineId = String(trap.line_id);
     const latLng = [trap.latitude, trap.longitude];
-    const isRetiredVisual = Boolean(trap.trap_is_retired || trap.line_is_retired);
+    const isRetiredVisual = Boolean(trap.trap_is_retired);
 
     if (!markersByLine[lineId]) {
       markersByLine[lineId] = [];

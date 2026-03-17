@@ -99,9 +99,8 @@ def line_detail(line_id):
             SELECT line_id, name, type, is_retired
             FROM lines
             WHERE line_id = %s
-              AND (%s OR is_retired = FALSE)
             """,
-            (line_id, show_retired)
+            (line_id,)
         )
         line = cursor.fetchone()
 
