@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const markersElement = document.getElementById('trap-markers-data');
   const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
   const linzApiKey = mapElement.dataset.linzApiKey;
+  const lineIsRetired = mapElement.dataset.lineIsRetired === 'true';
 
   const map = L.map('line-map');
   const tileUrl = `https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=${linzApiKey}`;
@@ -44,7 +45,8 @@ document.addEventListener('DOMContentLoaded', function () {
       L.polyline(latlngs, {
         color: '#0d6efd',
         weight: 3,
-        opacity: 0.8
+        opacity: 0.8,
+        dashArray: lineIsRetired ? '8 6' : null
       }).addTo(map);
     }
 
