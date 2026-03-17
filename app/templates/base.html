@@ -220,17 +220,19 @@
         {# Operator / Admin work #}
         {% if session.get('role') in ['Operator', 'Admin'] %}
           <div class="sidebar-section-label">My Work</div>
+          {% if session.get('role') == 'Operator' %}
           <a href="{{ url_for('add_catch') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'add_catch' }}">
             <i class="bi bi-plus-circle"></i> <span class="link-text">Add Catch Record</span>
           </a>
-          <a href="{{ url_for('my_records') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
-            <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
-          </a>
           <a href="{{ url_for('add_observation') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'add_observation' }}">
             <i class="bi bi-binoculars"></i> <span class="link-text">Add Observation</span>
+          </a>
+          {% endif %}
+          <a href="{{ url_for('my_records') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
+            <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
           </a>
         {% endif %}
 
