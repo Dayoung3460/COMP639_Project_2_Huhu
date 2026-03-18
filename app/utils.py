@@ -38,8 +38,8 @@ def role_required(*roles):
                 flash('Please log in to access this page.', 'danger')
                 return redirect(url_for('login'))
             if roles and session.get('role') not in roles:
-                flash('You do not have permission to access that page.', 'danger')
-                return redirect(url_for('index'))
+                flash('You do not have permission to access that page', 'danger')
+                return redirect_by_role()
             return f(*args, **kwargs)
         return decorated_function
     return decorator

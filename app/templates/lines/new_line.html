@@ -5,7 +5,6 @@
   <h2 class="mb-4">New Trap Line</h2>
   
   <form method="POST" action="{{ url_for('new_line') }}">
-    <input type="hidden" name="type" value="Trap">
     <div class="mb-3">
       <label for="name" class="form-label">Line Name <span class="text-danger">*</span></label>
       <input type="text" class="form-control" id="name" name="name" value="{{ name | default('') }}" required pattern=".*\S+.*" autofocus>
