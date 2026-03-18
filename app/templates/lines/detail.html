@@ -86,13 +86,14 @@
                   {% if not trap.is_retired %}
                     <a href="{{ url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id) }}"
                        class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="POST"
-                          action="{{ url_for('retire_trap', trap_id=trap.trap_id) }}"
-                          class="d-inline js-confirm-retire-trap-form">
-                      <button type="submit" class="btn btn-sm btn-outline-danger">
-                        Retire
-                      </button>
-                    </form>
+                    <button type="button" 
+                      class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal" 
+                      data-bs-target="#retire-trap-modal"
+                      data-trap-id="{{ trap.trap_id }}"
+                      data-trap-code="{{ trap.code }}">
+                      Retire
+                    </button>
                   {% endif %}
                 </td>
               {% endif %}
@@ -106,7 +107,31 @@
           {% endfor %}
         </tbody>
       </table>
-    </div>
+
+      <div class="modal fade retire-modal" id="retire-trap-modal" tabindex="-1">
+        <div class="modal-dialog" style="margin-top: 10vh;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Retire trap</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+              <p>Are you sure you want to retire trap <strong id="modal-trap-code"></strong>?</p>
+              <p class="text-muted" style="font-size: 13px;">This trap will be marked as Retired.</p>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              
+              <form method="POST" action="{{ url_for('retire_trap', line_id=line.line_id) }}">
+                <input type="hidden" name="trap_id" id="modal-trap-id" value="" />
+                <button type="submit" class="btn btn-danger">Yes, retire</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
 
     {# Assigned operators #}
     <h5>Assigned Operators</h5>

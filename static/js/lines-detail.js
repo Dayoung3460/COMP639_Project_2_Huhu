@@ -4,13 +4,16 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.js-confirm-retire-trap-form').forEach(function (form) {
-    form.addEventListener('submit', function (event) {
-      if (!window.confirm('Retire this trap?')) {
-        event.preventDefault();
-      }
-    });
-  });
+  // Handle trap retirement modal
+  const retireTrapModal = document.getElementById('retire-trap-modal')
+  retireTrapModal.addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget
+    const trapId = button.getAttribute('data-trap-id')
+    const trapCode = button.getAttribute('data-trap-code')
+
+    document.getElementById('modal-trap-id').value = trapId
+    document.getElementById('modal-trap-code').textContent = trapCode
+  })
 
   const mapElement = document.getElementById('line-map');
   if (!mapElement || typeof L === 'undefined') return;

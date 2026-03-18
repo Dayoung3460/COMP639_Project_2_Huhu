@@ -67,13 +67,17 @@
           {% if session.get('role') == 'Admin' and not line.is_retired %}
             <a href="{{ url_for('edit_line', line_id=line.line_id) }}"
                class="btn btn-sm btn-outline-secondary">Edit</a>
-            <form method="POST"
-                  action="{{ url_for('retire_line', line_id=line.line_id) }}"
-                  class="d-inline js-confirm-retire-line-form">
-              <button type="submit" class="btn btn-sm btn-outline-danger">
-                Retire
-              </button>
-            </form>
+
+            <button type="button" 
+              class="btn btn-sm btn-outline-danger"
+              data-bs-toggle="modal" 
+              data-bs-target="#retire-line-modal"
+              data-line-id="{{ line.line_id }}"
+              data-line-name="{{ line.name }}"
+              data-line-action="{{ url_for('retire_line', line_id=line.line_id, active_traps=1 if line.line_id in active_trap_line_ids else None) }}"
+              data-has-active-traps="{{ 'true' if line.line_id in active_trap_line_ids else 'false' }}">
+              Retire
+            </button>
           {% endif %}
         </div>
       </div>
@@ -81,6 +85,37 @@
   {% else %}
     <p class="text-muted">No trap lines found.</p>
   {% endfor %}
+
+  <div class="modal fade retire-modal" id="retire-line-modal" tabindex="-1">
+    <div class="modal-dialog" style="margin-top: 10vh;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Retire line</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <p>Are you sure you want to retire line <strong id="modal-line-name"></strong>?</p>
+
+          <p id="modal-warning-active" class="text-danger" style="display:none;">
+            Warning: This line has active traps. Retiring the line will also mark all its traps as retired.
+          </p>
+          <p id="modal-warning-no-active" class="text-muted" style="display:none;">
+            This line will be marked as Retired.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          
+          <form method="POST" id="modal-line-action">
+            <input type="hidden" name="line_id" id="modal-line-id" value="" />
+            <button type="submit" class="btn btn-danger">Yes, retire</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

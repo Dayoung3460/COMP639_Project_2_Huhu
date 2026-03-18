@@ -696,3 +696,9 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
    ═══════════════════════════════════════════════ */
 .gap-12 { gap: 12px !important; }
 .gap-16 { gap: 16px !important; }
+
+/* ═══════════════════════════════════════════════
+   Retire lines/traps modal
+   ═══════════════════════════════════════════════ */
+.modal-backdrop { z-index: 2000; }
+.modal.retire-modal { z-index: 2001; }

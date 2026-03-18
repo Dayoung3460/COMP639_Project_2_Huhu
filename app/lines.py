@@ -37,6 +37,22 @@ def lines_index():
 
         cursor.execute(
             """
+            SELECT l.line_id, COUNT(t.is_retired) as has_active_trap
+            FROM lines AS l
+            LEFT JOIN traps as t ON t.line_id = l.line_id
+            WHERE t.is_retired = FALSE
+            GROUP BY l.line_id
+            ;
+            """
+        )
+        line_has_active_traps = cursor.fetchall()
+        active_trap_line_ids = set(
+            line['line_id'] for line in line_has_active_traps 
+            if line['has_active_trap'] > 0
+        )
+
+        cursor.execute(
+            """
             SELECT
                 l.line_id,
                 l.name AS line_name,
@@ -84,7 +100,8 @@ def lines_index():
         lines=lines,
         show_retired=show_retired,
         map_traps=map_traps,
-        linz_api_key=linz_api_key
+        linz_api_key=linz_api_key,
+        active_trap_line_ids=active_trap_line_ids
     )
 
 
