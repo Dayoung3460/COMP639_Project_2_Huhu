@@ -42,6 +42,25 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 from app.utils import check_user_status
 app.before_request(check_user_status)
 
+# ── After request — prevent browser caching on authenticated pages ────────────
+
+from flask import session, request as flask_request
+
+@app.after_request
+def set_cache_headers(response):
+    """
+    Prevents the browser from caching authenticated pages.
+    Fixes the back-button issue after logout — cached pages won't be shown.
+    Public pages (home, login, register) are allowed to cache normally.
+    """
+    public_endpoints = {'index', 'login', 'register', 'forgot_password',
+                        'reset_password', 'static'}
+    if flask_request.endpoint not in public_endpoints:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
 # ── Route modules ─────────────────────────────────────────────────────────────
 
 from app import home
