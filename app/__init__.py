@@ -11,11 +11,30 @@ from flask_bcrypt import Bcrypt
 from datetime import timedelta
 import os
 
+def load_env_file(env_path):
+    """Load key=value pairs from a .env file into process environment."""
+    if not os.path.exists(env_path):
+        return
+
+    with open(env_path, 'r', encoding='utf-8') as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key:
+                os.environ.setdefault(key, value)
+
 # ── App setup ─────────────────────────────────────────────────────────────────
 
 app = Flask(__name__,
             template_folder='templates',
             static_folder='../static')
+
+load_env_file(os.path.join(app.root_path, '..', '.env'))
 
 bcrypt = Bcrypt(app)
 app.secret_key = 'pflu_secret_key_change_in_production'
@@ -41,6 +60,25 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 from app.utils import check_user_status
 app.before_request(check_user_status)
+
+# ── After request — prevent browser caching on authenticated pages ────────────
+
+from flask import session, request as flask_request
+
+@app.after_request
+def set_cache_headers(response):
+    """
+    Prevents the browser from caching authenticated pages.
+    Fixes the back-button issue after logout — cached pages won't be shown.
+    Public pages (home, login, register) are allowed to cache normally.
+    """
+    public_endpoints = {'index', 'login', 'register', 'forgot_password',
+                        'reset_password', 'static'}
+    if flask_request.endpoint not in public_endpoints:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 # ── Route modules ─────────────────────────────────────────────────────────────
 

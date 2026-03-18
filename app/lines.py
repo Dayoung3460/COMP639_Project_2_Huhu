@@ -3,8 +3,9 @@
 from flask import render_template, request, url_for
 from app import app, db
 from app.utils import role_required
-from app.connect import api_key as linz_api_key
+import os
 
+linz_api_key = os.getenv('LINZ_API_KEY', '')
 
 @app.route('/lines')
 @role_required()
