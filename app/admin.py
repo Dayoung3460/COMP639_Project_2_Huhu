@@ -226,13 +226,25 @@ def edit_trap(line_id, trap_id):
     return render_template('lines/edit_trap.html', trap=trap, trap_types=trap_types, line_id=line_id)
 
 
-@app.route('/admin/traps/<int:trap_id>/retire', methods=['POST'])
+@app.route('/admin/traps/<int:line_id>/retire', methods=['POST'])
 @role_required('Admin')
-def retire_trap(trap_id):
+def retire_trap(line_id):
     """Retire an individual trap (set is_retired = TRUE)."""
-    # TODO: UPDATE trap SET is_retired = TRUE
+    trap_id = request.form.get('trap_id')
+
+    if request.method == 'POST':
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE traps
+                SET is_retired = TRUE
+                WHERE trap_id = %s
+                """,
+                (trap_id,)
+            )
+
     flash('Trap retired.', 'success')
-    return redirect(url_for('lines_index'))
+    return redirect(url_for('line_detail', line_id=line_id))
 
 
 # ── Operator assignment ───────────────────────────────────────────────────────
