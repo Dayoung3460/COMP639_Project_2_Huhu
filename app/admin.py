@@ -63,9 +63,26 @@ def change_role(user_id):
 def new_line():
     """Create a new trap line."""
     if request.method == 'POST':
-        # TODO: validate and INSERT into line
-        flash('Trap line created.', 'success')
+        name = request.form.get('name', '').strip()
+
+        # Validate name
+        if not name:
+            flash('Please provide a name', 'danger')
+            return render_template('lines/new_line.html', name=name)
+
+        with db.get_cursor() as cursor:
+            # Check for existing line with the same name
+            cursor.execute('SELECT line_id FROM lines WHERE name = %s', (name,))
+            if cursor.fetchone():
+                flash(f'A line named "{name}" already exists', 'danger')
+                return render_template('lines/new_line.html', name=name)
+
+            # Insert the new line
+            cursor.execute("INSERT INTO lines (name, type) VALUES (%s, 'Trap')", (name,))
+
+        flash(f'Trap line "{name}" created successfully', 'success')
         return redirect(url_for('lines_index'))
+        
     return render_template('lines/new_line.html')
 
 
