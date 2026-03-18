@@ -9,16 +9,22 @@
   {% if line %}
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
-        <h2 class="mb-0">{{ line.name }}</h2>
-        <small class="text-muted">{{ line.type }}</small>
+        <div class="d-flex align-items-center gap-2">
+          <h2 class="mb-0">{{ line.name }}</h2>
+          {% if line.is_retired %}
+            <span class="badge bg-secondary">Retired</span>
+          {% else %}
+            <span class="badge bg-success">Active</span>
+          {% endif %}
+        </div>
       </div>
       <div class="d-flex gap-2 align-items-center">
         <a href="{{ url_for('line_detail', line_id=line.line_id, show_retired=1 if not show_retired else None) }}"
            class="btn btn-sm {{ 'btn-outline-secondary' if show_retired else 'btn-outline-dark' }}">
           {% if show_retired %}
-            Hide retired
+            Hide retired traps
           {% else %}
-            Show retired
+            Show retired traps
           {% endif %}
         </a>
         {% if session.get('role') == 'Admin' %}
@@ -37,7 +43,10 @@
     <div class="card mb-4">
       <div class="card-body">
         <h5 class="mb-3">Trap map</h5>
-        <div id="line-map" style="height: 420px; border-radius: 10px;"></div>
+        <div id="line-map"
+             data-linz-api-key="{{ linz_api_key }}"
+             data-line-is-retired="{{ 'true' if line.is_retired else 'false' }}"
+             style="height: 420px; border-radius: 10px;"></div>
         <script id="trap-markers-data" type="application/json">{{ trap_markers|tojson }}</script>
         <p class="text-muted small mb-0 mt-2">
           Basemap tiles by LINZ Basemaps.
@@ -52,7 +61,10 @@
         <thead>
           <tr>
             <th>Code</th><th>Type</th><th>Latitude</th>
-            <th>Longitude</th><th>Status</th><th>Actions</th>
+            <th>Longitude</th><th>Status</th>
+            {% if session.get('role') == 'Admin' %}
+              <th>Actions</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -64,29 +76,30 @@
               <td>{{ trap.longitude }}</td>
               <td>
                 {% if trap.is_retired %}
-                  <span class="badge bg-secondary">Retired</span>
+                  <span class="trap-status-badge trap-status-retired">Retired</span>
                 {% else %}
-                  <span class="badge bg-success">Active</span>
+                  <span class="trap-status-badge trap-status-active">Active</span>
                 {% endif %}
               </td>
-              <td>
-                {% if session.get('role') == 'Admin' and not trap.is_retired %}
-                  <a href="{{ url_for('edit_trap', trap_id=trap.trap_id) }}"
-                     class="btn btn-sm btn-outline-secondary">Edit</a>
-                  <form method="POST"
-                        action="{{ url_for('retire_trap', trap_id=trap.trap_id) }}"
-                        class="d-inline">
-                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                            onclick="return confirm('Retire this trap?')">
-                      Retire
-                    </button>
-                  </form>
-                {% endif %}
-              </td>
+              {% if session.get('role') == 'Admin' %}
+                <td>
+                  {% if not trap.is_retired %}
+                    <a href="{{ url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id) }}"
+                       class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="POST"
+                          action="{{ url_for('retire_trap', trap_id=trap.trap_id) }}"
+                          class="d-inline js-confirm-retire-trap-form">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        Retire
+                      </button>
+                    </form>
+                  {% endif %}
+                </td>
+              {% endif %}
             </tr>
           {% else %}
             <tr>
-              <td colspan="6" class="text-center text-muted py-3">
+              <td colspan="{{ 6 if session.get('role') == 'Admin' else 5 }}" class="text-center text-muted py-3">
                 No traps on this line yet.
               </td>
             </tr>
@@ -102,6 +115,9 @@
         {% for op in operators %}
           <li class="list-group-item">
             {{ op.first_name }} {{ op.last_name }}
+            {% if session.get('role') == 'Operator' and op.user_id == session.get('user_id') %}
+              <span class="badge bg-primary ms-2">me</span>
+            {% endif %}
             <small class="text-muted">(@{{ op.username }})</small>
           </li>
         {% endfor %}
@@ -123,37 +139,6 @@
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script>
-      (function () {
-        const markersElement = document.getElementById('trap-markers-data');
-        const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
-        const map = L.map('line-map');
-
-        const tileUrl = 'https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=d01k2zz584sk064m4gagxmwbyk6';
-
-        L.tileLayer(tileUrl, {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
-        }).addTo(map);
-
-        if (markers.length > 0) {
-          const latlngs = [];
-          markers.forEach((trap) => {
-            const marker = L.marker([trap.latitude, trap.longitude]).addTo(map);
-            const statusBadge = trap.is_retired
-              ? '<span class="badge bg-secondary">Retired</span>'
-              : '<span class="badge bg-success">Active</span>';
-            marker.bindPopup(
-              `<strong>${trap.code}</strong><br>${trap.trap_type}<br>${statusBadge}`
-            );
-            latlngs.push([trap.latitude, trap.longitude]);
-          });
-          map.fitBounds(latlngs, { padding: [30, 30] });
-        } else {
-          // Fallback: Lincoln University area
-          map.setView([-43.6409, 172.4678], 13);
-        }
-      })();
-    </script>
+    <script src="{{ url_for('static', filename='js/lines-detail.js') }}"></script>
   {% endif %}
 {% endblock %}

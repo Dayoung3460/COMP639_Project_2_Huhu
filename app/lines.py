@@ -1,8 +1,9 @@
 """lines.py — Trap lines and traps viewing (all logged-in roles)."""
 
-from flask import render_template, request
+from flask import render_template, request, url_for
 from app import app, db
 from app.utils import role_required
+from app.config import linz_api_key
 
 
 @app.route('/lines')
@@ -33,10 +34,56 @@ def lines_index():
         )
         lines = cursor.fetchall()
 
+        cursor.execute(
+            """
+            SELECT
+                l.line_id,
+                l.name AS line_name,
+                l.is_retired AS line_is_retired,
+                t.trap_id,
+                t.code,
+                t.trap_type,
+                t.latitude,
+                t.longitude,
+                t.is_retired AS trap_is_retired
+            FROM lines l
+            LEFT JOIN traps t ON t.line_id = l.line_id
+            WHERE (%s OR l.is_retired = FALSE)
+              AND t.trap_id IS NOT NULL
+              AND t.latitude IS NOT NULL
+              AND t.longitude IS NOT NULL
+              AND (%s OR t.is_retired = FALSE)
+            ORDER BY l.name ASC, t.code ASC
+            """,
+            (show_retired, show_retired)
+        )
+        trap_rows = cursor.fetchall()
+
+    map_traps = []
+    for trap in trap_rows:
+        detail_url = url_for('line_detail', line_id=trap['line_id'])
+        if show_retired:
+            detail_url = f"{detail_url}?show_retired=1"
+
+        map_traps.append({
+            'line_id': trap['line_id'],
+            'line_name': trap['line_name'],
+            'line_is_retired': trap['line_is_retired'],
+            'trap_id': trap['trap_id'],
+            'code': trap['code'],
+            'trap_type': trap['trap_type'],
+            'latitude': float(trap['latitude']),
+            'longitude': float(trap['longitude']),
+            'trap_is_retired': trap['trap_is_retired'],
+            'detail_url': detail_url
+        })
+
     return render_template(
         'lines/index.html',
         lines=lines,
-        show_retired=show_retired
+        show_retired=show_retired,
+        map_traps=map_traps,
+        linz_api_key=linz_api_key
     )
 
 
@@ -52,9 +99,8 @@ def line_detail(line_id):
             SELECT line_id, name, type, is_retired
             FROM lines
             WHERE line_id = %s
-              AND (%s OR is_retired = FALSE)
             """,
-            (line_id, show_retired)
+            (line_id,)
         )
         line = cursor.fetchone()
 
@@ -112,5 +158,6 @@ def line_detail(line_id):
         traps=traps,
         operators=operators,
         show_retired=show_retired,
-        trap_markers=trap_markers
+        trap_markers=trap_markers,
+        linz_api_key=linz_api_key
     )

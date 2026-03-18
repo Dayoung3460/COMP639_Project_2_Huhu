@@ -57,7 +57,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 200;
+  z-index: 2000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .pf-navbar .brand {
@@ -230,6 +230,68 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .sidebar-footer a:hover { color: #fff; }
 
+/* ── Sidebar toggle button ───────────────────── */
+.sidebar-toggle {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px;
+  width: calc(100% - 24px);
+  margin: 8px 12px 4px;
+  padding: 8px 0;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--pf-700);
+  border-radius: 8px;
+  color: var(--pf-300); cursor: pointer; font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.sidebar-toggle:hover { background: var(--pf-700); color: #fff; border-color: var(--pf-600); }
+.sidebar-toggle .toggle-label { font-size: 12px; }
+
+/* ── Sidebar transition ──────────────────────── */
+.sidebar { transition: width 0.2s ease; overflow: hidden; }
+
+/* ── Collapsed state ─────────────────────────── */
+.sidebar.collapsed { width: 52px; }
+
+/* Hide text elements when collapsed */
+.sidebar.collapsed .user-name,
+.sidebar.collapsed .user-role,
+.sidebar.collapsed .sidebar-section-label,
+.sidebar.collapsed .link-text,
+.sidebar.collapsed .badge-count,
+.sidebar.collapsed .toggle-label,
+.sidebar.collapsed .sidebar-footer a span { display: none; }
+
+/* Centre avatar when collapsed */
+.sidebar.collapsed .sidebar-user {
+  justify-content: center;
+  padding: 12px 0;
+}
+.sidebar.collapsed .sidebar-user > div:last-child { display: none; }
+
+/* Centre icons when collapsed */
+.sidebar.collapsed .sidebar-link {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+.sidebar.collapsed .sidebar-link i { font-size: 17px; width: auto; }
+
+/* Centre toggle and footer when collapsed */
+.sidebar.collapsed .sidebar-toggle {
+  width: 36px; height: 36px;
+  margin: 8px auto 4px;
+  padding: 0; border-radius: 8px;
+}
+.sidebar.collapsed .sidebar-footer {
+  padding: 8px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.sidebar.collapsed .sidebar-footer a {
+  justify-content: center;
+  padding: 8px 0; gap: 0;
+}
+
 /* ═══════════════════════════════════════════════
    Main Content Area
    ═══════════════════════════════════════════════ */
@@ -243,7 +305,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   flex-wrap: wrap; gap: 12px;
   position: sticky;
   top: var(--navbar-h);
-  z-index: 100;
+  z-index: 1200;
 }
 .content-header .page-title {
   font-size: 20px; font-weight: 700;
@@ -332,6 +394,29 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .badge-active         { background: #dcfce7;           color: #166534;        border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
 .badge-inactive       { background: #f1f5f9;           color: #64748b;        border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
 
+.trap-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  border: 1px solid transparent;
+}
+
+.trap-status-active {
+  color: #0f5132;
+  background: #d1e7dd;
+  border-color: #75b798;
+}
+
+.trap-status-retired {
+  color: #41464b;
+  background: #e2e3e5;
+  border-color: #b8bcc1;
+}
+
 /* ═══════════════════════════════════════════════
    Notice / Alert Boxes
    ═══════════════════════════════════════════════ */
@@ -367,7 +452,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .form-select {
   border: 1px solid #d0ddd5; border-radius: 8px;
-  font-size: 13px; padding: 8px 12px;
+  font-size: 13px; padding: 8px 30px 8px 12px;
 }
 .form-select:focus {
   border-color: var(--pf-500);
@@ -527,6 +612,45 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .trap-chip .trap-status { width: 7px; height: 7px; border-radius: 50%; }
 .trap-chip .trap-status.ok   { background: var(--pf-500); }
 .trap-chip .trap-status.warn { background: var(--amber); }
+
+.map-legend-line {
+  display: inline-block;
+  width: 24px;
+  height: 0;
+  border-top: 3px solid #198754;
+  vertical-align: middle;
+}
+
+.map-legend-line-active {
+  border-top-color: #198754;
+}
+
+.map-legend-line-retired {
+  border-top-color: #343a40;
+  border-top-style: dashed;
+}
+
+.map-legend-dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.map-legend-dot-active {
+  background: #198754;
+}
+
+.map-legend-dot-retired {
+  background: rgba(173, 181, 189, 0.2);
+  border: 2px solid #343a40;
+}
+
+/* /lines index clickable line cards */
+.js-line-card {
+  cursor: pointer;
+}
 
 /* ═══════════════════════════════════════════════
    Chart Placeholders

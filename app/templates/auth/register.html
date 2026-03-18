@@ -1,6 +1,7 @@
 {# templates/auth/register.html
    Route: GET/POST /register  →  register()
    Extends base_auth.html — no navbar or footer.
+   NOTE: form uses enctype="multipart/form-data" for photo upload
 #}
 {% extends 'base_auth.html' %}
 {% block title %}Create Account{% endblock %}
@@ -35,7 +36,33 @@
           {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('register') }}">
+        {# enctype required for file upload #}
+        <form method="POST" action="{{ url_for('register') }}"
+              enctype="multipart/form-data">
+
+          {# ── Profile Photo ── #}
+          <div class="form-section-label">Profile Photo</div>
+          <div class="field-group">
+            <div style="display:flex; align-items:center; gap:16px;">
+              {# Preview circle #}
+              <div id="photoPreview"
+                   style="width:64px; height:64px; border-radius:50%;
+                          background:var(--pf-600); border:2px solid var(--pf-300);
+                          display:flex; align-items:center; justify-content:center;
+                          font-size:22px; color:#fff; font-family:'Cabin',sans-serif;
+                          font-weight:700; flex-shrink:0; overflow:hidden;">
+                {{ request.form.get('first_name', '?')[:1].upper() }}
+              </div>
+              <div style="flex:1;">
+                <input type="file" class="form-control" name="profile_photo"
+                       id="photoInput" accept=".png,.jpg,.jpeg,.gif"
+                       style="font-size:12px;">
+                <div class="form-hint">Optional — PNG, JPG, GIF. Max 2MB.</div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="form-section-divider">
 
           {# ── Account Details ── #}
           <div class="form-section-label">Account Details</div>
@@ -63,19 +90,18 @@
                 Password <span class="required-star">*</span>
               </label>
               <input type="password" class="form-control" name="password"
-                     placeholder="Min. 8 characters"
-                     required>
+                     placeholder="Min. 8 characters" required>
               <div class="form-hint">
-                Must contain letters, numbers, and a special character
+                Must contain uppercase, lowercase, and a number
               </div>
             </div>
             <div class="col-6 field-group">
               <label class="form-label">
                 Confirm Password <span class="required-star">*</span>
               </label>
-              <input type="password" class="form-control" name="confirm_password"
-                     placeholder="Re-enter password"
-                     required>
+              <input type="password" class="form-control"
+                     name="confirm_password"
+                     placeholder="Re-enter password" required>
             </div>
           </div>
 
@@ -89,6 +115,7 @@
                 First Name <span class="required-star">*</span>
               </label>
               <input type="text" class="form-control" name="first_name"
+                     id="firstNameInput"
                      placeholder="First name"
                      value="{{ request.form.get('first_name', '') }}"
                      required>
@@ -103,10 +130,17 @@
                      required>
             </div>
             <div class="col-12 field-group">
-              <label class="form-label">Phone / Contact Info</label>
-              <input type="text" class="form-control" name="contact_info"
+              <label class="form-label">Phone</label>
+              <input type="text" class="form-control" name="phone"
                      placeholder="e.g. 021 123 4567"
-                     value="{{ request.form.get('contact_info', '') }}">
+                     value="{{ request.form.get('phone', '') }}">
+            </div>
+            <div class="col-12 field-group">
+              <label class="form-label">Home Address</label>
+              <input type="text" class="form-control" name="address"
+                     placeholder="e.g. 12 Haslemere Road, Christchurch 8041"
+                     value="{{ request.form.get('address', '') }}">
+              <div class="form-hint">Used for emergency purposes only</div>
             </div>
           </div>
 
@@ -140,11 +174,15 @@
           Already have an account? <a href="{{ url_for('login') }}">Log In</a>
         </div>
 
-      </div>
-      {# End card body #}
+        {# Back to home #}
+        <div class="auth-footer-link" style="margin-top:6px;">
+          <a href="{{ url_for('index') }}" style="color:#6b7c72;">
+            <i class="bi bi-arrow-left me-1"></i>Back to Home
+          </a>
+        </div>
 
+      </div>
     </div>
-    {# End auth-card #}
 
     <p class="text-center mt-3" style="font-size:11px; color:#8a9e93;">
       PF-LU System — COMP639 Group Project 1
@@ -152,4 +190,30 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const photoInput     = document.getElementById('photoInput');
+  const photoPreview   = document.getElementById('photoPreview');
+  const firstNameInput = document.getElementById('firstNameInput');
+
+  photoInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      photoPreview.innerHTML =
+        `<img src="${e.target.result}"
+              style="width:100%;height:100%;object-fit:cover;">`;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  firstNameInput.addEventListener('input', function () {
+    if (!photoInput.files[0]) {
+      photoPreview.textContent = this.value.trim().charAt(0).toUpperCase() || '?';
+    }
+  });
+</script>
 {% endblock %}

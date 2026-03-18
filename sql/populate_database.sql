@@ -2,7 +2,7 @@
 -- populate_database.sql — PF-LU Seed Data
 -- COMP639 Group Project 1 — Semester 1, 2026
 --
--- Run AFTER create_database.sql (Sun's schema)
+-- Run AFTER create_database.sql
 --
 -- All passwords are bcrypt hashes of: Password1!
 -- =============================================================
@@ -88,140 +88,160 @@ INSERT INTO bait_types (name) VALUES
 -- account_status uses ENUM account_status_type: 'active' | 'inactive'
 INSERT INTO users
     (username, email, password_hash, first_name, last_name,
-     contact_information, emergency_contact_information,
+     phone, emergency_contact_name, emergency_contact_phone,
      role, account_status)
 VALUES
     ('admin1', 'admin1@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
      'Admin', 'One',
-     '021 000 0001', 'Emergency One — 021 000 0099',
+     '021 000 0001', 'Emergency One', '021 000 0099',
      'Admin', 'active'),
 
     ('admin2', 'admin2@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
      'Admin', 'Two',
-     '021 000 0002', 'Emergency Two — 021 000 0098',
+     '021 000 0002', 'Emergency Two', '021 000 0098',
      'Admin', 'active');
 
 -- ── Operator accounts (10 required) ───────────────────────────
 INSERT INTO users
     (username, email, password_hash, first_name, last_name,
-     contact_information, emergency_contact_information,
+     phone, emergency_contact_name, emergency_contact_phone,
      role, account_status)
 VALUES
     ('operator1', 'op1@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'James', 'Ruane', '021 100 0001', 'James Emergency — 021 100 0091',
+     'James', 'Ruane',
+     '021 100 0001', 'James Emergency', '021 100 0091',
      'Operator', 'active'),
 
     ('operator2', 'op2@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Aroha', 'Kahu', '021 100 0002', 'Aroha Emergency — 021 100 0092',
+     'Aroha', 'Kahu',
+     '021 100 0002', 'Aroha Emergency', '021 100 0092',
      'Operator', 'active'),
 
     ('operator3', 'op3@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Tom', 'Walker', '021 100 0003', 'Tom Emergency — 021 100 0093',
+     'Tom', 'Walker',
+     '021 100 0003', 'Tom Emergency', '021 100 0093',
      'Operator', 'active'),
 
     ('operator4', 'op4@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Nina', 'Brown', '021 100 0004', 'Nina Emergency — 021 100 0094',
+     'Nina', 'Brown',
+     '021 100 0004', 'Nina Emergency', '021 100 0094',
      'Operator', 'active'),
 
     ('operator5', 'op5@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Liam', 'Chen', '021 100 0005', 'Liam Emergency — 021 100 0095',
+     'Liam', 'Chen',
+     '021 100 0005', 'Liam Emergency', '021 100 0095',
      'Operator', 'active'),
 
     ('operator6', 'op6@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Mei', 'Zhang', '021 100 0006', 'Mei Emergency — 021 100 0096',
+     'Mei', 'Zhang',
+     '021 100 0006', 'Mei Emergency', '021 100 0096',
      'Operator', 'active'),
 
     ('operator7', 'op7@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Sam', 'Wilson', '021 100 0007', 'Sam Emergency — 021 100 0087',
+     'Sam', 'Wilson',
+     '021 100 0007', 'Sam Emergency', '021 100 0087',
      'Operator', 'active'),
 
     ('operator8', 'op8@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Priya', 'Patel', '021 100 0008', 'Priya Emergency — 021 100 0088',
+     'Priya', 'Patel',
+     '021 100 0008', 'Priya Emergency', '021 100 0088',
      'Operator', 'active'),
 
     ('operator9', 'op9@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Carlos', 'Rivera', '021 100 0009', 'Carlos Emergency — 021 100 0089',
+     'Carlos', 'Rivera',
+     '021 100 0009', 'Carlos Emergency', '021 100 0089',
      'Operator', 'active'),
 
     ('operator10', 'op10@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Fiona', 'McDonald', '021 100 0010', 'Fiona Emergency — 021 100 0080',
+     'Fiona', 'McDonald',
+     '021 100 0010', 'Fiona Emergency', '021 100 0080',
      'Operator', 'active');
 
 -- ── Observer accounts (10 required) ───────────────────────────
 INSERT INTO users
     (username, email, password_hash, first_name, last_name,
-     contact_information, emergency_contact_information,
+     phone, emergency_contact_name, emergency_contact_phone,
      role, account_status)
 VALUES
     ('observer1', 'obs1@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Sarah', 'Thompson', '021 200 0001', 'Sarah Emergency — 021 200 0091',
+     'Sarah', 'Thompson',
+     '021 200 0001', 'Sarah Emergency', '021 200 0091',
      'Observer', 'active'),
 
     ('observer2', 'obs2@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Mike', 'Jones', '021 200 0002', 'Mike Emergency — 021 200 0092',
+     'Mike', 'Jones',
+     '021 200 0002', 'Mike Emergency', '021 200 0092',
      'Observer', 'active'),
 
     ('observer3', 'obs3@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Ella', 'Davis', '021 200 0003', 'Ella Emergency — 021 200 0093',
+     'Ella', 'Davis',
+     '021 200 0003', 'Ella Emergency', '021 200 0093',
      'Observer', 'active'),
 
     ('observer4', 'obs4@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Noah', 'Martin', '021 200 0004', 'Noah Emergency — 021 200 0094',
+     'Noah', 'Martin',
+     '021 200 0004', 'Noah Emergency', '021 200 0094',
      'Observer', 'active'),
 
     ('observer5', 'obs5@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Isla', 'White', '021 200 0005', 'Isla Emergency — 021 200 0095',
+     'Isla', 'White',
+     '021 200 0005', 'Isla Emergency', '021 200 0095',
      'Observer', 'active'),
 
     ('observer6', 'obs6@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Jack', 'Harris', '021 200 0006', 'Jack Emergency — 021 200 0096',
+     'Jack', 'Harris',
+     '021 200 0006', 'Jack Emergency', '021 200 0096',
      'Observer', 'active'),
 
     ('observer7', 'obs7@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Chloe', 'Clark', '021 200 0007', 'Chloe Emergency — 021 200 0097',
+     'Chloe', 'Clark',
+     '021 200 0007', 'Chloe Emergency', '021 200 0097',
      'Observer', 'active'),
 
     ('observer8', 'obs8@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Oliver', 'Lewis', '021 200 0008', 'Oliver Emergency — 021 200 0098',
+     'Oliver', 'Lewis',
+     '021 200 0008', 'Oliver Emergency', '021 200 0098',
      'Observer', 'active'),
 
     ('observer9', 'obs9@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Grace', 'Hall', '021 200 0009', 'Grace Emergency — 021 200 0099',
+     'Grace', 'Hall',
+     '021 200 0009', 'Grace Emergency', '021 200 0099',
      'Observer', 'active'),
 
     ('observer10', 'obs10@pflu.ac.nz',
      '$2b$12$BVmgoCw0W76RGSnOGTd1KeQ/VYEPCuJ0SmG/Krx6gi74.bAtSMBSu',
-     'Henry', 'Young', '021 200 0010', 'Henry Emergency — 021 200 0080',
+     'Henry', 'Young',
+     '021 200 0010', 'Henry Emergency', '021 200 0080',
      'Observer', 'active');
 
 -- ── Trap lines (5 required) ───────────────────────────────────
-INSERT INTO lines (name, type) VALUES
-    ('North Line',   'Trap'),
-    ('Lake Route',   'Trap'),
-    ('East Track',   'Trap'),
-    ('West Loop',    'Trap'),
-    ('Central Line', 'Trap');
+INSERT INTO lines (name, type, is_retired) VALUES
+    ('North Line',   'Trap', TRUE),
+    ('Lake Route',   'Trap', TRUE),
+    ('East Track',   'Trap', FALSE),
+    ('West Loop',    'Trap', FALSE),
+    ('Central Line', 'Trap', FALSE);
 
 -- ── Assign operators to lines ─────────────────────────────────
 INSERT INTO operator_lines (operator_id, line_id) VALUES
@@ -243,44 +263,44 @@ INSERT INTO operator_lines (operator_id, line_id) VALUES
 -- ── Traps — 5 per line (trap_type uses ENUM trap_type_enum) ───
 
 -- North Line
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('NL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645000, 172.472000),
-    ('NL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645200, 172.473000),
-    ('NL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645500, 172.474000),
-    ('NL-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645800, 172.475000),
-    ('NL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'North Line'), -43.646000, 172.476000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('NL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645000, 172.472000, TRUE),
+    ('NL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645200, 172.473000, FALSE),
+    ('NL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645500, 172.474000, FALSE),
+    ('NL-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'North Line'), -43.645800, 172.475000, TRUE),
+    ('NL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'North Line'), -43.646000, 172.476000, FALSE);
 
 -- Lake Route
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('LR-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648000, 172.470000),
-    ('LR-02', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648500, 172.471000),
-    ('LR-03', 'A24',            (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649000, 172.472000),
-    ('LR-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649500, 172.473000),
-    ('LR-05', 'DOC 250',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.650000, 172.474000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('LR-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648000, 172.470000, FALSE),
+    ('LR-02', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.648500, 172.471000, FALSE),
+    ('LR-03', 'A24',            (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649000, 172.472000, FALSE),
+    ('LR-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.649500, 172.473000, TRUE),
+    ('LR-05', 'DOC 250',        (SELECT line_id FROM lines WHERE name = 'Lake Route'), -43.650000, 172.474000, TRUE);
 
 -- East Track
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('ET-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643000, 172.480000),
-    ('ET-02', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643200, 172.481000),
-    ('ET-03', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643500, 172.482000),
-    ('ET-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643800, 172.483000),
-    ('ET-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'East Track'), -43.644000, 172.484000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('ET-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643000, 172.480000, FALSE),
+    ('ET-02', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643200, 172.481000, FALSE),
+    ('ET-03', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643500, 172.482000, FALSE),
+    ('ET-04', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'East Track'), -43.643800, 172.483000, FALSE),
+    ('ET-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'East Track'), -43.644000, 172.484000, TRUE);
 
 -- West Loop
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('WL-01', 'A24',            (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647000, 172.466000),
-    ('WL-02', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647500, 172.465000),
-    ('WL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648000, 172.464000),
-    ('WL-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648500, 172.463000),
-    ('WL-05', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.649000, 172.462000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('WL-01', 'A24',            (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647000, 172.466000, FALSE),
+    ('WL-02', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.647500, 172.465000, TRUE),
+    ('WL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648000, 172.464000, FALSE),
+    ('WL-04', 'Victor',         (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.648500, 172.463000, FALSE),
+    ('WL-05', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'West Loop'), -43.649000, 172.462000, TRUE);
 
 -- Central Line
-INSERT INTO traps (code, trap_type, line_id, latitude, longitude) VALUES
-    ('CL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644000, 172.475000),
-    ('CL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644200, 172.476000),
-    ('CL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644500, 172.477000),
-    ('CL-04', 'A24',            (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644800, 172.478000),
-    ('CL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.645000, 172.479000);
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('CL-01', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644000, 172.475000, FALSE),
+    ('CL-02', 'T-Rex Rat Trap', (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644200, 172.476000, FALSE),
+    ('CL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644500, 172.477000, FALSE),
+    ('CL-04', 'A24',            (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644800, 172.478000, FALSE),
+    ('CL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.645000, 172.479000, TRUE);
 
 -- ── Catch records — 5 per line ────────────────────────────────
 -- Sun's column names: recorded_by_id, species_caught, status, bait_type
