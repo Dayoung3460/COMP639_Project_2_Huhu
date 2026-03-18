@@ -3,7 +3,7 @@
 from flask import render_template, request, url_for
 from app import app, db
 from app.utils import role_required
-from app.connect import api_key as linz_api_key
+from app.config import linz_api_key
 
 
 @app.route('/lines')
