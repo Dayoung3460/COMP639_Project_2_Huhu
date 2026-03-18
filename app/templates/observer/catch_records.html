@@ -4,9 +4,9 @@
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">Catch Records</h2>
-    <a href="{{ url_for('download_csv') }}" class="btn btn-pf btn-sm">
+    <button id="downloadCsvBtn" class="btn btn-pf btn-sm">
       <i class="bi bi-download me-1"></i>Download CSV
-    </a>
+    </button>
   </div>
 
   {# Filter form #}
@@ -119,4 +119,66 @@
     </table>
   </div>
 </div>
+
+{% set csv_list = [] %}
+{% for r in records %}
+  {% set _ = csv_list.append({
+    'code': r.trap_code or '',
+    'date': r.date.strftime('%Y-%m-%d %H:%M') if r.date else '',
+    'recorded by': r.recorded_by or '',
+    'species caught': r.species_caught or 'None',
+    'sex': r.sex or '',
+    'maturity': r.maturity or '',
+    'status': r.status or '',
+    'rebaited': 'Yes' if r.rebaited in [True, 'true', 'Yes', 'yes', 't'] else 'No',
+    'bait type': r.bait_type or '',
+    'trap condition': r.trap_condition or '',
+    'strikes': r.strikes if r.strikes is not none else 0,
+    'notes': r.notes or ''
+  }) %}
+{% endfor %}
+
+<script id="csv-data" type="application/json">
+{{ csv_list | tojson }}
+</script>
+
+<script>
+function escapeCSV(val) {
+  if (val == null) return '';
+  const str = String(val);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function generateDownload() {
+  const dataNode = document.getElementById('csv-data');
+  const csvRecords = JSON.parse(dataNode.textContent);
+
+  // match the header strictly to the trap.nz required fields
+  const headers = ['code', 'date', 'recorded by', 'species caught', 'sex', 'maturity', 'status', 'rebaited', 'bait type', 'trap condition', 'strikes', 'notes'];
+  const rows = [headers.join(',')];
+  
+  csvRecords.forEach(r => {
+    const row = headers.map(h => {
+      if (h === 'date' && r[h]) {
+        // Keep date display exact in spreadsheet apps (avoid locale auto-format)
+        return `="${String(r[h]).replace(/"/g, '""')}"`;
+      }
+      return escapeCSV(r[h]);
+    });
+    rows.push(row.join(','));
+  });
+  
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'pflu_catch_records.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+document.getElementById('downloadCsvBtn').addEventListener('click', generateDownload);
+</script>
 {% endblock %}
