@@ -1,1 +1,0 @@
-linz_api_key = 'd01k2zz584sk064m4gagxmwbyk6'
