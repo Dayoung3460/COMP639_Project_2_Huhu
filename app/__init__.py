@@ -11,11 +11,30 @@ from flask_bcrypt import Bcrypt
 from datetime import timedelta
 import os
 
+def load_env_file(env_path):
+    """Load key=value pairs from a .env file into process environment."""
+    if not os.path.exists(env_path):
+        return
+
+    with open(env_path, 'r', encoding='utf-8') as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key:
+                os.environ.setdefault(key, value)
+
 # ── App setup ─────────────────────────────────────────────────────────────────
 
 app = Flask(__name__,
             template_folder='templates',
             static_folder='../static')
+
+load_env_file(os.path.join(app.root_path, '..', '.env'))
 
 bcrypt = Bcrypt(app)
 app.secret_key = 'pflu_secret_key_change_in_production'
