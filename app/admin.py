@@ -67,7 +67,7 @@ def new_line():
 
         # Validate name
         if not name:
-            flash('Please provide a name.', 'danger')
+            flash('Please provide a name', 'danger')
             return render_template('lines/new_line.html', name=name)
 
         with db.get_cursor() as cursor:
