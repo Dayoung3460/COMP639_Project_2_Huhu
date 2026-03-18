@@ -140,7 +140,29 @@ def edit_line(line_id):
 @role_required('Admin')
 def retire_line(line_id):
     """Retire a trap line (set is_retired = TRUE)."""
-    # TODO: UPDATE line SET is_retired = TRUE
+    
+    has_active_traps = request.args.get('active_traps') == '1'
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE lines
+            SET is_retired = TRUE
+            WHERE line_id = %s
+            """,
+            (line_id,)
+        )
+
+        if has_active_traps:
+            cursor.execute(
+                """
+                UPDATE traps
+                SET is_retired = TRUE
+                WHERE line_id = %s AND is_retired = FALSE
+                """,
+                (line_id,)
+            )
+
     flash('Trap line retired.', 'success')
     return redirect(url_for('lines_index'))
 
