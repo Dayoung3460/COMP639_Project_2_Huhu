@@ -1,7 +1,7 @@
 """auth.py — Register, login, logout, change password, profile."""
 
 from flask import render_template, request, redirect, url_for, flash, session
-from app import app, db, bcrypt
+from app import app, db, bcrypt, mail
 from app.utils import is_valid_password, redirect_by_role, allowed_file, UPLOAD_FOLDER
 import os
 import uuid
@@ -305,11 +305,55 @@ def forgot_password():
                     VALUES (%s, %s, %s)
                 ''', (token, user['user_id'], expires_at))
 
-            # TODO: Send email to user with reset link
-            # In production, replace this with: send_reset_email(email, token)
-            # For development — pass the link to the template as a variable
+            # Send password reset email
             reset_url = url_for('reset_password', token=token, _external=True)
-            return render_template('auth/forgot_password.html', reset_url=reset_url)
+            try:
+                from flask_mail import Message
+                msg = Message(
+                    subject='Reset your PF-LU password',
+                    recipients=[email]
+                )
+                msg.html = f'''
+                <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
+                  <div style="background:#1a5c38;padding:24px;border-radius:10px 10px 0 0;text-align:center;">
+                    <h2 style="color:#fff;margin:0;font-size:20px;">🌿 PF-LU Password Reset</h2>
+                    <p style="color:#a3d4b5;font-size:13px;margin:8px 0 0;">
+                      Predator Free Lincoln University
+                    </p>
+                  </div>
+                  <div style="background:#fff;padding:28px;border:1px solid #e4ede8;
+                              border-top:none;border-radius:0 0 10px 10px;">
+                    <p style="color:#1a1f1b;font-size:14px;">Hi,</p>
+                    <p style="color:#1a1f1b;font-size:14px;">
+                      We received a request to reset your PF-LU password.
+                      Click the button below to set a new password.
+                      This link expires in <strong>1 hour</strong>.
+                    </p>
+                    <div style="text-align:center;margin:28px 0;">
+                      <a href="{reset_url}"
+                         style="background:#236b43;color:#fff;padding:12px 28px;
+                                border-radius:8px;text-decoration:none;
+                                font-size:14px;font-weight:600;">
+                        Reset My Password
+                      </a>
+                    </div>
+                    <p style="color:#6b7c72;font-size:12px;">
+                      If you didn't request this, you can safely ignore this email.
+                      Your password won't change.
+                    </p>
+                    <hr style="border:none;border-top:1px solid #e4ede8;margin:20px 0;">
+                    <p style="color:#a3b5aa;font-size:11px;text-align:center;">
+                      PF-LU System — COMP639 Group Project 1, Lincoln University
+                    </p>
+                  </div>
+                </div>
+                '''
+                mail.send(msg)
+                flash('Password reset link sent! Check your email.', 'success')
+            except Exception as e:
+                app.logger.error(f'Mail send failed: {e}')
+                flash('Failed to send reset email. Please try again later.', 'danger')
+            return redirect(url_for('forgot_password'))
 
         # Always show the same message — don't reveal if email exists
         flash('If that email is registered, a reset link has been sent.', 'success')
