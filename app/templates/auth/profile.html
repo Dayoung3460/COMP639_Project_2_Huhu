@@ -1,45 +1,225 @@
+{# templates/auth/profile.html
+   Route: GET/POST /profile  →  profile()
+   Extends base.html — logged-in users only (sidebar layout).
+#}
 {% extends 'base.html' %}
 {% block title %}My Profile{% endblock %}
+
+{% block page_title %}My Profile{% endblock %}
+
+{% block header_actions %}
+  <a href="{{ url_for('change_password') }}" class="btn-sm-outline">
+    <i class="bi bi-key me-1"></i>Change Password
+  </a>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:580px;">
-  <h2 class="mb-4">My Profile</h2>
-  <form method="POST" action="{{ url_for('profile') }}">
-    <div class="row g-3">
-      <div class="col-6">
-        <label class="form-label">First Name</label>
-        <input type="text" class="form-control" name="first_name"
-               value="{{ user.first_name if user else '' }}">
+<div class="row g-4">
+
+  {# ── Profile header card ── #}
+  <div class="col-12">
+    <div class="profile-header-card">
+
+      {# Avatar — larger #}
+      <div style="width:80px; height:80px; border-radius:50%;
+                  background:var(--pf-600); border:3px solid rgba(255,255,255,0.3);
+                  display:flex; align-items:center; justify-content:center;
+                  font-size:28px; color:#fff; font-family:'Cabin',sans-serif;
+                  font-weight:700; flex-shrink:0; overflow:hidden;">
+        {% if user.profile_photo %}
+          <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}"
+               style="width:100%; height:100%; object-fit:cover;">
+        {% else %}
+          {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
+        {% endif %}
       </div>
-      <div class="col-6">
-        <label class="form-label">Last Name</label>
-        <input type="text" class="form-control" name="last_name"
-               value="{{ user.last_name if user else '' }}">
+
+      {# Info #}
+      <div style="flex:1;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="profile-name">{{ user.first_name }} {{ user.last_name }}</div>
+          {% if user.role == 'Admin' %}
+            <span class="badge-role-admin">Admin</span>
+          {% elif user.role == 'Operator' %}
+            <span class="badge-role-operator">Operator</span>
+          {% else %}
+            <span class="badge-role-observer">Observer</span>
+          {% endif %}
+        </div>
+        <div style="font-size:13px; color:var(--pf-300); margin-top:4px;">
+          @{{ user.username }}
+        </div>
+        <div style="font-size:12px; color:var(--pf-300); margin-top:4px;">
+          <i class="bi bi-envelope me-1"></i>{{ user.email }}
+          {% if user.phone %}
+            <span style="margin-left:16px;">
+              <i class="bi bi-telephone me-1"></i>{{ user.phone }}
+            </span>
+          {% endif %}
+        </div>
+        {% if user.date_joined %}
+          <div style="font-size:11px; color:var(--pf-400); margin-top:6px;">
+            <i class="bi bi-calendar3 me-1"></i>
+            Joined {{ user.date_joined.strftime('%d %B %Y') }}
+          </div>
+        {% endif %}
       </div>
-      <div class="col-12">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-control" name="email"
-               value="{{ user.email if user else '' }}">
-      </div>
-      <div class="col-12">
-        <label class="form-label">Contact Info</label>
-        <input type="text" class="form-control" name="contact_info"
-               value="{{ user.contact_info if user else '' }}">
-      </div>
-      <div class="col-6">
-        <label class="form-label">Emergency Contact Name</label>
-        <input type="text" class="form-control" name="emergency_name" value="">
-      </div>
-      <div class="col-6">
-        <label class="form-label">Emergency Contact Phone</label>
-        <input type="text" class="form-control" name="emergency_phone" value="">
-      </div>
+
     </div>
-    <div class="d-flex gap-2 mt-4">
-      <button type="submit" class="btn btn-pf">Save Changes</button>
-      <a href="{{ url_for('change_password') }}" class="btn btn-outline-secondary">
-        Change Password
-      </a>
-    </div>
-  </form>
+  </div>
+
+  {# ── Edit form ── #}
+  <div class="col-12">
+    <form method="POST" action="{{ url_for('profile') }}"
+          enctype="multipart/form-data">
+
+      {# ── Personal Details ── #}
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="bi bi-person me-2"></i>Personal Details
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="row g-3">
+            <div class="col-6 field-group">
+              <label class="form-label">
+                First Name <span class="required-star">*</span>
+              </label>
+              <input type="text" class="form-control" name="first_name"
+                     value="{{ user.first_name if user else '' }}" required>
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">
+                Last Name <span class="required-star">*</span>
+              </label>
+              <input type="text" class="form-control" name="last_name"
+                     value="{{ user.last_name if user else '' }}" required>
+            </div>
+            <div class="col-12 field-group">
+              <label class="form-label">
+                Username <span class="required-star">*</span>
+              </label>
+              <input type="text" class="form-control" name="username"
+                     value="{{ user.username if user else '' }}" required>
+              <div class="form-hint">Must be unique across all accounts</div>
+            </div>
+            <div class="col-12 field-group">
+              <label class="form-label">
+                Email Address <span class="required-star">*</span>
+              </label>
+              <input type="email" class="form-control" name="email"
+                     value="{{ user.email if user else '' }}" required>
+            </div>
+            <div class="col-12 field-group">
+              <label class="form-label">Phone</label>
+              <input type="text" class="form-control" name="phone"
+                     placeholder="e.g. 021 123 4567"
+                     value="{{ user.phone or '' }}">
+            </div>
+            <div class="col-12 field-group">
+              <label class="form-label">Home Address</label>
+              <input type="text" class="form-control" name="address"
+                     placeholder="e.g. 12 Haslemere Road, Christchurch 8041"
+                     value="{{ user.address or '' }}">
+              <div class="form-hint">Used for emergency purposes only</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ── Emergency Contact ── #}
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="bi bi-heart-pulse me-2"></i>Emergency Contact
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="row g-3">
+            <div class="col-6 field-group">
+              <label class="form-label">Contact Name</label>
+              <input type="text" class="form-control" name="emergency_name"
+                     placeholder="Full name"
+                     value="{{ user.emergency_contact_name or '' }}">
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">Contact Phone</label>
+              <input type="text" class="form-control" name="emergency_phone"
+                     placeholder="Phone number"
+                     value="{{ user.emergency_contact_phone or '' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ── Profile Photo ── #}
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="bi bi-camera me-2"></i>Profile Photo
+          </div>
+        </div>
+        <div class="panel-body">
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div id="photoPreview"
+                 style="width:64px; height:64px; border-radius:50%;
+                        background:var(--pf-600); border:2px solid var(--pf-300);
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:22px; color:#fff; font-family:'Cabin',sans-serif;
+                        font-weight:700; flex-shrink:0; overflow:hidden;">
+              {% if user.profile_photo %}
+                <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}"
+                     style="width:100%; height:100%; object-fit:cover;">
+              {% else %}
+                {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
+              {% endif %}
+            </div>
+            <div style="flex:1;">
+              <input type="file" class="form-control" name="profile_photo"
+                     id="photoInput" accept=".png,.jpg,.jpeg,.gif"
+                     style="font-size:12px;">
+              <div class="form-hint">
+                Optional — PNG, JPG, GIF. Leave blank to keep current photo.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ── Actions ── #}
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn-pf">
+          <i class="bi bi-check-lg me-1"></i>Save Changes
+        </button>
+        <a href="{{ url_for('change_password') }}" class="btn-sm-outline"
+           style="padding:8px 16px; font-size:13px;">
+          <i class="bi bi-key me-1"></i>Change Password
+        </a>
+      </div>
+
+    </form>
+  </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live photo preview
+  const photoInput   = document.getElementById('photoInput');
+  const photoPreview = document.getElementById('photoPreview');
+
+  photoInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      photoPreview.innerHTML =
+        `<img src="${e.target.result}"
+              style="width:100%; height:100%; object-fit:cover;">`;
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
 {% endblock %}

@@ -4,13 +4,23 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.js-confirm-retire-line-form').forEach(function (form) {
-    form.addEventListener('submit', function (event) {
-      if (!window.confirm('Retire this line?')) {
-        event.preventDefault();
-      }
-    });
-  });
+  // Handle line retirement modal
+  const retireLineModal = document.getElementById('retire-line-modal')
+  retireLineModal.addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget
+    const lineId = button.getAttribute('data-line-id')
+    const lineName = button.getAttribute('data-line-name')
+    const lineAction = button.getAttribute('data-line-action')
+    const hasActiveTraps = button.getAttribute('data-has-active-traps') === 'true'
+
+    document.getElementById('modal-line-id').value = lineId
+    document.getElementById('modal-line-name').textContent = lineName
+    document.getElementById('modal-line-action').action = lineAction
+
+    // Show correct warning based on active traps status
+    document.getElementById('modal-warning-active').style.display = hasActiveTraps ? 'block' : 'none'
+    document.getElementById('modal-warning-no-active').style.display = hasActiveTraps ? 'none' : 'block'
+  })
 
   const mapElement = document.getElementById('lines-overview-map');
   if (!mapElement || typeof L === 'undefined') return;
