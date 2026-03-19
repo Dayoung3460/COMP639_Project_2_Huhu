@@ -4,9 +4,17 @@
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">Catch Records</h2>
-    <button id="downloadCsvBtn" class="btn btn-pf btn-sm">
-      <i class="bi bi-download me-1"></i>Download CSV
-    </button>
+    {% if records %}
+      <button id="downloadCsvBtn" class="btn btn-pf btn-sm">
+        <i class="bi bi-download me-1"></i>Download CSV
+      </button>
+    {% else %}
+      <span class="d-inline-block" tabindex="0" title="There is no data to download">
+        <button class="btn btn-secondary btn-sm" disabled style="pointer-events: none;">
+          <i class="bi bi-download me-1"></i>Download CSV
+        </button>
+      </span>
+    {% endif %}
   </div>
 
   {# Filter form #}
