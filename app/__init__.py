@@ -8,6 +8,7 @@ route modules, template filters, and global context processors.
 
 from flask import Flask
 from flask_bcrypt import Bcrypt
+from flask_mail import Mail
 from datetime import timedelta
 import os
 
@@ -50,6 +51,18 @@ db.init_db(app,
            connect.dbhost,
            connect.dbname,
            connect.dbport)
+
+# ── Mail (Gmail SMTP) ─────────────────────────────────────────────────────────
+
+app.config['MAIL_SERVER']         = 'smtp.gmail.com'
+app.config['MAIL_PORT']           = 587
+app.config['MAIL_USE_TLS']        = True
+app.config['MAIL_USERNAME']       = os.environ.get('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD']       = os.environ.get('MAIL_PASSWORD', '')
+app.config['MAIL_DEFAULT_SENDER'] = ('PF-LU System',
+                                      os.environ.get('MAIL_USERNAME', ''))
+
+mail = Mail(app)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
