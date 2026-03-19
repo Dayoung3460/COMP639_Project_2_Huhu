@@ -1,4 +1,4 @@
-# PF-LU — Predator Free Lincoln University
+# PF-LU Predator Control System
 ### COMP639 Studio Project — Group Project 1 — Semester 1, 2026
 
 [Live URL](https://pflu.pythonanywhere.com/)
@@ -11,7 +11,7 @@ A Flask web application for monitoring and reporting predator trap activity acro
 ### 1. Clone the repository
 ```bash
 git clone <your-repo-url>
-cd pflu
+cd COMP639_Project_1_Huhu
 ```
 
 ### 2. Create and activate a virtual environment
