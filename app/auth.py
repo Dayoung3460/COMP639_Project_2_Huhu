@@ -177,6 +177,7 @@ def profile():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        username        = request.form.get('username', '').strip()
         first_name      = request.form.get('first_name', '').strip()
         last_name       = request.form.get('last_name', '').strip()
         email           = request.form.get('email', '').strip()
@@ -185,21 +186,74 @@ def profile():
         emergency_name  = request.form.get('emergency_name', '').strip()
         emergency_phone = request.form.get('emergency_phone', '').strip()
 
+        # ── Server-side validation ─────────────────────────────
+        if not all([username, first_name, last_name, email]):
+            flash('Please fill in all required fields.', 'danger')
+            return redirect(url_for('profile'))
+
+        # ── Check username/email not already taken by another user ──
         with db.get_cursor() as cursor:
             cursor.execute('''
-                UPDATE users
-                SET first_name = %s,
-                    last_name = %s,
-                    email = %s,
-                    phone = %s,
-                    address = %s,
-                    emergency_contact_name = %s,
-                    emergency_contact_phone = %s
-                WHERE user_id = %s
-            ''', (first_name, last_name, email,
-                  phone or None, address or None,
-                  emergency_name or None, emergency_phone or None,
-                  session['user_id']))
+                SELECT user_id FROM users
+                WHERE (username = %s OR email = %s)
+                AND user_id != %s
+            ''', (username, email, session['user_id']))
+            conflict = cursor.fetchone()
+
+        if conflict:
+            # Find out which one conflicts
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'SELECT user_id FROM users WHERE username = %s AND user_id != %s',
+                    (username, session['user_id'])
+                )
+                if cursor.fetchone():
+                    flash('That username is already taken. Please choose a different one.', 'danger')
+                else:
+                    flash('That email address is already in use by another account.', 'danger')
+            return redirect(url_for('profile'))
+
+        # ── Handle profile photo upload ────────────────────────
+        profile_photo = None
+        file = request.files.get('profile_photo')
+        if file and file.filename:
+            if allowed_file(file.filename):
+                ext = file.filename.rsplit('.', 1)[1].lower()
+                filename = f"avatar_{uuid.uuid4().hex[:10]}.{ext}"
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                file.save(os.path.join(UPLOAD_FOLDER, filename))
+                profile_photo = filename
+            else:
+                flash('Profile photo must be a PNG, JPG, JPEG, or GIF.', 'danger')
+                return redirect(url_for('profile'))
+
+        with db.get_cursor() as cursor:
+            if profile_photo:
+                cursor.execute('''
+                    UPDATE users
+                    SET username = %s, first_name = %s, last_name = %s, email = %s,
+                        phone = %s, address = %s,
+                        emergency_contact_name = %s, emergency_contact_phone = %s,
+                        profile_photo = %s
+                    WHERE user_id = %s
+                ''', (username, first_name, last_name, email,
+                      phone or None, address or None,
+                      emergency_name or None, emergency_phone or None,
+                      profile_photo, session['user_id']))
+            else:
+                cursor.execute('''
+                    UPDATE users
+                    SET username = %s, first_name = %s, last_name = %s, email = %s,
+                        phone = %s, address = %s,
+                        emergency_contact_name = %s, emergency_contact_phone = %s
+                    WHERE user_id = %s
+                ''', (username, first_name, last_name, email,
+                      phone or None, address or None,
+                      emergency_name or None, emergency_phone or None,
+                      session['user_id']))
+
+        # ── Update session username if it changed ──────────────
+        session['username'] = username
 
         flash('Profile updated successfully.', 'success')
         return redirect(url_for('profile'))

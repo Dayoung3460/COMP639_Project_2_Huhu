@@ -303,7 +303,6 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border-bottom: 1px solid #e4ede8;
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 12px;
-  position: sticky;
   top: var(--navbar-h);
   z-index: 1200;
 }
