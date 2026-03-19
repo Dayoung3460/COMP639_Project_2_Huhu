@@ -77,9 +77,24 @@ from app import general
 @app.context_processor
 def inject_globals():
     """Makes global variables available to all Jinja2 templates."""
+    from flask import session as _session
+    profile_photo = None
+    if _session.get('user_id'):
+        try:
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'SELECT profile_photo FROM users WHERE user_id = %s',
+                    (_session['user_id'],)
+                )
+                row = cursor.fetchone()
+                if row:
+                    profile_photo = row['profile_photo']
+        except Exception:
+            pass
     return dict(
         site_name='PF-LU',
-        site_tagline='Predator Free Lincoln University'
+        site_tagline='Predator Free Lincoln University',
+        nav_profile_photo=profile_photo
     )
 
 # ── Template filters ──────────────────────────────────────────────────────────
