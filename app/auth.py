@@ -7,6 +7,13 @@ import os
 import uuid
 
 
+def _is_quick_login_enabled():
+    """Return True when test quick-login UI should be shown."""
+    return os.environ.get('ENABLE_QUICK_LOGIN', 'false').strip().lower() in {
+        '1', 'true', 'yes', 'on'
+    }
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """Register a new Observer account."""
@@ -83,6 +90,8 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """Log in an existing user and redirect to their role dashboard."""
+    quick_login_enabled = _is_quick_login_enabled()
+
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
@@ -99,11 +108,19 @@ def login():
 
         if not user or not bcrypt.check_password_hash(user['password_hash'], password):
             flash('Incorrect username or password.', 'danger')
-            return render_template('auth/login.html', username=username)
+            return render_template(
+                'auth/login.html',
+                username=username,
+                quick_login_enabled=quick_login_enabled
+            )
 
         if user['account_status'] != 'active':
             flash('Your account has been deactivated. Please contact an administrator.', 'danger')
-            return render_template('auth/login.html', username=username)
+            return render_template(
+                'auth/login.html',
+                username=username,
+                quick_login_enabled=quick_login_enabled
+            )
 
         session['user_id']  = user['user_id']
         session['username'] = user['username']
@@ -112,7 +129,7 @@ def login():
         flash(f"Welcome back, {user['username']}!", 'success')
         return redirect_by_role()
 
-    return render_template('auth/login.html')
+    return render_template('auth/login.html', quick_login_enabled=quick_login_enabled)
 
 
 @app.route('/logout')
