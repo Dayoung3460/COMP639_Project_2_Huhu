@@ -293,14 +293,63 @@ def retire_trap(line_id):
 def assign_operators(line_id):
     """Assign or reassign operators to a trap line."""
     if request.method == 'POST':
-        # TODO: DELETE old operator_line rows, INSERT new ones from form
+        operator_ids = request.form.getlist('operator_ids')
+
+        with db.get_cursor() as cursor:
+            # Delete ALL current assignments for this line
+            cursor.execute("""
+                DELETE FROM operator_lines
+                WHERE line_id = %s
+            """, (line_id,))
+
+            # Re-insert only the checked ones
+            for operator_id in operator_ids:
+                cursor.execute("""
+                    INSERT INTO operator_lines (operator_id, line_id)
+                    VALUES (%s, %s)
+                """, (operator_id, line_id))
+
         flash('Operators updated.', 'success')
         return redirect(url_for('line_detail', line_id=line_id))
-    # TODO: query line, all operators, currently assigned operator ids
+    
     line = None
     all_operators = []
     assigned_ids = []
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT line_id, name
+            FROM lines
+            WHERE line_id = %s
+            """,
+            (line_id,)
+        )
+        line = cursor.fetchone()
+
+        cursor.execute(
+            """
+            SELECT user_id, username, first_name, last_name
+            FROM users
+            WHERE role = 'Operator'
+            ORDER BY last_name ASC, first_name ASC
+            """
+        )
+        all_operators = cursor.fetchall()
+
+        cursor.execute(
+            """
+            SELECT operator_id
+            FROM operator_lines
+            WHERE line_id = %s
+            """,
+            (line_id,)
+        )
+        assign_operators = cursor.fetchall()
+        assigned_ids = [row['operator_id'] for row in assign_operators]
+
     return render_template('admin/assign_operators.html',
+                           line_id=line_id,
                            line=line,
                            all_operators=all_operators,
                            assigned_ids=assigned_ids)
