@@ -22,7 +22,7 @@ def lines_index():
                 l.type,
                 l.is_retired,
                 COUNT(DISTINCT t.trap_id)
-                    FILTER (WHERE (%s OR t.is_retired = FALSE)) AS trap_count,
+                    FILTER (WHERE t.is_retired = FALSE) AS trap_count,
                 COUNT(DISTINCT ol.operator_id) AS operator_count
             FROM lines l
             LEFT JOIN traps t ON t.line_id = l.line_id
@@ -31,7 +31,7 @@ def lines_index():
             GROUP BY l.line_id, l.name, l.type, l.is_retired
             ORDER BY l.is_retired ASC, l.name ASC
             """,
-            (show_retired, show_retired)
+            (show_retired,)
         )
         lines = cursor.fetchall()
 
@@ -69,9 +69,10 @@ def lines_index():
               AND t.trap_id IS NOT NULL
               AND t.latitude IS NOT NULL
               AND t.longitude IS NOT NULL
+              AND (%s OR t.is_retired = FALSE)
             ORDER BY l.name ASC, t.code ASC
             """,
-            (show_retired,)
+            (show_retired, show_retired)
         )
         trap_rows = cursor.fetchall()
 

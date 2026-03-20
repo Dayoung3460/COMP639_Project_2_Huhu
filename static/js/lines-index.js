@@ -148,7 +148,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const lineId = card.dataset.lineId;
       const lineMarkers = markersByLine[lineId] || [];
       const linePoints = linePointsByLine[lineId] || [];
-      if (linePoints.length === 0) return;
+      if (linePoints.length === 0) {
+        highlightLineCard(lineId);
+        return;
+      }
 
       const bounds = L.latLngBounds(linePoints);
 
