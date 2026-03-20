@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const markersElement = document.getElementById('lines-overview-traps-data');
   const traps = markersElement ? JSON.parse(markersElement.textContent) : [];
   const linzApiKey = mapElement.dataset.linzApiKey;
+  const showRetired = new URLSearchParams(window.location.search).get('show_retired') === '1';
 
   const map = L.map('lines-overview-map');
   const tileUrl = `https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=${linzApiKey}`;
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const retiredColor = '#343a40';
   const retiredFillColor = '#adb5bd';
   const markersByLine = {};
+  const linePointsByLine = {};
   const lineRetiredById = {};
   const allLatLngs = [];
 
@@ -69,11 +71,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const lineId = String(trap.line_id);
     const latLng = [trap.latitude, trap.longitude];
     const isRetiredVisual = Boolean(trap.trap_is_retired);
+    const shouldShowMarker = showRetired || !isRetiredVisual;
+
+    if (!linePointsByLine[lineId]) {
+      linePointsByLine[lineId] = [];
+    }
+    linePointsByLine[lineId].push(latLng);
 
     if (!markersByLine[lineId]) {
       markersByLine[lineId] = [];
     }
     lineRetiredById[lineId] = Boolean(trap.line_is_retired);
+
+    allLatLngs.push(latLng);
+
+    if (!shouldShowMarker) return;
 
     const lineColor = getLineColor(lineId);
     const marker = L.circleMarker(latLng, isRetiredVisual
@@ -108,13 +120,10 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
     markersByLine[lineId].push({ marker: marker, latLng: latLng });
-    allLatLngs.push(latLng);
   });
 
-  Object.keys(markersByLine).forEach(function (lineId) {
-    const linePoints = markersByLine[lineId].map(function (entry) {
-      return entry.latLng;
-    });
+  Object.keys(linePointsByLine).forEach(function (lineId) {
+    const linePoints = linePointsByLine[lineId];
 
     if (linePoints.length < 2) return;
 
@@ -137,15 +146,16 @@ document.addEventListener('DOMContentLoaded', function () {
       if (event.target.closest('a, button, form')) return;
 
       const lineId = card.dataset.lineId;
-      const lineMarkers = markersByLine[lineId];
-      if (!lineMarkers || lineMarkers.length === 0) return;
+      const lineMarkers = markersByLine[lineId] || [];
+      const linePoints = linePointsByLine[lineId] || [];
+      if (linePoints.length === 0) return;
 
-      const bounds = L.latLngBounds(lineMarkers.map(function (entry) {
-        return entry.latLng;
-      }));
+      const bounds = L.latLngBounds(linePoints);
 
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
-      lineMarkers[0].marker.openPopup();
+      if (lineMarkers.length > 0) {
+        lineMarkers[0].marker.openPopup();
+      }
       highlightLineCard(lineId);
     });
   });

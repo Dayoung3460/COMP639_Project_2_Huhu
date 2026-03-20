@@ -69,10 +69,9 @@ def lines_index():
               AND t.trap_id IS NOT NULL
               AND t.latitude IS NOT NULL
               AND t.longitude IS NOT NULL
-              AND (%s OR t.is_retired = FALSE)
             ORDER BY l.name ASC, t.code ASC
             """,
-            (show_retired, show_retired)
+            (show_retired,)
         )
         trap_rows = cursor.fetchall()
 
