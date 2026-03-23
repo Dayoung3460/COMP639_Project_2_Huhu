@@ -55,12 +55,18 @@ def edit_catch(catch_id):
 
 
 @app.route('/operator/my-records')
-@role_required('Operator', 'Admin')
+@role_required('Operator')
 def my_records():
     """View all catch records created by the logged-in operator."""
-    # TODO: query WHERE recorded_by = session['user_id']
-    records = []
-    return render_template('operator/my_records.html', records=records)
+    from app.general import get_catch_records
+    records, filters, filter_data = get_catch_records(recorded_by_id=session.get('user_id'))
+    return render_template(
+        'observer/catch_records.html', 
+        records=records, 
+        selected_filters=filters, 
+        filter_data=filter_data,
+        is_my_records=True
+    )
 
 
 @app.route('/operator/add-observation', methods=['GET', 'POST'])
