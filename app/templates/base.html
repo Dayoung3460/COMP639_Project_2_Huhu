@@ -178,11 +178,11 @@
                class="sidebar-link {{ 'active' if request.endpoint == 'add_observation' }}">
               <i class="bi bi-binoculars"></i> <span class="link-text">Add Observation</span>
             </a>
+            <a href="{{ url_for('my_records') }}"
+               class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
+              <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
+            </a>
           {% endif %}
-          <a href="{{ url_for('my_records') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
-            <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
-          </a>
         {% endif %}
 
         {# View data — all roles #}

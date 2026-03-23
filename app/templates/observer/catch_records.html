@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}Catch Records{% endblock %}
+{% block title %}{% if is_my_records %}My Records{% else %}Catch Records{% endif %}{% endblock %}
 {% block content %}
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Catch Records</h2>
+    <h2 class="mb-0">{% if is_my_records %}My Records{% else %}Catch Records{% endif %}</h2>
     {% if records %}
       <button id="downloadCsvBtn" class="btn btn-pf btn-sm">
         <i class="bi bi-download me-1"></i>Download CSV
@@ -18,7 +18,7 @@
   </div>
 
   {# Filter form #}
-  <form method="GET" action="{{ url_for('catch_records') }}" class="row g-2 mb-4 align-items-center">
+  <form method="GET" action="{{ url_for('my_records' if is_my_records else 'catch_records') }}" class="row g-2 mb-4 align-items-center">
     
     <div class="col-auto">
       <input type="text" id="trapCodeSearch" class="form-control form-control-sm"
@@ -85,7 +85,7 @@
     </div>
 
     <div class="col-auto">
-      <a href="{{ url_for('catch_records') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+      <a href="{{ url_for('my_records' if is_my_records else 'catch_records') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
     </div>
   </form>
 

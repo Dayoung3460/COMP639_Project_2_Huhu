@@ -4,10 +4,8 @@ from flask import render_template, request
 from app import app, db
 from app.utils import role_required
 
-@app.route('/catch-records')
-@role_required()
-def catch_records():
-    """Browse and filter all trap catch records."""
+def get_catch_records(recorded_by_id=None):
+    """Query catch records with optional filter by recorded_by_id."""
     filters = {
         'trap_code': request.args.get('trap_code'),
         'line_id': request.args.get('line_id'),
@@ -22,6 +20,9 @@ def catch_records():
     where_clauses = []
     query_params = []
 
+    if recorded_by_id:
+        where_clauses.append("tc.recorded_by_id = %s")
+        query_params.append(recorded_by_id)
     if filters['trap_code']:
         where_clauses.append("t.code = %s")
         query_params.append(filters['trap_code'])
@@ -48,7 +49,6 @@ def catch_records():
     if where_clauses:
         where_sql = "WHERE " + " AND ".join(where_clauses)
         
-    # Sort by date only
     if filters['sort_date'] == 'asc':
         order_sql = "ORDER BY tc.date ASC"
     else:
@@ -60,8 +60,7 @@ def catch_records():
                 tc.*,
                 t.code AS trap_code,
                 t.trap_type,
-                l.name AS line_name,
-                u.first_name || ' ' || u.last_name AS recorded_by
+                l.name AS line_name
             FROM trap_catches tc
             JOIN traps t ON tc.trap_id = t.trap_id
             JOIN lines l ON t.line_id = l.line_id
@@ -94,6 +93,14 @@ def catch_records():
             'conditions': conditions
         }
 
+    return records, filters, filter_data
+
+
+@app.route('/catch-records')
+@role_required()
+def catch_records():
+    """Browse and filter all trap catch records."""
+    records, filters, filter_data = get_catch_records()
     return render_template(
         'observer/catch_records.html', 
         records=records, 
