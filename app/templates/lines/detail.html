@@ -28,10 +28,10 @@
           {% endif %}
         </a>
         {% if session.get('role') == 'Admin' %}
-          <a href="{{ url_for('new_trap', line_id=line.line_id) }}"
-             class="btn btn-pf btn-sm">
+          <!-- The button to trigger the form -->
+          <button id="inline-add-trap-btn" class="btn btn-pf btn-sm" data-trap-types='{{ trap_types | tojson }}'>
             <i class="bi bi-plus-lg me-1"></i>Add Trap
-          </a>
+          </button>
           <a href="{{ url_for('assign_operators', line_id=line.line_id) }}"
              class="btn btn-outline-secondary btn-sm">
             Assign Operators
@@ -44,6 +44,7 @@
       <div class="card-body">
         <h5 class="mb-3">Trap map</h5>
         <div id="line-map"
+             data-line-id="{{ line.line_id }}"
              data-linz-api-key="{{ linz_api_key }}"
              data-line-is-retired="{{ 'true' if line.is_retired else 'false' }}"
              style="height: 420px; border-radius: 10px;"></div>
@@ -56,7 +57,7 @@
 
     {# Traps table #}
     <h5>Traps on this line</h5>
-    <div class="table-responsive mb-4">
+    <div id="traps-list-container">
       <table class="table table-striped table-hover">
         <thead>
           <tr>
@@ -107,6 +108,7 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
 
       <div class="modal fade retire-modal" id="retire-trap-modal" tabindex="-1">
         <div class="modal-dialog" style="margin-top: 10vh;">
@@ -155,6 +157,7 @@
     <p class="text-muted">Line not found.</p>
   {% endif %}
 </div>
+
 {% endblock %}
 
 {% block scripts %}
