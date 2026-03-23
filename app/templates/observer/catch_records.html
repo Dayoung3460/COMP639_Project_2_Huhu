@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}Catch Records{% endblock %}
+{% block title %}{% if is_my_records %}My Records{% else %}Catch Records{% endif %}{% endblock %}
 {% block content %}
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Catch Records</h2>
+    <h2 class="mb-0">{% if is_my_records %}My Records{% else %}Catch Records{% endif %}</h2>
     {% if records %}
       <button id="downloadCsvBtn" class="btn btn-pf btn-sm">
         <i class="bi bi-download me-1"></i>Download CSV
@@ -18,15 +18,11 @@
   </div>
 
   {# Filter form #}
-  <form method="GET" action="{{ url_for('catch_records') }}" class="row g-2 mb-4 align-items-center">
+  <form method="GET" action="{{ url_for('my_records' if is_my_records else 'catch_records') }}" class="row g-2 mb-4 align-items-center">
     
     <div class="col-auto">
-      <select name="trap_code" class="form-select form-select-sm" onchange="this.form.submit()">
-        <option value="">All Trap Codes</option>
-        {% for code in filter_data.trap_codes %}
-          <option value="{{ code }}" {% if selected_filters.trap_code == code %}selected{% endif %}>{{ code }}</option>
-        {% endfor %}
-      </select>
+      <input type="text" id="trapCodeSearch" class="form-control form-control-sm"
+             placeholder="Search trap code..." autocomplete="off">
     </div>
 
     <div class="col-auto">
@@ -89,13 +85,13 @@
     </div>
 
     <div class="col-auto">
-      <a href="{{ url_for('catch_records') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+      <a href="{{ url_for('my_records' if is_my_records else 'catch_records') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
     </div>
   </form>
 
-  <div class="table-responsive">
-    <table class="table table-striped table-hover">
-      <thead>
+  <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
+    <table class="table table-striped table-hover mb-0" id="recordsTable">
+      <thead class="sticky-top bg-white">
         <tr>
           <th>Trap Code</th><th>Trap Type</th><th>Date</th><th>Line</th><th>Species</th>
           <th>Status</th><th>Strikes</th><th>Rebaited</th>
@@ -151,6 +147,25 @@
 </script>
 
 <script>
+
+document.getElementById('trapCodeSearch').addEventListener('input', function() {
+  const searchTerm = this.value.toLowerCase().trim();
+  const rows = document.querySelectorAll('#recordsTable tbody tr');
+  
+  rows.forEach(row => {
+    const trapCode = row.querySelector('td strong');
+    if (!trapCode) return;
+    const code = trapCode.textContent.toLowerCase();
+    row.style.display = code.includes(searchTerm) ? '' : 'none';
+  });
+});
+
+document.getElementById('trapCodeSearch').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+  }
+});
+
 function escapeCSV(val) {
   if (val == null) return '';
   const str = String(val);
