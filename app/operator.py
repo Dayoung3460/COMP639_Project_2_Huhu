@@ -35,7 +35,14 @@ def add_catch():
     else:
         lookup = fetch_lookup_data(db)
         lines = fetch_operator_lines(db, session['user_id'])
-        return render_template('operator/add_catch.html', lines=lines, data={}, lookup=lookup)
+        
+        # Capture selected line from URL param, validate it belongs to operator
+        selected_line_id = request.args.get('line_id', '')
+        valid_line_ids = [str(line['line_id']) for line in lines]
+        if selected_line_id not in valid_line_ids:
+            selected_line_id = ''
+        
+        return render_template('operator/add_catch.html', lines=lines, data={'line_id': selected_line_id}, lookup=lookup)
 
 
 @app.route('/operator/edit-catch/<int:catch_id>', methods=['GET', 'POST'])

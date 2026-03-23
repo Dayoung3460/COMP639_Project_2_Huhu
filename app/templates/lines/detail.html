@@ -142,6 +142,11 @@
             {{ op.first_name }} {{ op.last_name }}
             {% if session.get('role') == 'Operator' and op.user_id == session.get('user_id') %}
               <span class="badge bg-primary ms-2">me</span>
+              {% if not line.is_retired %}
+                <a href="{{ url_for('add_catch', line_id=line.line_id) }}" class="btn btn-sm btn-pf m-2 py-0 px-2" style="font-size:0.75rem;">
+                 + Add Catch
+                </a>
+              {% endif %}
             {% endif %}
             <small class="text-muted">(@{{ op.username }})</small>
           </li>
