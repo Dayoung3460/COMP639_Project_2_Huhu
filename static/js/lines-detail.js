@@ -185,6 +185,11 @@ document.addEventListener('DOMContentLoaded', function () {
         alertDiv.className = 'alert alert-danger py-2 px-3 mb-3 small';
         alertDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>${errorMsg}`;
         cardBody.insertBefore(alertDiv, cardBody.querySelector('form'));
+
+        // Compensate for the extra height the error message adds to the form
+        setTimeout(() => {
+          window.scrollBy({ top: alertDiv.offsetHeight, behavior: 'smooth' });
+        }, 300);
       }
     }
 

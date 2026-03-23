@@ -196,7 +196,7 @@ def new_trap(line_id):
         line = cursor.fetchone()
 
         if not line:
-            flash('Trap line not found.', 'danger')
+            flash('Trap line not found', 'danger')
             return redirect(url_for('lines_index'))
 
     code = request.form.get('code', '').strip()
@@ -216,7 +216,7 @@ def new_trap(line_id):
     with db.get_cursor() as cursor:
         cursor.execute("SELECT code FROM traps WHERE code = %s", (code,))
         if cursor.fetchone():
-            return redirect(url_for('line_detail', line_id=line_id, trap_type=trap_type, latitude=latitude, longitude=longitude, add_trap=1, error=f'Trap Code "{code}" already exists. Please choose a different code.'))
+            return redirect(url_for('line_detail', line_id=line_id, trap_type=trap_type, latitude=latitude, longitude=longitude, add_trap=1, error=f'Trap code "{code}" already exists. Please choose a different code.'))
 
         cursor.execute(
             """
