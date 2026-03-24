@@ -13,14 +13,6 @@ def observer_dashboard():
     # TODO: query stats and recent records
     return render_template('observer/dashboard.html')
 
-@app.route('/observations')
-@role_required()
-def observations():
-    """View all incidental observations."""
-    # TODO: query all observations
-    observations = []
-    return render_template('observer/observations.html', observations=observations)
-
 
 @app.route('/download-csv')
 @role_required()
