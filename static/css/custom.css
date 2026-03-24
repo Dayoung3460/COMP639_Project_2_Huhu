@@ -651,6 +651,76 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   cursor: pointer;
 }
 
+.lines-filter-shell {
+  background: #eef7f1;
+  border: 1px solid rgba(61, 155, 103, 0.18);
+  border-radius: 18px;
+  padding: 20px 22px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+}
+
+.lines-filter-shell__intro {
+  margin-bottom: 14px;
+}
+
+.lines-filter-shell__eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(35, 107, 67, 0.08);
+  color: var(--pf-800);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lines-filter-shell .form-label {
+  color: var(--pf-800);
+  font-weight: 600;
+}
+
+.lines-filter-shell .form-control,
+.lines-filter-shell .form-select,
+.lines-filter-shell .input-group-text {
+  min-height: 44px;
+  border-color: rgba(45, 122, 79, 0.18);
+  background: rgba(255,255,255,0.84);
+}
+
+.lines-filter-shell .input-group-text {
+  color: var(--pf-700);
+}
+
+.lines-filter-shell .form-control:focus,
+.lines-filter-shell .form-select:focus {
+  border-color: var(--pf-400);
+  box-shadow: 0 0 0 0.2rem rgba(61, 155, 103, 0.14);
+}
+
+.lines-filter-shell__clear-btn {
+  min-height: 44px;
+  background: #6c757d;
+  color: #fff;
+  border: 1px solid #6c757d;
+  font-weight: 600;
+}
+
+.lines-filter-shell__clear-btn:hover,
+.lines-filter-shell__clear-btn:focus {
+  background: #5c636a;
+  color: #fff;
+  border-color: #565e64;
+}
+
+@media (max-width: 767.98px) {
+  .lines-filter-shell {
+    padding: 16px;
+    border-radius: 14px;
+  }
+}
+
 /* ═══════════════════════════════════════════════
    Chart Placeholders
    ═══════════════════════════════════════════════ */
