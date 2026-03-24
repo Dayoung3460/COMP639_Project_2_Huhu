@@ -137,3 +137,12 @@ def insert_observation(db, data, user_id):
             data['line_id'],  # Required field
             data.get('trap_id') or None
         ))
+
+def update_user_active(db, user_id, status):
+    """Update a user's account status."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            UPDATE users
+            SET account_status = %s
+            WHERE user_id = %s
+        """, (status, user_id))

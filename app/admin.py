@@ -9,7 +9,7 @@ from app.utils import (
     LINCOLN_NZ_LAT_RANGE,
     LINCOLN_NZ_LON_RANGE,
 )
-from app.helpers.dbHelper import fetch_enum_values
+from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -52,8 +52,23 @@ def admin_user_detail(user_id):
 @role_required('Admin')
 def toggle_active(user_id):
     """Activate or deactivate a user account."""
-    # TODO: UPDATE "user" SET is_active = NOT is_active WHERE user_id = %s
-    flash('User account status updated.', 'success')
+    # Prevent admin from deactivating themselves
+    if user_id == session.get('user_id'):
+        flash('You cannot deactivate your own account.', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    with db.get_cursor() as cursor:
+        cursor.execute("SELECT account_status FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            flash('User not found.', 'danger')
+            return redirect(url_for('admin_users'))
+        
+        # Toggle between 'active' and 'inactive'
+        new_status = 'inactive' if user['account_status'] == 'active' else 'active'
+        update_user_active(db, user_id, new_status)
+    
+    flash(f'User account {"activated" if new_status == "active" else "deactivated"}.', 'success')
     return redirect(url_for('admin_users'))
 
 
@@ -593,3 +608,18 @@ def manage_bait_types():
         bait_types = cursor.fetchall()
 
     return render_template('admin/manage_bait_types.html', bait_types=bait_types)
+
+@app.route('/admin/set-user-active', methods=['POST'])
+@role_required('Admin')
+def set_user_active():
+    """Set a user's account status."""
+    user_id = request.form.get('user_id')
+    set_active = request.form.get('setUserActiveSelect')
+    lookup = fetch_lookup_data(db)
+    if set_active not in lookup['valid_account_status']:
+        flash('Invalid account status value.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    update_user_active(db, user_id, set_active)
+    flash('User account status updated.', 'success')
+    return redirect(url_for('admin_users'))
