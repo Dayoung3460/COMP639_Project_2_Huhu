@@ -45,7 +45,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     if (latlngs.length >= 2) {
-      L.polyline(latlngs, {
+      const orderedLatLngs = orderPointsByNearestNeighbor(latlngs);
+
+      L.polyline(orderedLatLngs, {
         color: '#0d6efd',
         weight: 3,
         opacity: 0.8,
