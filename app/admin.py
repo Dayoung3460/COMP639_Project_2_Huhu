@@ -405,12 +405,61 @@ def assign_operators(line_id):
 
 # ── Lookup data management ────────────────────────────────────────────────────
 
-@app.route('/admin/species')
+@app.route('/admin/species', methods=['GET', 'POST'])
 @role_required('Admin')
 def manage_species():
     """View and manage the species lookup table."""
-    # TODO: query species
-    return render_template('admin/manage_species.html', species=[])
+    if request.method == 'POST':
+        current_species_name = request.form.get('current-species-name', '').strip()
+        species_name = request.form.get('species-name', '').strip()
+        modal_action = request.form.get('modal-action')
+
+        if not species_name:
+            flash('Please provide a species name.', 'danger')
+            return redirect(url_for('manage_species'))
+        
+        with db.get_cursor() as cursor:
+            # Check for existing species with the same name
+            cursor.execute(
+                """
+                SELECT name
+                FROM species
+                WHERE name = %s
+                """, (species_name,))
+            if cursor.fetchone():
+                flash(f'A species named "{species_name}" already exists.', 'danger')
+                return redirect(url_for('manage_species'))
+            
+            if modal_action == 'add':
+                # Insert the new species
+                cursor.execute(
+                    """
+                    INSERT INTO species (name)
+                    VALUES (%s)
+                    """, (species_name,))
+                flash(f'Species "{species_name}" added successfully.', 'success')
+            elif modal_action == 'edit':
+                # Update the new species
+                cursor.execute(
+                    """
+                    UPDATE species
+                    SET name = %s
+                    WHERE name = %s
+                    """, (species_name, current_species_name))
+                flash(f'Species "{current_species_name}" updated to "{species_name}" successfully.', 'success')
+
+    # get list of species for display
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT name
+            FROM species
+            ORDER BY name ASC
+            """
+        )
+        species_list = cursor.fetchall()
+    
+    return render_template('admin/manage_species.html', species_list=species_list)
 
 
 @app.route('/admin/statuses')
@@ -464,6 +513,7 @@ def manage_bait_types():
                     """, (bait_type_name, current_bait_type_name))
                 flash(f'Bait type "{current_bait_type_name}" updated to "{bait_type_name}" successfully.', 'success')
 
+    # get list of bait types for display
     with db.get_cursor() as cursor:
         cursor.execute(
             """
