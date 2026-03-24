@@ -705,12 +705,12 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 /* ═══════════════════════════════════════════════
    bait-types page - make table header sticky
    ═══════════════════════════════════════════════ */
-.bait-types-container .table-container {
+.stick-table-header-container .table-container {
   max-height: 60vh; /* Set a maximum height to enable vertical scrolling */
   overflow-y: auto; /* Add vertical scrollbar when content exceeds height */
   display: block; /* Important for some scenarios, though often not strictly required */
 }
-.bait-types-container .table-container thead th {
+.stick-table-header-container .table-container thead th {
   position: sticky; /* Make the header sticky */
   top: 0; /* Pin it to the top of the container */
   background-color: #f8f9fa; /* Add a background color to prevent content bleed-through */
