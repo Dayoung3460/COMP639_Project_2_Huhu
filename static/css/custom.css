@@ -716,3 +716,78 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   background-color: #f8f9fa; /* Add a background color to prevent content bleed-through */
   box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); /* Optional: Add a subtle shadow */
 }
+
+/* ── Insight cards (reports page) ──────────────────────── */
+.insight-card { background: var(--pf-50); border: 1px solid var(--pf-200); border-radius: 10px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+.insight-icon { width: 32px; height: 32px; background: var(--pf-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--pf-700); font-size: 15px; flex-shrink: 0; }
+.insight-title { font-size: 12px; font-weight: 600; color: var(--pf-800); margin-bottom: 2px; font-family: 'Cabin', sans-serif; }
+.insight-text { font-size: 12px; color: #6b7c72; margin: 0; line-height: 1.5; }
+
+/* ── Print / PDF styles ─────────────────────────────────── */
+@media print {
+  .pf-navbar, .sidebar, .content-header,
+  .btn-sm-pf, .btn-sm-outline, .btn-pf, .btn-pf-outline, form { display: none !important; }
+  .app-layout { display: block !important; }
+  .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  .content-body { padding: 0 !important; }
+  .panel { border: 1px solid #ddd !important; break-inside: avoid; margin-bottom: 16px; }
+  .stat-card { break-inside: avoid; }
+  body::before {
+    content: 'PF-LU — Reports & Charts';
+    display: block;
+    font-family: 'Cabin', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #1a5c38;
+  }
+  canvas { max-width: 100% !important; }
+  .row { break-inside: avoid; }
+}
+
+/* ── Print header/footer (reports page) ─────────────────── */
+.print-header, .print-footer { display: none; }
+
+@media print {
+  @page {
+    margin-top: 130px;
+    margin-bottom: 70px;
+    margin-left: 28px;
+    margin-right: 28px;
+  }
+
+  /* Named page margins for header/footer content */
+  @page :first {
+    margin-top: 130px;
+  }
+
+  .print-header {
+    display: block !important;
+    position: running(header);
+    background: #fff;
+    border-bottom: 2px solid #1a5c38;
+    padding: 10px 0 10px 0;
+    width: 100%;
+  }
+
+  .print-footer {
+    display: flex !important;
+    position: running(footer);
+    justify-content: space-between;
+    font-size: 11px;
+    color: #6b7c72;
+    border-top: 1px solid #e4ede8;
+    padding: 8px 0;
+    width: 100%;
+  }
+
+  /* Use running elements in page margin boxes */
+  @page {
+    @top-center { content: element(header); }
+    @bottom-center { content: element(footer); }
+  }
+
+  .content-body {
+    padding: 0 !important;
+  }
+}
