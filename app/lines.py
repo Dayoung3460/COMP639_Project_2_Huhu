@@ -1,8 +1,7 @@
-"""lines.py — Trap lines and traps viewing (all logged-in roles)."""
-
-from flask import render_template, request, url_for
+from flask import render_template, request, url_for, flash, redirect
 from app import app, db
 from app.utils import role_required
+from app.helpers.dbHelper import fetch_enum_values
 import os
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
@@ -156,7 +155,8 @@ def line_detail(line_id):
         else:
             traps = []
             operators = []
-
+    
+    trap_types = fetch_enum_values(db, 'trap_type_enum')
     trap_markers = []
     for trap in traps:
         if trap.get('latitude') is None or trap.get('longitude') is None:
@@ -177,5 +177,6 @@ def line_detail(line_id):
         operators=operators,
         show_retired=show_retired,
         trap_markers=trap_markers,
-        linz_api_key=linz_api_key
+        linz_api_key=linz_api_key,
+        trap_types=trap_types
     )

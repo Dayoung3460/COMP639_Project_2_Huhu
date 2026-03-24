@@ -1,6 +1,7 @@
 """admin.py — Admin dashboard, user management, lines, traps, operator assignment, lookups."""
 
 from flask import render_template, request, redirect, url_for, flash, session
+import os
 from app import app, db
 from app.utils import role_required
 from app.helpers.dbHelper import fetch_enum_values
@@ -186,18 +187,65 @@ def retire_line(line_id):
 
 # ── Traps ─────────────────────────────────────────────────────────────────────
 
-@app.route('/admin/lines/<int:line_id>/traps/new', methods=['GET', 'POST'])
+@app.route('/admin/lines/<int:line_id>/new_trap', methods=['POST'])
 @role_required('Admin')
 def new_trap(line_id):
     """Add a new trap to a line."""
-    if request.method == 'POST':
-        # TODO: validate unique code, INSERT into trap
-        flash('Trap added.', 'success')
-        return redirect(url_for('line_detail', line_id=line_id))
-    # TODO: query line
-    line = None
-    return render_template('lines/new_trap.html', line=line)
+    with db.get_cursor() as cursor:
+        cursor.execute("SELECT line_id, name, is_retired FROM lines WHERE line_id = %s", (line_id,))
+        line = cursor.fetchone()
 
+        if not line:
+            flash('Trap line not found', 'danger')
+            return redirect(url_for('lines_index'))
+            
+        if line['is_retired']:
+            flash('Cannot add traps to a retired line', 'danger')
+            return redirect(url_for('line_detail', line_id=line_id))
+
+    code = request.form.get('code', '').strip()
+    trap_type = request.form.get('trap_type', '').strip()
+    latitude = request.form.get('latitude', '').strip()
+    longitude = request.form.get('longitude', '').strip()
+
+    if not all([code, trap_type, latitude, longitude]):
+        return redirect(url_for('line_detail', line_id=line_id, code=code, trap_type=trap_type, latitude=latitude, longitude=longitude, add_trap=1, error='All fields are required'))
+
+    allowed_trap_types = fetch_enum_values(db, 'trap_type_enum')
+    if trap_type not in allowed_trap_types:
+        return redirect(
+            url_for(
+                'line_detail',
+                line_id=line_id,
+                code=code,
+                latitude=latitude,
+                longitude=longitude,
+                add_trap=1,
+                error='Invalid trap type selected'
+            )
+        )
+
+    try:
+        float(latitude)
+        float(longitude)
+    except ValueError:
+        return redirect(url_for('line_detail', line_id=line_id, code=code, trap_type=trap_type, add_trap=1, error='Invalid coordinates. Please ensure Latitude and Longitude are valid numbers.'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute("SELECT code FROM traps WHERE code = %s", (code,))
+        if cursor.fetchone():
+            return redirect(url_for('line_detail', line_id=line_id, trap_type=trap_type, latitude=latitude, longitude=longitude, add_trap=1, error=f'Trap code "{code}" already exists. Please choose a different code.'))
+
+        cursor.execute(
+            """
+            INSERT INTO traps (code, trap_type, line_id, latitude, longitude)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (code, trap_type, line_id, latitude, longitude)
+        )
+
+    flash('Trap added', 'success')
+    return redirect(url_for('line_detail', line_id=line_id))
 
 @app.route('/admin/traps/<int:line_id>/<int:trap_id>/edit', methods=['GET', 'POST'])
 @role_required('Admin')
