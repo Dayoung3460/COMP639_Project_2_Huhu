@@ -3,8 +3,8 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 from app.utils import role_required
-from app.helpers.trapCatchHelper import validate_all_catch_record_fields
-from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data
+from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
+from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation
 
 
 @app.route('/operator/dashboard')
@@ -81,8 +81,24 @@ def my_records():
 def add_observation():
     """Record an incidental observation."""
     if request.method == 'POST':
-        # TODO: INSERT into observation
+        pass_check, errors, lookup = validate_all_observation_fields(request.form, db, session['user_id'])
+        
+        if not pass_check:
+            lines = fetch_operator_lines(db, session['user_id'])
+            return render_template('operator/add_observation.html', errors=errors, data=request.form, lines=lines, lookup=lookup)
+        
+        insert_observation(db, request.form, session['user_id'])
         flash('Observation recorded successfully.', 'success')
         return redirect(url_for('operator_dashboard'))
 
-    return render_template('operator/add_observation.html')
+    else:
+        lines = fetch_operator_lines(db, session['user_id'])
+        lookup = fetch_lookup_data(db)
+        
+        # Capture selected line from URL param, validate it belongs to operator
+        selected_line_id = request.args.get('line_id', '')
+        valid_line_ids = [str(line['line_id']) for line in lines]
+        if selected_line_id not in valid_line_ids:
+            selected_line_id = ''
+        
+        return render_template('operator/add_observation.html', lines=lines, data={'line_id': selected_line_id}, lookup=lookup)

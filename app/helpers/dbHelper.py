@@ -23,6 +23,9 @@ def fetch_lookup_data(db):
     valid_rebaited = fetch_enum_values(db, 'rebaited_type')
     valid_sex = fetch_enum_values(db, 'sex_type')
     valid_maturity = fetch_enum_values(db, 'maturity_type')
+    valid_account_status = fetch_enum_values(db, 'account_status_type')
+    valid_roles = fetch_enum_values(db, 'role_type')
+    valid_observation_types = fetch_enum_values(db, 'observation_type_enum')
         
     return {
         'species_list': species_list,
@@ -34,7 +37,10 @@ def fetch_lookup_data(db):
         'valid_conditions': valid_conditions,
         'valid_rebaited': valid_rebaited,
         'valid_sex': valid_sex,
-        'valid_maturity': valid_maturity
+        'valid_maturity': valid_maturity,
+        'valid_account_status': valid_account_status,
+        'valid_roles': valid_roles,
+        'valid_observation_types': valid_observation_types
     }
 
 def fetch_operator_trap_ids(db, operator_id):
@@ -111,4 +117,23 @@ def insert_catch_record(db, data, user_id):
             data['trap_condition'],
             data['strikes'],
             data.get('notes') or None
+        ))
+
+def insert_observation(db, data, user_id):
+    """Insert an incidental observation into the database."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO incidental_observations (
+                date, operator_id, observation_type, notes, latitude, longitude, line_id, trap_id
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['date'],
+            user_id,
+            data['observation_type'],
+            data.get('notes') or None,
+            data.get('latitude') or None,
+            data.get('longitude') or None,
+            data['line_id'],  # Required field
+            data.get('trap_id') or None
         ))

@@ -25,6 +25,7 @@ DROP TYPE IF EXISTS sex_type            CASCADE;
 DROP TYPE IF EXISTS maturity_type       CASCADE;
 DROP TYPE IF EXISTS rebaited_type       CASCADE;
 DROP TYPE IF EXISTS trap_condition_type CASCADE;
+DROP TYPE IF EXISTS observation_type_enum CASCADE;
 
 -- ==============================================================
 -- 1. ENUMs — static values that will never change
@@ -56,6 +57,15 @@ CREATE TYPE trap_condition_type AS ENUM (
     'Regassed',
     'Recurred',
     'Battery charge'
+);
+
+CREATE TYPE observation_type_enum AS ENUM (
+    'Bird sighting',
+    'Predator sighting',
+    'Predator tracks',
+    'Native species tracks',
+    'Native species sign',
+    'Other'
 );
 
 -- ==============================================================
@@ -153,14 +163,14 @@ CREATE TABLE trap_catches (
 
 CREATE TABLE incidental_observations (
     observation_id   SERIAL PRIMARY KEY,
-    date             TIMESTAMP    NOT NULL,
-    operator_id      INTEGER      NOT NULL REFERENCES users(user_id),
-    observation_type VARCHAR(255) NOT NULL,
+    date             TIMESTAMP            NOT NULL,
+    operator_id      INTEGER              NOT NULL REFERENCES users(user_id),
+    observation_type observation_type_enum NOT NULL,
     notes            TEXT,
     latitude         NUMERIC(9, 6),
     longitude        NUMERIC(9, 6),
-    line_id          INTEGER      REFERENCES lines(line_id),
-    trap_id          INTEGER      REFERENCES traps(trap_id)
+    line_id          INTEGER              NOT NULL REFERENCES lines(line_id),
+    trap_id          INTEGER              REFERENCES traps(trap_id)
 );
 
 -- Password reset tokens — used by the forgot password flow

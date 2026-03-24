@@ -108,3 +108,92 @@ def catch_records():
         filter_data=filter_data
     )
 
+
+def get_observations(operator_id=None):
+    """Query observations with optional filter by operator_id."""
+    filters = {
+        'observation_type': request.args.get('observation_type'),
+        'line_id': request.args.get('line_id'),
+        'trap_code': request.args.get('trap_code'),
+        'date_from': request.args.get('date_from'),
+        'date_to': request.args.get('date_to'),
+        'sort_date': request.args.get('sort_date', 'desc')
+    }
+
+    where_clauses = []
+    query_params = []
+
+    if operator_id:
+        where_clauses.append("o.operator_id = %s")
+        query_params.append(operator_id)
+    if filters['observation_type']:
+        where_clauses.append("o.observation_type = %s")
+        query_params.append(filters['observation_type'])
+    if filters['line_id']:
+        where_clauses.append("o.line_id = %s")
+        query_params.append(filters['line_id'])
+    if filters['trap_code']:
+        where_clauses.append("t.code = %s")
+        query_params.append(filters['trap_code'])
+    if filters['date_from']:
+        where_clauses.append("o.date >= %s")
+        query_params.append(filters['date_from'])
+    if filters['date_to']:
+        where_clauses.append("o.date <= %s")
+        query_params.append(filters['date_to'] + " 23:59:59")
+
+    where_sql = ""
+    if where_clauses:
+        where_sql = "WHERE " + " AND ".join(where_clauses)
+        
+    if filters['sort_date'] == 'asc':
+        order_sql = "ORDER BY o.date ASC"
+    else:
+        order_sql = "ORDER BY o.date DESC"
+
+    with db.get_cursor() as cursor:
+        cursor.execute(f"""
+            SELECT 
+                o.*,
+                t.code AS trap_code,
+                l.name AS line_name,
+                u.first_name || ' ' || u.last_name AS operator_name
+            FROM incidental_observations o
+            LEFT JOIN traps t ON o.trap_id = t.trap_id
+            LEFT JOIN lines l ON o.line_id = l.line_id
+            LEFT JOIN users u ON o.operator_id = u.user_id
+            {where_sql}
+            {order_sql}
+        """, tuple(query_params))
+        records = cursor.fetchall()
+
+        cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
+        trap_codes = [r['code'] for r in cursor.fetchall()]
+        
+        cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
+        lines = cursor.fetchall()
+        
+        cursor.execute("SELECT unnest(enum_range(NULL::observation_type_enum)) AS obs_type")
+        observation_types = [r['obs_type'] for r in cursor.fetchall()]
+
+        filter_data = {
+            'trap_codes': trap_codes,
+            'lines': lines,
+            'observation_types': observation_types
+        }
+
+    return records, filters, filter_data
+
+
+@app.route('/observations')
+@role_required()
+def observations():
+    """Browse and filter all incidental observations."""
+    records, filters, filter_data = get_observations()
+    return render_template(
+        'observer/observations.html', 
+        records=records, 
+        selected_filters=filters, 
+        filter_data=filter_data
+    )
+
