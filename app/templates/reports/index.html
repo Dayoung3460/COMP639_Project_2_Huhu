@@ -18,7 +18,7 @@
       {% for line in lines %}
         <option value="{{ line.line_id }}"
                 {{ 'selected' if selected_line == line.line_id|string }}>
-          {{ line.name }}
+          {{ line.name }}{{ ' (Retired)' if line.is_retired }}
         </option>
       {% endfor %}
     </select>
@@ -140,7 +140,7 @@
         </div>
         <div class="panel-body">
           {% if trend_values %}
-            <canvas id="trendChart" height="160"></canvas>
+            <div style="position:relative; height:280px;"><canvas id="trendChart"></canvas></div>
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
               <i class="bi bi-graph-up" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
@@ -157,7 +157,7 @@
         </div>
         <div class="panel-body d-flex align-items-center justify-content-center">
           {% if species_values %}
-            <canvas id="speciesChart"></canvas>
+            <div style="position:relative; height:280px;"><canvas id="speciesChart"></canvas></div>
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
               <i class="bi bi-pie-chart" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
@@ -179,7 +179,13 @@
         </div>
         <div class="panel-body">
           {% if line_values %}
-            <canvas id="lineChart" style="min-height:400px;" height="400"></canvas>
+            <div style="position:relative; height:400px;"><canvas id="lineChart"></canvas></div>
+            {% if insights.retired_lines %}
+              <div style="margin-top:10px; font-size:11px; color:#6b7c72; display:flex; align-items:center; gap:6px;">
+                <span style="display:inline-block; width:12px; height:12px; background:#cbd5e1; border-radius:2px; flex-shrink:0;"></span>
+                ⊘ Retired line
+              </div>
+            {% endif %}
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
               <i class="bi bi-bar-chart-horizontal" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
@@ -197,7 +203,13 @@
         </div>
         <div class="panel-body">
           {% if status_datasets %}
-            <canvas id="statusChart" style="min-height:400px;" height="400"></canvas>
+            <div style="position:relative; height:400px;"><canvas id="statusChart"></canvas></div>
+            {% if insights.retired_lines %}
+              <div style="margin-top:10px; font-size:11px; color:#6b7c72; display:flex; align-items:center; gap:6px;">
+                <span style="display:inline-block; width:12px; height:12px; background:#cbd5e1; border-radius:2px; flex-shrink:0;"></span>
+                ⊘ Retired line
+              </div>
+            {% endif %}
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
               <i class="bi bi-bar-chart" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
@@ -277,6 +289,24 @@
               <p class="insight-text">
                 Most recent record was on {{ insights.last_check_line }}
                 — {{ insights.last_check_date.strftime('%d %b %Y, %H:%M') }}.
+              </p>
+            </div>
+          </div>
+          {% endif %}
+
+          {# Retired lines #}
+          {% if insights.retired_lines %}
+          <div class="insight-card" style="background:#f8fafc; border-color:#cbd5e1;">
+            <div class="insight-icon" style="background:#e2e8f0; color:#64748b;">
+              <i class="bi bi-archive"></i>
+            </div>
+            <div>
+              <div class="insight-title" style="color:#475569;">Retired Lines</div>
+              <p class="insight-text">
+                {{ insights.retired_lines | length }} line{{ 's' if insights.retired_lines | length != 1 }} retired:
+                <span style="color:#475569; font-weight:500;">
+                  {{ insights.retired_lines | join(', ') }}
+                </span>
               </p>
             </div>
           </div>
@@ -456,10 +486,7 @@
       datasets: [{
         label: 'Catches',
         data: {{ line_values | tojson }},
-        backgroundColor: [
-          '#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
-          '#0891b2','#d97706','#059669','#dc2626','#6b7280'
-        ].slice(0, {{ line_labels | length }}),
+        backgroundColor: {{ line_colors | tojson }},
         borderRadius: 4,
         borderSkipped: false
       }]
@@ -468,7 +495,20 @@
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              const label = items[0].label;
+              return label.endsWith(' ⊘') ? label + ' — Retired' : label;
+            },
+            afterLabel: function(item) {
+              return item.label.endsWith(' ⊘') ? '⚠ This line has been retired' : '';
+            }
+          }
+        }
+      },
       scales: {
         x: { beginAtZero: true, grid: { color: '#f0f5f2' }, ticks: { stepSize: 1 } },
         y: { grid: { display: false } }

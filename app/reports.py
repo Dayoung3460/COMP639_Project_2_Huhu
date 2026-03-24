@@ -39,9 +39,11 @@ def reports():
     try:
         with db.get_cursor() as cursor:
 
-            # All lines for filter dropdown
+            # All lines for filter dropdown — including retired
             cursor.execute(
-                'SELECT line_id, name FROM lines WHERE is_retired = FALSE ORDER BY name'
+                '''SELECT line_id, name, is_retired
+                   FROM lines
+                   ORDER BY is_retired ASC, name ASC'''
             )
             lines = cursor.fetchall()
 
@@ -108,6 +110,7 @@ def reports():
     other_breakdown = {}
     line_labels = []
     line_values = []
+    line_colors = []
     status_labels = []
     status_datasets = []
     insights = {}
@@ -171,38 +174,56 @@ def reports():
 
             # ── Catches by trap line ───────────────────────────
             cursor.execute(f'''
-                SELECT l.line_id, l.name AS line_name, COUNT(*) AS cnt
+                SELECT l.line_id, l.name AS line_name, l.is_retired, COUNT(*) AS cnt
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
                 {period_sql} {line_sql}
-                GROUP BY l.line_id, l.name
-                ORDER BY cnt DESC
+                GROUP BY l.line_id, l.name, l.is_retired
+                ORDER BY l.is_retired ASC, cnt DESC
             ''', line_params)
             line_rows = cursor.fetchall()
-            line_labels = [r['line_name'] for r in line_rows]
+            active_palette  = ['#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
+                               '#0891b2','#d97706','#059669','#dc2626','#6b7280']
+            retired_color   = '#cbd5e1'
+            line_labels = [
+                r['line_name'] + (' ⊘' if r['is_retired'] else '')
+                for r in line_rows
+            ]
             line_values = [r['cnt'] for r in line_rows]
+            line_colors = [
+                retired_color if r['is_retired'] else active_palette[i % len(active_palette)]
+                for i, r in enumerate(line_rows)
+            ]
 
             # ── Trap status distribution by line ───────────────
             cursor.execute(f'''
-                SELECT l.line_id, l.name AS line_name, tc.status, COUNT(*) AS cnt
+                SELECT l.line_id, l.name AS line_name, l.is_retired, tc.status, COUNT(*) AS cnt
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE 1=1 {period_sql} {line_sql}
-                GROUP BY l.line_id, l.name, tc.status
-                ORDER BY l.name, tc.status
+                GROUP BY l.line_id, l.name, l.is_retired, tc.status
+                ORDER BY l.is_retired ASC, l.name, tc.status
             ''', line_params)
             status_rows = cursor.fetchall()
 
             # Build datasets — one per unique status value
-            status_line_names = sorted(set(r['line_name'] for r in status_rows))
+            # Retired lines get ⊘ suffix and sorted to end
+            seen = {}
+            for r in status_rows:
+                key = r['line_id']
+                if key not in seen:
+                    label = r['line_name'] + (' ⊘' if r['is_retired'] else '')
+                    seen[key] = (label, r['is_retired'])
+            status_line_names = [v[0] for v in seen.values()]
             status_map = {}
             for r in status_rows:
+                label = r['line_name'] + (' ⊘' if r['is_retired'] else '')
                 if r['status'] not in status_map:
                     status_map[r['status']] = {ln: 0 for ln in status_line_names}
-                status_map[r['status']][r['line_name']] = r['cnt']
+                status_map[r['status']][label] = r['cnt']
 
             status_labels = status_line_names
             status_palette = {
@@ -265,6 +286,13 @@ def reports():
                 insights['last_check_line'] = last['line_name']
                 insights['last_check_date'] = last['date']
 
+            # Retired lines
+            cursor.execute(
+                'SELECT name FROM lines WHERE is_retired = TRUE ORDER BY name'
+            )
+            retired_rows = cursor.fetchall()
+            insights['retired_lines'] = [r['name'] for r in retired_rows]
+
             # ── Recent catches (last 10) ───────────────────────
             cursor.execute(f'''
                 SELECT
@@ -301,6 +329,7 @@ def reports():
                            other_breakdown=other_breakdown,
                            line_labels=line_labels,
                            line_values=line_values,
+                           line_colors=line_colors,
                            status_labels=status_labels,
                            status_datasets=status_datasets,
                            insights=insights,
