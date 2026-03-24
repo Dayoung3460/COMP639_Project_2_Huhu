@@ -140,7 +140,7 @@
         </div>
         <div class="panel-body">
           {% if trend_values %}
-            <div style="position:relative; height:280px;"><canvas id="trendChart"></canvas></div>
+            <div style="position:relative; height:400px; width:100%;"><canvas id="trendChart" style="width:100% !important;"></canvas></div>
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
               <i class="bi bi-graph-up" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
@@ -157,7 +157,7 @@
         </div>
         <div class="panel-body d-flex align-items-center justify-content-center">
           {% if species_values %}
-            <div style="position:relative; height:280px;"><canvas id="speciesChart"></canvas></div>
+            <div style="position:relative; height:400px; width:100%;"><canvas id="speciesChart" style="width:100% !important;"></canvas></div>
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
               <i class="bi bi-pie-chart" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
@@ -179,7 +179,7 @@
         </div>
         <div class="panel-body">
           {% if line_values %}
-            <div style="position:relative; height:400px;"><canvas id="lineChart"></canvas></div>
+            <div style="position:relative; height:400px; width:100%;"><canvas id="lineChart" style="width:100% !important;"></canvas></div>
             {% if insights.retired_lines %}
               <div style="margin-top:10px; font-size:11px; color:#6b7c72; display:flex; align-items:center; gap:6px;">
                 <span style="display:inline-block; width:12px; height:12px; background:#cbd5e1; border-radius:2px; flex-shrink:0;"></span>
@@ -203,7 +203,7 @@
         </div>
         <div class="panel-body">
           {% if status_datasets %}
-            <div style="position:relative; height:400px;"><canvas id="statusChart"></canvas></div>
+            <div style="position:relative; height:400px; width:100%;"><canvas id="statusChart" style="width:100% !important;"></canvas></div>
             {% if insights.retired_lines %}
               <div style="margin-top:10px; font-size:11px; color:#6b7c72; display:flex; align-items:center; gap:6px;">
                 <span style="display:inline-block; width:12px; height:12px; background:#cbd5e1; border-radius:2px; flex-shrink:0;"></span>
@@ -384,6 +384,8 @@
   Chart.defaults.font.family = "'DM Sans', sans-serif";
   Chart.defaults.font.size   = 12;
   Chart.defaults.color       = '#6b7c72';
+  Chart.defaults.responsive  = true;
+  Chart.defaults.maintainAspectRatio = false;
 
   // ── Set print date ────────────────────────────────────────
   const now = new Date();
@@ -432,7 +434,7 @@
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
         y: { beginAtZero: true, grid: { color: '#f0f5f2' }, ticks: { stepSize: 1 } },
