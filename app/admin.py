@@ -421,9 +421,57 @@ def manage_statuses():
     return render_template('admin/manage_statuses.html', statuses=[])
 
 
-@app.route('/admin/bait-types')
+@app.route('/admin/bait-types', methods=['GET', 'POST'])
 @role_required('Admin')
 def manage_bait_types():
     """View and manage the bait type lookup table."""
-    # TODO: query bait_type
-    return render_template('admin/manage_bait_types.html', bait_types=[])
+    if request.method == 'POST':
+        current_bait_type_name = request.form.get('current-bait-type-name', '').strip()
+        bait_type_name = request.form.get('bait-type-name', '').strip()
+        modal_action = request.form.get('modal-action')
+        
+        if not bait_type_name:
+            flash('Please provide a bait type name.', 'danger')
+            return redirect(url_for('manage_bait_types'))
+        
+        with db.get_cursor() as cursor:
+            # Check for existing bait type with the same name
+            cursor.execute(
+                """
+                SELECT name
+                FROM bait_types
+                WHERE name = %s
+                """, (bait_type_name,))
+            if cursor.fetchone():
+                flash(f'A bait type named "{bait_type_name}" already exists.', 'danger')
+                return redirect(url_for('manage_bait_types'))
+            
+            if modal_action == 'add':
+                # Insert the new bait type
+                cursor.execute(
+                    """
+                    INSERT INTO bait_types (name)
+                    VALUES (%s)
+                    """, (bait_type_name,))
+                flash(f'Bait type "{bait_type_name}" added successfully.', 'success')
+            elif modal_action == 'edit':
+                # Update the new bait type
+                cursor.execute(
+                    """
+                    UPDATE bait_types
+                    SET name = %s
+                    WHERE name = %s
+                    """, (bait_type_name, current_bait_type_name))
+                flash(f'Bait type "{current_bait_type_name}" updated to "{bait_type_name}" successfully.', 'success')
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT name
+            FROM bait_types
+            ORDER BY name ASC
+            """
+        )
+        bait_types = cursor.fetchall()
+
+    return render_template('admin/manage_bait_types.html', bait_types=bait_types)
