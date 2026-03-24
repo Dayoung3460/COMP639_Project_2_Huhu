@@ -31,9 +31,39 @@ def admin_users():
 @role_required('Admin')
 def admin_user_detail(user_id):
     """View detailed profile for a single user."""
-    # TODO: query user, assigned lines, catch record history
-    user = None
-    return render_template('admin/user_detail.html', user=user)
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT * FROM users WHERE user_id = %s',
+            (user_id,)
+        )
+        user = cursor.fetchone()
+
+        if not user:
+            flash('User not found', 'danger')
+            return redirect(url_for('admin_users'))
+
+        assigned_lines = []
+        if user['role'] == 'Operator':
+            cursor.execute('''
+                SELECT l.line_id, l.name, l.is_retired
+                FROM operator_lines ol
+                JOIN lines l ON ol.line_id = l.line_id
+                WHERE ol.operator_id = %s
+                ORDER BY l.name
+            ''', (user_id,))
+            assigned_lines = cursor.fetchall()
+
+        cursor.execute('''
+            SELECT tc.*, t.code AS trap_code, l.name AS line_name
+            FROM trap_catches tc
+            JOIN traps t ON tc.trap_id = t.trap_id
+            JOIN lines l ON t.line_id = l.line_id
+            WHERE tc.recorded_by_id = %s
+            ORDER BY tc.date DESC
+        ''', (user_id,))
+        catch_history = cursor.fetchall()
+
+    return render_template('admin/user_detail.html', user=user, assigned_lines=assigned_lines, catch_history=catch_history)
 
 
 @app.route('/admin/users/<int:user_id>/toggle-active', methods=['POST'])
