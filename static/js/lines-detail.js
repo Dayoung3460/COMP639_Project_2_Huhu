@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Extract line ID and trap types (fallback to a default list if not provided)
       const lineId = mapElement.dataset.lineId || '0';
+      const newTrapUrl = addTrapBtn.dataset.newTrapUrl || '#';
       let trapTypes = ['SA200', 'SA250', 'DOC150', 'DOC200', 'DOC250', 'Timms', 'Live Capture', 'Goodnature A24', 'Other'];
       if (addTrapBtn.dataset.trapTypes) {
         try { trapTypes = JSON.parse(addTrapBtn.dataset.trapTypes); } catch (e) {}
@@ -85,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
       newRow.innerHTML = `
         <div class="card-body py-3">
           <h6 class="card-title mb-2" style="color: #1a5c38;">Add Trap</h6>
-          <form id="new-trap-inline-form" method="POST" action="/admin/lines/${lineId}/new_trap">
+          <form id="new-trap-inline-form" method="POST" action="${newTrapUrl}">
             <div class="row g-0 mb-1">
               <div class="col-md-4 text-center" style="margin-left: 24%;">
                 <small class="fw-medium" style="color: #1a5c38;"><i class="bi bi-geo-alt-fill me-1"></i>Click on the map above to set coordinates</small>
@@ -183,7 +184,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const cardBody = formContainer.querySelector('.card-body');
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert alert-danger py-2 px-3 mb-3 small';
-        alertDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>${errorMsg}`;
+
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-exclamation-triangle-fill me-2';
+        const message = document.createElement('span');
+        message.textContent = errorMsg;
+        alertDiv.appendChild(icon);
+        alertDiv.appendChild(message);
+
         cardBody.insertBefore(alertDiv, cardBody.querySelector('form'));
 
         // Compensate for the extra height the error message adds to the form

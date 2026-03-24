@@ -27,9 +27,9 @@
             Show retired traps
           {% endif %}
         </a>
-        {% if session.get('role') == 'Admin' %}
+        {% if session.get('role') == 'Admin' and not line.is_retired %}
           <!-- The button to trigger the form -->
-          <button id="inline-add-trap-btn" class="btn btn-pf btn-sm" data-trap-types='{{ trap_types | tojson }}'>
+          <button id="inline-add-trap-btn" class="btn btn-pf btn-sm" data-trap-types='{{ trap_types | tojson }}' data-new-trap-url="{{ url_for('new_trap', line_id=line.line_id) }}">
             <i class="bi bi-plus-lg me-1"></i>Add Trap
           </button>
           <a href="{{ url_for('assign_operators', line_id=line.line_id) }}"
