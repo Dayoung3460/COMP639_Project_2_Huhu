@@ -9,7 +9,7 @@ from app.utils import (
     LINCOLN_NZ_LAT_RANGE,
     LINCOLN_NZ_LON_RANGE,
 )
-from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data
+from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data, fetch_user_info, update_user_role
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -622,4 +622,21 @@ def set_user_active():
     
     update_user_active(db, user_id, set_active)
     flash('User account status updated.', 'success')
+    return redirect(url_for('admin_users'))
+
+def set_user_role():
+    """Set a user's role."""
+    user_id = request.form.get('user_id')
+    role = request.form.get('setUserRoleSelect')
+    fetched_user = fetch_user_info(db, user_id)
+    if fetched_user['role'] == 'Admin':
+        flash('Cannot change Admin role.', 'error')
+        return redirect(url_for('admin_users'))
+    lookup = fetch_lookup_data(db)
+    if role not in lookup['valid_roles']:
+        flash('Invalid role value.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    update_user_role(db, user_id, role)
+    flash('User role updated.', 'success')
     return redirect(url_for('admin_users'))
