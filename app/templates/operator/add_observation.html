@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container py-4" style="max-width:580px;">
   <h2 class="mb-4">Add Incidental Observation</h2>
-  <form method="POST" action="{{ url_for('add_observation') }}" novalidate>
+  <form method="POST" action="{{ url_for('add_observation') }}" novalidate onsubmit="return confirm('Are you sure you want to save this observation?')">
     <div class="mb-3">
       <label class="form-label">Line <span class="text-danger">*</span></label>
       <select name="line_id" id="lineSelect" class="form-select {% if errors and errors.get('line_id') %}is-invalid{% endif %}" required>
