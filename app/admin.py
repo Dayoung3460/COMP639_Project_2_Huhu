@@ -28,8 +28,14 @@ def admin_dashboard():
 @role_required('Admin')
 def admin_users():
     """List all registered users with role and account status."""
-    # TODO: query all users with role name and is_active
-    users = []
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT user_id, username, first_name, last_name, email, role, account_status
+            FROM users
+            ORDER BY first_name ASC, last_name ASC
+        ''')
+        users = cursor.fetchall()
+
     return render_template('admin/users.html', users=users)
 
 
