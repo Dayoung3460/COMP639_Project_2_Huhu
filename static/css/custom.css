@@ -714,6 +714,49 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border-color: #565e64;
 }
 
+.lines-list-shell {
+  --lines-visible-card-height: 7.5rem;
+  --lines-list-gap: 0.9rem;
+  background: #fff;
+  border: 1px solid rgba(45, 122, 79, 0.16);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(25, 63, 46, 0.06);
+}
+
+.lines-list-scroll {
+  max-height: calc((var(--lines-visible-card-height) * 3) + (var(--lines-list-gap) * 2));
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lines-list-gap);
+  scrollbar-gutter: stable;
+}
+
+.lines-list-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.lines-list-scroll::-webkit-scrollbar-track {
+  background: #edf4ef;
+  border-radius: 999px;
+}
+
+.lines-list-scroll::-webkit-scrollbar-thumb {
+  background: rgba(45, 122, 79, 0.4);
+  border-radius: 999px;
+}
+
+.lines-list-scroll .js-line-card {
+  margin-bottom: 0;
+  min-height: var(--lines-visible-card-height);
+}
+
+.lines-list-scroll .js-line-card .card-body {
+  min-height: var(--lines-visible-card-height);
+}
+
 .operator-assignment-item {
   display: flex;
   align-items: center;
@@ -742,6 +785,15 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   .lines-filter-shell {
     padding: 16px;
     border-radius: 14px;
+  }
+
+  .lines-list-shell {
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .lines-list-scroll {
+    padding-right: 6px;
   }
 }
 
