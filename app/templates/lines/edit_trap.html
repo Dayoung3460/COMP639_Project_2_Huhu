@@ -21,12 +21,14 @@
 
     <div class="mb-3">
       <label for="trapLatitude" class="form-label">Trap Latitude</label>
-      <input type="number" class="form-control" id="trapLatitude" name="trap_latitude" step="0.000001" min="-999.999999" max="999.999999" value="{{ trap.latitude }}" required>
+      <input type="number" class="form-control" id="trapLatitude" name="trap_latitude" step="0.000001" min="{{ lat_range[0] }}" max="{{ lat_range[1] }}" value="{{ trap.latitude }}" required>
+      <div class="form-text">Allowed Lincoln boundary: {{ lat_range[0] }} to {{ lat_range[1] }}</div>
     </div>
 
     <div class="mb-3">
       <label for="trapLongitude" class="form-label">Trap Longitude</label>
-      <input type="number" class="form-control" id="trapLongitude" name="trap_longitude" step="0.000001" min="-180.0" max="180.0" value="{{ trap.longitude }}" required>
+      <input type="number" class="form-control" id="trapLongitude" name="trap_longitude" step="0.000001" min="{{ lon_range[0] }}" max="{{ lon_range[1] }}" value="{{ trap.longitude }}" required>
+      <div class="form-text">Allowed Lincoln boundary: {{ lon_range[0] }} to {{ lon_range[1] }}</div>
     </div>
 
     <a href="{{ url_for('line_detail', line_id=line_id) }}" class="btn btn-secondary">Cancel</a>

@@ -14,6 +14,9 @@ import os
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+LINCOLN_NZ_LAT_RANGE = (-43.6600, -43.6350)
+LINCOLN_NZ_LON_RANGE = (172.4550, 172.4900)
+LINCOLN_NZ_COORDINATES_ERROR = 'Trap coordinates must be within the allowed Lincoln, New Zealand boundary.'
 
 
 # ── Decorators ────────────────────────────────────────────────────────────────
@@ -83,6 +86,32 @@ def allowed_file(filename):
     """
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def validate_lincoln_nz_coordinates(latitude, longitude):
+    """
+    Validates trap coordinates fall within the supported Lincoln, New Zealand area.
+
+    Args:
+        latitude (str | float): Latitude to validate.
+        longitude (str | float): Longitude to validate.
+
+    Returns:
+        str: Empty string when valid, otherwise an error message.
+    """
+    try:
+        lat = float(latitude)
+        lon = float(longitude)
+    except (TypeError, ValueError):
+        return 'Invalid coordinates. Please ensure Latitude and Longitude are valid numbers.'
+
+    if not (LINCOLN_NZ_LAT_RANGE[0] <= lat <= LINCOLN_NZ_LAT_RANGE[1]):
+        return LINCOLN_NZ_COORDINATES_ERROR
+
+    if not (LINCOLN_NZ_LON_RANGE[0] <= lon <= LINCOLN_NZ_LON_RANGE[1]):
+        return LINCOLN_NZ_COORDINATES_ERROR
+
+    return ''
 
 
 # ── Role-based redirect ───────────────────────────────────────────────────────

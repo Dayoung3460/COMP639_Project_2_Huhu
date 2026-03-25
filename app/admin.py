@@ -3,7 +3,12 @@
 from flask import render_template, request, redirect, url_for, flash, session
 import os
 from app import app, db
-from app.utils import role_required
+from app.utils import (
+    role_required,
+    validate_lincoln_nz_coordinates,
+    LINCOLN_NZ_LAT_RANGE,
+    LINCOLN_NZ_LON_RANGE,
+)
 from app.helpers.dbHelper import fetch_enum_values
 
 
@@ -225,11 +230,20 @@ def new_trap(line_id):
             )
         )
 
-    try:
-        float(latitude)
-        float(longitude)
-    except ValueError:
-        return redirect(url_for('line_detail', line_id=line_id, code=code, trap_type=trap_type, add_trap=1, error='Invalid coordinates. Please ensure Latitude and Longitude are valid numbers.'))
+    coordinates_error = validate_lincoln_nz_coordinates(latitude, longitude)
+    if coordinates_error:
+        return redirect(
+            url_for(
+                'line_detail',
+                line_id=line_id,
+                code=code,
+                trap_type=trap_type,
+                latitude=latitude,
+                longitude=longitude,
+                add_trap=1,
+                error=coordinates_error
+            )
+        )
 
     with db.get_cursor() as cursor:
         cursor.execute("SELECT code FROM traps WHERE code = %s", (code,))
@@ -253,18 +267,61 @@ def edit_trap(line_id, trap_id):
     """Edit an existing trap."""
     # get trap types for dropdown
     trap_types = fetch_enum_values(db, 'trap_type_enum')
-    trap = None
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT trap_id, line_id, code, trap_type, latitude, longitude, is_retired
+            FROM traps
+            WHERE trap_id = %s
+            """,
+            (trap_id,)
+        )
+        trap = cursor.fetchone()
+        if not trap:
+            flash('Trap not found.', 'danger')
+            return redirect(url_for('lines_index'))
 
     if request.method == 'POST':
-        code = request.form.get('trap_code')
-        trap_type = request.form.get('trap_type')
-        latitude = request.form.get('trap_latitude')
-        longitude = request.form.get('trap_longitude')
+        code = request.form.get('trap_code', '').strip()
+        trap_type = request.form.get('trap_type', '').strip()
+        latitude = request.form.get('trap_latitude', '').strip()
+        longitude = request.form.get('trap_longitude', '').strip()
 
         # Basic validation
         if not code or not trap_type or not latitude or not longitude:
             flash('All fields are required.', 'danger')
-            return redirect(url_for('edit_trap', line_id=line_id, trap_id=trap_id))
+            trap.update({
+                'code': code,
+                'trap_type': trap_type,
+                'latitude': latitude,
+                'longitude': longitude
+            })
+            return render_template(
+                'lines/edit_trap.html',
+                trap=trap,
+                trap_types=trap_types,
+                line_id=line_id,
+                lat_range=LINCOLN_NZ_LAT_RANGE,
+                lon_range=LINCOLN_NZ_LON_RANGE,
+            )
+
+        coordinates_error = validate_lincoln_nz_coordinates(latitude, longitude)
+        if coordinates_error:
+            flash(coordinates_error, 'danger')
+            trap.update({
+                'code': code,
+                'trap_type': trap_type,
+                'latitude': latitude,
+                'longitude': longitude
+            })
+            return render_template(
+                'lines/edit_trap.html',
+                trap=trap,
+                trap_types=trap_types,
+                line_id=line_id,
+                lat_range=LINCOLN_NZ_LAT_RANGE,
+                lon_range=LINCOLN_NZ_LON_RANGE,
+            )
 
         # Check for unique trap code (excluding current trap)
         with db.get_cursor() as cursor:
@@ -279,7 +336,20 @@ def edit_trap(line_id, trap_id):
             existing_trap = cursor.fetchone()
             if existing_trap:
                 flash(f'Trap Code "{code}" has already been taken. Please choose a different code.', 'danger')
-                return redirect(url_for('edit_trap', line_id=line_id, trap_id=trap_id))
+                trap.update({
+                    'code': code,
+                    'trap_type': trap_type,
+                    'latitude': latitude,
+                    'longitude': longitude
+                })
+                return render_template(
+                    'lines/edit_trap.html',
+                    trap=trap,
+                    trap_types=trap_types,
+                    line_id=line_id,
+                    lat_range=LINCOLN_NZ_LAT_RANGE,
+                    lon_range=LINCOLN_NZ_LON_RANGE,
+                )
             
         # Update trap in database
         with db.get_cursor() as cursor:
@@ -295,22 +365,14 @@ def edit_trap(line_id, trap_id):
         flash('Trap updated.', 'success')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    # Query trap details for pre-filling the form
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT trap_id, line_id, code, trap_type, latitude, longitude, is_retired
-            FROM traps
-            WHERE trap_id = %s
-            """,
-            (trap_id,)
-        )
-        trap = cursor.fetchone()
-        if not trap:
-            flash('Trap not found.', 'danger')
-            return redirect(url_for('lines_index'))
-
-    return render_template('lines/edit_trap.html', trap=trap, trap_types=trap_types, line_id=line_id)
+    return render_template(
+        'lines/edit_trap.html',
+        trap=trap,
+        trap_types=trap_types,
+        line_id=line_id,
+        lat_range=LINCOLN_NZ_LAT_RANGE,
+        lon_range=LINCOLN_NZ_LON_RANGE,
+    )
 
 
 @app.route('/admin/traps/<int:line_id>/retire', methods=['POST'])
