@@ -462,12 +462,61 @@ def manage_species():
     return render_template('admin/manage_species.html', species_list=species_list)
 
 
-@app.route('/admin/statuses')
+@app.route('/admin/statuses', methods=['GET', 'POST'])
 @role_required('Admin')
 def manage_statuses():
     """View and manage the trap status lookup table."""
-    # TODO: query trap_status
-    return render_template('admin/manage_statuses.html', statuses=[])
+    if request.method == 'POST':
+        current_status_name = request.form.get('current-status-name', '').strip()
+        status_name = request.form.get('status-name', '').strip()
+        modal_action = request.form.get('modal-action')
+
+        if not status_name:
+            flash('Please provide a trap status name.', 'danger')
+            return redirect(url_for('manage_statuses'))
+        
+        with db.get_cursor() as cursor:
+            # Check for existing status with the same name
+            cursor.execute(
+                """
+                SELECT name
+                FROM trap_statuses
+                WHERE name = %s
+                """, (status_name,))
+            if cursor.fetchone():
+                flash(f'A trap status named "{status_name}" already exists.', 'danger')
+                return redirect(url_for('manage_statuses'))
+            
+            if modal_action == 'add':
+                # Insert the new status
+                print(f"Adding new status: {status_name}")
+                cursor.execute(
+                    """
+                    INSERT INTO trap_statuses (name)
+                    VALUES (%s)
+                    """, (status_name,))
+                flash(f'Trap status "{status_name}" added successfully.', 'success')
+            elif modal_action == 'edit':
+                # Update the new status
+                cursor.execute(
+                    """
+                    UPDATE trap_statuses
+                    SET name = %s
+                    WHERE name = %s
+                    """, (status_name, current_status_name))
+                flash(f'Trap status "{current_status_name}" updated to "{status_name}" successfully.', 'success')
+
+    # get list of statuses for display
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT name
+            FROM trap_statuses
+            ORDER BY name ASC
+            """
+        )
+        statuses_list = cursor.fetchall()
+    return render_template('admin/manage_statuses.html', statuses_list=statuses_list)
 
 
 @app.route('/admin/bait-types', methods=['GET', 'POST'])

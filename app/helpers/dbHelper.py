@@ -137,3 +137,26 @@ def insert_observation(db, data, user_id):
             data['line_id'],  # Required field
             data.get('trap_id') or None
         ))
+
+def validate_lookup_table_values(db, data):
+    """If the value that user selected from dropdown is not in database, return error message. This is to prevent the data inconsistency of database values."""
+    with db.get_cursor() as cursor:
+        if data.get('species_caught'):
+            cursor.execute("SELECT name FROM species WHERE name = %s", (data.get('species_caught'),))
+            species_result = cursor.fetchone()
+            if not species_result:
+                return f"The species '{data.get('species_caught')}' not found in database. Please select a valid species."
+
+        if data.get('bait_type'):
+            cursor.execute("SELECT name FROM bait_types WHERE name = %s", (data.get('bait_type'),))
+            bait_result = cursor.fetchone()
+            if not bait_result:
+                return f"The bait type '{data.get('bait_type')}' not found in database. Please select a valid bait type."
+
+        if data.get('status'):
+            cursor.execute("SELECT name FROM trap_statuses WHERE name = %s", (data.get('status'),))
+            status_result = cursor.fetchone()
+            if not status_result:
+                return f"The status '{data.get('status')}' not found in database. Please select a valid status."
+        
+    return False # No lookup errors found
