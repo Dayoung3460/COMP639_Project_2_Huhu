@@ -68,7 +68,20 @@ def lines_index():
                         ) AS op
                     ),
                     ARRAY[]::text[]
-                ) AS assigned_operator_labels
+                ) AS assigned_operator_labels,
+                COALESCE(
+                    (
+                        SELECT ARRAY_AGG(op.operator_id ORDER BY op.operator_id)
+                        FROM (
+                            SELECT DISTINCT u.user_id AS operator_id
+                            FROM operator_lines ol
+                            JOIN users u ON u.user_id = ol.operator_id
+                            WHERE ol.line_id = l.line_id
+                              AND u.role = 'Operator'
+                        ) AS op
+                    ),
+                    ARRAY[]::int[]
+                ) AS assigned_operator_ids
             FROM lines l
             WHERE (%s OR l.is_retired = FALSE)
             ORDER BY l.is_retired ASC, l.name ASC
@@ -139,6 +152,7 @@ def lines_index():
 
     for line in lines:
         line['assigned_operator_labels'] = line.get('assigned_operator_labels') or []
+        line['assigned_operator_ids'] = line.get('assigned_operator_ids') or []
 
     available_types = sorted({
         line['type'] for line in lines

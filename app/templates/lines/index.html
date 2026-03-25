@@ -93,15 +93,19 @@
         <div>
           <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
             <h5 class="mb-0">{{ line.name }}</h5>
+            
           </div>
           <small class="text-muted">
             {{ line.trap_count | default(0) }} active traps &mdash;
             {{ line.operator_count | default(0) }} operators
           </small>
           <div class="small text-muted mt-1">
-            <span class="fw-semibold">Assigned:</span>
             {{ line.assigned_operator_names if line.assigned_operator_names else 'None' }}
+            {% if session.get('role') == 'Operator' and session.get('user_id') in line.assigned_operator_ids %}
+              <span class="badge bg-primary">me</span>
+            {% endif %}
           </div>
+          
         </div>
         <div class="d-flex gap-2 align-items-center">
           {% if line.is_retired %}

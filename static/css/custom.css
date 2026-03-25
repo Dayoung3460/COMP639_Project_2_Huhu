@@ -714,6 +714,30 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border-color: #565e64;
 }
 
+.operator-assignment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.operator-assignment-item__identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.operator-assignment-item__name {
+  font-weight: 600;
+}
+
+.operator-assignment-item__add-catch {
+  font-size: 0.75rem;
+}
+
 @media (max-width: 767.98px) {
   .lines-filter-shell {
     padding: 16px;

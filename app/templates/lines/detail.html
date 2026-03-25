@@ -140,17 +140,19 @@
     {% if operators %}
       <ul class="list-group mb-4" style="max-width:400px;">
         {% for op in operators %}
-          <li class="list-group-item">
-            {{ op.first_name }} {{ op.last_name }}
-            {% if session.get('role') == 'Operator' and op.user_id == session.get('user_id') %}
-              <span class="badge bg-primary ms-2">me</span>
-              {% if not line.is_retired %}
-                <a href="{{ url_for('add_catch', line_id=line.line_id) }}" class="btn btn-sm btn-pf m-2 py-0 px-2" style="font-size:0.75rem;">
-                 + Add Catch
-                </a>
+          <li class="list-group-item operator-assignment-item">
+            <div class="operator-assignment-item__identity">
+              <span class="operator-assignment-item__name">{{ op.first_name }} {{ op.last_name }}</span>
+              <small class="text-muted">(@{{ op.username }})</small>
+              {% if session.get('role') == 'Operator' and op.user_id == session.get('user_id') %}
+                <span class="badge bg-primary">me</span>
+                {% if not line.is_retired %}
+                  <a href="{{ url_for('add_catch', line_id=line.line_id) }}" class="btn btn-sm btn-pf py-0 px-2 operator-assignment-item__add-catch">
+                   + Add Catch
+                  </a>
+                {% endif %}
               {% endif %}
-            {% endif %}
-            <small class="text-muted">(@{{ op.username }})</small>
+            </div>
           </li>
         {% endfor %}
       </ul>
