@@ -4,7 +4,7 @@ from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 from app.utils import role_required
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
-from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation
+from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation, validate_lookup_table_values
 
 
 @app.route('/operator/dashboard')
@@ -23,7 +23,15 @@ def add_catch():
     """Add a new trap catch record for an assigned line."""
     if request.method == 'POST':
         pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'])
-        
+
+        # Additional check for lookup tables, in case the data inconsistency of database values
+        lookup_valid_msg = validate_lookup_table_values(db, request.form)
+
+        if lookup_valid_msg:
+            flash(lookup_valid_msg, 'error')
+            lines = fetch_operator_lines(db, session['user_id'])
+            return render_template('operator/add_catch.html', data=request.form, lines=lines, lookup=lookup)
+
         if not pass_check:
             lines = fetch_operator_lines(db, session['user_id'])
             return render_template('operator/add_catch.html', errors=errors, data=request.form, lines=lines, lookup=lookup)
