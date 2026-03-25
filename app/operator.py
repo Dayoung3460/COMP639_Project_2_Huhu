@@ -17,6 +17,24 @@ def operator_dashboard():
     return render_template('operator/dashboard.html', assigned_lines=assigned_lines)
 
 
+@app.route('/operator/my-lines')
+@role_required('Operator')
+def my_lines():
+    """View lines specifically assigned to the logged-in operator."""
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT l.line_id, l.name, l.is_retired, l.type,
+                   (SELECT COUNT(*) FROM traps t WHERE t.line_id = l.line_id AND t.is_retired = FALSE) AS trap_count
+            FROM operator_lines ol
+            JOIN lines l ON ol.line_id = l.line_id
+            WHERE ol.operator_id = %s
+            ORDER BY l.is_retired ASC, l.name ASC
+        ''', (session['user_id'],))
+        assigned_lines = cursor.fetchall()
+
+    return render_template('operator/my_lines.html', assigned_lines=assigned_lines)
+
+
 @app.route('/operator/add-catch', methods=['GET', 'POST'])
 @role_required('Operator')
 def add_catch():
