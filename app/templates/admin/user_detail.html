@@ -3,6 +3,11 @@
 {% block title %}{{ user.first_name }} {{ user.last_name }} - Profile{% endblock %}
 
 {% block content %}
+{% set line_colors = [
+    '#0d6efd', '#6610f2', '#20c997', '#fd7e14', '#d63384', '#198754', '#6f42c1',
+    '#dc3545', '#0dcaf0', '#ffc107', '#6c757d', '#1982c4', '#8ac926', '#ff595e',
+    '#ff924c', '#9b5de5', '#2ec4b6', '#e71d36', '#3a86ff', '#8338ec'
+] %}
 <div class="container mt-4">
     <div class="d-flex justify-content-end mb-4">
         <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">Back to Users</a>
@@ -99,7 +104,7 @@
                         <ul class="list-group list-group-flush">
                             {% for line in assigned_lines %}
                                 <li class="list-group-item px-0 py-2">
-                                    <a href="{{ url_for('line_detail', line_id=line.line_id) }}" class="text-decoration-none fw-bold text-success">{{ line.name }}</a>
+                                    <a href="{{ url_for('line_detail', line_id=line.line_id) }}" class="text-decoration-none fw-bold" style="color: {{ line_colors[line.line_id % (line_colors|length)] }};">{{ line.name }}</a>
                                 </li>
                             {% endfor %}
                         </ul>
@@ -108,43 +113,93 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
+        </div>
+    </div>
 
-            <!-- Activity History Card -->
+    {% if user.role == 'Operator' %}
+    <!-- Full-width Activity History Row -->
+    <div class="row">
+        <div class="col-12">
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">Activity History</h5>
                 </div>
                 <div class="card-body">
-                    {% if recent_catches %}
-                        <div class="table-responsive">
-                            <table class="table table-hover table-sm mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Line</th>
-                                        <th>Trap</th>
-                                        <th>Species Caught</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for catch in recent_catches %}
-                                        <tr>
-                                            <td>{{ catch.date|nz_date }}</td>
-                                            <td>{{ catch.line_name }}</td>
-                                            <td>{{ catch.trap_code }}</td>
-                                            <td>{{ catch.species_caught }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <div class="row">
+                        <!-- Catches Column -->
+                        <div class="col-lg-6 mb-4 mb-lg-0">
+                            <div class="border rounded p-3 h-100 bg-white shadow-sm">
+                                <h6 class="fw-bold text-muted mb-3 text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Catches</h6>
+                                {% if recent_catches %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Line</th>
+                                                    <th>Trap</th>
+                                                    <th>Species Caught</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for catch in recent_catches %}
+                                                    <tr>
+                                                        <td>{{ catch.date|nz_date }}</td>
+                                                        <td><span style="color: {{ line_colors[catch.line_id % (line_colors|length)] }}; font-weight: 600;">{{ catch.line_name }}</span></td>
+                                                        <td>{{ catch.trap_code }}</td>
+                                                        <td>{{ catch.species_caught }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted mb-0">No catches available.</p>
+                                {% endif %}
+                            </div>
                         </div>
-                    {% else %}
-                        <p class="text-muted mb-0">No activity history is available.</p>
-                    {% endif %}
+
+                        <!-- Observations Column -->
+                        <div class="col-lg-6">
+                            <div class="border rounded p-3 h-100 bg-white shadow-sm">
+                                <h6 class="fw-bold text-muted mb-3 text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Observations</h6>
+                                {% if recent_observations %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Line / Trap</th>
+                                                    <th>Type</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for obs in recent_observations %}
+                                                    <tr>
+                                                        <td>{{ obs.date|nz_date }}</td>
+                                                        <td>
+                                                            {% if obs.line_name %}
+                                                                <span style="color: {{ line_colors[obs.line_id % (line_colors|length)] }}; font-weight: 600;">{{ obs.line_name }}</span>
+                                                            {% endif %}
+                                                            {% if obs.trap_code %}{% if obs.line_name %} / {% endif %}{{ obs.trap_code }}{% endif %}
+                                                        </td>
+                                                        <td>{{ obs.observation_type }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted mb-0">No observations available.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

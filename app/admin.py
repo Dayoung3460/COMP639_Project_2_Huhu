@@ -41,7 +41,6 @@ def admin_user_detail(user_id):
         ''', (user_id,))
         user = cursor.fetchone()
 
-    # TODO: check if correct
     if not user:
         flash('User not found', 'danger')
         return redirect(url_for('admin_users'))
@@ -67,20 +66,33 @@ def admin_user_detail(user_id):
     recent_catches = []
     with db.get_cursor() as cursor:
         cursor.execute('''
-            SELECT tc.catch_id, tc.date, tc.species_caught, t.code AS trap_code, l.name AS line_name
+            SELECT tc.catch_id, tc.date, tc.species_caught, t.code AS trap_code, l.name AS line_name, l.line_id
             FROM trap_catches tc
             JOIN traps t ON tc.trap_id = t.trap_id
             JOIN lines l ON t.line_id = l.line_id
             WHERE tc.recorded_by_id = %s
             ORDER BY tc.date DESC
-            LIMIT 10
         ''', (user_id,))
         recent_catches = cursor.fetchall()
+
+    recent_observations = []
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT o.observation_id, o.date, o.observation_type, 
+                   l.name AS line_name, t.code AS trap_code, l.line_id
+            FROM incidental_observations o
+            LEFT JOIN lines l ON o.line_id = l.line_id
+            LEFT JOIN traps t ON o.trap_id = t.trap_id
+            WHERE o.operator_id = %s
+            ORDER BY o.date DESC
+        ''', (user_id,))
+        recent_observations = cursor.fetchall()
 
     return render_template('admin/user_detail.html', 
                            user=user, 
                            assigned_lines=assigned_lines, 
-                           recent_catches=recent_catches)
+                           recent_catches=recent_catches,
+                           recent_observations=recent_observations)
 
 
 @app.route('/admin/users/<int:user_id>/toggle-active', methods=['POST'])
