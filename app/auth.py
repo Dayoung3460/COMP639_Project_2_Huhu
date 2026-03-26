@@ -327,22 +327,22 @@ def forgot_password():
             try:
                 from flask_mail import Message
                 msg = Message(
-                    subject='Reset your PF-LU password',
+                    subject='Reset your Tiaki password',
                     recipients=[email]
                 )
                 msg.html = f'''
                 <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
                   <div style="background:#1a5c38;padding:24px;border-radius:10px 10px 0 0;text-align:center;">
-                    <h2 style="color:#fff;margin:0;font-size:20px;">🌿 PF-LU Password Reset</h2>
+                    <h2 style="color:#fff;margin:0;font-size:20px;">Tiaki — Password Reset</h2>
                     <p style="color:#a3d4b5;font-size:13px;margin:8px 0 0;">
-                      Predator Free Lincoln University
+                      Predator Trapping & Monitoring
                     </p>
                   </div>
                   <div style="background:#fff;padding:28px;border:1px solid #e4ede8;
                               border-top:none;border-radius:0 0 10px 10px;">
                     <p style="color:#1a1f1b;font-size:14px;">Hi,</p>
                     <p style="color:#1a1f1b;font-size:14px;">
-                      We received a request to reset your PF-LU password.
+                      We received a request to reset your Tiaki password.
                       Click the button below to set a new password.
                       This link expires in <strong>1 hour</strong>.
                     </p>
@@ -360,7 +360,7 @@ def forgot_password():
                     </p>
                     <hr style="border:none;border-top:1px solid #e4ede8;margin:20px 0;">
                     <p style="color:#a3b5aa;font-size:11px;text-align:center;">
-                      PF-LU System — COMP639 Group Project 1, Lincoln University
+                      Tiaki — COMP639 Group Project 1, Lincoln University
                     </p>
                   </div>
                 </div>
