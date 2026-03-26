@@ -131,7 +131,7 @@
                         <div class="col-lg-6 mb-4 mb-lg-0">
                             <div class="border rounded p-3 h-100 bg-white shadow-sm">
                                 <h6 class="fw-bold text-muted mb-3 text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Catches</h6>
-                                {% if recent_catches %}
+                                {% if catches %}
                                     <div class="table-responsive">
                                         <table class="table table-hover table-sm mb-0">
                                             <thead>
@@ -143,7 +143,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {% for catch in recent_catches %}
+                                                {% for catch in catches %}
                                                     <tr>
                                                         <td>{{ catch.date|nz_date }}</td>
                                                         <td><span style="color: {{ line_colors[catch.line_id % (line_colors|length)] }}; font-weight: 600;">{{ catch.line_name }}</span></td>
@@ -164,7 +164,7 @@
                         <div class="col-lg-6">
                             <div class="border rounded p-3 h-100 bg-white shadow-sm">
                                 <h6 class="fw-bold text-muted mb-3 text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Observations</h6>
-                                {% if recent_observations %}
+                                {% if observations %}
                                     <div class="table-responsive">
                                         <table class="table table-hover table-sm mb-0">
                                             <thead>
@@ -175,7 +175,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {% for obs in recent_observations %}
+                                                {% for obs in observations %}
                                                     <tr>
                                                         <td>{{ obs.date|nz_date }}</td>
                                                         <td>

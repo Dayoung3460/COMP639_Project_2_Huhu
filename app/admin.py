@@ -229,7 +229,7 @@ def admin_user_detail(user_id):
             ''', (user_id,))
             assigned_lines = cursor.fetchall()
 
-    recent_catches = []
+    catches = []
     with db.get_cursor() as cursor:
         cursor.execute('''
             SELECT tc.catch_id, tc.date, tc.species_caught, t.code AS trap_code, l.name AS line_name, l.line_id
@@ -239,9 +239,9 @@ def admin_user_detail(user_id):
             WHERE tc.recorded_by_id = %s
             ORDER BY tc.date DESC
         ''', (user_id,))
-        recent_catches = cursor.fetchall()
+        catches = cursor.fetchall()
 
-    recent_observations = []
+    observations = []
     with db.get_cursor() as cursor:
         cursor.execute('''
             SELECT o.observation_id, o.date, o.observation_type, 
@@ -252,13 +252,13 @@ def admin_user_detail(user_id):
             WHERE o.operator_id = %s
             ORDER BY o.date DESC
         ''', (user_id,))
-        recent_observations = cursor.fetchall()
+        observations = cursor.fetchall()
 
     return render_template('admin/user_detail.html', 
                            user=user, 
                            assigned_lines=assigned_lines, 
-                           recent_catches=recent_catches,
-                           recent_observations=recent_observations)
+                           catches=catches,
+                           observations=observations)
 
 
 @app.route('/admin/users/<int:user_id>/toggle-active', methods=['POST'])
