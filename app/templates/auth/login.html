@@ -13,9 +13,11 @@
 
       {# ── Card header ── #}
       <div class="auth-card-header">
-        <div class="brand-circle">🌿</div>
+        <div class="">
+          <img src="{{ icon_url }}" alt="{{ site_name }}" style="width:52px; margin-bottom: 10px">
+        </div>
         <h4>Welcome Back</h4>
-        <p>Log in to access the PF-LU system</p>
+        <p>Log in to access the {{ site_name }}</p>
       </div>
 
       {# ── Card body ── #}
@@ -136,7 +138,7 @@
     </div>
 
     <p class="text-center mt-3" style="font-size:11px; color:#8a9e93;">
-      PF-LU System — COMP639 Group Project 1
+      {{ site_name }} — COMP639 Group Project 1
     </p>
 
   </div>

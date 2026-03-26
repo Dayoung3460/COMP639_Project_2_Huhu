@@ -23,6 +23,9 @@ def fetch_lookup_data(db):
     valid_rebaited = fetch_enum_values(db, 'rebaited_type')
     valid_sex = fetch_enum_values(db, 'sex_type')
     valid_maturity = fetch_enum_values(db, 'maturity_type')
+    valid_account_status = fetch_enum_values(db, 'account_status_type')
+    valid_roles = fetch_enum_values(db, 'role_type')
+    valid_observation_types = fetch_enum_values(db, 'observation_type_enum')
         
     return {
         'species_list': species_list,
@@ -34,7 +37,10 @@ def fetch_lookup_data(db):
         'valid_conditions': valid_conditions,
         'valid_rebaited': valid_rebaited,
         'valid_sex': valid_sex,
-        'valid_maturity': valid_maturity
+        'valid_maturity': valid_maturity,
+        'valid_account_status': valid_account_status,
+        'valid_roles': valid_roles,
+        'valid_observation_types': valid_observation_types
     }
 
 def fetch_operator_trap_ids(db, operator_id):
@@ -112,3 +118,54 @@ def insert_catch_record(db, data, user_id):
             data['strikes'],
             data.get('notes') or None
         ))
+
+def insert_observation(db, data, user_id):
+    """Insert an incidental observation into the database."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO incidental_observations (
+                date, operator_id, observation_type, notes, latitude, longitude, line_id, trap_id
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['date'],
+            user_id,
+            data['observation_type'],
+            data.get('notes') or None,
+            data.get('latitude') or None,
+            data.get('longitude') or None,
+            data['line_id'],  # Required field
+            data.get('trap_id') or None
+        ))
+
+def update_user_active(db, user_id, status):
+    """Update a user's account status."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            UPDATE users
+            SET account_status = %s
+            WHERE user_id = %s
+        """, (status, user_id))
+
+def validate_lookup_table_values(db, data):
+    """If the value that user selected from dropdown is not in database, return error message. This is to prevent the data inconsistency of database values."""
+    with db.get_cursor() as cursor:
+        if data.get('species_caught'):
+            cursor.execute("SELECT name FROM species WHERE name = %s", (data.get('species_caught'),))
+            species_result = cursor.fetchone()
+            if not species_result:
+                return f"The species '{data.get('species_caught')}' not found in database. Please select a valid species."
+
+        if data.get('bait_type'):
+            cursor.execute("SELECT name FROM bait_types WHERE name = %s", (data.get('bait_type'),))
+            bait_result = cursor.fetchone()
+            if not bait_result:
+                return f"The bait type '{data.get('bait_type')}' not found in database. Please select a valid bait type."
+
+        if data.get('status'):
+            cursor.execute("SELECT name FROM trap_statuses WHERE name = %s", (data.get('status'),))
+            status_result = cursor.fetchone()
+            if not status_result:
+                return f"The status '{data.get('status')}' not found in database. Please select a valid status."
+        
+    return False # No lookup errors found

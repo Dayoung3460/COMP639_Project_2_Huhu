@@ -3,32 +3,68 @@
 {% block content %}
 <div class="container py-4" style="max-width:580px;">
   <h2 class="mb-4">Add Incidental Observation</h2>
-  <form method="POST" action="{{ url_for('add_observation') }}">
+  <form method="POST" action="{{ url_for('add_observation') }}" novalidate onsubmit="return confirm('Are you sure you want to save this observation?')">
     <div class="mb-3">
-      <label class="form-label">Observation Type <span class="text-danger">*</span></label>
-      <select name="obs_type" class="form-select" required>
-        <option value="">— select —</option>
-        <option>Bird sighting</option>
-        <option>Predator sighting</option>
-        <option>Predator tracks</option>
-        <option>Native species tracks</option>
-        <option>Native species sign</option>
-        <option>Other</option>
+      <label class="form-label">Line <span class="text-danger">*</span></label>
+      <select name="line_id" id="lineSelect" class="form-select {% if errors and errors.get('line_id') %}is-invalid{% endif %}" required>
+        <option value="">— select line —</option>
+        {% for line in lines %}
+        <option value="{{ line.line_id }}" {% if data and data.get('line_id')|string == line.line_id|string %}selected{% endif %}>
+          {{ line.line_name }}
+        </option>
+        {% endfor %}
       </select>
+      {% if errors and errors.get('line_id') %}<div class="text-danger small">{{ errors.get('line_id') }}</div>{% endif %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Trap</label>
+      <select name="trap_id" id="trapSelect" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}">
+        <option value="">— optional —</option>
+        {% for line in lines %}
+          {% for trap in line.traps %}
+          <option value="{{ trap.trap_id }}" data-line-id="{{ line.line_id }}" 
+                  {% if data and data.get('trap_id')|string == trap.trap_id|string %}selected{% endif %}>
+            {{ trap.trap_code }} ({{ trap.trap_type }})
+          </option>
+          {% endfor %}
+        {% endfor %}
+      </select>
+      {% if errors and errors.get('trap_id') %}<div class="text-danger small">{{ errors.get('trap_id') }}</div>{% endif %}
     </div>
     <div class="mb-3">
       <label class="form-label">Date &amp; Time <span class="text-danger">*</span></label>
-      <input type="datetime-local" class="form-control" name="obs_date" required>
+      <input type="datetime-local" class="form-control {% if errors and errors.get('date') %}is-invalid{% endif %}" name="date" 
+             value="{{ data.get('date', '') if data else '' }}" required>
+      {% if errors and errors.get('date') %}<div class="text-danger small">{{ errors.get('date') }}</div>{% endif %}
     </div>
     <div class="mb-3">
-      <label class="form-label">Location</label>
-      <input type="text" class="form-control" name="location"
-             placeholder="e.g. North Line near trap NL-03">
+      <label class="form-label">Observation Type <span class="text-danger">*</span></label>
+      <select name="observation_type" class="form-select {% if errors and errors.get('observation_type') %}is-invalid{% endif %}" required>
+        <option value="">— select —</option>
+        {% for obs_type in lookup.valid_observation_types %}
+          <option value="{{ obs_type }}" {% if data and data.get('observation_type') == obs_type %}selected{% endif %}>{{ obs_type }}</option>
+        {% endfor %}
+      </select>
+      {% if errors and errors.get('observation_type') %}<div class="text-danger small">{{ errors.get('observation_type') }}</div>{% endif %}
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Latitude</label>
+        <input type="number" step="0.000001" min="-90" max="90" class="form-control {% if errors and errors.get('latitude') %}is-invalid{% endif %}" 
+               name="latitude" value="{{ data.get('latitude', '') if data else '' }}" placeholder="-36.848460">
+        {% if errors and errors.get('latitude') %}<div class="text-danger small">{{ errors.get('latitude') }}</div>{% endif %}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Longitude</label>
+        <input type="number" step="0.000001" min="-180" max="180" class="form-control {% if errors and errors.get('longitude') %}is-invalid{% endif %}" 
+               name="longitude" value="{{ data.get('longitude', '') if data else '' }}" placeholder="174.763492">
+        {% if errors and errors.get('longitude') %}<div class="text-danger small">{{ errors.get('longitude') }}</div>{% endif %}
+      </div>
     </div>
     <div class="mb-3">
       <label class="form-label">Notes</label>
       <textarea class="form-control" name="notes" rows="3"
-                placeholder="Describe what you observed..."></textarea>
+                placeholder="Describe what you observed...">{{ data.get('notes', '') if data else '' }}</textarea>
     </div>
     <div class="d-flex gap-2">
       <button type="submit" class="btn btn-pf">Save Observation</button>
@@ -36,4 +72,34 @@
     </div>
   </form>
 </div>
+
+<script>
+// Filter traps by selected line
+document.getElementById('lineSelect').addEventListener('change', function() {
+  const selectedLineId = this.value;
+  const trapSelect = document.getElementById('trapSelect');
+  const trapOptions = trapSelect.querySelectorAll('option[data-line-id]');
+  
+  trapOptions.forEach(option => {
+    if (option.dataset.lineId === selectedLineId) {
+      option.style.display = '';
+    } else {
+      option.style.display = 'none';
+    }
+  });
+  
+  // Reset trap selection if current selection doesn't belong to selected line
+  if (trapSelect.selectedOptions[0] && trapSelect.selectedOptions[0].dataset.lineId !== selectedLineId) {
+    trapSelect.value = '';
+  }
+});
+
+// Trigger on page load to filter traps for pre-selected line
+document.addEventListener('DOMContentLoaded', function() {
+  const lineSelect = document.getElementById('lineSelect');
+  if (lineSelect.value) {
+    lineSelect.dispatchEvent(new Event('change'));
+  }
+});
+</script>
 {% endblock %}

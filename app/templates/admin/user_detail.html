@@ -2,6 +2,10 @@
 
 {% block title %}{{ user.first_name }} {{ user.last_name }} - Profile{% endblock %}
 
+{% extends "base.html" %}
+
+{% block title %}{{ user.first_name }} {{ user.last_name }} - Profile{% endblock %}
+
 {% block content %}
 {% set line_colors = [
     '#0d6efd', '#6610f2', '#20c997', '#fd7e14', '#d63384', '#198754', '#6f42c1',
@@ -202,4 +206,28 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editBtn = document.getElementById('edit-notes-btn');
+    const cancelBtn = document.getElementById('cancel-notes-btn');
+    const displayDiv = document.getElementById('notes-display');
+    const editDiv = document.getElementById('notes-edit');
+    const textarea = document.getElementById('notes-textarea');
+
+    if (editBtn && cancelBtn) {
+        editBtn.addEventListener('click', function() {
+            displayDiv.classList.add('d-none');
+            editDiv.classList.remove('d-none');
+            textarea.focus();
+            // Move text cursor to the end of the existing notes
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        });
+        cancelBtn.addEventListener('click', function() {
+            editDiv.classList.add('d-none');
+            displayDiv.classList.remove('d-none');
+        });
+    }
+});
+</script>
 {% endblock %}

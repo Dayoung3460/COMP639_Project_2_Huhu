@@ -1,7 +1,7 @@
 /*
  * static/css/custom.css
- * PF-LU — All application styles
- * COMP639 Group Project 1 — Semester 1, 2026
+ * Tiaki — All application styles
+ * COMP639 Group Project 1
  */
 
 /* ═══════════════════════════════════════════════
@@ -562,6 +562,15 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .feature-card h5 { font-size: 15px; font-weight: 600; color: var(--pf-900); margin-bottom: 6px; }
 .feature-card p  { font-size: 13px; color: #6b7c72; line-height: 1.6; margin: 0; }
 
+.step-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding-top: 40px;
+  color: var(--pf-400);
+  font-size: 20px;
+}
 .step-card { text-align: center; padding: 32px 16px; }
 .step-num {
   width: 48px; height: 48px; background: var(--pf-800); color: #fff;
@@ -651,6 +660,203 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   cursor: pointer;
 }
 
+.lines-filter-shell {
+  background: #eef7f1;
+  border: 1px solid rgba(61, 155, 103, 0.18);
+  border-radius: 18px;
+  padding: 20px 22px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+}
+
+.lines-filter-shell__intro {
+  margin-bottom: 14px;
+}
+
+.lines-filter-shell__eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(35, 107, 67, 0.08);
+  color: var(--pf-800);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lines-filter-shell .form-label {
+  color: var(--pf-800);
+  font-weight: 600;
+}
+
+.lines-filter-shell .form-control,
+.lines-filter-shell .form-select,
+.lines-filter-shell .input-group-text {
+  min-height: 44px;
+  border-color: rgba(45, 122, 79, 0.18);
+  background: rgba(255,255,255,0.84);
+}
+
+.lines-filter-shell .input-group-text {
+  color: var(--pf-700);
+}
+
+.lines-filter-shell .form-control:focus,
+.lines-filter-shell .form-select:focus {
+  border-color: var(--pf-400);
+  box-shadow: 0 0 0 0.2rem rgba(61, 155, 103, 0.14);
+}
+
+.lines-filter-shell__clear-btn {
+  min-height: 44px;
+  background: #6c757d;
+  color: #fff;
+  border: 1px solid #6c757d;
+  font-weight: 600;
+}
+
+.lines-filter-shell__clear-btn:hover,
+.lines-filter-shell__clear-btn:focus {
+  background: #5c636a;
+  color: #fff;
+  border-color: #565e64;
+}
+
+.lines-list-shell {
+  --lines-visible-card-height: 7.5rem;
+  --lines-list-gap: 0.9rem;
+  background: #fff;
+  border: 1px solid rgba(45, 122, 79, 0.16);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(25, 63, 46, 0.06);
+}
+
+.lines-list-scroll {
+  max-height: calc((var(--lines-visible-card-height) * 3) + (var(--lines-list-gap) * 2));
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lines-list-gap);
+  scrollbar-gutter: stable;
+}
+
+.lines-list-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.lines-list-scroll::-webkit-scrollbar-track {
+  background: #edf4ef;
+  border-radius: 999px;
+}
+
+.lines-list-scroll::-webkit-scrollbar-thumb {
+  background: rgba(45, 122, 79, 0.4);
+  border-radius: 999px;
+}
+
+.lines-list-scroll .js-line-card {
+  margin-bottom: 0;
+}
+
+.operator-assignment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.operator-assignment-item__identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.operator-assignment-item__name {
+  font-weight: 600;
+}
+
+.operator-assignment-item__add-catch {
+  font-size: 0.75rem;
+}
+
+@media (max-width: 767.98px) {
+  .lines-page-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+
+  .lines-page-header__actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch !important;
+    justify-content: flex-start;
+  }
+
+  .lines-page-header__actions .btn {
+    width: 100%;
+  }
+
+  .lines-map-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 6px;
+  }
+
+  .lines-map-header__hint {
+    display: block;
+    line-height: 1.4;
+  }
+
+  .lines-filter-shell {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .lines-list-shell {
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .lines-list-scroll {
+    padding-right: 6px;
+  }
+
+  .lines-list-card-body {
+    display: block !important;
+    flex-direction: column;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .lines-list-card__content {
+    width: 100%;
+    margin-bottom: 14px;
+  }
+
+  .lines-list-card__actions {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .lines-list-card__actions .badge {
+    align-self: flex-start;
+  }
+
+  .lines-list-card__actions .btn {
+    width: 100%;
+  }
+}
+
 /* ═══════════════════════════════════════════════
    Chart Placeholders
    ═══════════════════════════════════════════════ */
@@ -700,4 +906,120 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
    Retire lines/traps modal
    ═══════════════════════════════════════════════ */
 .modal-backdrop { z-index: 2000; }
-.modal.retire-modal { z-index: 2001; }
+.modal.pop-up-modal { z-index: 2001; }
+
+/* ═══════════════════════════════════════════════
+   bait-types page - make table header sticky
+   ═══════════════════════════════════════════════ */
+.stick-table-header-container .table-container {
+  max-height: 60vh; /* Set a maximum height to enable vertical scrolling */
+  overflow-y: auto; /* Add vertical scrollbar when content exceeds height */
+  display: block; /* Important for some scenarios, though often not strictly required */
+}
+.stick-table-header-container .table-container thead th {
+  position: sticky; /* Make the header sticky */
+  top: 0; /* Pin it to the top of the container */
+  background-color: #f8f9fa; /* Add a background color to prevent content bleed-through */
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); /* Optional: Add a subtle shadow */
+}
+
+/* ── Insight cards (reports page) ──────────────────────── */
+.insight-card { background: var(--pf-50); border: 1px solid var(--pf-200); border-radius: 10px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+.insight-icon { width: 32px; height: 32px; background: var(--pf-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--pf-700); font-size: 15px; flex-shrink: 0; }
+.insight-title { font-size: 12px; font-weight: 600; color: var(--pf-800); margin-bottom: 2px; font-family: 'Cabin', sans-serif; }
+.insight-text { font-size: 12px; color: #6b7c72; margin: 0; line-height: 1.5; }
+
+/* ── Print / PDF styles ─────────────────────────────────── */
+@media print {
+  .pf-navbar, .sidebar, .content-header,
+  .btn-sm-pf, .btn-sm-outline, .btn-pf, .btn-pf-outline, form { display: none !important; }
+  .app-layout { display: block !important; }
+  .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  .content-body { padding: 0 !important; }
+  .panel { border: 1px solid #ddd !important; break-inside: avoid; margin-bottom: 16px; }
+  .stat-card { break-inside: avoid; }
+  body::before {
+    content: 'PF-LU — Reports & Charts';
+    display: block;
+    font-family: 'Cabin', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #1a5c38;
+  }
+  canvas { max-width: 100% !important; }
+  .row { break-inside: avoid; }
+}
+
+/* ── Print header/footer (reports page) ─────────────────── */
+.print-header, .print-footer { display: none; }
+
+@media print {
+  @page {
+    margin-top: 130px;
+    margin-bottom: 70px;
+    margin-left: 28px;
+    margin-right: 28px;
+  }
+
+  /* Named page margins for header/footer content */
+  @page :first {
+    margin-top: 130px;
+  }
+
+  .print-header {
+    display: block !important;
+    position: running(header);
+    background: #fff;
+    border-bottom: 2px solid #1a5c38;
+    padding: 10px 0 10px 0;
+    width: 100%;
+  }
+
+  .print-footer {
+    display: flex !important;
+    position: running(footer);
+    justify-content: space-between;
+    font-size: 11px;
+    color: #6b7c72;
+    border-top: 1px solid #e4ede8;
+    padding: 8px 0;
+    width: 100%;
+  }
+
+  /* Use running elements in page margin boxes */
+  @page {
+    @top-center { content: element(header); }
+    @bottom-center { content: element(footer); }
+  }
+
+  .content-body {
+    padding: 0 !important;
+  }
+}
+
+/* ── Team cards (home page) ─────────────────────── */
+.team-card { background: #fff; border: 0.5px solid #c8e6d5; border-radius: 16px; overflow: hidden; height: 100%; display: flex; flex-direction: column; }
+.team-photo { aspect-ratio: 1/1; overflow: hidden; position: relative; }
+.team-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.team-initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Cabin', sans-serif; font-size: 40px; font-weight: 700; color: rgba(255,255,255,0.3); }
+.team-body { padding: 18px 20px 22px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.team-name { font-family: 'Cabin', sans-serif; font-size: 15px; font-weight: 700; color: #1a1f1b; }
+.team-country { font-size: 11px; color: #3d9b67; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.team-bio { font-size: 12px; color: #4a5e52; line-height: 1.7; margin: 0; flex: 1; }
+.group-photo {
+  width:100%; height:600px; object-fit:cover; border-radius:16px; border:0.5px solid #c8e6d5;
+}
+/* ── tablet (md) ───────────────────── */
+@media (max-width: 960px) {
+  .group-photo {
+    height: 400px;
+  }
+}
+
+/* ── mobile (sm) ───────────────────── */
+@media (max-width: 575px) {
+  .group-photo {
+    height: 250px;
+  }
+}

@@ -1,63 +1,692 @@
+{# templates/reports/index.html
+   Route: GET /reports  →  reports()
+   Extends base.html — all logged-in roles.
+#}
 {% extends 'base.html' %}
-{% block title %}Reports{% endblock %}
+{% block title %}Reports & Charts{% endblock %}
+
+{% block page_title %}Reports &amp; Charts{% endblock %}
+
+{% block header_actions %}
+  <form method="GET" action="{{ url_for('reports') }}"
+        class="d-flex gap-2 align-items-center flex-wrap">
+
+    <select name="line_id" class="form-control"
+          style="width:160px; font-size:13px;"
+          onchange="this.form.submit()">
+    <option value=""        {{ 'selected' if not selected_line and selected_line_status == 'all' }}>All Lines</option>
+    <option value="active"  {{ 'selected' if selected_line_status == 'active' }}>All Active</option>
+    <option value="retired" {{ 'selected' if selected_line_status == 'retired' }}>All Retired</option>
+    {% set active_lines  = lines | rejectattr('is_retired') | list %}
+    {% set retired_lines = lines | selectattr('is_retired') | list %}
+    {% if active_lines %}
+      <optgroup label="── Active Lines">
+        {% for line in active_lines %}
+          <option value="{{ line.line_id }}"
+                  {{ 'selected' if selected_line == line.line_id|string }}>
+            {{ line.name }}
+          </option>
+        {% endfor %}
+      </optgroup>
+    {% endif %}
+    {% if retired_lines %}
+      <optgroup label="── Retired Lines">
+        {% for line in retired_lines %}
+          <option value="{{ line.line_id }}"
+                  {{ 'selected' if selected_line == line.line_id|string }}>
+            {{ line.name }} ⊘
+          </option>
+        {% endfor %}
+      </optgroup>
+    {% endif %}
+  </select>
+
+    <select name="period" class="form-control"
+            style="width:150px; font-size:13px;"
+            id="periodSelect"
+            onchange="toggleDatePicker(this.value); this.form.submit()">
+      <option value="1"      {{ 'selected' if selected_period == '1' }}>Last Month</option>
+      <option value="3"      {{ 'selected' if selected_period == '3' }}>Last 3 Months</option>
+      <option value="6"      {{ 'selected' if selected_period == '6' }}>Last 6 Months</option>
+      <option value="12"     {{ 'selected' if selected_period == '12' }}>Last Year</option>
+      <option value="all"    {{ 'selected' if selected_period == 'all' }}>All Time</option>
+      <option value="custom" {{ 'selected' if selected_period == 'custom' }}>Custom Range</option>
+    </select>
+
+    <div id="dateRangePicker"
+         style="display:{{ 'flex' if selected_period == 'custom' else 'none' }};
+                gap:6px; align-items:center;">
+      <input type="date" name="date_from" class="form-control"
+             style="font-size:13px; width:145px;"
+             value="{{ date_from or '' }}">
+      <span style="font-size:12px; color:#6b7c72;">to</span>
+      <input type="date" name="date_to" class="form-control"
+             style="font-size:13px; width:145px;"
+             value="{{ date_to or '' }}">
+    </div>
+
+    <button type="submit" class="btn-sm-pf">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+    <button onclick="printReport()" class="btn-sm-outline">
+      <i class="bi bi-printer me-1"></i>Print / PDF
+    </button>
+
+  </form>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="mb-0">Reports &amp; Charts</h2>
-    <div class="d-flex gap-2">
-      <select class="form-select form-select-sm" style="width:auto;">
-        <option>All Lines</option>
-        {# TODO: populate from lines #}
-      </select>
-      <a href="{{ url_for('download_csv') }}" class="btn btn-pf btn-sm">
-        <i class="bi bi-download me-1"></i>Export CSV
-      </a>
+
+  {# ── Stat cards ── #}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_captures }}</div>
+          <div class="stat-label">Total Captures</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="bi bi-clipboard2-check"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_records }}</div>
+          <div class="stat-label">Total Records</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.active_trap_pct }}%</div>
+          <div class="stat-label">Active Traps</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-trophy"></i></div>
+        <div>
+          <div class="stat-value" style="font-size:20px;">{{ stats.top_species }}</div>
+          <div class="stat-label">Most Caught Species</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  {# TODO: stat cards #}
-
-  <div class="row g-3">
-    <div class="col-lg-8">
-      <div class="card">
-        <div class="card-header fw-semibold">Catch Trend Over Time</div>
-        <div class="card-body">
-          <canvas id="trendChart" height="100"></canvas>
+  {# ── Row 1: Trend + Species ── #}
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Catch Trend Over Time</div>
+          <span class="panel-meta">Catches per week</span>
+        </div>
+        <div class="panel-body">
+          {% if trend_values %}
+            <div style="position:relative; height:400px; width:100%;"><canvas id="trendChart" style="width:100% !important;"></canvas></div>
+          {% else %}
+            <div style="text-align:center; padding:40px 0; color:#6b7c72;">
+              <i class="bi bi-graph-up" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              No catch data available for this period.
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
-    <div class="col-lg-4">
-      <div class="card">
-        <div class="card-header fw-semibold">Captures by Species</div>
-        <div class="card-body">
-          <canvas id="speciesChart" height="200"></canvas>
+    <div class="col-lg-4 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Captures by Species</div>
         </div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-header fw-semibold">Catches by Line</div>
-        <div class="card-body">
-          <canvas id="lineChart" height="120"></canvas>
+        <div class="panel-body d-flex align-items-center justify-content-center">
+          {% if species_values %}
+            <div style="position:relative; height:400px; width:100%;"><canvas id="speciesChart" style="width:100% !important;"></canvas></div>
+          {% else %}
+            <div style="text-align:center; padding:40px 0; color:#6b7c72;">
+              <i class="bi bi-pie-chart" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              No captures recorded yet.
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
-</div>
+
+  {# ── Row 2: Catches by Line + Status Distribution ── #}
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Catches by Trap Line</div>
+          <span class="panel-meta">Excludes no-catch records</span>
+        </div>
+        <div class="panel-body">
+          {% if line_values %}
+            <div style="position:relative; height:400px; width:100%;"><canvas id="lineChart" style="width:100% !important;"></canvas></div>
+            {% if insights.retired_lines %}
+              <div style="margin-top:10px; font-size:11px; color:#6b7c72; display:flex; align-items:center; gap:6px;">
+                <span style="display:inline-block; width:12px; height:12px; background:#cbd5e1; border-radius:2px; flex-shrink:0;"></span>
+                ⊘ Retired line
+              </div>
+            {% endif %}
+          {% else %}
+            <div style="text-align:center; padding:40px 0; color:#6b7c72;">
+              <i class="bi bi-bar-chart-horizontal" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              No data for selected filters.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Trap Status Distribution</div>
+          <span class="panel-meta">All records by status per line</span>
+        </div>
+        <div class="panel-body">
+          {% if status_datasets %}
+            <div style="position:relative; height:400px; width:100%;"><canvas id="statusChart" style="width:100% !important;"></canvas></div>
+            {% if insights.retired_lines %}
+              <div style="margin-top:10px; font-size:11px; color:#6b7c72; display:flex; align-items:center; gap:6px;">
+                <span style="display:inline-block; width:12px; height:12px; background:#cbd5e1; border-radius:2px; flex-shrink:0;"></span>
+                ⊘ Retired line
+              </div>
+            {% endif %}
+          {% else %}
+            <div style="text-align:center; padding:40px 0; color:#6b7c72;">
+              <i class="bi bi-bar-chart" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              No data for selected filters.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Insights and recent catches will go here next #}
+
+  {# ── Row 3: Key Insights + Recent Catches ── #}
+  <div class="row g-3 mb-3">
+
+    {# Key Insights #}
+    <div class="col-lg-4 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Key Insights</div>
+        </div>
+        <div class="panel-body d-flex flex-column gap-3">
+
+          {# Busiest line #}
+          {% if insights.busiest_line is defined %}
+          <div class="insight-card">
+            <div class="insight-icon"><i class="bi bi-arrow-up-circle"></i></div>
+            <div>
+              <div class="insight-title">Busiest Line</div>
+              <p class="insight-text">
+                {{ insights.busiest_line }} has the highest catch rate —
+                {{ insights.busiest_count }} catch{{ 'es' if insights.busiest_count != 1 }} this period.
+              </p>
+            </div>
+          </div>
+          {% endif %}
+
+          {# Maintenance #}
+          <div class="insight-card">
+            <div class="insight-icon" style="background:#fdecea; color:#c0392b;">
+              <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div>
+              <div class="insight-title">Needs Attention</div>
+              <p class="insight-text">
+                {% if insights.maintenance_count %}
+                  {{ insights.maintenance_count }} trap{{ 's' if insights.maintenance_count != 1 }} flagged for maintenance:
+                  <span style="font-family:monospace; font-size:11px; color:var(--pf-800);">
+                    {{ insights.maintenance_traps | join(', ') }}
+                  </span>
+                {% else %}
+                  No traps flagged for maintenance this period. ✓
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          {# Capture rate #}
+          <div class="insight-card">
+            <div class="insight-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <div>
+              <div class="insight-title">Capture Rate</div>
+              <p class="insight-text">
+                {{ insights.capture_rate }}% of all trap checks
+                resulted in a catch this period.
+              </p>
+            </div>
+          </div>
+
+          {# Last check #}
+          {% if insights.last_check_date is defined %}
+          <div class="insight-card">
+            <div class="insight-icon"><i class="bi bi-calendar-check"></i></div>
+            <div>
+              <div class="insight-title">Last Check</div>
+              <p class="insight-text">
+                Most recent record was on {{ insights.last_check_line }}
+                — {{ insights.last_check_date.strftime('%d %b %Y, %H:%M') }}.
+              </p>
+            </div>
+          </div>
+          {% endif %}
+
+          {# Retired lines #}
+          {% if insights.retired_lines %}
+          <div class="insight-card" style="background:#f8fafc; border-color:#cbd5e1;">
+            <div class="insight-icon" style="background:#e2e8f0; color:#64748b;">
+              <i class="bi bi-archive"></i>
+            </div>
+            <div>
+              <div class="insight-title" style="color:#475569;">Retired Lines</div>
+              <p class="insight-text">
+                {{ insights.retired_lines | length }} line{{ 's' if insights.retired_lines | length != 1 }} retired:
+                <span style="color:#475569; font-weight:500;">
+                  {{ insights.retired_lines | join(', ') }}
+                </span>
+              </p>
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    {# Recent Catches table #}
+    <div class="col-lg-8 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Recent Catches</div>
+          <span class="panel-meta">Last 10 records</span>
+        </div>
+        {% if recent_catches %}
+          <div style="overflow-x:auto;">
+            <table class="pf-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Line</th>
+                  <th>Trap</th>
+                  <th>Species</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in recent_catches %}
+                <tr>
+                  <td>{{ record.date.strftime('%d %b %Y') }}</td>
+                  <td>{{ record.line_name }}</td>
+                  <td style="font-family:monospace; font-size:12px;">{{ record.trap_code }}</td>
+                  <td>
+                    {% if record.species_caught != 'None' %}
+                      <span class="badge-species">{{ record.species_caught }}</span>
+                    {% else %}
+                      <span style="color:#6b7c72; font-size:12px;">No catch</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if 'Sprung' in record.status %}
+                      <span class="badge-status-sprung">{{ record.status }}</span>
+                    {% else %}
+                      <span class="badge-status-set">{{ record.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="panel-body" style="text-align:center; padding:40px 0; color:#6b7c72;">
+            <i class="bi bi-table" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+            No records found for selected filters.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+  </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // TODO: fetch data from /reports/data/species, /reports/data/by-line,
-  //       /reports/data/trend and render Chart.js charts.
-  // Example:
-  // fetch('/reports/data/species')
-  //   .then(r => r.json())
-  //   .then(data => {
-  //     new Chart(document.getElementById('speciesChart'), {
-  //       type: 'pie',
-  //       data: { labels: data.labels, datasets: [{ data: data.values }] }
-  //     });
-  //   });
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size   = 12;
+  Chart.defaults.color       = '#6b7c72';
+  Chart.defaults.responsive  = true;
+  Chart.defaults.maintainAspectRatio = false;
+
+  // ── Set print date ────────────────────────────────────────
+  const now = new Date();
+  const formatted = now.toLocaleDateString('en-NZ', {
+    day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+function toggleDatePicker(val) {
+    document.getElementById('dateRangePicker').style.display =
+      val === 'custom' ? 'flex' : 'none';
+  }
+
+  const dateFrom = document.querySelector('input[name="date_from"]');
+  const dateTo   = document.querySelector('input[name="date_to"]');
+  if (dateFrom && dateTo) {
+    dateFrom.addEventListener('change', function () {
+      dateTo.min = this.value;
+      if (dateTo.value && dateTo.value < this.value) dateTo.value = this.value;
+    });
+    if (dateFrom.value) dateTo.min = dateFrom.value;
+  }
+
+  // ── 1. Catch Trend ────────────────────────────────────────
+  {% if trend_values %}
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: {{ trend_labels | tojson }},
+      datasets: [{
+        label: 'Catches',
+        data: {{ trend_values | tojson }},
+        borderColor: '#3d9b67',
+        backgroundColor: 'rgba(61,155,103,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#3d9b67',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f0f5f2' }, ticks: { stepSize: 1 } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+  {% endif %}
+
+  // ── 2. Species Doughnut ───────────────────────────────────
+  {% if species_values %}
+  const otherBreakdown = {{ other_breakdown | tojson }};
+  new Chart(document.getElementById('speciesChart'), {
+    type: 'doughnut',
+    data: {
+      labels: {{ species_labels | tojson }},
+      datasets: [{
+        data: {{ species_values | tojson }},
+        backgroundColor: {{ species_colors | tojson }},
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 12, boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(item) {
+              if (item.label === 'Other' && Object.keys(otherBreakdown).length > 0) {
+                return '── breakdown ──\n' +
+                  Object.entries(otherBreakdown).map(([k, v]) => `  ${k}: ${v}`).join('\n');
+              }
+              return '';
+            }
+          }
+        }
+      },
+      cutout: '60%'
+    }
+  });
+  {% endif %}
+
+  // ── 3. Catches by Line ────────────────────────────────────
+  {% if line_values %}
+  new Chart(document.getElementById('lineChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ line_labels | tojson }},
+      datasets: [{
+        label: 'Catches',
+        data: {{ line_values | tojson }},
+        backgroundColor: {{ line_colors | tojson }},
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              const label = items[0].label;
+              return label.endsWith(' ⊘') ? label + ' — Retired' : label;
+            },
+            afterLabel: function(item) {
+              return item.label.endsWith(' ⊘') ? '⚠ This line has been retired' : '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f0f5f2' }, ticks: { stepSize: 1 } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+  {% endif %}
+
+  // ── 4. Status Distribution ───────────────────────────────
+  {% if status_datasets %}
+  new Chart(document.getElementById('statusChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ status_labels | tojson }},
+      datasets: {{ status_datasets | tojson }}
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 10, boxWidth: 12, font: { size: 11 } } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, grid: { color: '#f0f5f2' } }
+      }
+    }
+  });
+  {% endif %}
+
+  // ── Print report ──────────────────────────────────────────
+  function printReport() {
+    // Collect all chart canvases as images
+    const charts = {};
+    ['trendChart','speciesChart','lineChart','statusChart'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) charts[id] = el.toDataURL('image/png');
+    });
+
+    // Build period label
+    const periodSelect = document.querySelector('select[name="period"]');
+    const lineSelect   = document.querySelector('select[name="line_id"]');
+    const periodLabel  = periodSelect ? periodSelect.options[periodSelect.selectedIndex].text : 'All Time';
+    const lineLabel    = lineSelect   ? lineSelect.options[lineSelect.selectedIndex].text     : 'All Lines';
+    const dateFrom     = document.querySelector('input[name="date_from"]')?.value || '';
+    const dateTo       = document.querySelector('input[name="date_to"]')?.value   || '';
+    const customRange  = dateFrom && dateTo ? `${dateFrom} to ${dateTo}` : '';
+    const generated    = new Date().toLocaleDateString('en-NZ', {
+      day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    // Collect stat cards HTML
+    const statCards = document.querySelector('.row.g-3.mb-4')?.outerHTML || '';
+
+    // Collect insights HTML
+    const insights = document.querySelector('.insight-card')?.closest('.panel')?.outerHTML || '';
+
+    // Collect recent catches table HTML
+    const tablePanel = document.querySelector('.pf-table')?.closest('.panel')?.outerHTML || '';
+
+    // Build print window HTML
+    const win = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>{{ site_name }} Reports</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+        <style>
+          * { box-sizing: border-box; }
+          body { font-family: 'DM Sans', sans-serif; font-size: 13px; color: #1a1f1b; margin: 0; padding: 0; }
+
+          /* Header */
+          .rpt-header { background: #1a5c38; color: #fff; padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; }
+          .rpt-header-title { font-family: 'Cabin', sans-serif; font-size: 18px; font-weight: 700; }
+          .rpt-header-sub { font-size: 11px; color: #a3d4b5; margin-top: 2px; }
+          .rpt-header-meta { text-align: right; font-size: 11px; color: #a3d4b5; }
+
+          /* Body */
+          .rpt-body { padding: 24px 28px; }
+
+          /* Stat cards */
+          .stat-card { background: #fff; border: 1px solid #e4ede8; border-radius: 10px; padding: 16px; display: flex; align-items: flex-start; gap: 12px; }
+          .stat-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+          .stat-icon.red   { background: #fdecea; color: #c0392b; }
+          .stat-icon.amber { background: #fef3dc; color: #e8920a; }
+          .stat-icon.green { background: #e6f4ec; color: #2d7a4f; }
+          .stat-icon.blue  { background: #e8f4fd; color: #1a6fa8; }
+          .stat-value { font-family: 'Cabin', sans-serif; font-size: 24px; font-weight: 700; line-height: 1; margin-bottom: 3px; }
+          .stat-label { font-size: 11px; color: #6b7c72; }
+
+          /* Panels */
+          .panel { background: #fff; border: 1px solid #e4ede8; border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+          .panel-header { padding: 12px 16px; border-bottom: 1px solid #e4ede8; display: flex; justify-content: space-between; align-items: center; }
+          .panel-title { font-family: 'Cabin', sans-serif; font-size: 14px; font-weight: 600; }
+          .panel-meta { font-size: 11px; color: #6b7c72; }
+          .panel-body { padding: 14px 16px; }
+
+          /* Charts as images */
+          .chart-img { width: 100%; height: auto; display: block; }
+
+          /* Insight cards */
+          .insight-card { background: #f4faf6; border: 1px solid #c8e6d5; border-radius: 8px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+          .insight-icon { width: 28px; height: 28px; background: #e6f4ec; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #2d7a4f; font-size: 13px; flex-shrink: 0; }
+          .insight-title { font-size: 11px; font-weight: 600; color: #1a5c38; font-family: 'Cabin', sans-serif; margin-bottom: 2px; }
+          .insight-text { font-size: 11px; color: #6b7c72; margin: 0; line-height: 1.4; }
+
+          /* Table */
+          table { width: 100%; font-size: 12px; border-collapse: collapse; }
+          th { background: #f4faf6; color: #3d5445; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid #e4ede8; text-align: left; }
+          td { padding: 8px 12px; border-bottom: 1px solid #f0f5f2; }
+          tr:last-child td { border-bottom: none; }
+          .badge-species { background: #e6f4ec; color: #1a5c38; border-radius: 20px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+          .badge-sprung  { background: #fdecea; color: #a32d2d; border-radius: 20px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+          .badge-set     { background: #e6f4ec; color: #2d7a4f; border-radius: 20px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+
+          /* Footer */
+          .rpt-footer { border-top: 1px solid #e4ede8; padding: 10px 28px; display: flex; justify-content: space-between; font-size: 10px; color: #9ca3af; margin-top: 8px; }
+
+          @media print {
+            @page { margin: 0; size: A4; }
+            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .no-break { break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-header-title">{{ site_name }} — {{ site_tagline }}</div>
+            <div class="rpt-header-sub">Reports &amp; Charts</div>
+          </div>
+          <div class="rpt-header-meta">
+            <div><strong style="color:#fff;">Line:</strong> ${lineLabel}</div>
+            <div><strong style="color:#fff;">Period:</strong> ${periodSelect?.value === 'custom' ? customRange : periodLabel}</div>
+            <div style="margin-top:4px;">Generated: ${generated}</div>
+          </div>
+        </div>
+
+        <div class="rpt-body">
+
+          ${statCards}
+
+          <div class="row g-3 mb-3 no-break">
+            <div class="col-8">
+              <div class="panel">
+                <div class="panel-header"><div class="panel-title">Catch Trend Over Time</div><span class="panel-meta">Catches per week</span></div>
+                <div class="panel-body">${charts.trendChart ? `<img src="${charts.trendChart}" class="chart-img">` : '<p style="color:#6b7c72;text-align:center;padding:20px 0;">No data</p>'}</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="panel">
+                <div class="panel-header"><div class="panel-title">Captures by Species</div></div>
+                <div class="panel-body">${charts.speciesChart ? `<img src="${charts.speciesChart}" class="chart-img">` : '<p style="color:#6b7c72;text-align:center;padding:20px 0;">No data</p>'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3 no-break">
+            <div class="col-6">
+              <div class="panel">
+                <div class="panel-header"><div class="panel-title">Catches by Trap Line</div></div>
+                <div class="panel-body">${charts.lineChart ? `<img src="${charts.lineChart}" class="chart-img">` : '<p style="color:#6b7c72;text-align:center;padding:20px 0;">No data</p>'}</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="panel">
+                <div class="panel-header"><div class="panel-title">Trap Status Distribution</div></div>
+                <div class="panel-body">${charts.statusChart ? `<img src="${charts.statusChart}" class="chart-img">` : '<p style="color:#6b7c72;text-align:center;padding:20px 0;">No data</p>'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 no-break">
+            <div class="col-4">
+              ${insights}
+            </div>
+            <div class="col-8">
+              ${tablePanel}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="rpt-footer">
+          <div>pflu.pythonanywhere.com &nbsp;|&nbsp; COMP639 Group Project 1 — Team Huhu</div>
+          <div>Generated: ${generated}</div>
+        </div>
+
+      </body>
+      </html>
+    `);
+    win.document.close();
+    win.onload = function() { win.print(); };
+  }
+
 </script>
 {% endblock %}

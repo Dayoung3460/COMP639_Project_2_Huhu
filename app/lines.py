@@ -1,8 +1,7 @@
-"""lines.py — Trap lines and traps viewing (all logged-in roles)."""
-
-from flask import render_template, request, url_for
+from flask import render_template, request, url_for, flash, redirect
 from app import app, db
 from app.utils import role_required
+from app.helpers.dbHelper import fetch_enum_values
 import os
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
@@ -21,14 +20,70 @@ def lines_index():
                 l.name,
                 l.type,
                 l.is_retired,
-                COUNT(DISTINCT t.trap_id)
-                    FILTER (WHERE t.is_retired = FALSE) AS trap_count,
-                COUNT(DISTINCT ol.operator_id) AS operator_count
+                (
+                    SELECT COUNT(*)
+                    FROM traps t
+                    WHERE t.line_id = l.line_id
+                      AND t.is_retired = FALSE
+                ) AS trap_count,
+                (
+                    SELECT COUNT(*)
+                    FROM operator_lines ol
+                    JOIN users u ON u.user_id = ol.operator_id
+                    WHERE ol.line_id = l.line_id
+                      AND u.role = 'Operator'
+                ) AS operator_count,
+                COALESCE(
+                    (
+                        SELECT STRING_AGG(op.operator_label, ' | ' ORDER BY op.operator_label)
+                        FROM (
+                            SELECT DISTINCT CONCAT_WS(
+                                ' ',
+                                u.first_name,
+                                u.last_name,
+                                CONCAT('(@', u.username, ')')
+                            ) AS operator_label
+                            FROM operator_lines ol
+                            JOIN users u ON u.user_id = ol.operator_id
+                            WHERE ol.line_id = l.line_id
+                              AND u.role = 'Operator'
+                        ) AS op
+                    ),
+                    ''
+                ) AS assigned_operator_names,
+                COALESCE(
+                    (
+                        SELECT ARRAY_AGG(op.operator_label ORDER BY op.operator_label)
+                        FROM (
+                            SELECT DISTINCT CONCAT_WS(
+                                ' ',
+                                u.first_name,
+                                u.last_name,
+                                CONCAT('(@', u.username, ')')
+                            ) AS operator_label
+                            FROM operator_lines ol
+                            JOIN users u ON u.user_id = ol.operator_id
+                            WHERE ol.line_id = l.line_id
+                              AND u.role = 'Operator'
+                        ) AS op
+                    ),
+                    ARRAY[]::text[]
+                ) AS assigned_operator_labels,
+                COALESCE(
+                    (
+                        SELECT ARRAY_AGG(op.operator_id ORDER BY op.operator_id)
+                        FROM (
+                            SELECT DISTINCT u.user_id AS operator_id
+                            FROM operator_lines ol
+                            JOIN users u ON u.user_id = ol.operator_id
+                            WHERE ol.line_id = l.line_id
+                              AND u.role = 'Operator'
+                        ) AS op
+                    ),
+                    ARRAY[]::int[]
+                ) AS assigned_operator_ids
             FROM lines l
-            LEFT JOIN traps t ON t.line_id = l.line_id
-            LEFT JOIN operator_lines ol ON ol.line_id = l.line_id
             WHERE (%s OR l.is_retired = FALSE)
-            GROUP BY l.line_id, l.name, l.type, l.is_retired
             ORDER BY l.is_retired ASC, l.name ASC
             """,
             (show_retired,)
@@ -95,13 +150,29 @@ def lines_index():
             'detail_url': detail_url
         })
 
+    for line in lines:
+        line['assigned_operator_labels'] = line.get('assigned_operator_labels') or []
+        line['assigned_operator_ids'] = line.get('assigned_operator_ids') or []
+
+    available_types = sorted({
+        line['type'] for line in lines
+        if line.get('type')
+    })
+    available_operators = sorted({
+        operator_label
+        for line in lines
+        for operator_label in line['assigned_operator_labels']
+    })
+
     return render_template(
         'lines/index.html',
         lines=lines,
         show_retired=show_retired,
         map_traps=map_traps,
         linz_api_key=linz_api_key,
-        active_trap_line_ids=active_trap_line_ids
+        active_trap_line_ids=active_trap_line_ids,
+        available_types=available_types,
+        available_operators=available_operators
     )
 
 
@@ -156,7 +227,8 @@ def line_detail(line_id):
         else:
             traps = []
             operators = []
-
+    
+    trap_types = fetch_enum_values(db, 'trap_type_enum')
     trap_markers = []
     for trap in traps:
         if trap.get('latitude') is None or trap.get('longitude') is None:
@@ -177,5 +249,6 @@ def line_detail(line_id):
         operators=operators,
         show_retired=show_retired,
         trap_markers=trap_markers,
-        linz_api_key=linz_api_key
+        linz_api_key=linz_api_key,
+        trap_types=trap_types
     )

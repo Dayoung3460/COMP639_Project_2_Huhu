@@ -1,9 +1,15 @@
 """admin.py — Admin dashboard, user management, lines, traps, operator assignment, lookups."""
 
 from flask import render_template, request, redirect, url_for, flash, session
+import os
 from app import app, db
-from app.utils import role_required
-from app.helpers.dbHelper import fetch_enum_values
+from app.utils import (
+    role_required,
+    validate_lincoln_nz_coordinates,
+    LINCOLN_NZ_LAT_RANGE,
+    LINCOLN_NZ_LON_RANGE,
+)
+from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -12,8 +18,118 @@ from app.helpers.dbHelper import fetch_enum_values
 @role_required('Admin')
 def admin_dashboard():
     """Admin dashboard — system-wide statistics and quick actions."""
-    # TODO: query stats (total lines, traps, users, captures)
-    return render_template('admin/dashboard.html')
+    stats = {
+        'total_users':    0,
+        'total_observers': 0,
+        'total_operators': 0,
+        'total_admins':   0,
+        'inactive_users': 0,
+        'total_lines':    0,
+        'retired_lines':  0,
+        'total_traps':    0,
+        'retired_traps':  0,
+        'total_catches':  0,
+        'catches_month':  0,
+        'maintenance_traps': 0,
+    }
+    recent_users = []
+    recent_catches = []
+ 
+    try:
+        with db.get_cursor() as cursor:
+ 
+            # ── Users ─────────────────────────────────────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                          AS total,
+                    COUNT(*) FILTER (WHERE role = 'Observer')        AS observers,
+                    COUNT(*) FILTER (WHERE role = 'Operator')        AS operators,
+                    COUNT(*) FILTER (WHERE role = 'Admin')           AS admins,
+                    COUNT(*) FILTER (WHERE account_status = 'inactive') AS inactive
+                FROM users
+            """)
+            row = cursor.fetchone()
+            stats['total_users']     = row['total']
+            stats['total_observers'] = row['observers']
+            stats['total_operators'] = row['operators']
+            stats['total_admins']    = row['admins']
+            stats['inactive_users']  = row['inactive']
+ 
+            # ── Lines & Traps ──────────────────────────────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                    AS total,
+                    COUNT(*) FILTER (WHERE is_retired = TRUE)  AS retired
+                FROM lines
+            """)
+            row = cursor.fetchone()
+            stats['total_lines']   = row['total']
+            stats['retired_lines'] = row['retired']
+ 
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                    AS total,
+                    COUNT(*) FILTER (WHERE is_retired = TRUE)  AS retired
+                FROM traps
+            """)
+            row = cursor.fetchone()
+            stats['total_traps']   = row['total']
+            stats['retired_traps'] = row['retired']
+ 
+            # ── Catches ────────────────────────────────────────
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM trap_catches
+                WHERE species_caught != 'None'
+            """)
+            stats['total_catches'] = cursor.fetchone()['cnt']
+ 
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM trap_catches
+                WHERE species_caught != 'None'
+                AND date >= NOW() - INTERVAL '30 days'
+            """)
+            stats['catches_month'] = cursor.fetchone()['cnt']
+ 
+            # ── Traps needing maintenance ──────────────────────
+            cursor.execute("""
+                SELECT COUNT(DISTINCT trap_id) AS cnt FROM trap_catches
+                WHERE trap_condition = 'Needs maintenance'
+                AND date >= NOW() - INTERVAL '30 days'
+            """)
+            stats['maintenance_traps'] = cursor.fetchone()['cnt']
+ 
+            # ── Recent registrations (last 5) ──────────────────
+            cursor.execute("""
+                SELECT username, first_name, last_name, role,
+                       account_status, date_joined
+                FROM users
+                ORDER BY date_joined DESC
+                LIMIT 5
+            """)
+            recent_users = cursor.fetchall()
+ 
+            # ── Recent catches (last 5) ────────────────────────
+            cursor.execute("""
+                SELECT tc.date, tc.species_caught, tc.status,
+                       t.code AS trap_code, l.name AS line_name,
+                       u.username AS recorded_by
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                LEFT JOIN users u ON tc.recorded_by_id = u.user_id
+                WHERE tc.species_caught != 'None'
+                ORDER BY tc.date DESC
+                LIMIT 5
+            """)
+            recent_catches = cursor.fetchall()
+ 
+    except Exception as e:
+        app.logger.error(f'Admin dashboard error: {e}')
+ 
+    return render_template('admin/dashboard.html',
+                           stats=stats,
+                           recent_users=recent_users,
+                           recent_catches=recent_catches)
 
 
 # ── User management ───────────────────────────────────────────────────────────
@@ -22,9 +138,59 @@ def admin_dashboard():
 @role_required('Admin')
 def admin_users():
     """List all registered users with role and account status."""
-    # TODO: query all users with role name and is_active
-    users = []
-    return render_template('admin/users.html', users=users)
+    search = request.args.get('search', '').strip()
+    role_filter = request.args.get('role', '').strip()
+    status_filter = request.args.get('status', '').strip()
+    sort_by = request.args.get('sort_by', '').strip()
+    sort_dir = request.args.get('sort_dir', '').strip().lower()
+
+    query = '''
+        SELECT user_id, username, first_name, last_name, role, account_status, date_joined, last_login
+        FROM users
+        WHERE 1=1
+    '''
+    params = []
+
+    if search:
+        # Strip '@' in case the user copy-pasted the username from the table
+        clean_search = search.lstrip('@')
+        query += " AND (username ILIKE %s OR first_name ILIKE %s OR last_name ILIKE %s OR CONCAT(first_name, ' ', last_name) ILIKE %s)"
+        search_term = f"%{clean_search}%"
+        params.extend([search_term, search_term, search_term, search_term])
+    
+    if role_filter:
+        query += " AND role = %s"
+        params.append(role_filter)
+        
+    if status_filter:
+        query += " AND account_status = %s"
+        params.append(status_filter)
+
+    # Sort Mapping Dictionary for SQL injection safety
+    sort_columns = {
+        'name': 'first_name {dir}, last_name {dir}',
+        'username': 'username {dir}',
+        'role': 'role::text {dir}',
+        'status': 'account_status::text {dir}',
+        'date_joined': 'date_joined {dir}',
+        'last_login': 'last_login {dir}'
+    }
+
+    if sort_by in sort_columns and sort_dir in ['asc', 'desc']:
+        order_clause = sort_columns[sort_by].format(dir=sort_dir.upper())
+        query += f" ORDER BY {order_clause}"
+    else:
+        query += " ORDER BY first_name ASC, last_name ASC"
+        sort_by, sort_dir = '', ''
+
+    with db.get_cursor() as cursor:
+        cursor.execute(query, tuple(params))
+        users = cursor.fetchall()
+
+    return render_template('admin/users.html', users=users, 
+                           search=search, role_filter=role_filter, 
+                           status_filter=status_filter,
+                           sort_by=sort_by, sort_dir=sort_dir)
 
 
 @app.route('/admin/users/<int:user_id>')
@@ -99,8 +265,23 @@ def admin_user_detail(user_id):
 @role_required('Admin')
 def toggle_active(user_id):
     """Activate or deactivate a user account."""
-    # TODO: UPDATE "user" SET is_active = NOT is_active WHERE user_id = %s
-    flash('User account status updated.', 'success')
+    # Prevent admin from deactivating themselves
+    if user_id == session.get('user_id'):
+        flash('You cannot deactivate your own account.', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    with db.get_cursor() as cursor:
+        cursor.execute("SELECT account_status FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            flash('User not found.', 'danger')
+            return redirect(url_for('admin_users'))
+        
+        # Toggle between 'active' and 'inactive'
+        new_status = 'inactive' if user['account_status'] == 'active' else 'active'
+        update_user_active(db, user_id, new_status)
+    
+    flash(f'User account {"activated" if new_status == "active" else "deactivated"}.', 'success')
     return redirect(url_for('admin_users'))
 
 
@@ -112,6 +293,26 @@ def change_role(user_id):
     # TODO: prevent changing own role
     # TODO: UPDATE role_id
     flash('User role updated.', 'success')
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+
+@app.route('/admin/users/<int:user_id>/notes', methods=['POST'])
+@role_required('Admin')
+def update_user_notes(user_id):
+    """Update the admin-only notes for a user."""
+    notes = request.form.get('notes', '').strip()
+    
+    if len(notes) > 2000:
+        flash('Admin notes cannot exceed 2000 characters', 'danger')
+        return redirect(url_for('admin_user_detail', user_id=user_id))
+        
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            UPDATE users
+            SET notes = %s
+            WHERE user_id = %s
+        ''', (notes if notes else None, user_id))
+    flash('Admin notes updated', 'success')
     return redirect(url_for('admin_user_detail', user_id=user_id))
 
 
@@ -245,18 +446,74 @@ def retire_line(line_id):
 
 # ── Traps ─────────────────────────────────────────────────────────────────────
 
-@app.route('/admin/lines/<int:line_id>/traps/new', methods=['GET', 'POST'])
+@app.route('/admin/lines/<int:line_id>/new_trap', methods=['POST'])
 @role_required('Admin')
 def new_trap(line_id):
     """Add a new trap to a line."""
-    if request.method == 'POST':
-        # TODO: validate unique code, INSERT into trap
-        flash('Trap added.', 'success')
-        return redirect(url_for('line_detail', line_id=line_id))
-    # TODO: query line
-    line = None
-    return render_template('lines/new_trap.html', line=line)
+    with db.get_cursor() as cursor:
+        cursor.execute("SELECT line_id, name, is_retired FROM lines WHERE line_id = %s", (line_id,))
+        line = cursor.fetchone()
 
+        if not line:
+            flash('Trap line not found', 'danger')
+            return redirect(url_for('lines_index'))
+            
+        if line['is_retired']:
+            flash('Cannot add traps to a retired line', 'danger')
+            return redirect(url_for('line_detail', line_id=line_id))
+
+    code = request.form.get('code', '').strip()
+    trap_type = request.form.get('trap_type', '').strip()
+    latitude = request.form.get('latitude', '').strip()
+    longitude = request.form.get('longitude', '').strip()
+
+    if not all([code, trap_type, latitude, longitude]):
+        return redirect(url_for('line_detail', line_id=line_id, code=code, trap_type=trap_type, latitude=latitude, longitude=longitude, add_trap=1, error='All fields are required'))
+
+    allowed_trap_types = fetch_enum_values(db, 'trap_type_enum')
+    if trap_type not in allowed_trap_types:
+        return redirect(
+            url_for(
+                'line_detail',
+                line_id=line_id,
+                code=code,
+                latitude=latitude,
+                longitude=longitude,
+                add_trap=1,
+                error='Invalid trap type selected'
+            )
+        )
+
+    coordinates_error = validate_lincoln_nz_coordinates(latitude, longitude)
+    if coordinates_error:
+        return redirect(
+            url_for(
+                'line_detail',
+                line_id=line_id,
+                code=code,
+                trap_type=trap_type,
+                latitude=latitude,
+                longitude=longitude,
+                add_trap=1,
+                error=coordinates_error
+            )
+        )
+
+    with db.get_cursor() as cursor:
+        cursor.execute("SELECT code FROM traps WHERE code = %s", (code,))
+        if cursor.fetchone():
+            return redirect(url_for('line_detail', line_id=line_id, trap_type=trap_type, latitude=latitude, longitude=longitude, add_trap=1, error=f'Trap code "{code}" already exists. Please choose a different code.'))
+
+        cursor.execute(
+            """
+            INSERT INTO traps (code, trap_type, line_id, latitude, longitude)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (code, trap_type, line_id, latitude, longitude)
+        )
+
+    flash('Trap added', 'success')
+    return redirect(url_for('line_detail', line_id=line_id))
 
 @app.route('/admin/traps/<int:line_id>/<int:trap_id>/edit', methods=['GET', 'POST'])
 @role_required('Admin')
@@ -264,18 +521,61 @@ def edit_trap(line_id, trap_id):
     """Edit an existing trap."""
     # get trap types for dropdown
     trap_types = fetch_enum_values(db, 'trap_type_enum')
-    trap = None
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT trap_id, line_id, code, trap_type, latitude, longitude, is_retired
+            FROM traps
+            WHERE trap_id = %s
+            """,
+            (trap_id,)
+        )
+        trap = cursor.fetchone()
+        if not trap:
+            flash('Trap not found.', 'danger')
+            return redirect(url_for('lines_index'))
 
     if request.method == 'POST':
-        code = request.form.get('trap_code')
-        trap_type = request.form.get('trap_type')
-        latitude = request.form.get('trap_latitude')
-        longitude = request.form.get('trap_longitude')
+        code = request.form.get('trap_code', '').strip()
+        trap_type = request.form.get('trap_type', '').strip()
+        latitude = request.form.get('trap_latitude', '').strip()
+        longitude = request.form.get('trap_longitude', '').strip()
 
         # Basic validation
         if not code or not trap_type or not latitude or not longitude:
             flash('All fields are required.', 'danger')
-            return redirect(url_for('edit_trap', line_id=line_id, trap_id=trap_id))
+            trap.update({
+                'code': code,
+                'trap_type': trap_type,
+                'latitude': latitude,
+                'longitude': longitude
+            })
+            return render_template(
+                'lines/edit_trap.html',
+                trap=trap,
+                trap_types=trap_types,
+                line_id=line_id,
+                lat_range=LINCOLN_NZ_LAT_RANGE,
+                lon_range=LINCOLN_NZ_LON_RANGE,
+            )
+
+        coordinates_error = validate_lincoln_nz_coordinates(latitude, longitude)
+        if coordinates_error:
+            flash(coordinates_error, 'danger')
+            trap.update({
+                'code': code,
+                'trap_type': trap_type,
+                'latitude': latitude,
+                'longitude': longitude
+            })
+            return render_template(
+                'lines/edit_trap.html',
+                trap=trap,
+                trap_types=trap_types,
+                line_id=line_id,
+                lat_range=LINCOLN_NZ_LAT_RANGE,
+                lon_range=LINCOLN_NZ_LON_RANGE,
+            )
 
         # Check for unique trap code (excluding current trap)
         with db.get_cursor() as cursor:
@@ -290,7 +590,20 @@ def edit_trap(line_id, trap_id):
             existing_trap = cursor.fetchone()
             if existing_trap:
                 flash(f'Trap Code "{code}" has already been taken. Please choose a different code.', 'danger')
-                return redirect(url_for('edit_trap', line_id=line_id, trap_id=trap_id))
+                trap.update({
+                    'code': code,
+                    'trap_type': trap_type,
+                    'latitude': latitude,
+                    'longitude': longitude
+                })
+                return render_template(
+                    'lines/edit_trap.html',
+                    trap=trap,
+                    trap_types=trap_types,
+                    line_id=line_id,
+                    lat_range=LINCOLN_NZ_LAT_RANGE,
+                    lon_range=LINCOLN_NZ_LON_RANGE,
+                )
             
         # Update trap in database
         with db.get_cursor() as cursor:
@@ -306,22 +619,14 @@ def edit_trap(line_id, trap_id):
         flash('Trap updated.', 'success')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    # Query trap details for pre-filling the form
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT trap_id, line_id, code, trap_type, latitude, longitude, is_retired
-            FROM traps
-            WHERE trap_id = %s
-            """,
-            (trap_id,)
-        )
-        trap = cursor.fetchone()
-        if not trap:
-            flash('Trap not found.', 'danger')
-            return redirect(url_for('lines_index'))
-
-    return render_template('lines/edit_trap.html', trap=trap, trap_types=trap_types, line_id=line_id)
+    return render_template(
+        'lines/edit_trap.html',
+        trap=trap,
+        trap_types=trap_types,
+        line_id=line_id,
+        lat_range=LINCOLN_NZ_LAT_RANGE,
+        lon_range=LINCOLN_NZ_LON_RANGE,
+    )
 
 
 @app.route('/admin/traps/<int:line_id>/retire', methods=['POST'])
@@ -416,25 +721,187 @@ def assign_operators(line_id):
 
 # ── Lookup data management ────────────────────────────────────────────────────
 
-@app.route('/admin/species')
+@app.route('/admin/species', methods=['GET', 'POST'])
 @role_required('Admin')
 def manage_species():
     """View and manage the species lookup table."""
-    # TODO: query species
-    return render_template('admin/manage_species.html', species=[])
+    if request.method == 'POST':
+        current_species_name = request.form.get('current-species-name', '').strip()
+        species_name = request.form.get('species-name', '').strip()
+        modal_action = request.form.get('modal-action')
+
+        if not species_name:
+            flash('Please provide a species name.', 'danger')
+            return redirect(url_for('manage_species'))
+        
+        with db.get_cursor() as cursor:
+            # Check for existing species with the same name
+            cursor.execute(
+                """
+                SELECT name
+                FROM species
+                WHERE name = %s
+                """, (species_name,))
+            if cursor.fetchone():
+                flash(f'A species named "{species_name}" already exists.', 'danger')
+                return redirect(url_for('manage_species'))
+            
+            if modal_action == 'add':
+                # Insert the new species
+                cursor.execute(
+                    """
+                    INSERT INTO species (name)
+                    VALUES (%s)
+                    """, (species_name,))
+                flash(f'Species "{species_name}" added successfully.', 'success')
+            elif modal_action == 'edit':
+                # Update the new species
+                cursor.execute(
+                    """
+                    UPDATE species
+                    SET name = %s
+                    WHERE name = %s
+                    """, (species_name, current_species_name))
+                flash(f'Species "{current_species_name}" updated to "{species_name}" successfully.', 'success')
+
+    # get list of species for display
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT name
+            FROM species
+            ORDER BY name ASC
+            """
+        )
+        species_list = cursor.fetchall()
+    
+    return render_template('admin/manage_species.html', species_list=species_list)
 
 
-@app.route('/admin/statuses')
+@app.route('/admin/statuses', methods=['GET', 'POST'])
 @role_required('Admin')
 def manage_statuses():
     """View and manage the trap status lookup table."""
-    # TODO: query trap_status
-    return render_template('admin/manage_statuses.html', statuses=[])
+    if request.method == 'POST':
+        current_status_name = request.form.get('current-status-name', '').strip()
+        status_name = request.form.get('status-name', '').strip()
+        modal_action = request.form.get('modal-action')
+
+        if not status_name:
+            flash('Please provide a trap status name.', 'danger')
+            return redirect(url_for('manage_statuses'))
+        
+        with db.get_cursor() as cursor:
+            # Check for existing status with the same name
+            cursor.execute(
+                """
+                SELECT name
+                FROM trap_statuses
+                WHERE name = %s
+                """, (status_name,))
+            if cursor.fetchone():
+                flash(f'A trap status named "{status_name}" already exists.', 'danger')
+                return redirect(url_for('manage_statuses'))
+            
+            if modal_action == 'add':
+                # Insert the new status
+                print(f"Adding new status: {status_name}")
+                cursor.execute(
+                    """
+                    INSERT INTO trap_statuses (name)
+                    VALUES (%s)
+                    """, (status_name,))
+                flash(f'Trap status "{status_name}" added successfully.', 'success')
+            elif modal_action == 'edit':
+                # Update the new status
+                cursor.execute(
+                    """
+                    UPDATE trap_statuses
+                    SET name = %s
+                    WHERE name = %s
+                    """, (status_name, current_status_name))
+                flash(f'Trap status "{current_status_name}" updated to "{status_name}" successfully.', 'success')
+
+    # get list of statuses for display
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT name
+            FROM trap_statuses
+            ORDER BY name ASC
+            """
+        )
+        statuses_list = cursor.fetchall()
+    return render_template('admin/manage_statuses.html', statuses_list=statuses_list)
 
 
-@app.route('/admin/bait-types')
+@app.route('/admin/bait-types', methods=['GET', 'POST'])
 @role_required('Admin')
 def manage_bait_types():
     """View and manage the bait type lookup table."""
-    # TODO: query bait_type
-    return render_template('admin/manage_bait_types.html', bait_types=[])
+    if request.method == 'POST':
+        current_bait_type_name = request.form.get('current-bait-type-name', '').strip()
+        bait_type_name = request.form.get('bait-type-name', '').strip()
+        modal_action = request.form.get('modal-action')
+        
+        if not bait_type_name:
+            flash('Please provide a bait type name.', 'danger')
+            return redirect(url_for('manage_bait_types'))
+        
+        with db.get_cursor() as cursor:
+            # Check for existing bait type with the same name
+            cursor.execute(
+                """
+                SELECT name
+                FROM bait_types
+                WHERE name = %s
+                """, (bait_type_name,))
+            if cursor.fetchone():
+                flash(f'A bait type named "{bait_type_name}" already exists.', 'danger')
+                return redirect(url_for('manage_bait_types'))
+            
+            if modal_action == 'add':
+                # Insert the new bait type
+                cursor.execute(
+                    """
+                    INSERT INTO bait_types (name)
+                    VALUES (%s)
+                    """, (bait_type_name,))
+                flash(f'Bait type "{bait_type_name}" added successfully.', 'success')
+            elif modal_action == 'edit':
+                # Update the new bait type
+                cursor.execute(
+                    """
+                    UPDATE bait_types
+                    SET name = %s
+                    WHERE name = %s
+                    """, (bait_type_name, current_bait_type_name))
+                flash(f'Bait type "{current_bait_type_name}" updated to "{bait_type_name}" successfully.', 'success')
+
+    # get list of bait types for display
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT name
+            FROM bait_types
+            ORDER BY name ASC
+            """
+        )
+        bait_types = cursor.fetchall()
+
+    return render_template('admin/manage_bait_types.html', bait_types=bait_types)
+
+@app.route('/admin/set-user-active', methods=['POST'])
+@role_required('Admin')
+def set_user_active():
+    """Set a user's account status."""
+    user_id = request.form.get('user_id')
+    set_active = request.form.get('setUserActiveSelect')
+    lookup = fetch_lookup_data(db)
+    if set_active not in lookup['valid_account_status']:
+        flash('Invalid account status value.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    update_user_active(db, user_id, set_active)
+    flash('User account status updated.', 'success')
+    return redirect(url_for('admin_users'))
