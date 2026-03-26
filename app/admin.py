@@ -398,8 +398,6 @@ def new_trap(line_id):
                 line_id=line_id,
                 code=code,
                 trap_type=trap_type,
-                latitude=latitude,
-                longitude=longitude,
                 add_trap=1,
                 error=coordinates_error
             )
