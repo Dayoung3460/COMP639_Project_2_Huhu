@@ -18,8 +18,118 @@ from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lo
 @role_required('Admin')
 def admin_dashboard():
     """Admin dashboard — system-wide statistics and quick actions."""
-    # TODO: query stats (total lines, traps, users, captures)
-    return render_template('admin/dashboard.html')
+    stats = {
+        'total_users':    0,
+        'total_observers': 0,
+        'total_operators': 0,
+        'total_admins':   0,
+        'inactive_users': 0,
+        'total_lines':    0,
+        'retired_lines':  0,
+        'total_traps':    0,
+        'retired_traps':  0,
+        'total_catches':  0,
+        'catches_month':  0,
+        'maintenance_traps': 0,
+    }
+    recent_users = []
+    recent_catches = []
+ 
+    try:
+        with db.get_cursor() as cursor:
+ 
+            # ── Users ─────────────────────────────────────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                          AS total,
+                    COUNT(*) FILTER (WHERE role = 'Observer')        AS observers,
+                    COUNT(*) FILTER (WHERE role = 'Operator')        AS operators,
+                    COUNT(*) FILTER (WHERE role = 'Admin')           AS admins,
+                    COUNT(*) FILTER (WHERE account_status = 'inactive') AS inactive
+                FROM users
+            """)
+            row = cursor.fetchone()
+            stats['total_users']     = row['total']
+            stats['total_observers'] = row['observers']
+            stats['total_operators'] = row['operators']
+            stats['total_admins']    = row['admins']
+            stats['inactive_users']  = row['inactive']
+ 
+            # ── Lines & Traps ──────────────────────────────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                    AS total,
+                    COUNT(*) FILTER (WHERE is_retired = TRUE)  AS retired
+                FROM lines
+            """)
+            row = cursor.fetchone()
+            stats['total_lines']   = row['total']
+            stats['retired_lines'] = row['retired']
+ 
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                    AS total,
+                    COUNT(*) FILTER (WHERE is_retired = TRUE)  AS retired
+                FROM traps
+            """)
+            row = cursor.fetchone()
+            stats['total_traps']   = row['total']
+            stats['retired_traps'] = row['retired']
+ 
+            # ── Catches ────────────────────────────────────────
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM trap_catches
+                WHERE species_caught != 'None'
+            """)
+            stats['total_catches'] = cursor.fetchone()['cnt']
+ 
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM trap_catches
+                WHERE species_caught != 'None'
+                AND date >= NOW() - INTERVAL '30 days'
+            """)
+            stats['catches_month'] = cursor.fetchone()['cnt']
+ 
+            # ── Traps needing maintenance ──────────────────────
+            cursor.execute("""
+                SELECT COUNT(DISTINCT trap_id) AS cnt FROM trap_catches
+                WHERE trap_condition = 'Needs maintenance'
+                AND date >= NOW() - INTERVAL '30 days'
+            """)
+            stats['maintenance_traps'] = cursor.fetchone()['cnt']
+ 
+            # ── Recent registrations (last 5) ──────────────────
+            cursor.execute("""
+                SELECT username, first_name, last_name, role,
+                       account_status, date_joined
+                FROM users
+                ORDER BY date_joined DESC
+                LIMIT 5
+            """)
+            recent_users = cursor.fetchall()
+ 
+            # ── Recent catches (last 5) ────────────────────────
+            cursor.execute("""
+                SELECT tc.date, tc.species_caught, tc.status,
+                       t.code AS trap_code, l.name AS line_name,
+                       u.username AS recorded_by
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                LEFT JOIN users u ON tc.recorded_by_id = u.user_id
+                WHERE tc.species_caught != 'None'
+                ORDER BY tc.date DESC
+                LIMIT 5
+            """)
+            recent_catches = cursor.fetchall()
+ 
+    except Exception as e:
+        app.logger.error(f'Admin dashboard error: {e}')
+ 
+    return render_template('admin/dashboard.html',
+                           stats=stats,
+                           recent_users=recent_users,
+                           recent_catches=recent_catches)
 
 
 # ── User management ───────────────────────────────────────────────────────────
@@ -28,15 +138,59 @@ def admin_dashboard():
 @role_required('Admin')
 def admin_users():
     """List all registered users with role and account status."""
+    search = request.args.get('search', '').strip()
+    role_filter = request.args.get('role', '').strip()
+    status_filter = request.args.get('status', '').strip()
+    sort_by = request.args.get('sort_by', '').strip()
+    sort_dir = request.args.get('sort_dir', '').strip().lower()
+
+    query = '''
+        SELECT user_id, username, first_name, last_name, role, account_status, date_joined, last_login
+        FROM users
+        WHERE 1=1
+    '''
+    params = []
+
+    if search:
+        # Strip '@' in case the user copy-pasted the username from the table
+        clean_search = search.lstrip('@')
+        query += " AND (username ILIKE %s OR first_name ILIKE %s OR last_name ILIKE %s OR CONCAT(first_name, ' ', last_name) ILIKE %s)"
+        search_term = f"%{clean_search}%"
+        params.extend([search_term, search_term, search_term, search_term])
+    
+    if role_filter:
+        query += " AND role = %s"
+        params.append(role_filter)
+        
+    if status_filter:
+        query += " AND account_status = %s"
+        params.append(status_filter)
+
+    # Sort Mapping Dictionary for SQL injection safety
+    sort_columns = {
+        'name': 'first_name {dir}, last_name {dir}',
+        'username': 'username {dir}',
+        'role': 'role::text {dir}',
+        'status': 'account_status::text {dir}',
+        'date_joined': 'date_joined {dir}',
+        'last_login': 'last_login {dir}'
+    }
+
+    if sort_by in sort_columns and sort_dir in ['asc', 'desc']:
+        order_clause = sort_columns[sort_by].format(dir=sort_dir.upper())
+        query += f" ORDER BY {order_clause}"
+    else:
+        query += " ORDER BY first_name ASC, last_name ASC"
+        sort_by, sort_dir = '', ''
+
     with db.get_cursor() as cursor:
-        cursor.execute('''
-            SELECT user_id, username, first_name, last_name, email, role, account_status
-            FROM users
-            ORDER BY first_name ASC, last_name ASC
-        ''')
+        cursor.execute(query, tuple(params))
         users = cursor.fetchall()
 
-    return render_template('admin/users.html', users=users)
+    return render_template('admin/users.html', users=users, 
+                           search=search, role_filter=role_filter, 
+                           status_filter=status_filter,
+                           sort_by=sort_by, sort_dir=sort_dir)
 
 
 @app.route('/admin/users/<int:user_id>')
@@ -545,12 +699,61 @@ def manage_species():
     return render_template('admin/manage_species.html', species_list=species_list)
 
 
-@app.route('/admin/statuses')
+@app.route('/admin/statuses', methods=['GET', 'POST'])
 @role_required('Admin')
 def manage_statuses():
     """View and manage the trap status lookup table."""
-    # TODO: query trap_status
-    return render_template('admin/manage_statuses.html', statuses=[])
+    if request.method == 'POST':
+        current_status_name = request.form.get('current-status-name', '').strip()
+        status_name = request.form.get('status-name', '').strip()
+        modal_action = request.form.get('modal-action')
+
+        if not status_name:
+            flash('Please provide a trap status name.', 'danger')
+            return redirect(url_for('manage_statuses'))
+        
+        with db.get_cursor() as cursor:
+            # Check for existing status with the same name
+            cursor.execute(
+                """
+                SELECT name
+                FROM trap_statuses
+                WHERE name = %s
+                """, (status_name,))
+            if cursor.fetchone():
+                flash(f'A trap status named "{status_name}" already exists.', 'danger')
+                return redirect(url_for('manage_statuses'))
+            
+            if modal_action == 'add':
+                # Insert the new status
+                print(f"Adding new status: {status_name}")
+                cursor.execute(
+                    """
+                    INSERT INTO trap_statuses (name)
+                    VALUES (%s)
+                    """, (status_name,))
+                flash(f'Trap status "{status_name}" added successfully.', 'success')
+            elif modal_action == 'edit':
+                # Update the new status
+                cursor.execute(
+                    """
+                    UPDATE trap_statuses
+                    SET name = %s
+                    WHERE name = %s
+                    """, (status_name, current_status_name))
+                flash(f'Trap status "{current_status_name}" updated to "{status_name}" successfully.', 'success')
+
+    # get list of statuses for display
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT name
+            FROM trap_statuses
+            ORDER BY name ASC
+            """
+        )
+        statuses_list = cursor.fetchall()
+    return render_template('admin/manage_statuses.html', statuses_list=statuses_list)
 
 
 @app.route('/admin/bait-types', methods=['GET', 'POST'])

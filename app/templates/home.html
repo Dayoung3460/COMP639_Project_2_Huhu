@@ -315,6 +315,118 @@
 </section>
 
 {# ═══════════════════════════════════════════════
+   MEET THE TEAM
+   ═══════════════════════════════════════════════ #}
+<section class="section" id="team" style="background:#f4faf6;">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="section-label">The people behind it</div>
+      <img src="{{ url_for('static', filename='images/huhu.png') }}"
+          alt="Team Huhu" style="display: block; margin: 16px auto 4px; width: 80px;">
+      <div class="section-title">Meet Team Huhu</div>
+      <p class="section-sub mx-auto">
+        COMP639 Studio Project &nbsp;·&nbsp; Semester 1, 2026 &nbsp;·&nbsp; Lincoln University
+      </p>
+    </div>
+    {# Group photo #}
+    <div class="mb-4">
+      <img src="{{ url_for('static', filename='images/team/group.jpg') }}"
+          alt="Team Huhu" class="group-photo">
+    </div>
+
+    {# Row 1 — 3 cards #}
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="team-card">
+          <div class="team-photo">
+            <img src="{{ url_for('static', filename='images/team/ben.jpg') }}"
+                 alt="Ben Fitzgerald"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="team-initials" style="background:#236b43; display:none;">BF</div>
+          </div>
+          <div class="team-body">
+            <div class="team-name">Ben Fitzgerald</div>
+            <div class="team-country">New Zealand</div>
+            <p class="team-bio">
+              Master of Applied Computing student by day, amateur gym-goer and DIY repair enthusiast by night. Will attempt to fix absolutely any broken item before giving up and buying a new one. Keeps the team's logic sound and the local Cookie Time stash dangerously low. Hoping to eventually write code that runs as reliably as his 2011 Toyota Corolla.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="team-card">
+          <div class="team-photo">
+            <img src="{{ url_for('static', filename='images/team/mingcheng.jpg') }}"
+                 alt="Ming-Cheng Hsiao"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="team-initials" style="background:#1a5c38; display:none;">MH</div>
+          </div>
+          <div class="team-body">
+            <div class="team-name">Ming-Cheng Hsiao</div>
+            <div class="team-country">Taiwan</div>
+            <p class="team-bio">Coming soon</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="team-card">
+          <div class="team-photo">
+            <img src="{{ url_for('static', filename='images/team/dayoung.jpg') }}"
+                 alt="Da-young Kim"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="team-initials" style="background:#1a6fa8; display:none;">DK</div>
+          </div>
+          <div class="team-body">
+            <div class="team-name">Da-young Kim</div>
+            <div class="team-country">South Korea</div>
+            <p class="team-bio">
+              Da-young likes building software with AI to solve real-world problems, whether that means making life easier for people or helping catch predators. She enjoys working independently, but also genuinely likes being part of a team, partly because she believes everyone has something worth learning from. She’s naturally curious about people’s stories, hidden insights, and the ways different experiences shape how they think. In the long term, she dreams of becoming a solopreneur and seeing as much of the world as her energy levels allow.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# Row 2 — 2 cards centred #}
+    <div class="row g-4 justify-content-center">
+      <div class="col-md-4">
+        <div class="team-card">
+          <div class="team-photo">
+            <img src="{{ url_for('static', filename='images/team/jeremiah.jpg') }}"
+                 alt="Jeremiah Ruanes"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="team-initials" style="background:#3d9b67; display:none;">JR</div>
+          </div>
+          <div class="team-body">
+            <div class="team-name">Jeremiah Ruanes</div>
+            <div class="team-country">Philippines</div>
+            <p class="team-bio">
+              Believes in <em>meraki</em> — doing things with heart, even when debugging says otherwise. Writing code since 2010, primarily in web development, combining strong UI instincts with critical thinking to build practical, user-focused solutions, while also exploring automations and AI agents. Big Pearl Jam fan, occasional singer, and guitarist (first thing he bought in NZ, still no regrets). Outnumbered at home by three boys who somehow have more energy than his code ever will.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="team-card">
+          <div class="team-photo">
+            <img src="{{ url_for('static', filename='images/team/ziyuan.jpg') }}"
+                 alt="Ziyuan Sun"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="team-initials" style="background:#e8920a; display:none;">ZS</div>
+          </div>
+          <div class="team-body">
+            <div class="team-name">Ziyuan Sun</div>
+            <div class="team-country">China</div>
+            <p class="team-bio">Coming soon</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════
    CONTACT
    ═══════════════════════════════════════════════ #}
 <section class="section" id="contact" style="background:var(--pf-50);">
