@@ -108,16 +108,20 @@ from app import general
 def inject_globals():
     """Makes global variables available to all Jinja2 templates."""
     profile_photo = None
+    first_name    = None
+    last_name     = None
     if session.get('user_id'):
         try:
             with db.get_cursor() as cursor:
                 cursor.execute(
-                    'SELECT profile_photo FROM users WHERE user_id = %s',
+                    'SELECT profile_photo, first_name, last_name FROM users WHERE user_id = %s',
                     (session['user_id'],)
                 )
                 row = cursor.fetchone()
                 if row:
                     profile_photo = row['profile_photo']
+                    first_name    = row['first_name']
+                    last_name     = row['last_name']
         except Exception:
             pass
     return dict(
@@ -125,7 +129,9 @@ def inject_globals():
         site_tagline='Predator Trapping & Monitoring',
         logo_url=url_for('static', filename='images/logo.png'),
         icon_url=url_for('static', filename='images/icon.png'),
-        nav_profile_photo=profile_photo
+        nav_profile_photo=profile_photo,
+        nav_first_name=first_name,
+        nav_full_name=f"{first_name} {last_name}".strip(),
     )
 
 # ── Template filters ──────────────────────────────────────────────────────────
