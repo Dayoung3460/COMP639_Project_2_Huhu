@@ -1,29 +1,268 @@
+{# templates/operator/dashboard.html
+   Route: GET /operator/dashboard  →  operator_dashboard()
+   Operator only — assigned lines, stats, quick actions, recent records.
+#}
 {% extends 'base.html' %}
 {% block title %}Operator Dashboard{% endblock %}
-{% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Operator Dashboard</h2>
-    <a href="{{ url_for('add_catch') }}" class="btn btn-pf btn-sm">
-      <i class="bi bi-plus-lg me-1"></i>Add Catch Record
-    </a>
-  </div>
 
-  {% if assigned_lines %}
-    <div class="alert alert-success">
-      <i class="bi bi-check-circle me-2"></i>
-      You are assigned to
-      <strong>{{ assigned_lines | length }} line(s)</strong>:
-      {{ assigned_lines | map(attribute='name') | join(', ') }}.
-    </div>
-  {% else %}
-    <div class="alert alert-warning">
-      <i class="bi bi-exclamation-triangle me-2"></i>
-      You are not assigned to any trap lines. Contact an Admin.
+{% block page_title %}Operator Dashboard{% endblock %}
+
+{% block header_actions %}
+  <a href="{{ url_for('add_catch') }}" class="btn-sm-pf">
+    <i class="bi bi-plus-lg me-1"></i>Add Catch Record
+  </a>
+  <a href="{{ url_for('add_observation') }}" class="btn-sm-outline">
+    <i class="bi bi-binoculars me-1"></i>Add Observation
+  </a>
+{% endblock %}
+
+{% block content %}
+
+  {# ── Not assigned warning ── #}
+  {% if not assigned_lines %}
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-4"
+         style="font-size:13px; border-radius:8px;">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      You are not assigned to any trap lines yet. Contact an Admin to get assigned.
     </div>
   {% endif %}
 
-  {# TODO: stat cards, assigned lines detail, recent catch records #}
-  <p class="text-muted">Dashboard content — TODO</p>
-</div>
+  {# ── Stat cards ── #}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-geo-alt"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.lines_count }}</div>
+          <div class="stat-label">Assigned Lines</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="bi bi-clipboard2-check"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_records }}</div>
+          <div class="stat-label">Records This Month</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.catches_month }}</div>
+          <div class="stat-label">Catches This Month</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-trophy"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_catches }}</div>
+          <div class="stat-label">Total Catches</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    {# ── Assigned lines ── #}
+    <div class="col-lg-5 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="bi bi-geo-alt me-2"></i>My Assigned Lines
+          </div>
+          <a href="{{ url_for('lines_index') }}"
+             style="font-size:11px; color:var(--pf-600); text-decoration:none;">
+            View all →
+          </a>
+        </div>
+        {% if assigned_lines %}
+          <div class="panel-body d-flex flex-column gap-2">
+            {% for line in assigned_lines %}
+              <a href="{{ url_for('line_detail', line_id=line.line_id) }}"
+                 style="display:flex; align-items:center; justify-content:space-between;
+                        padding:10px 14px; background:var(--pf-50);
+                        border:1px solid var(--pf-200); border-radius:8px;
+                        text-decoration:none; color:var(--pf-900);
+                        transition:background 0.15s;"
+                 onmouseover="this.style.background='var(--pf-100)'"
+                 onmouseout="this.style.background='var(--pf-50)'">
+                <div>
+                  <div style="font-size:13px; font-weight:600;
+                              font-family:'Cabin',sans-serif;">
+                    {{ line.name }}
+                  </div>
+                  <div style="font-size:11px; color:#6b7c72; margin-top:2px;">
+                    {{ line.type }} · {{ line.trap_count }} active trap{{ 's' if line.trap_count != 1 }}
+                  </div>
+                </div>
+                <i class="bi bi-chevron-right"
+                   style="color:var(--pf-400); font-size:12px;"></i>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="panel-body" style="text-align:center; padding:30px; color:#6b7c72;">
+            <i class="bi bi-geo-alt" style="font-size:32px; display:block;
+               margin-bottom:10px; color:var(--pf-300);"></i>
+            No lines assigned yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ── Recent records + quick actions ── #}
+    <div class="col-lg-7 d-flex flex-column gap-3">
+
+      {# Quick actions #}
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="bi bi-lightning me-2"></i>Quick Actions
+          </div>
+        </div>
+        <div class="panel-body" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <a href="{{ url_for('add_catch') }}"
+             style="display:flex; align-items:center; gap:10px; padding:10px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:32px; height:32px; background:var(--pf-100);
+                        border-radius:8px; display:flex; align-items:center;
+                        justify-content:center; color:var(--pf-700); font-size:15px;">
+              <i class="bi bi-plus-circle"></i>
+            </div>
+            <div>
+              <div style="font-size:12px; font-weight:600;
+                          font-family:'Cabin',sans-serif;">Add Catch</div>
+              <div style="font-size:10px; color:#6b7c72;">Log a trap check</div>
+            </div>
+          </a>
+          <a href="{{ url_for('add_observation') }}"
+             style="display:flex; align-items:center; gap:10px; padding:10px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:32px; height:32px; background:var(--pf-100);
+                        border-radius:8px; display:flex; align-items:center;
+                        justify-content:center; color:var(--pf-700); font-size:15px;">
+              <i class="bi bi-binoculars"></i>
+            </div>
+            <div>
+              <div style="font-size:12px; font-weight:600;
+                          font-family:'Cabin',sans-serif;">Add Observation</div>
+              <div style="font-size:10px; color:#6b7c72;">Record sighting</div>
+            </div>
+          </a>
+          <a href="{{ url_for('my_records') }}"
+             style="display:flex; align-items:center; gap:10px; padding:10px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:32px; height:32px; background:var(--pf-100);
+                        border-radius:8px; display:flex; align-items:center;
+                        justify-content:center; color:var(--pf-700); font-size:15px;">
+              <i class="bi bi-pencil-square"></i>
+            </div>
+            <div>
+              <div style="font-size:12px; font-weight:600;
+                          font-family:'Cabin',sans-serif;">My Records</div>
+              <div style="font-size:10px; color:#6b7c72;">View & edit yours</div>
+            </div>
+          </a>
+          <a href="{{ url_for('reports') }}"
+             style="display:flex; align-items:center; gap:10px; padding:10px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:32px; height:32px; background:var(--pf-100);
+                        border-radius:8px; display:flex; align-items:center;
+                        justify-content:center; color:var(--pf-700); font-size:15px;">
+              <i class="bi bi-graph-up"></i>
+            </div>
+            <div>
+              <div style="font-size:12px; font-weight:600;
+                          font-family:'Cabin',sans-serif;">Reports</div>
+              <div style="font-size:10px; color:#6b7c72;">Charts & analytics</div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      {# Recent records #}
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Records</div>
+          <a href="{{ url_for('my_records') }}"
+             style="font-size:11px; color:var(--pf-600); text-decoration:none;">
+            View all →
+          </a>
+        </div>
+        {% if recent_records %}
+          <div style="overflow-x:auto;">
+            <table class="pf-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Line</th>
+                  <th>Trap</th>
+                  <th>Species</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in recent_records %}
+                <tr>
+                  <td style="font-size:12px; color:#6b7c72;">
+                    {{ r.date.strftime('%d %b %Y') }}
+                  </td>
+                  <td style="font-size:12px;">{{ r.line_name }}</td>
+                  <td style="font-family:monospace; font-size:12px;">
+                    {{ r.trap_code }}
+                  </td>
+                  <td>
+                    {% if r.species_caught != 'None' %}
+                      <span class="badge-species">{{ r.species_caught }}</span>
+                    {% else %}
+                      <span style="color:#6b7c72; font-size:12px;">No catch</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if 'Sprung' in r.status %}
+                      <span class="badge-status-sprung">{{ r.status }}</span>
+                    {% else %}
+                      <span class="badge-status-set">{{ r.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="panel-body"
+               style="text-align:center; padding:24px; color:#6b7c72;">
+            No records yet —
+            <a href="{{ url_for('add_catch') }}"
+               style="color:var(--pf-600);">add your first catch</a>.
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
 {% endblock %}
