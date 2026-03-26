@@ -28,15 +28,59 @@ def admin_dashboard():
 @role_required('Admin')
 def admin_users():
     """List all registered users with role and account status."""
+    search = request.args.get('search', '').strip()
+    role_filter = request.args.get('role', '').strip()
+    status_filter = request.args.get('status', '').strip()
+    sort_by = request.args.get('sort_by', '').strip()
+    sort_dir = request.args.get('sort_dir', '').strip().lower()
+
+    query = '''
+        SELECT user_id, username, first_name, last_name, role, account_status, date_joined, last_login
+        FROM users
+        WHERE 1=1
+    '''
+    params = []
+
+    if search:
+        # Strip '@' in case the user copy-pasted the username from the table
+        clean_search = search.lstrip('@')
+        query += " AND (username ILIKE %s OR first_name ILIKE %s OR last_name ILIKE %s OR CONCAT(first_name, ' ', last_name) ILIKE %s)"
+        search_term = f"%{clean_search}%"
+        params.extend([search_term, search_term, search_term, search_term])
+    
+    if role_filter:
+        query += " AND role = %s"
+        params.append(role_filter)
+        
+    if status_filter:
+        query += " AND account_status = %s"
+        params.append(status_filter)
+
+    # Sort Mapping Dictionary for SQL injection safety
+    sort_columns = {
+        'name': 'first_name {dir}, last_name {dir}',
+        'username': 'username {dir}',
+        'role': 'role::text {dir}',
+        'status': 'account_status::text {dir}',
+        'date_joined': 'date_joined {dir}',
+        'last_login': 'last_login {dir}'
+    }
+
+    if sort_by in sort_columns and sort_dir in ['asc', 'desc']:
+        order_clause = sort_columns[sort_by].format(dir=sort_dir.upper())
+        query += f" ORDER BY {order_clause}"
+    else:
+        query += " ORDER BY first_name ASC, last_name ASC"
+        sort_by, sort_dir = '', ''
+
     with db.get_cursor() as cursor:
-        cursor.execute('''
-            SELECT user_id, username, first_name, last_name, email, role, account_status
-            FROM users
-            ORDER BY first_name ASC, last_name ASC
-        ''')
+        cursor.execute(query, tuple(params))
         users = cursor.fetchall()
 
-    return render_template('admin/users.html', users=users)
+    return render_template('admin/users.html', users=users, 
+                           search=search, role_filter=role_filter, 
+                           status_filter=status_filter,
+                           sort_by=sort_by, sort_dir=sort_dir)
 
 
 @app.route('/admin/users/<int:user_id>')
