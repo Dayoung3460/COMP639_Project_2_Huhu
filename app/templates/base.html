@@ -206,10 +206,6 @@
            class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
           <i class="bi bi-graph-up"></i> <span class="link-text">Reports &amp; Charts</span>
         </a>
-        <a href="{{ url_for('download_csv') }}"
-           class="sidebar-link {{ 'active' if request.endpoint == 'download_csv' }}">
-          <i class="bi bi-download"></i> <span class="link-text">Download CSV</span>
-        </a>
 
         {# Admin-only system links #}
         {% if session.get('role') == 'Admin' %}

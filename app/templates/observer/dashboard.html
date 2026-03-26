@@ -1,13 +1,219 @@
+{# templates/observer/dashboard.html
+   Route: GET /observer/dashboard  →  observer_dashboard()
+   Observer only — read-only view of system stats and recent activity.
+#}
 {% extends 'base.html' %}
 {% block title %}Observer Dashboard{% endblock %}
+
+{% block page_title %}Observer Dashboard{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  <h2 class="mb-3">Observer Dashboard</h2>
-  <div class="alert alert-info">
-    <i class="bi bi-eye me-2"></i>
-    You are logged in as <strong>Observer</strong>. You can view data but cannot add or edit records.
+
+  {# ── Observer notice ── #}
+  <div class="notice blue mb-4">
+    <i class="bi bi-eye"></i>
+    <span>
+      You are logged in as <strong>Observer</strong> — you can view all data
+      but cannot add or edit records. Contact an Admin to upgrade your role.
+    </span>
   </div>
-  {# TODO: stat cards, recent catch records table, recent observations #}
-  <p class="text-muted">Dashboard content — TODO</p>
-</div>
+
+  {# ── Stat cards ── #}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_catches }}</div>
+          <div class="stat-label">Total Catches</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-geo-alt"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_lines }}</div>
+          <div class="stat-label">Active Lines</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="bi bi-cpu"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_traps }}</div>
+          <div class="stat-label">Active Traps</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-trophy"></i></div>
+        <div>
+          <div class="stat-value" style="font-size:20px;">{{ stats.top_species }}</div>
+          <div class="stat-label">Most Caught Species</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    {# ── Quick links ── #}
+    <div class="col-lg-4 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="bi bi-compass me-2"></i>Explore
+          </div>
+        </div>
+        <div class="panel-body d-flex flex-column gap-2">
+
+          <a href="{{ url_for('lines_index') }}"
+             style="display:flex; align-items:center; gap:12px; padding:12px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
+                        display:flex; align-items:center; justify-content:center;
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+              <i class="bi bi-geo-alt"></i>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Trap Lines</div>
+              <div style="font-size:11px; color:#6b7c72;">Browse lines and traps</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+          </a>
+
+          <a href="{{ url_for('catch_records') }}"
+             style="display:flex; align-items:center; gap:12px; padding:12px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
+                        display:flex; align-items:center; justify-content:center;
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+              <i class="bi bi-table"></i>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Catch Records</div>
+              <div style="font-size:11px; color:#6b7c72;">View all trap checks</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+          </a>
+
+          <a href="{{ url_for('observations') }}"
+             style="display:flex; align-items:center; gap:12px; padding:12px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
+                        display:flex; align-items:center; justify-content:center;
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+              <i class="bi bi-binoculars"></i>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Observations</div>
+              <div style="font-size:11px; color:#6b7c72;">Incidental sightings</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+          </a>
+
+          <a href="{{ url_for('reports') }}"
+             style="display:flex; align-items:center; gap:12px; padding:12px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
+                        display:flex; align-items:center; justify-content:center;
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+              <i class="bi bi-graph-up"></i>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Reports &amp; Charts</div>
+              <div style="font-size:11px; color:#6b7c72;">Analytics and trends</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+          </a>
+
+          
+
+        </div>
+      </div>
+    </div>
+
+    {# ── Recent catches ── #}
+    <div class="col-lg-8 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Recent Catches</div>
+          <a href="{{ url_for('catch_records') }}"
+             style="font-size:11px; color:var(--pf-600); text-decoration:none;">
+            View all →
+          </a>
+        </div>
+        {% if recent_catches %}
+          <div style="overflow-x:auto;">
+            <table class="pf-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Line</th>
+                  <th>Trap</th>
+                  <th>Species</th>
+                  <th>Status</th>
+                  <th>By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for catch in recent_catches %}
+                <tr>
+                  <td style="font-size:12px; color:#6b7c72;">
+                    {{ catch.date.strftime('%d %b %Y') }}
+                  </td>
+                  <td style="font-size:12px;">{{ catch.line_name }}</td>
+                  <td style="font-family:monospace; font-size:12px;">
+                    {{ catch.trap_code }}
+                  </td>
+                  <td>
+                    <span class="badge-species">{{ catch.species_caught }}</span>
+                  </td>
+                  <td>
+                    {% if 'Sprung' in catch.status %}
+                      <span class="badge-status-sprung">{{ catch.status }}</span>
+                    {% else %}
+                      <span class="badge-status-set">{{ catch.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td style="font-size:12px; color:#6b7c72;">
+                    {{ catch.recorded_by or '—' }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="panel-body"
+               style="text-align:center; padding:40px; color:#6b7c72;">
+            <i class="bi bi-table" style="font-size:36px; display:block;
+               margin-bottom:10px; color:var(--pf-300);"></i>
+            No catch records yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
 {% endblock %}
