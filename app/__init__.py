@@ -129,6 +129,7 @@ def inject_globals():
         site_tagline='Predator Trapping & Monitoring',
         logo_url=url_for('static', filename='images/logo.png'),
         icon_url=url_for('static', filename='images/icon.png'),
+        favicon_url=url_for('static', filename='images/favicon.png'),
         nav_profile_photo=profile_photo,
         nav_first_name=first_name,
         nav_full_name=f"{first_name} {last_name}".strip(),
