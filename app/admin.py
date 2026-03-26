@@ -18,8 +18,118 @@ from app.helpers.dbHelper import fetch_enum_values
 @role_required('Admin')
 def admin_dashboard():
     """Admin dashboard — system-wide statistics and quick actions."""
-    # TODO: query stats (total lines, traps, users, captures)
-    return render_template('admin/dashboard.html')
+    stats = {
+        'total_users':    0,
+        'total_observers': 0,
+        'total_operators': 0,
+        'total_admins':   0,
+        'inactive_users': 0,
+        'total_lines':    0,
+        'retired_lines':  0,
+        'total_traps':    0,
+        'retired_traps':  0,
+        'total_catches':  0,
+        'catches_month':  0,
+        'maintenance_traps': 0,
+    }
+    recent_users = []
+    recent_catches = []
+ 
+    try:
+        with db.get_cursor() as cursor:
+ 
+            # ── Users ─────────────────────────────────────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                          AS total,
+                    COUNT(*) FILTER (WHERE role = 'Observer')        AS observers,
+                    COUNT(*) FILTER (WHERE role = 'Operator')        AS operators,
+                    COUNT(*) FILTER (WHERE role = 'Admin')           AS admins,
+                    COUNT(*) FILTER (WHERE account_status = 'inactive') AS inactive
+                FROM users
+            """)
+            row = cursor.fetchone()
+            stats['total_users']     = row['total']
+            stats['total_observers'] = row['observers']
+            stats['total_operators'] = row['operators']
+            stats['total_admins']    = row['admins']
+            stats['inactive_users']  = row['inactive']
+ 
+            # ── Lines & Traps ──────────────────────────────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                    AS total,
+                    COUNT(*) FILTER (WHERE is_retired = TRUE)  AS retired
+                FROM lines
+            """)
+            row = cursor.fetchone()
+            stats['total_lines']   = row['total']
+            stats['retired_lines'] = row['retired']
+ 
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                    AS total,
+                    COUNT(*) FILTER (WHERE is_retired = TRUE)  AS retired
+                FROM traps
+            """)
+            row = cursor.fetchone()
+            stats['total_traps']   = row['total']
+            stats['retired_traps'] = row['retired']
+ 
+            # ── Catches ────────────────────────────────────────
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM trap_catches
+                WHERE species_caught != 'None'
+            """)
+            stats['total_catches'] = cursor.fetchone()['cnt']
+ 
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM trap_catches
+                WHERE species_caught != 'None'
+                AND date >= NOW() - INTERVAL '30 days'
+            """)
+            stats['catches_month'] = cursor.fetchone()['cnt']
+ 
+            # ── Traps needing maintenance ──────────────────────
+            cursor.execute("""
+                SELECT COUNT(DISTINCT trap_id) AS cnt FROM trap_catches
+                WHERE trap_condition = 'Needs maintenance'
+                AND date >= NOW() - INTERVAL '30 days'
+            """)
+            stats['maintenance_traps'] = cursor.fetchone()['cnt']
+ 
+            # ── Recent registrations (last 5) ──────────────────
+            cursor.execute("""
+                SELECT username, first_name, last_name, role,
+                       account_status, date_joined
+                FROM users
+                ORDER BY date_joined DESC
+                LIMIT 5
+            """)
+            recent_users = cursor.fetchall()
+ 
+            # ── Recent catches (last 5) ────────────────────────
+            cursor.execute("""
+                SELECT tc.date, tc.species_caught, tc.status,
+                       t.code AS trap_code, l.name AS line_name,
+                       u.username AS recorded_by
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                LEFT JOIN users u ON tc.recorded_by_id = u.user_id
+                WHERE tc.species_caught != 'None'
+                ORDER BY tc.date DESC
+                LIMIT 5
+            """)
+            recent_catches = cursor.fetchall()
+ 
+    except Exception as e:
+        app.logger.error(f'Admin dashboard error: {e}')
+ 
+    return render_template('admin/dashboard.html',
+                           stats=stats,
+                           recent_users=recent_users,
+                           recent_catches=recent_catches)
 
 
 # ── User management ───────────────────────────────────────────────────────────

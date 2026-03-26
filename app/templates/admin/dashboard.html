@@ -1,19 +1,361 @@
+{# templates/admin/dashboard.html
+   Route: GET /admin/dashboard  →  admin_dashboard()
+   Admin only — system-wide stats, quick actions, recent activity.
+#}
 {% extends 'base.html' %}
 {% block title %}Admin Dashboard{% endblock %}
+
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block header_actions %}
+  <a href="{{ url_for('new_line') }}" class="btn-sm-pf">
+    <i class="bi bi-plus-lg me-1"></i>New Line
+  </a>
+  <a href="{{ url_for('admin_users') }}" class="btn-sm-outline">
+    <i class="bi bi-people me-1"></i>Manage Users
+  </a>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Admin Dashboard</h2>
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('new_line') }}" class="btn btn-pf btn-sm">
-        <i class="bi bi-plus-lg me-1"></i>New Line
-      </a>
-      <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-people me-1"></i>Manage Users
-      </a>
+
+  {# ── Row 1: User stats ── #}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-people"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_users }}</div>
+          <div class="stat-label">Total Users</div>
+          <div class="stat-trend" style="color:#6b7c72; margin-top:6px; font-size:11px;">
+            {{ stats.total_observers }} Observer · {{ stats.total_operators }} Operator · {{ stats.total_admins }} Admin
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-geo-alt"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_lines - stats.retired_lines }}</div>
+          <div class="stat-label">Active Lines</div>
+          {% if stats.retired_lines %}
+            <div class="stat-trend" style="color:#6b7c72; margin-top:6px; font-size:11px;">
+              {{ stats.retired_lines }} retired
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="bi bi-cpu"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_traps - stats.retired_traps }}</div>
+          <div class="stat-label">Active Traps</div>
+          {% if stats.retired_traps %}
+            <div class="stat-trend" style="color:#6b7c72; margin-top:6px; font-size:11px;">
+              {{ stats.retired_traps }} retired
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.catches_month }}</div>
+          <div class="stat-label">Catches This Month</div>
+          <div class="stat-trend" style="color:#6b7c72; margin-top:6px; font-size:11px;">
+            {{ stats.total_catches }} total all time
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  {# TODO: stat cards, trap line overview table, recent user registrations #}
-  <p class="text-muted">Dashboard content — TODO</p>
-</div>
+
+  {# ── Row 2: Alerts + Quick actions ── #}
+  <div class="row g-3 mb-4">
+
+    {# Alerts #}
+    <div class="col-lg-6">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-bell me-2"></i>Alerts</div>
+        </div>
+        <div class="panel-body d-flex flex-column gap-3">
+
+          {# Maintenance #}
+          <div class="insight-card {{ '' if stats.maintenance_traps else '' }}"
+               style="{{ 'background:#fdecea; border-color:#f5c6cb;' if stats.maintenance_traps else '' }}">
+            <div class="insight-icon"
+                 style="{{ 'background:#f8d7da; color:#c0392b;' if stats.maintenance_traps else '' }}">
+              <i class="bi bi-tools"></i>
+            </div>
+            <div>
+              <div class="insight-title"
+                   style="{{ 'color:#c0392b;' if stats.maintenance_traps else '' }}">
+                Traps Needing Maintenance
+              </div>
+              <p class="insight-text">
+                {% if stats.maintenance_traps %}
+                  {{ stats.maintenance_traps }} trap{{ 's' if stats.maintenance_traps != 1 }}
+                  flagged for maintenance in the last 30 days.
+                {% else %}
+                  No traps flagged for maintenance recently. ✓
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          {# Inactive users #}
+          <div class="insight-card"
+               style="{{ 'background:#fef3dc; border-color:#fde8b0;' if stats.inactive_users else '' }}">
+            <div class="insight-icon"
+                 style="{{ 'background:#fde8b0; color:#e8920a;' if stats.inactive_users else '' }}">
+              <i class="bi bi-person-x"></i>
+            </div>
+            <div>
+              <div class="insight-title"
+                   style="{{ 'color:#e8920a;' if stats.inactive_users else '' }}">
+                Inactive Accounts
+              </div>
+              <p class="insight-text">
+                {% if stats.inactive_users %}
+                  {{ stats.inactive_users }} user account{{ 's' if stats.inactive_users != 1 }}
+                  currently inactive.
+                  <a href="{{ url_for('admin_users') }}" style="color:var(--pf-700); font-weight:500;">
+                    Manage users →
+                  </a>
+                {% else %}
+                  All user accounts are active. ✓
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          {# Retired lines #}
+          <div class="insight-card" style="background:#f8fafc; border-color:#cbd5e1;">
+            <div class="insight-icon" style="background:#e2e8f0; color:#64748b;">
+              <i class="bi bi-archive"></i>
+            </div>
+            <div>
+              <div class="insight-title" style="color:#475569;">Retired Lines</div>
+              <p class="insight-text">
+                {% if stats.retired_lines %}
+                  {{ stats.retired_lines }} line{{ 's' if stats.retired_lines != 1 }} retired
+                  out of {{ stats.total_lines }} total.
+                {% else %}
+                  No lines have been retired yet.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# Quick actions #}
+    <div class="col-lg-6">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-lightning me-2"></i>Quick Actions</div>
+        </div>
+        <div class="panel-body d-flex flex-column gap-2">
+
+          <a href="{{ url_for('admin_users') }}"
+             style="display:flex; align-items:center; gap:12px; padding:12px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
+                        display:flex; align-items:center; justify-content:center;
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+              <i class="bi bi-people"></i>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Manage Users</div>
+              <div style="font-size:11px; color:#6b7c72;">View, edit roles and account status</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+          </a>
+
+          <a href="{{ url_for('new_line') }}"
+             style="display:flex; align-items:center; gap:12px; padding:12px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
+                        display:flex; align-items:center; justify-content:center;
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+              <i class="bi bi-plus-circle-dotted"></i>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Create New Trap Line</div>
+              <div style="font-size:11px; color:#6b7c72;">Add a new line to the monitoring network</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+          </a>
+
+          <a href="{{ url_for('manage_species') }}"
+             style="display:flex; align-items:center; gap:12px; padding:12px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
+                        display:flex; align-items:center; justify-content:center;
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+              <i class="bi bi-bug"></i>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Manage Lookup Lists</div>
+              <div style="font-size:11px; color:#6b7c72;">Species, statuses, bait types</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+          </a>
+
+          <a href="{{ url_for('reports') }}"
+             style="display:flex; align-items:center; gap:12px; padding:12px 14px;
+                    background:var(--pf-50); border:1px solid var(--pf-200);
+                    border-radius:8px; text-decoration:none; color:var(--pf-900);
+                    transition:background 0.15s;"
+             onmouseover="this.style.background='var(--pf-100)'"
+             onmouseout="this.style.background='var(--pf-50)'">
+            <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
+                        display:flex; align-items:center; justify-content:center;
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+              <i class="bi bi-graph-up"></i>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">View Reports</div>
+              <div style="font-size:11px; color:#6b7c72;">Charts and catch data analytics</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+          </a>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Row 3: Recent registrations + Recent catches ── #}
+  <div class="row g-3">
+
+    {# Recent registrations #}
+    <div class="col-lg-5 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Recent Registrations</div>
+          <a href="{{ url_for('admin_users') }}"
+             style="font-size:11px; color:var(--pf-600); text-decoration:none;">
+            View all →
+          </a>
+        </div>
+        {% if recent_users %}
+          <div style="overflow-x:auto;">
+            <table class="pf-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Joined</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for user in recent_users %}
+                <tr>
+                  <td>
+                    <div style="font-weight:500; font-size:13px;">{{ user.username }}</div>
+                    <div style="font-size:11px; color:#6b7c72;">
+                      {{ user.first_name }} {{ user.last_name }}
+                    </div>
+                  </td>
+                  <td>
+                    {% if user.role == 'Admin' %}
+                      <span class="badge-role-admin">Admin</span>
+                    {% elif user.role == 'Operator' %}
+                      <span class="badge-role-operator">Operator</span>
+                    {% else %}
+                      <span class="badge-role-observer">Observer</span>
+                    {% endif %}
+                  </td>
+                  <td style="font-size:12px; color:#6b7c72;">
+                    {{ user.date_joined.strftime('%d %b %Y') if user.date_joined else '—' }}
+                  </td>
+                  <td>
+                    {% if user.account_status == 'active' %}
+                      <span style="color:var(--pf-600); font-size:11px; font-weight:600;">● Active</span>
+                    {% else %}
+                      <span style="color:#e8920a; font-size:11px; font-weight:600;">● Inactive</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="panel-body" style="text-align:center; padding:30px; color:#6b7c72;">
+            No users registered yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Recent catches #}
+    <div class="col-lg-7 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Recent Catches</div>
+          <a href="{{ url_for('reports') }}"
+             style="font-size:11px; color:var(--pf-600); text-decoration:none;">
+            View reports →
+          </a>
+        </div>
+        {% if recent_catches %}
+          <div style="overflow-x:auto;">
+            <table class="pf-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Line</th>
+                  <th>Trap</th>
+                  <th>Species</th>
+                  <th>By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for catch in recent_catches %}
+                <tr>
+                  <td style="font-size:12px; color:#6b7c72;">
+                    {{ catch.date.strftime('%d %b %Y') }}
+                  </td>
+                  <td style="font-size:12px;">{{ catch.line_name }}</td>
+                  <td style="font-family:monospace; font-size:12px;">{{ catch.trap_code }}</td>
+                  <td><span class="badge-species">{{ catch.species_caught }}</span></td>
+                  <td style="font-size:12px; color:#6b7c72;">{{ catch.recorded_by or '—' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="panel-body" style="text-align:center; padding:30px; color:#6b7c72;">
+            No catches recorded yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
 {% endblock %}
