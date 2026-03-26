@@ -103,7 +103,12 @@
             <td>{{ u.date_joined.strftime('%d %b %Y') if u.date_joined else 'Unknown' }}</td>
             <td>{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
             <td>
-              <a href="{{ url_for('admin_user_detail', user_id=u.user_id) }}" class="btn btn-sm btn-outline-secondary">View</a>
+              <a href="{{ url_for('admin_user_detail', user_id=u.user_id) }}"
+                 class="btn btn-sm btn-outline-secondary">View</a>
+              {% if u.role != 'Admin' %}
+              <a href="{{ url_for('edit_role', user_id=u.user_id) }}"
+                 class="btn btn-sm btn-outline-primary">Edit Role</a>
+              {% endif %}
               <form method="POST"
                     action="{{ url_for('toggle_active', user_id=u.user_id) }}"
                     class="d-inline"

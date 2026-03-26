@@ -9,7 +9,7 @@ from app.utils import (
     LINCOLN_NZ_LAT_RANGE,
     LINCOLN_NZ_LON_RANGE,
 )
-from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data
+from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data, fetch_user_info, update_user_role
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -283,6 +283,34 @@ def change_role(user_id):
     flash('User role updated.', 'success')
     return redirect(url_for('admin_user_detail', user_id=user_id))
 
+
+@app.route('/admin/users/<int:user_id>/edit-role', methods=['GET', 'POST'])
+@role_required('Admin')
+def edit_role(user_id):
+    """Edit a user's role."""
+    # Prevent admin from changing their own role
+    if user_id == session.get('user_id'):
+        flash('You cannot change your own role.', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    user = fetch_user_info(db, user_id)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    lookup = fetch_lookup_data(db)
+    
+    if request.method == 'POST':
+        new_role = request.form.get('role')
+        if new_role not in lookup['valid_roles']:
+            flash('Invalid role selected.', 'danger')
+            return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
+        
+        update_user_role(db, user_id, new_role)
+        flash(f'Role updated to "{new_role}" for {user["first_name"]} {user["last_name"]}.', 'success')
+        return redirect(url_for('admin_users'))
+    
+    return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
 
 @app.route('/admin/users/<int:user_id>/notes', methods=['POST'])
 @role_required('Admin')
@@ -890,4 +918,21 @@ def set_user_active():
     
     update_user_active(db, user_id, set_active)
     flash('User account status updated.', 'success')
+    return redirect(url_for('admin_users'))
+
+def set_user_role():
+    """Set a user's role."""
+    user_id = request.form.get('user_id')
+    role = request.form.get('setUserRoleSelect')
+    fetched_user = fetch_user_info(db, user_id)
+    if fetched_user['role'] == 'Admin':
+        flash('Cannot change Admin role.', 'error')
+        return redirect(url_for('admin_users'))
+    lookup = fetch_lookup_data(db)
+    if role not in lookup['valid_roles']:
+        flash('Invalid role value.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    update_user_role(db, user_id, role)
+    flash('User role updated.', 'success')
     return redirect(url_for('admin_users'))
