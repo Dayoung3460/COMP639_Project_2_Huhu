@@ -1,5 +1,5 @@
 """
-utils.py — PF-LU
+utils.py — Tiaki
 Shared utilities: role_required decorator, password validation,
 file upload helper, role-based redirect, and before_request status check.
 """

@@ -1,7 +1,7 @@
 /*
  * static/css/custom.css
- * PF-LU — All application styles
- * COMP639 Group Project 1 — Semester 1, 2026
+ * Tiaki — All application styles
+ * COMP639 Group Project 1
  */
 
 /* ═══════════════════════════════════════════════
@@ -562,6 +562,15 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .feature-card h5 { font-size: 15px; font-weight: 600; color: var(--pf-900); margin-bottom: 6px; }
 .feature-card p  { font-size: 13px; color: #6b7c72; line-height: 1.6; margin: 0; }
 
+.step-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding-top: 40px;
+  color: var(--pf-400);
+  font-size: 20px;
+}
 .step-card { text-align: center; padding: 32px 16px; }
 .step-num {
   width: 48px; height: 48px; background: var(--pf-800); color: #fff;
@@ -986,5 +995,31 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
   .content-body {
     padding: 0 !important;
+  }
+}
+
+/* ── Team cards (home page) ─────────────────────── */
+.team-card { background: #fff; border: 0.5px solid #c8e6d5; border-radius: 16px; overflow: hidden; height: 100%; display: flex; flex-direction: column; }
+.team-photo { aspect-ratio: 1/1; overflow: hidden; position: relative; }
+.team-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.team-initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Cabin', sans-serif; font-size: 40px; font-weight: 700; color: rgba(255,255,255,0.3); }
+.team-body { padding: 18px 20px 22px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.team-name { font-family: 'Cabin', sans-serif; font-size: 15px; font-weight: 700; color: #1a1f1b; }
+.team-country { font-size: 11px; color: #3d9b67; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.team-bio { font-size: 12px; color: #4a5e52; line-height: 1.7; margin: 0; flex: 1; }
+.group-photo {
+  width:100%; height:600px; object-fit:cover; border-radius:16px; border:0.5px solid #c8e6d5;
+}
+/* ── tablet (md) ───────────────────── */
+@media (max-width: 960px) {
+  .group-photo {
+    height: 400px;
+  }
+}
+
+/* ── mobile (sm) ───────────────────── */
+@media (max-width: 575px) {
+  .group-photo {
+    height: 250px;
   }
 }

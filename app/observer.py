@@ -1,35 +1,75 @@
-"""observer.py — Observer dashboard, catch records view, CSV download."""
+"""observer.py — Observer dashboard."""
 
-from flask import render_template, request, send_file
+from flask import render_template
 from app import app, db
 from app.utils import role_required
-import io, csv
 
 
 @app.route('/observer/dashboard')
 @role_required()
 def observer_dashboard():
-    """Observer dashboard — summary stats and recent activity."""
-    # TODO: query stats and recent records
-    return render_template('observer/dashboard.html')
-
-
-@app.route('/download-csv')
-@role_required()
-def download_csv():
-    """Download all catch records as a trap.nz-compatible CSV file."""
-    # TODO: query all catch records with all required fields
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow([
-        'code', 'date', 'recorded by', 'species caught', 'sex', 'maturity',
-        'status', 'rebaited', 'bait type', 'trap condition', 'strikes', 'notes'
-    ])
-    # TODO: write data rows
-    output.seek(0)
-    return send_file(
-        io.BytesIO(output.getvalue().encode('utf-8')),
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='pflu_catch_records.csv'
-    )
+    """Observer dashboard — system-wide stats and recent activity."""
+    stats = {
+        'total_catches': 0,
+        'total_lines':   0,
+        'total_traps':   0,
+        'top_species':   '—',
+    }
+    recent_catches = []
+ 
+    try:
+        with db.get_cursor() as cursor:
+ 
+            # Total catches
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM trap_catches
+                WHERE species_caught != 'None'
+            """)
+            stats['total_catches'] = cursor.fetchone()['cnt']
+ 
+            # Active lines
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM lines WHERE is_retired = FALSE
+            """)
+            stats['total_lines'] = cursor.fetchone()['cnt']
+ 
+            # Active traps
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt FROM traps WHERE is_retired = FALSE
+            """)
+            stats['total_traps'] = cursor.fetchone()['cnt']
+ 
+            # Top species
+            cursor.execute("""
+                SELECT species_caught, COUNT(*) AS cnt
+                FROM trap_catches
+                WHERE species_caught != 'None'
+                GROUP BY species_caught
+                ORDER BY cnt DESC
+                LIMIT 1
+            """)
+            row = cursor.fetchone()
+            if row:
+                stats['top_species'] = row['species_caught']
+ 
+            # Recent catches (last 5)
+            cursor.execute("""
+                SELECT tc.date, tc.species_caught, tc.status,
+                       t.code AS trap_code, l.name AS line_name,
+                       u.username AS recorded_by
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                LEFT JOIN users u ON tc.recorded_by_id = u.user_id
+                WHERE tc.species_caught != 'None'
+                ORDER BY tc.date DESC
+                LIMIT 5
+            """)
+            recent_catches = cursor.fetchall()
+ 
+    except Exception as e:
+        app.logger.error(f'Observer dashboard error: {e}')
+ 
+    return render_template('observer/dashboard.html',
+                           stats=stats,
+                           recent_catches=recent_catches)

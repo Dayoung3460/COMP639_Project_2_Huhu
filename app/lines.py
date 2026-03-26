@@ -71,9 +71,37 @@ def lines_index():
                 ) AS assigned_operator_labels,
                 COALESCE(
                     (
-                        SELECT ARRAY_AGG(op.operator_id ORDER BY op.operator_id)
+                        SELECT ARRAY_AGG(op.username ORDER BY op.operator_label, op.operator_id)
                         FROM (
-                            SELECT DISTINCT u.user_id AS operator_id
+                            SELECT DISTINCT
+                                u.user_id AS operator_id,
+                                u.username,
+                                CONCAT_WS(
+                                    ' ',
+                                    u.first_name,
+                                    u.last_name,
+                                    CONCAT('(@', u.username, ')')
+                                ) AS operator_label
+                            FROM operator_lines ol
+                            JOIN users u ON u.user_id = ol.operator_id
+                            WHERE ol.line_id = l.line_id
+                              AND u.role = 'Operator'
+                        ) AS op
+                    ),
+                    ARRAY[]::text[]
+                ) AS assigned_operator_usernames,
+                COALESCE(
+                    (
+                        SELECT ARRAY_AGG(op.operator_id ORDER BY op.operator_label, op.operator_id)
+                        FROM (
+                            SELECT DISTINCT
+                                u.user_id AS operator_id,
+                                CONCAT_WS(
+                                    ' ',
+                                    u.first_name,
+                                    u.last_name,
+                                    CONCAT('(@', u.username, ')')
+                                ) AS operator_label
                             FROM operator_lines ol
                             JOIN users u ON u.user_id = ol.operator_id
                             WHERE ol.line_id = l.line_id
@@ -152,7 +180,20 @@ def lines_index():
 
     for line in lines:
         line['assigned_operator_labels'] = line.get('assigned_operator_labels') or []
+        line['assigned_operator_usernames'] = line.get('assigned_operator_usernames') or []
         line['assigned_operator_ids'] = line.get('assigned_operator_ids') or []
+        line['assigned_operators'] = [
+            {
+                'user_id': operator_id,
+                'username': username,
+                'label': label
+            }
+            for operator_id, username, label in zip(
+                line['assigned_operator_ids'],
+                line['assigned_operator_usernames'],
+                line['assigned_operator_labels']
+            )
+        ]
 
     available_types = sorted({
         line['type'] for line in lines
