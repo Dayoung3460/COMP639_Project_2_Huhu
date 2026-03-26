@@ -29,11 +29,9 @@
 {# ══════════════════════════════════════════════════════ #}
 <nav class="pf-navbar">
   <a class="brand" href="{{ url_for('index') }}">
-    <div class="brand-icon">🌿</div>
-    <div>
-      <div class="brand-name">PF-LU</div>
-      <div class="brand-tagline">Predator Control System</div>
-    </div>
+    <img src="{{ logo_url }}"
+         alt="{{ site_name }}"
+         style="height:36px; width:auto;">
   </a>
 
   {% if not session.get('user_id') %}
@@ -314,12 +312,14 @@
       <div class="row g-4">
         <div class="col-md-4">
           <div class="d-flex align-items-center gap-2 mb-3">
-            <div style="background:var(--pf-600);width:32px;height:32px;border-radius:8px;
-                        display:flex;align-items:center;justify-content:center;font-size:16px;">🌿</div>
-            <div style="font-family:'Cabin',sans-serif;font-size:16px;font-weight:700;color:#fff;">PF-LU</div>
+            <a class="brand" href="{{ url_for('index') }}">
+              <img src="{{ logo_url }}"
+                  alt="{{ site_name }}"
+                  style="height:36px; width:auto;">
+            </a>
           </div>
           <p style="font-size:12px;line-height:1.6;color:var(--pf-400);">
-            Predator Free - Lincoln University's Predator Control System<br>
+            {{site_name}} - {{site_tagline}}<br>
             Inspired by the national Predator Free 2050 movement
           </p>
         </div>
