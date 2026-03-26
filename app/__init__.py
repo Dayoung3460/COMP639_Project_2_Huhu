@@ -1,5 +1,5 @@
 """
-__init__.py — PF-LU (Predator Free Lincoln University)
+__init__.py — Tiaki (Predator Trapping & Monitoring)
 COMP639 Group Project 1 — Semester 1, 2026
 
 Application factory: initialises Flask app, bcrypt, database,

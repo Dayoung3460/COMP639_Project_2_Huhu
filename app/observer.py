@@ -1,9 +1,8 @@
-"""observer.py — Observer dashboard, catch records view, CSV download."""
+"""observer.py — Observer dashboard."""
 
-from flask import render_template, request, send_file
+from flask import render_template
 from app import app, db
 from app.utils import role_required
-import io, csv
 
 
 @app.route('/observer/dashboard')
@@ -74,24 +73,3 @@ def observer_dashboard():
     return render_template('observer/dashboard.html',
                            stats=stats,
                            recent_catches=recent_catches)
-
-
-@app.route('/download-csv')
-@role_required()
-def download_csv():
-    """Download all catch records as a trap.nz-compatible CSV file."""
-    # TODO: query all catch records with all required fields
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow([
-        'code', 'date', 'recorded by', 'species caught', 'sex', 'maturity',
-        'status', 'rebaited', 'bait type', 'trap condition', 'strikes', 'notes'
-    ])
-    # TODO: write data rows
-    output.seek(0)
-    return send_file(
-        io.BytesIO(output.getvalue().encode('utf-8')),
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='pflu_catch_records.csv'
-    )

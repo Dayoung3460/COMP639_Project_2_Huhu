@@ -1,6 +1,6 @@
 """reports.py — Reports and chart data routes (all logged-in roles)."""
 
-from flask import render_template, request, jsonify
+from flask import render_template, request
 from app import app, db
 from app.utils import role_required
 
@@ -9,10 +9,19 @@ from app.utils import role_required
 @role_required()
 def reports():
     """Render the reports page with live summary stats."""
-    line_id  = request.args.get('line_id', '')
-    period   = request.args.get('period', '3')
-    date_from = request.args.get('date_from', '')
-    date_to   = request.args.get('date_to', '')
+    line_id     = request.args.get('line_id', '')
+    period      = request.args.get('period', '3')
+    date_from   = request.args.get('date_from', '')
+    date_to     = request.args.get('date_to', '')
+    line_status = 'all'
+
+    # Handle All Active / All Retired coming through line_id dropdown
+    if line_id == 'active':
+        line_status = 'active'
+        line_id     = ''
+    elif line_id == 'retired':
+        line_status = 'retired'
+        line_id     = ''
 
     # ── Build date filter ─────────────────────────────────────
     period_sql = ''
@@ -21,17 +30,25 @@ def reports():
     elif period != 'all':
         period_sql = f"AND tc.date >= NOW() - INTERVAL '{period} months'"
 
-    line_sql = ''
+    # ── Build line filter ─────────────────────────────────────
+    line_sql    = ''
     line_params = []
     if line_id:
-        line_sql = 'AND l.line_id = %s'
+        line_sql    = 'AND l.line_id = %s'
         line_params = [line_id]
 
+    # ── Build retired status filter ───────────────────────────
+    status_filter = ''
+    if line_status == 'active':
+        status_filter = 'AND l.is_retired = FALSE'
+    elif line_status == 'retired':
+        status_filter = 'AND l.is_retired = TRUE'
+
     stats = {
-        'total_captures': 0,
-        'total_records':  0,
+        'total_captures':  0,
+        'total_records':   0,
         'active_trap_pct': 0,
-        'top_species': '—',
+        'top_species':     '—',
     }
 
     lines = []
@@ -54,7 +71,7 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql}
+                {period_sql} {line_sql} {status_filter}
             ''', line_params)
             stats['total_captures'] = cursor.fetchone()['count']
 
@@ -64,7 +81,7 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {period_sql} {line_sql}
+                WHERE 1=1 {period_sql} {line_sql} {status_filter}
             ''', line_params)
             stats['total_records'] = cursor.fetchone()['count']
 
@@ -89,7 +106,7 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql}
+                {period_sql} {line_sql} {status_filter}
                 GROUP BY tc.species_caught
                 ORDER BY cnt DESC
                 LIMIT 1
@@ -102,24 +119,24 @@ def reports():
         app.logger.error(f'Reports stats error: {e}')
 
     # ── Chart data ────────────────────────────────────────────
-    trend_labels = []
-    trend_values = []
-    species_labels = []
-    species_values = []
-    species_colors = []
+    trend_labels    = []
+    trend_values    = []
+    species_labels  = []
+    species_values  = []
+    species_colors  = []
     other_breakdown = {}
-    line_labels = []
-    line_values = []
-    line_colors = []
-    status_labels = []
+    line_labels     = []
+    line_values     = []
+    line_colors     = []
+    status_labels   = []
     status_datasets = []
-    insights = {}
-    recent_catches = []
+    insights        = {}
+    recent_catches  = []
 
     try:
         with db.get_cursor() as cursor:
 
-            # Catch trend — grouped by week
+            # ── Catch trend — grouped by week ─────────────────
             cursor.execute(f'''
                 SELECT
                     TO_CHAR(DATE_TRUNC('week', tc.date), 'DD Mon') AS week_label,
@@ -128,32 +145,32 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql}
+                {period_sql} {line_sql} {status_filter}
                 GROUP BY DATE_TRUNC('week', tc.date)
                 ORDER BY DATE_TRUNC('week', tc.date)
             ''', line_params)
-            trend_rows = cursor.fetchall()
-            trend_labels = [r['week_label'] for r in trend_rows]
-            trend_values = [r['cnt'] for r in trend_rows]
+            trend_rows    = cursor.fetchall()
+            trend_labels  = [r['week_label'] for r in trend_rows]
+            trend_values  = [r['cnt'] for r in trend_rows]
 
-            # Species breakdown with 5% threshold grouping
+            # ── Species breakdown with 5% threshold ──────────
             cursor.execute(f'''
                 SELECT tc.species_caught, COUNT(*) AS cnt
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql}
+                {period_sql} {line_sql} {status_filter}
                 GROUP BY tc.species_caught
                 ORDER BY cnt DESC
             ''', line_params)
-            species_rows = cursor.fetchall()
+            species_rows  = cursor.fetchall()
 
             total_catches = sum(r['cnt'] for r in species_rows)
-            threshold = total_catches * 0.05 if total_catches > 0 else 0
+            threshold     = total_catches * 0.05 if total_catches > 0 else 0
 
-            palette = ['#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
-                       '#0891b2','#d97706','#059669','#dc2626','#7c3aed']
+            palette   = ['#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
+                         '#0891b2','#d97706','#059669','#dc2626','#7c3aed']
             color_idx = 0
             other_total = 0
 
@@ -179,14 +196,14 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql}
+                {period_sql} {line_sql} {status_filter}
                 GROUP BY l.line_id, l.name, l.is_retired
                 ORDER BY l.is_retired ASC, cnt DESC
             ''', line_params)
-            line_rows = cursor.fetchall()
-            active_palette  = ['#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
-                               '#0891b2','#d97706','#059669','#dc2626','#6b7280']
-            retired_color   = '#cbd5e1'
+            line_rows      = cursor.fetchall()
+            active_palette = ['#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
+                              '#0891b2','#d97706','#059669','#dc2626','#6b7280']
+            retired_color  = '#cbd5e1'
             line_labels = [
                 r['line_name'] + (' ⊘' if r['is_retired'] else '')
                 for r in line_rows
@@ -203,14 +220,12 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {period_sql} {line_sql}
+                WHERE 1=1 {period_sql} {line_sql} {status_filter}
                 GROUP BY l.line_id, l.name, l.is_retired, tc.status
                 ORDER BY l.is_retired ASC, l.name, tc.status
             ''', line_params)
             status_rows = cursor.fetchall()
 
-            # Build datasets — one per unique status value
-            # Retired lines get ⊘ suffix and sorted to end
             seen = {}
             for r in status_rows:
                 key = r['line_id']
@@ -218,6 +233,7 @@ def reports():
                     label = r['line_name'] + (' ⊘' if r['is_retired'] else '')
                     seen[key] = (label, r['is_retired'])
             status_line_names = [v[0] for v in seen.values()]
+
             status_map = {}
             for r in status_rows:
                 label = r['line_name'] + (' ⊘' if r['is_retired'] else '')
@@ -225,28 +241,27 @@ def reports():
                     status_map[r['status']] = {ln: 0 for ln in status_line_names}
                 status_map[r['status']][label] = r['cnt']
 
-            status_labels = status_line_names
+            status_labels  = status_line_names
             status_palette = {
-                'Sprung':              '#c0392b',
-                'Still set, bait OK':  '#3d9b67',
-                'Still set, bait bad': '#e8920a',
+                'Sprung':                  '#c0392b',
+                'Still set, bait OK':      '#3d9b67',
+                'Still set, bait bad':     '#e8920a',
                 'Still set, bait missing': '#f59e0b',
-                'Initial set':         '#1a6fa8',
-                'Removed':             '#6b7c72',
+                'Initial set':             '#1a6fa8',
+                'Removed':                 '#6b7c72',
             }
             status_datasets = [
                 {
-                    'label': status,
-                    'data':  [counts[ln] for ln in status_line_names],
+                    'label':           status,
+                    'data':            [counts[ln] for ln in status_line_names],
                     'backgroundColor': status_palette.get(status, '#9ca3af')
                 }
                 for status, counts in status_map.items()
             ]
 
-            # ── Key insights ──────────────────────────────────
-            # Busiest line
+            # ── Key insights ───────────────────────────────────
             if line_labels:
-                insights['busiest_line'] = line_labels[0]
+                insights['busiest_line']  = line_labels[0]
                 insights['busiest_count'] = line_values[0]
 
             # Traps needing maintenance
@@ -256,10 +271,10 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.trap_condition = 'Needs maintenance'
-                {period_sql} {line_sql}
+                {period_sql} {line_sql} {status_filter}
                 ORDER BY t.code
             ''', line_params)
-            maintenance_rows = cursor.fetchall()
+            maintenance_rows              = cursor.fetchall()
             insights['maintenance_count'] = len(maintenance_rows)
             insights['maintenance_traps'] = [r['code'] for r in maintenance_rows]
 
@@ -277,7 +292,7 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {line_sql}
+                WHERE 1=1 {line_sql} {status_filter}
                 ORDER BY tc.date DESC
                 LIMIT 1
             ''', line_params)
@@ -290,7 +305,7 @@ def reports():
             cursor.execute(
                 'SELECT name FROM lines WHERE is_retired = TRUE ORDER BY name'
             )
-            retired_rows = cursor.fetchall()
+            retired_rows              = cursor.fetchall()
             insights['retired_lines'] = [r['name'] for r in retired_rows]
 
             # ── Recent catches (last 10) ───────────────────────
@@ -304,12 +319,11 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {line_sql}
+                WHERE 1=1 {line_sql} {status_filter}
                 ORDER BY tc.date DESC
                 LIMIT 10
             ''', line_params)
             recent_catches = cursor.fetchall()
-
 
     except Exception as e:
         app.logger.error(f'Reports chart data error: {e}')
@@ -318,6 +332,7 @@ def reports():
                            stats=stats,
                            lines=lines,
                            selected_line=line_id,
+                           selected_line_status=line_status,
                            selected_period=period,
                            date_from=date_from,
                            date_to=date_to,
