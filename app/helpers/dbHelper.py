@@ -138,6 +138,15 @@ def insert_observation(db, data, user_id):
             data.get('trap_id') or None
         ))
 
+def update_user_active(db, user_id, status):
+    """Update a user's account status."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            UPDATE users
+            SET account_status = %s
+            WHERE user_id = %s
+        """, (status, user_id))
+
 def validate_lookup_table_values(db, data):
     """If the value that user selected from dropdown is not in database, return error message. This is to prevent the data inconsistency of database values."""
     with db.get_cursor() as cursor:
