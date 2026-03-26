@@ -109,6 +109,26 @@ def change_role(user_id):
     return redirect(url_for('admin_user_detail', user_id=user_id))
 
 
+@app.route('/admin/users/<int:user_id>/notes', methods=['POST'])
+@role_required('Admin')
+def update_user_notes(user_id):
+    """Update the admin-only notes for a user."""
+    notes = request.form.get('notes', '').strip()
+    
+    if len(notes) > 2000:
+        flash('Admin notes cannot exceed 2000 characters', 'danger')
+        return redirect(url_for('admin_user_detail', user_id=user_id))
+        
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            UPDATE users
+            SET notes = %s
+            WHERE user_id = %s
+        ''', (notes if notes else None, user_id))
+    flash('Admin notes updated', 'success')
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+
 # ── Lines ─────────────────────────────────────────────────────────────────────
 
 @app.route('/admin/lines/new', methods=['GET', 'POST'])
