@@ -197,9 +197,56 @@ def admin_users():
 @role_required('Admin')
 def admin_user_detail(user_id):
     """View detailed profile for a single user."""
-    # TODO: query user, assigned lines, catch record history
-    user = None
-    return render_template('admin/user_detail.html', user=user)
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT user_id, username, first_name, last_name, email, phone, address,
+                   emergency_contact_name, emergency_contact_phone, profile_photo,
+                   notes, role, account_status, date_joined, last_login
+            FROM users
+            WHERE user_id = %s
+        ''', (user_id,))
+        user = cursor.fetchone()
+
+    # TODO: check if correct
+    if not user:
+        flash('User not found', 'danger')
+        return redirect(url_for('admin_users'))
+
+    # Handle optional data defaults (display "None provided" for missing text fields)
+    optional_text_fields = ['phone', 'address', 'emergency_contact_name', 'emergency_contact_phone', 'notes']
+    for field in optional_text_fields:
+        if not user.get(field) or not str(user.get(field)).strip():
+            user[field] = 'None provided'
+
+    assigned_lines = []
+    if user['role'] == 'Operator':
+        with db.get_cursor() as cursor:
+            cursor.execute('''
+                SELECT l.line_id, l.name
+                FROM operator_lines ol
+                JOIN lines l ON ol.line_id = l.line_id
+                WHERE ol.operator_id = %s
+                ORDER BY l.name ASC
+            ''', (user_id,))
+            assigned_lines = cursor.fetchall()
+
+    recent_catches = []
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT tc.catch_id, tc.date, tc.species_caught, t.code AS trap_code, l.name AS line_name
+            FROM trap_catches tc
+            JOIN traps t ON tc.trap_id = t.trap_id
+            JOIN lines l ON t.line_id = l.line_id
+            WHERE tc.recorded_by_id = %s
+            ORDER BY tc.date DESC
+            LIMIT 10
+        ''', (user_id,))
+        recent_catches = cursor.fetchall()
+
+    return render_template('admin/user_detail.html', 
+                           user=user, 
+                           assigned_lines=assigned_lines, 
+                           recent_catches=recent_catches)
 
 
 @app.route('/admin/users/<int:user_id>/toggle-active', methods=['POST'])
@@ -234,6 +281,26 @@ def change_role(user_id):
     # TODO: prevent changing own role
     # TODO: UPDATE role_id
     flash('User role updated.', 'success')
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+
+@app.route('/admin/users/<int:user_id>/notes', methods=['POST'])
+@role_required('Admin')
+def update_user_notes(user_id):
+    """Update the admin-only notes for a user."""
+    notes = request.form.get('notes', '').strip()
+    
+    if len(notes) > 2000:
+        flash('Admin notes cannot exceed 2000 characters', 'danger')
+        return redirect(url_for('admin_user_detail', user_id=user_id))
+        
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            UPDATE users
+            SET notes = %s
+            WHERE user_id = %s
+        ''', (notes if notes else None, user_id))
+    flash('Admin notes updated', 'success')
     return redirect(url_for('admin_user_detail', user_id=user_id))
 
 
