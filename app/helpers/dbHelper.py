@@ -194,4 +194,4 @@ def update_user_role(db, user_id, role):
             UPDATE users
             SET role = %s
             WHERE user_id = %s
-        """, (status, user_id))
+        """, (role, user_id))

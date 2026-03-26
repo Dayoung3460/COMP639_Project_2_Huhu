@@ -83,6 +83,35 @@ def change_role(user_id):
     return redirect(url_for('admin_user_detail', user_id=user_id))
 
 
+@app.route('/admin/users/<int:user_id>/edit-role', methods=['GET', 'POST'])
+@role_required('Admin')
+def edit_role(user_id):
+    """Edit a user's role."""
+    # Prevent admin from changing their own role
+    if user_id == session.get('user_id'):
+        flash('You cannot change your own role.', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    user = fetch_user_info(db, user_id)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    lookup = fetch_lookup_data(db)
+    
+    if request.method == 'POST':
+        new_role = request.form.get('role')
+        if new_role not in lookup['valid_roles']:
+            flash('Invalid role selected.', 'danger')
+            return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
+        
+        update_user_role(db, user_id, new_role)
+        flash(f'Role updated to "{new_role}" for {user["first_name"]} {user["last_name"]}.', 'success')
+        return redirect(url_for('admin_users'))
+    
+    return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
+
+
 # ── Lines ─────────────────────────────────────────────────────────────────────
 
 @app.route('/admin/lines/new', methods=['GET', 'POST'])
