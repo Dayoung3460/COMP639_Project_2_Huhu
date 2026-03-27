@@ -1,6 +1,6 @@
 from flask import render_template, request, url_for, flash, redirect
 from app import app, db
-from app.utils import role_required
+from app.utils import role_required, LINE_COLOURS
 from app.helpers.dbHelper import fetch_enum_values
 import os
 
@@ -172,7 +172,8 @@ def lines_index():
         linz_api_key=linz_api_key,
         active_trap_line_ids=active_trap_line_ids,
         available_types=available_types,
-        available_operators=available_operators
+        available_operators=available_operators,
+        line_colours=LINE_COLOURS
     )
 
 
@@ -250,5 +251,6 @@ def line_detail(line_id):
         show_retired=show_retired,
         trap_markers=trap_markers,
         linz_api_key=linz_api_key,
-        trap_types=trap_types
+        trap_types=trap_types,
+        line_colours=LINE_COLOURS
     )

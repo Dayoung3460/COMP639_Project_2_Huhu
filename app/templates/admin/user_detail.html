@@ -3,12 +3,7 @@
 {% block title %}{{ user.first_name }} {{ user.last_name }} - Profile{% endblock %}
 
 {% block content %}
-{% set line_colors = [
-    '#0d6efd', '#6610f2', '#20c997', '#fd7e14', '#d63384', '#198754', '#6f42c1',
-    '#dc3545', '#0dcaf0', '#ffc107', '#6c757d', '#1982c4', '#8ac926', '#ff595e',
-    '#ff924c', '#9b5de5', '#2ec4b6', '#e71d36', '#3a86ff', '#8338ec'
-] %}
-<div class="container mt-4">
+<div class="container-fluid py-3 px-4">
     <div class="d-flex justify-content-end mb-4">
         <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">Back to Users</a>
     </div>
@@ -47,8 +42,24 @@
                     <p><strong>Date Joined:</strong> {{ user.date_joined|nz_date }}</p>
                     <p><strong>Last Login:</strong> {{ user.last_login|nz_datetime if user.last_login else 'Never logged in' }}</p>
                     <hr>
-                    <p class="mb-1"><strong>Admin Notes:</strong></p>
-                    <p class="text-muted">{{ user.notes }}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Admin Notes:</strong>
+                        <button type="button" class="btn btn-sm text-secondary p-0" id="edit-notes-btn" title="Edit Notes">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </div>
+                    <div id="notes-display">
+                        <p class="text-muted mb-0">{{ user.notes }}</p>
+                    </div>
+                    <div id="notes-edit" class="d-none">
+                        <form method="POST" action="{{ url_for('update_user_notes', user_id=user.user_id) }}">
+                            <textarea class="form-control mb-2" name="notes" id="notes-textarea" rows="4" maxlength="2000">{% if user.notes != 'None provided' %}{{ user.notes }}{% endif %}</textarea>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="cancel-notes-btn">Cancel</button>
+                                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -104,7 +115,7 @@
                         <ul class="list-group list-group-flush">
                             {% for line in assigned_lines %}
                                 <li class="list-group-item px-0 py-2">
-                                    <a href="{{ url_for('line_detail', line_id=line.line_id) }}" class="text-decoration-none fw-bold" style="color: {{ line_colors[line.line_id % (line_colors|length)] }};">{{ line.name }}</a>
+                                    <a href="{{ url_for('line_detail', line_id=line.line_id) }}" class="text-decoration-none fw-bold" style="color: {{ line_colours[line.line_id % (line_colours|length)] }};">{{ line.name }}</a>
                                 </li>
                             {% endfor %}
                         </ul>
@@ -146,7 +157,7 @@
                                                 {% for catch in catches %}
                                                     <tr>
                                                         <td>{{ catch.date|nz_date }}</td>
-                                                        <td><span style="color: {{ line_colors[catch.line_id % (line_colors|length)] }}; font-weight: 600;">{{ catch.line_name }}</span></td>
+                                                        <td><span style="color: {{ line_colours[catch.line_id % (line_colours|length)] }}; font-weight: 600;">{{ catch.line_name }}</span></td>
                                                         <td>{{ catch.trap_code }}</td>
                                                         <td>{{ catch.species_caught }}</td>
                                                     </tr>
@@ -180,7 +191,7 @@
                                                         <td>{{ obs.date|nz_date }}</td>
                                                         <td>
                                                             {% if obs.line_name %}
-                                                                <span style="color: {{ line_colors[obs.line_id % (line_colors|length)] }}; font-weight: 600;">{{ obs.line_name }}</span>
+                                                                <span style="color: {{ line_colours[obs.line_id % (line_colours|length)] }}; font-weight: 600;">{{ obs.line_name }}</span>
                                                             {% endif %}
                                                             {% if obs.trap_code %}{% if obs.line_name %} / {% endif %}{{ obs.trap_code }}{% endif %}
                                                         </td>

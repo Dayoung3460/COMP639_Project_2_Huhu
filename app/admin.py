@@ -8,6 +8,7 @@ from app.utils import (
     validate_lincoln_nz_coordinates,
     LINCOLN_NZ_LAT_RANGE,
     LINCOLN_NZ_LON_RANGE,
+    LINE_COLOURS,
 )
 from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data
 
@@ -258,7 +259,8 @@ def admin_user_detail(user_id):
                            user=user, 
                            assigned_lines=assigned_lines, 
                            catches=catches,
-                           observations=observations)
+                           observations=observations,
+                           line_colours=LINE_COLOURS)
 
 
 @app.route('/admin/users/<int:user_id>/toggle-active', methods=['POST'])
