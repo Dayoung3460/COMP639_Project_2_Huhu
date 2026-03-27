@@ -35,23 +35,6 @@
                {% else %}
                  <span class="badge bg-success">Active</span>
                {% endif %}
-               {% if session.get('role') == 'Admin' and not line.is_retired %}
-                 <a href="{{ url_for('edit_line', line_id=line.line_id) }}"
-                    class="btn btn-sm btn-outline-secondary">Edit</a>
-                 {# The retire modal is not included in this template, so this button would not work without it #}
-                 {#
-                 <button type="button"
-                   class="btn btn-sm btn-outline-danger"
-                   data-bs-toggle="modal"
-                   data-bs-target="#retire-line-modal"
-                   data-line-id="{{ line.line_id }}"
-                   data-line-name="{{ line.name }}"
-                   data-line-action="{{ url_for('retire_line', line_id=line.line_id, active_traps=1 if line.line_id in active_trap_line_ids else None) }}"
-                   data-has-active-traps="{{ 'true' if line.line_id in active_trap_line_ids else 'false' }}">
-                   Retire
-                 </button>
-                 #}
-               {% endif %}
              </div>
            </div>
          </div>
@@ -66,7 +49,25 @@
 
 {% block scripts %}
  {{ super() }}
- <script src="{{ url_for('static', filename='js/lines-map-utils.js') }}"></script>
- <script src="{{ url_for('static', filename='js/lines-index.js') }}"></script>
+ <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.js-line-card');
+    cards.forEach(card => {
+      card.addEventListener('click', function(e) {
+        // Prevent navigation if a button or link inside the card was clicked
+        if (e.target.closest('a, button')) {
+          return;
+        }
+        const lineId = this.dataset.lineId;
+        if (lineId) {
+          // Construct the URL to the line detail page.
+          // We use a placeholder '0' and replace it, which is a safe way to
+          // use url_for in JavaScript without complex escaping.
+          const url = `{{ url_for('line_detail', line_id=0) }}`.replace('0', lineId);
+          window.location.href = url;
+        }
+      });
+    });
+  });
+ </script>
 {% endblock %}
-
