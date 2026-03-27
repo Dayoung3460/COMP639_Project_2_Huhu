@@ -2,7 +2,7 @@
 
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
-from app.utils import role_required
+from app.utils import role_required, LINE_COLOURS
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
 from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation, validate_lookup_table_values, update_catch_record
 
@@ -83,6 +83,25 @@ def operator_dashboard():
                            assigned_lines=assigned_lines,
                            stats=stats,
                            recent_records=recent_records)
+
+
+@app.route('/operator/my-lines')
+@role_required('Operator')
+def my_lines():
+    """View lines specifically assigned to the logged-in operator."""
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT l.line_id, l.name, l.is_retired, l.type,
+                   (SELECT COUNT(*) FROM traps t WHERE t.line_id = l.line_id AND t.is_retired = FALSE) AS trap_count,
+                   (SELECT COUNT(*) FROM operator_lines ol_inner WHERE ol_inner.line_id = l.line_id) AS operator_count
+            FROM operator_lines ol
+            JOIN lines l ON ol.line_id = l.line_id
+            WHERE ol.operator_id = %s
+            ORDER BY l.is_retired ASC, l.name ASC
+        ''', (session['user_id'],))
+        assigned_lines = cursor.fetchall()
+
+    return render_template('operator/my_lines.html', assigned_lines=assigned_lines, line_colours=LINE_COLOURS)
 
 
 @app.route('/operator/add-catch', methods=['GET', 'POST'])
