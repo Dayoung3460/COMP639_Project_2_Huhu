@@ -24,12 +24,19 @@ document.addEventListener('DOMContentLoaded', function () {
   const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
   const linzApiKey = mapElement.dataset.linzApiKey;
   const lineIsRetired = mapElement.dataset.lineIsRetired === 'true';
+  const mapMinZoom = 5;
+  const mapMaxZoom = 19;
 
-  const map = L.map('line-map');
+  const map = L.map('line-map', {
+    minZoom: mapMinZoom,
+    maxZoom: mapMaxZoom
+  });
   const tileUrl = `https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=${linzApiKey}`;
 
   L.tileLayer(tileUrl, {
-    maxZoom: 19,
+    minZoom: mapMinZoom,
+    maxZoom: mapMaxZoom,
+    noWrap: true,
     attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
   }).addTo(map);
 

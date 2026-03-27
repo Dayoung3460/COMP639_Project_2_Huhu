@@ -168,12 +168,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const traps = markersElement ? JSON.parse(markersElement.textContent) : [];
     const linzApiKey = mapElement.dataset.linzApiKey;
     const showRetired = new URLSearchParams(window.location.search).get('show_retired') === '1';
+    const mapMinZoom = 5;
+    const mapMaxZoom = 19;
     const tileUrl = `https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=${linzApiKey}`;
 
-    map = L.map('lines-overview-map');
+    map = L.map('lines-overview-map', {
+      minZoom: mapMinZoom,
+      maxZoom: mapMaxZoom
+    });
 
     L.tileLayer(tileUrl, {
-      maxZoom: 19,
+      minZoom: mapMinZoom,
+      maxZoom: mapMaxZoom,
+      noWrap: true,
       attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
     }).addTo(map);
 
