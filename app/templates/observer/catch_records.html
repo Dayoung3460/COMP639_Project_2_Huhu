@@ -96,6 +96,7 @@
           <th>Trap Code</th><th>Trap Type</th><th>Date</th><th>Line</th><th>Species</th>
           <th>Status</th><th>Strikes</th><th>Rebaited</th>
           <th>Bait Type</th><th>Condition</th>
+          {% if is_my_records %}<th>Action</th>{% endif %}
         </tr>
       </thead>
       <tbody>
@@ -111,6 +112,14 @@
             <td>{{ r.rebaited }}</td>
             <td>{{ r.bait_type }}</td>
             <td>{{ r.trap_condition }}</td>
+            {% if is_my_records %}
+            <td>
+              <a href="{{ url_for('edit_catch', catch_id=r.catch_id) }}"
+                class="btn btn-outline-secondary btn-sm">
+                Edit
+              </a>
+            </td>
+            {% endif %}
           </tr>
         {% else %}
           <tr>
