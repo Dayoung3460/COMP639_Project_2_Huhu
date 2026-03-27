@@ -26,6 +26,7 @@ def fetch_lookup_data(db):
     valid_account_status = fetch_enum_values(db, 'account_status_type')
     valid_roles = fetch_enum_values(db, 'role_type')
     valid_observation_types = fetch_enum_values(db, 'observation_type_enum')
+    valid_roles = fetch_enum_values(db, 'role_type')
         
     return {
         'species_list': species_list,
@@ -38,6 +39,7 @@ def fetch_lookup_data(db):
         'valid_rebaited': valid_rebaited,
         'valid_sex': valid_sex,
         'valid_maturity': valid_maturity,
+        'valid_roles': valid_roles,
         'valid_account_status': valid_account_status,
         'valid_roles': valid_roles,
         'valid_observation_types': valid_observation_types
@@ -147,6 +149,52 @@ def update_user_active(db, user_id, status):
             WHERE user_id = %s
         """, (status, user_id))
 
+def insert_observation(db, data, user_id):
+    """Insert an incidental observation into the database."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO incidental_observations (
+                date, operator_id, observation_type, notes, latitude, longitude, line_id, trap_id
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['date'],
+            user_id,
+            data['observation_type'],
+            data.get('notes') or None,
+            data.get('latitude') or None,
+            data.get('longitude') or None,
+            data['line_id'],  # Required field
+            data.get('trap_id') or None
+        ))
+
+def update_user_active(db, user_id, status):
+    """Update a user's account status."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            UPDATE users
+            SET account_status = %s
+            WHERE user_id = %s
+        """, (status, user_id))
+
+def fetch_user_info(db, user_id):
+    """Fetch user info including role for permission checks."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            SELECT user_id, username, email, first_name, last_name, role, account_status
+            FROM users
+            WHERE user_id = %s
+        """, (user_id,))
+        return cursor.fetchone()
+
+def update_user_role(db, user_id, role):
+    """Update a user's role."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            UPDATE users
+            SET role = %s
+            WHERE user_id = %s
+        """, (role, user_id))
 def validate_lookup_table_values(db, data):
     """If the value that user selected from dropdown is not in database, return error message. This is to prevent the data inconsistency of database values."""
     with db.get_cursor() as cursor:

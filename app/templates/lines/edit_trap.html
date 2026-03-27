@@ -21,13 +21,13 @@
 
     <div class="mb-3">
       <label for="trapLatitude" class="form-label">Trap Latitude</label>
-      <input type="number" class="form-control" id="trapLatitude" name="trap_latitude" step="0.000001" min="{{ lat_range[0] }}" max="{{ lat_range[1] }}" value="{{ trap.latitude }}" required>
+      <input type="text" class="form-control" id="trapLatitude" name="trap_latitude" inputmode="decimal" value="{{ trap.latitude }}" required>
       <div class="form-text">Allowed Lincoln boundary: {{ lat_range[0] }} to {{ lat_range[1] }}</div>
     </div>
 
     <div class="mb-3">
       <label for="trapLongitude" class="form-label">Trap Longitude</label>
-      <input type="number" class="form-control" id="trapLongitude" name="trap_longitude" step="0.000001" min="{{ lon_range[0] }}" max="{{ lon_range[1] }}" value="{{ trap.longitude }}" required>
+      <input type="text" class="form-control" id="trapLongitude" name="trap_longitude" inputmode="decimal" value="{{ trap.longitude }}" required>
       <div class="form-text">Allowed Lincoln boundary: {{ lon_range[0] }} to {{ lon_range[1] }}</div>
     </div>
 
@@ -35,4 +35,10 @@
     <button type="submit" class="btn btn-primary">Save Changes</button>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/coordinate-input.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/edit-trap.js') }}"></script>
 {% endblock %}
