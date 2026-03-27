@@ -1,39 +1,72 @@
-{% extends "base.html" %}
-
-{% block title %}My Assigned Lines{% endblock %}
-
+{% extends 'base.html' %}
+{% block title %}My Lines{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4">My Assigned Lines</h2>
+<div class="container py-4">
+ <div class="d-flex justify-content-between align-items-center mb-4">
+   <h2 class="mb-0">My Assigned Trap Lines</h2>
+ </div>
 
-    <div class="row">
-        {% for line in assigned_lines %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title d-flex justify-content-between align-items-center">
-                        {{ line.name }}
-                        {% if line.is_retired %}
-                            <span class="badge bg-secondary">Retired</span>
-                        {% else %}
-                            <span class="badge bg-success">Active</span>
-                        {% endif %}
-                    </h5>
-                    <p class="card-text text-muted mb-2">Type: {{ line.type }}</p>
-                    <p class="card-text">
-                        <strong>{{ line.trap_count }}</strong> active traps
-                    </p>
-                </div>
-                <div class="card-footer bg-white border-top-0 pb-3">
-                    <a href="{{ url_for('line_detail', line_id=line.line_id) }}" class="btn btn-outline-primary w-100">View Line Details</a>
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="col-12 text-center py-5 text-muted">
-            <h5>You currently have no lines assigned to you.</h5>
-        </div>
-        {% endfor %}
-    </div>
+ {% if assigned_lines %}
+   <section class="lines-list-shell mb-4">
+     <div class="lines-list-scroll">
+       {% for line in assigned_lines %}
+         <div
+           class="card js-line-card"
+           data-line-id="{{ line.line_id }}"
+           data-line-name="{{ line.name }}"
+           data-line-type="{{ line.type or '' }}"
+           data-line-status="{{ 'retired' if line.is_retired else 'active' }}"
+           id="line-card-{{ line.line_id }}">
+           <div class="card-body d-flex justify-content-between align-items-center lines-list-card-body">
+             <div class="lines-list-card__content">
+               <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                 <h5 class="mb-0">
+                   <span style="color: {{ line_colours[line.line_id % (line_colours|length)] }}; font-weight: 600;">{{ line.name }}</span>
+                 </h5>
+               </div>
+               <small class="text-muted">
+                 {{ line.trap_count | default(0) }} active traps &mdash;
+                 {{ line.operator_count | default(0) }} operators
+               </small>
+             </div>
+             <div class="d-flex gap-2 align-items-center lines-list-card__actions">
+               {% if line.is_retired %}
+                 <span class="badge bg-secondary">Retired</span>
+               {% else %}
+                 <span class="badge bg-success">Active</span>
+               {% endif %}
+               {% if session.get('role') == 'Admin' and not line.is_retired %}
+                 <a href="{{ url_for('edit_line', line_id=line.line_id) }}"
+                    class="btn btn-sm btn-outline-secondary">Edit</a>
+                 {# The retire modal is not included in this template, so this button would not work without it #}
+                 {#
+                 <button type="button"
+                   class="btn btn-sm btn-outline-danger"
+                   data-bs-toggle="modal"
+                   data-bs-target="#retire-line-modal"
+                   data-line-id="{{ line.line_id }}"
+                   data-line-name="{{ line.name }}"
+                   data-line-action="{{ url_for('retire_line', line_id=line.line_id, active_traps=1 if line.line_id in active_trap_line_ids else None) }}"
+                   data-has-active-traps="{{ 'true' if line.line_id in active_trap_line_ids else 'false' }}">
+                   Retire
+                 </button>
+                 #}
+               {% endif %}
+             </div>
+           </div>
+         </div>
+       {% endfor %}
+     </div>
+   </section>
+ {% else %}
+   <p class="text-muted">No trap lines assigned to you.</p>
+ {% endif %}
 </div>
 {% endblock %}
+
+{% block scripts %}
+ {{ super() }}
+ <script src="{{ url_for('static', filename='js/lines-map-utils.js') }}"></script>
+ <script src="{{ url_for('static', filename='js/lines-index.js') }}"></script>
+{% endblock %}
+
