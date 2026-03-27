@@ -4,6 +4,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
+  const coordinateInputUtils = window.coordinateInputUtils;
+
   // Handle trap retirement modal
   const retireTrapModal = document.getElementById('retire-trap-modal')
   retireTrapModal.addEventListener('show.bs.modal', function(event) {
@@ -108,11 +110,11 @@ document.addEventListener('DOMContentLoaded', function () {
               </div>
               <div class="col-md-2 ms-5">
                 <label class="form-label small mb-1">Latitude</label>
-                <input type="text" name="latitude" id="inline-lat" class="form-control form-control-sm bg-light" required placeholder="e.g. -43.640914">
+                <input type="text" name="latitude" id="inline-lat" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. -43.640914">
               </div>
               <div class="col-md-2 ms-4">
                 <label class="form-label small mb-1">Longitude</label>
-                <input type="text" name="longitude" id="inline-lng" class="form-control form-control-sm bg-light" required placeholder="e.g. 172.475682">
+                <input type="text" name="longitude" id="inline-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. 172.475682">
               </div>
               <div class="col-md-1 ms-auto">
                 <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="cancel-add-trap">Cancel</button>
@@ -127,6 +129,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Insert at the top of the list
       trapsListContainer.prepend(newRow);
+
+      if (coordinateInputUtils) {
+        coordinateInputUtils.attachCoordinateInputGuards([
+          document.getElementById('inline-lat'),
+          document.getElementById('inline-lng')
+        ]);
+      }
 
       // Flash effect (briefly highlight the background in a soft green)
       newRow.style.transition = 'background-color 0.5s ease-out';
@@ -213,6 +222,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeSelect && urlParams.get('trap_type')) typeSelect.value = urlParams.get('trap_type');
     if (latInput && urlParams.get('latitude')) latInput.value = urlParams.get('latitude');
     if (lngInput && urlParams.get('longitude')) lngInput.value = urlParams.get('longitude');
+
+    if (coordinateInputUtils) {
+      if (latInput) latInput.value = coordinateInputUtils.sanitizeCoordinateValue(latInput.value);
+      if (lngInput) lngInput.value = coordinateInputUtils.sanitizeCoordinateValue(lngInput.value);
+    }
 
     // Re-create temporary map marker
     if (latInput && latInput.value && lngInput && lngInput.value) {

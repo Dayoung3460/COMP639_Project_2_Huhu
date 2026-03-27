@@ -102,9 +102,17 @@
                   {{ line.operator_count | default(0) }} operators
                 </small>
                 <div class="small text-muted mt-1">
-                  {{ line.assigned_operator_names if line.assigned_operator_names else 'None' }}
-                  {% if session.get('role') == 'Operator' and session.get('user_id') in line.assigned_operator_ids %}
-                    <span class="badge bg-primary">me</span>
+                  {% if line.assigned_operators %}
+                    {% for operator in line.assigned_operators %}
+                      <span>
+                        {{ operator.label }}
+                        {% if session.get('role') == 'Operator' and operator.user_id == session.get('user_id') %}
+                          <span class="badge bg-primary">me</span>
+                        {% endif %}
+                      </span>{% if not loop.last %} | {% endif %}
+                    {% endfor %}
+                  {% else %}
+                    None
                   {% endif %}
                 </div>
               </div>

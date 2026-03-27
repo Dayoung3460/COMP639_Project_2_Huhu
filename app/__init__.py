@@ -1,12 +1,12 @@
 """
-__init__.py — PF-LU (Predator Free Lincoln University)
+__init__.py — Tiaki (Predator Trapping & Monitoring)
 COMP639 Group Project 1 — Semester 1, 2026
 
 Application factory: initialises Flask app, bcrypt, database,
 route modules, template filters, and global context processors.
 """
 
-from flask import Flask
+from flask import Flask, session, request as flask_request, url_for, render_template
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail
 from datetime import timedelta
@@ -59,7 +59,7 @@ app.config['MAIL_PORT']           = 587
 app.config['MAIL_USE_TLS']        = True
 app.config['MAIL_USERNAME']       = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD']       = os.environ.get('MAIL_PASSWORD', '')
-app.config['MAIL_DEFAULT_SENDER'] = ('PF-LU System',
+app.config['MAIL_DEFAULT_SENDER'] = ('Tiaki System',
                                       os.environ.get('MAIL_USERNAME', ''))
 
 mail = Mail(app)
@@ -75,8 +75,6 @@ from app.utils import check_user_status
 app.before_request(check_user_status)
 
 # ── After request — prevent browser caching on authenticated pages ────────────
-
-from flask import session, request as flask_request
 
 @app.after_request
 def set_cache_headers(response):
@@ -109,24 +107,32 @@ from app import general
 @app.context_processor
 def inject_globals():
     """Makes global variables available to all Jinja2 templates."""
-    from flask import session as _session
     profile_photo = None
-    if _session.get('user_id'):
+    first_name    = None
+    last_name     = None
+    if session.get('user_id'):
         try:
             with db.get_cursor() as cursor:
                 cursor.execute(
-                    'SELECT profile_photo FROM users WHERE user_id = %s',
-                    (_session['user_id'],)
+                    'SELECT profile_photo, first_name, last_name FROM users WHERE user_id = %s',
+                    (session['user_id'],)
                 )
                 row = cursor.fetchone()
                 if row:
                     profile_photo = row['profile_photo']
+                    first_name    = row['first_name']
+                    last_name     = row['last_name']
         except Exception:
             pass
     return dict(
-        site_name='PF-LU',
-        site_tagline='Predator Free Lincoln University',
-        nav_profile_photo=profile_photo
+        site_name='Tiaki',
+        site_tagline='Predator Trapping & Monitoring',
+        logo_url=url_for('static', filename='images/logo.png'),
+        icon_url=url_for('static', filename='images/icon.png'),
+        favicon_url=url_for('static', filename='images/favicon.png'),
+        nav_profile_photo=profile_photo,
+        nav_first_name=first_name,
+        nav_full_name=f"{first_name} {last_name}".strip(),
     )
 
 # ── Template filters ──────────────────────────────────────────────────────────
@@ -146,8 +152,6 @@ def nz_datetime_filter(dt):
     return ''
 
 # ── Error handlers ────────────────────────────────────────────────────────────
-
-from flask import render_template
 
 @app.errorhandler(403)
 def forbidden(e):

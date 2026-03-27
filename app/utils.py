@@ -1,5 +1,5 @@
 """
-utils.py — PF-LU
+utils.py — Tiaki
 Shared utilities: role_required decorator, password validation,
 file upload helper, role-based redirect, and before_request status check.
 """
@@ -17,6 +17,11 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 LINCOLN_NZ_LAT_RANGE = (-43.6600, -43.6350)
 LINCOLN_NZ_LON_RANGE = (172.4550, 172.4900)
 LINCOLN_NZ_COORDINATES_ERROR = 'Trap coordinates must be within the allowed Lincoln, New Zealand boundary.'
+LINE_COLOURS = [
+    '#0d6efd', '#6610f2', '#20c997', '#fd7e14', '#d63384', '#198754', '#6f42c1',
+    '#dc3545', '#0dcaf0', '#ffc107', '#6c757d', '#1982c4', '#8ac926', '#ff595e',
+    '#ff924c', '#9b5de5', '#2ec4b6', '#e71d36', '#3a86ff', '#8338ec'
+]
 
 
 # ── Decorators ────────────────────────────────────────────────────────────────
