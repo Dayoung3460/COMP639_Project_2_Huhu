@@ -119,6 +119,43 @@ def insert_catch_record(db, data, user_id):
             data.get('notes') or None
         ))
 
+#validate catch data before call this!
+def update_catch_record(db, data, user_id):
+    """Update a validated catch record into the database."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            UPDATE trap_catches
+            SET 
+                trap_id = %s,
+                date = %s,
+                species_caught = %s,
+                sex = %s,
+                maturity = %s,
+                status = %s,
+                rebaited = %s,
+                bait_type = %s,
+                bait_details = %s,
+                trap_condition = %s,
+                strikes = %s,
+                notes = %s
+            WHERE catch_id = %s AND recorded_by_id = %s
+        """, (
+            data['trap_id'],
+            data['date'],
+            data['species_caught'],
+            data.get('sex') or None,
+            data.get('maturity') or None,
+            data['status'],
+            data['rebaited'],
+            data['bait_type'],
+            data.get('bait_details') or None,
+            data['trap_condition'],
+            data['strikes'],
+            data.get('notes') or None,
+            data['catch_id'],
+            user_id
+        ))
+
 def insert_observation(db, data, user_id):
     """Insert an incidental observation into the database."""
     with db.get_cursor() as cursor:

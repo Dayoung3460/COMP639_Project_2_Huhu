@@ -2,10 +2,240 @@
 {% block title %}Edit Catch Record{% endblock %}
 {% block content %}
 <div class="container py-4" style="max-width:720px;">
-  <h2 class="mb-4">Edit Catch Record</h2>
-  {# TODO: same form as add_catch.html but pre-filled with record values #}
-  {# Tip: reuse the same card structure, swap action URL and prefill values #}
-  <p class="text-muted">Edit form — TODO (mirror add_catch.html with pre-filled values)</p>
-  <a href="{{ url_for('my_records') }}" class="btn btn-secondary">Back</a>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Edit Catch Record</h2>
+    <a href="{{ url_for('my_records') }}" class="btn btn-secondary">Back</a>
+  </div>
+
+  <form method="POST" action="{{ url_for('edit_catch', catch_id=record.catch_id) }}" novalidate>
+    <input type="hidden" name="recorded_by_id" value="{{ record.recorded_by_id }}">
+
+    <!-- Trap Details -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-geo-alt me-2"></i>Trap Details
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Trap Line <span class="text-danger">*</span></label>
+            <select name="line_id" class="form-select" required id="lineSelect">
+              <option value="">— select line —</option>
+              {% for line in lines %}
+                <option value="{{ line.line_id }}" {% if data and data.get('line_id')|string == line.line_id|string %}selected{% endif %}>{{ line.line_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Trap Code <span class="text-danger">*</span></label>
+            <select name="trap_id" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}" required id="trapSelect">
+              <option value="">— select line first —</option>
+              {% for line in lines %}
+                {% for trap in line.traps %}
+                <option value="{{ trap.trap_id }}" data-line-id="{{ line.line_id }}" 
+                        {% if data and data.get('trap_id')|string == trap.trap_id|string %}selected{% endif %}>
+                  {{ trap.trap_code }} ({{ trap.trap_type }})
+                </option>
+                {% endfor %}
+              {% endfor %}
+            </select>
+            {% if errors and errors.get('trap_id') %}
+            <div class="invalid-feedback">{{ errors.get('trap_id') }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Date &amp; Time <span class="text-danger">*</span></label>
+            <input type="datetime-local" class="form-control {% if errors and errors.get('date') %}is-invalid{% endif %}" name="date" value="{{ data.get('date', '') if data else '' }}" required>
+            {% if errors and errors.get('date') %}
+            <div class="invalid-feedback">{{ errors.get('date') }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Recorded By</label>
+            <input type="text" class="form-control"
+                   value="{{ session.get('username') }}" readonly>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Catch Details -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-bug me-2"></i>Catch Details
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Species Caught <span class="text-danger">*</span></label>
+            <select name="species_caught" class="form-select {% if errors and errors.get('species_caught') %}is-invalid{% endif %}" required>
+              <option value="">— select —</option>
+              {% for s in lookup.species_list %}
+                <option value="{{ s.name }}" {% if data and data.get('species_caught') == s.name %}selected{% endif %}>{{ s.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Use "None" when strikes = 0</div>
+            {% if errors and errors.get('species_caught') %}
+            <div class="invalid-feedback">{{ errors.get('species_caught') }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Strikes <span class="text-danger">*</span></label>
+            <input type="number" class="form-control {% if errors and errors.get('strikes') %}is-invalid{% endif %}" name="strikes"
+                   min="0" value="{{ data.get('strikes', '0') if data else '0' }}" required>
+            <div class="form-text">0 = no catch</div>
+            {% if errors and errors.get('strikes') %}
+            <div class="invalid-feedback">{{ errors.get('strikes') }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Sex</label>
+            <select name="sex" class="form-select">
+              <option value="">— optional —</option>
+              {% for value in lookup.valid_sex %}
+              <option value="{{ value }}" {% if data and data.get('sex') == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Maturity</label>
+            <select name="maturity" class="form-select">
+              <option value="">— optional —</option>
+              {% for value in lookup.valid_maturity %}
+              <option value="{{ value }}" {% if data and data.get('maturity') == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trap Status & Condition -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-clipboard2-check me-2"></i>Trap Status &amp; Condition
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            <select name="status" class="form-select {% if errors and errors.get('status') %}is-invalid{% endif %}" required>
+              <option value="">— select —</option>
+              {% for s in lookup.status_list %}
+                <option value="{{ s.name }}" {% if data and data.get('status') == s.name %}selected{% endif %}>{{ s.name }}</option>
+              {% endfor %}
+            </select>
+            {% if errors and errors.get('status') %}
+            <div class="invalid-feedback">{{ errors.get('status') }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Trap Condition <span class="text-danger">*</span></label>
+            <select name="trap_condition" class="form-select {% if errors and errors.get('trap_condition') %}is-invalid{% endif %}" required>
+              <option value="">— select —</option>
+              {% for c in lookup.valid_conditions %}
+                <option value="{{ c }}" {% if data and data.get('trap_condition') == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+            {% if errors and errors.get('trap_condition') %}
+            <div class="invalid-feedback">{{ errors.get('trap_condition') }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bait -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-egg-fried me-2"></i>Bait Used
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Rebaited? <span class="text-danger">*</span></label>
+            <select name="rebaited" class="form-select {% if errors and errors.get('rebaited') %}is-invalid{% endif %}" required>
+              <option value="">— select —</option>
+              {% for value in lookup.valid_rebaited %}
+              <option value="{{ value }}" {% if data and data.get('rebaited') == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+            {% if errors and errors.get('rebaited') %}
+            <div class="invalid-feedback">{{ errors.get('rebaited') }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Bait Type <span class="text-danger">*</span></label>
+            <select name="bait_type" class="form-select {% if errors and errors.get('bait_type') %}is-invalid{% endif %}" required>
+              <option value="">— select —</option>
+              {% for b in lookup.bait_list %}
+                <option value="{{ b.name }}" {% if data and data.get('bait_type') == b.name %}selected{% endif %}>{{ b.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Use "None" when Rebaited = No</div>
+            {% if errors and errors.get('bait_type') %}
+            <div class="invalid-feedback">{{ errors.get('bait_type') }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-12">
+            <label class="form-label">Bait Details</label>
+            <input type="text" class="form-control" name="bait_details" value="{{ data.get('bait_details', '') if data else '' }}" placeholder="Optional details...">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-sticky me-2"></i>Notes
+      </div>
+      <div class="card-body">
+        <textarea class="form-control" name="notes" rows="3"
+                  placeholder="Optional notes about this trap check...">{{ data.get('notes', '') if data else '' }}</textarea>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-pf">
+        <i class="bi bi-check-lg me-1"></i>Save Record
+      </button>
+      <a href="{{ url_for('my_records') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
 </div>
+
+<!-- Simple filter for trap dropdown based on selected line -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const lineSelect = document.getElementById('lineSelect');
+    const trapSelect = document.getElementById('trapSelect');
+    const trapOptions = trapSelect.querySelectorAll('option[data-line-id]');
+    const placeholder = trapSelect.querySelector('option:not([data-line-id])');
+
+    function filterTraps() {
+      const lineId = lineSelect.value;
+      trapOptions.forEach(opt => {
+        const matches = opt.dataset.lineId === lineId;
+        opt.hidden = !matches;
+        opt.disabled = !matches;
+      });
+
+      const selectedOption = trapSelect.options[trapSelect.selectedIndex];
+      if (selectedOption && selectedOption.dataset.lineId !== lineId) {
+        trapSelect.value = '';
+      }
+
+      if (!lineId) {
+        placeholder.textContent = '— select line first —';
+        trapSelect.value = '';
+      } else {
+        placeholder.textContent = '— select trap —';
+      }
+    }
+
+    lineSelect.addEventListener('change', filterTraps);
+    filterTraps(); // Run on load
+  });
+</script>
 {% endblock %}
