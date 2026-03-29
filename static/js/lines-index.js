@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('modal-line-action').action = lineAction
 
       // Show correct warning based on active traps status
-      document.getElementById('modal-warning-active').style.display = hasActiveTraps ? 'block' : 'none'
-      document.getElementById('modal-warning-no-active').style.display = hasActiveTraps ? 'none' : 'block'
+      document.getElementById('modal-warning-active').classList.toggle('d-none', !hasActiveTraps)
+      document.getElementById('modal-warning-no-active').classList.toggle('d-none', hasActiveTraps)
     })
   }
 
@@ -223,8 +223,8 @@ document.addEventListener('DOMContentLoaded', function () {
       ).addTo(map);
 
       const lineStatusBadge = trap.line_is_retired
-        ? '<span class="badge bg-dark">Retired line</span>'
-        : '<span class="badge bg-success">Active line</span>';
+        ? '<span class="trap-status-badge trap-status-retired">Retired line</span>'
+        : '<span class="trap-status-badge trap-status-active">Active line</span>';
       const trapStatusBadge = trap.trap_is_retired
         ? '<span class="trap-status-badge trap-status-retired">Retired trap</span>'
         : '<span class="trap-status-badge trap-status-active">Active trap</span>';

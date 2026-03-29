@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', function () {
     markers.forEach(function (trap) {
       const marker = L.marker([trap.latitude, trap.longitude]).addTo(map);
       const statusBadge = trap.is_retired
-        ? '<span class="badge bg-secondary">Retired</span>'
-        : '<span class="badge bg-success">Active</span>';
+        ? '<span class="trap-status-badge trap-status-retired">Retired</span>'
+        : '<span class="trap-status-badge trap-status-active">Active</span>';
 
       marker.bindPopup(`<strong>${trap.code}</strong><br>${trap.trap_type}<br>${statusBadge}`);
       latlngs.push([trap.latitude, trap.longitude]);
@@ -92,17 +92,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const newRow = document.createElement('div');
       newRow.id = 'new-trap-form-container';
-      newRow.className = 'card mb-3 shadow-sm';
-      newRow.style.borderColor = '#1a5c38';
+      newRow.className = 'panel mb-3 lines-inline-form-panel lines-inline-form-flash';
       newRow.innerHTML = `
-        <div class="card-body py-3">
-          <h6 class="card-title mb-2" style="color: #1a5c38;">Add Trap</h6>
+        <div class="panel-body lines-inline-form-body">
+          <div class="lines-inline-form-title">Add Trap</div>
+          <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill"></i>Click on the map above to set coordinates</div>
           <form id="new-trap-inline-form" method="POST" action="${newTrapUrl}">
-            <div class="row g-0 mb-1">
-              <div class="col-md-4 text-center" style="margin-left: 24%;">
-                <small class="fw-medium" style="color: #1a5c38;"><i class="bi bi-geo-alt-fill me-1"></i>Click on the map above to set coordinates</small>
-              </div>
-            </div>
             <div class="row g-2 align-items-end">
               <div class="col-md-1">
                 <label class="form-label small mb-1">Code</label>
@@ -124,10 +119,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 <input type="text" name="longitude" id="inline-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. 172.475682">
               </div>
               <div class="col-md-1 ms-auto">
-                <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="cancel-add-trap">Cancel</button>
+                <button type="button" class="btn btn-sm-outline w-100" id="cancel-add-trap">Cancel</button>
               </div>
               <div class="col-md-1">
-              <button type="submit" class="btn btn-pf btn-sm w-100">Save</button>
+              <button type="submit" class="btn btn-sm-pf w-100">Save</button>
               </div>
             </div>
           </form>
@@ -144,11 +139,8 @@ document.addEventListener('DOMContentLoaded', function () {
         ]);
       }
 
-      // Flash effect (briefly highlight the background in a soft green)
-      newRow.style.transition = 'background-color 0.5s ease-out';
-      newRow.style.backgroundColor = '#d4edda';
       setTimeout(() => {
-        newRow.style.backgroundColor = '';
+        newRow.classList.remove('lines-inline-form-flash');
       }, 500);
 
       // Scroll into view, wait a split second, then push down an extra ~1cm (40px)
@@ -199,12 +191,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (errorMsg) {
       const formContainer = document.getElementById('new-trap-form-container');
       if (formContainer) {
-        const cardBody = formContainer.querySelector('.card-body');
+        const cardBody = formContainer.querySelector('.panel-body');
         const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger py-2 px-3 mb-3 small';
+        alertDiv.className = 'notice amber lines-inline-form-error';
 
         const icon = document.createElement('i');
-        icon.className = 'bi bi-exclamation-triangle-fill me-2';
+        icon.className = 'bi bi-exclamation-triangle-fill';
         const message = document.createElement('span');
         message.textContent = errorMsg;
         alertDiv.appendChild(icon);

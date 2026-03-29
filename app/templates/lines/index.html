@@ -1,56 +1,24 @@
 {% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel, pf_trap_status_badge %}
 {% block title %}Trap Lines{% endblock %}
 {% block content %}
 <div class="container py-4">
+  {% set toggle_retired_label = 'Hide retired lines and traps' if show_retired else 'Show retired lines and traps' %}
   <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
     <h2 class="mb-0">Trap Lines</h2>
-    <div class="d-flex gap-2 align-items-center lines-page-header__actions">
-      <a href="{{ url_for('lines_index', show_retired=1 if not show_retired else None) }}"
-         class="btn btn-sm {{ 'btn-outline-secondary' if show_retired else 'btn-outline-dark' }}">
-        {% if show_retired %}
-          Hide retired lines and traps
-        {% else %}
-          Show retired lines and traps
-        {% endif %}
-      </a>
-      {% if session.get('role') == 'Admin' %}
-        <a href="{{ url_for('new_line') }}" class="btn btn-pf btn-sm">
-          <i class="bi bi-plus-lg me-1"></i>New Line
-        </a>
-      {% endif %}
-    </div>
-  </div>
-
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2 lines-map-header">
-        <h5 class="mb-0">All Lines & Traps Map</h5>
-        <small class="text-muted lines-map-header__hint">Click a marker to view trap and line details</small>
+    {% if session.get('role') == 'Admin' %}
+      <div class="d-flex gap-2 align-items-center lines-page-header__actions">
+        {{ pf_link_button(url_for('new_line'), 'New Line', variant='btn-sm-pf', icon='bi-plus-lg') }}
       </div>
-      <div id="lines-overview-map"
-           data-linz-api-key="{{ linz_api_key }}"
-           style="height: 430px; border-radius: 10px;"></div>
-      <script id="lines-overview-traps-data" type="application/json">{{ map_traps|tojson }}</script>
-      <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
-        <span class="d-inline-flex align-items-center gap-1">
-          <span class="map-legend-line map-legend-line-retired"></span>
-          Retired line
-        </span>
-        <span class="d-inline-flex align-items-center gap-1">
-          <span class="map-legend-dot map-legend-dot-retired"></span>
-          Retired trap
-        </span>
-      </div>
-      <p class="text-muted small mb-0 mt-2">Basemap tiles by LINZ Basemaps.</p>
-    </div>
+    {% endif %}
   </div>
 
   {% if lines %}
-    <section class="lines-filter-shell mb-4">
+    <section class="mb-4">
       <div class="row g-3 align-items-end">
         <div class="col-lg-8">
           <label for="lines-search-input" class="form-label mb-1">Search lines</label>
-          <div class="input-group lines-filter-shell__search">
+          <div class="input-group">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
             <input
               type="search"
@@ -69,88 +37,129 @@
           </select>
         </div>
         <div class="col-lg-1 d-grid">
-          <button type="button" id="lines-clear-filters" class="btn lines-filter-shell__clear-btn">Clear</button>
+          {{ pf_button('Clear', variant='btn-sm-outline', extra_classes='lines-filter-shell__clear-btn', attrs={'id': 'lines-clear-filters'}) }}
         </div>
       </div>
     </section>
 
-    <div id="lines-empty-filter-state" class="alert alert-light border d-none">
-      No lines match the current search or filters.
+    <div id="lines-empty-filter-state" class="notice blue d-none lines-empty-filter-state">
+      <i class="bi bi-funnel"></i>
+      <div>No lines match the current search or filters.</div>
     </div>
   {% endif %}
 
-  {% if lines %}
-    <section class="lines-list-shell mb-4">
-      <div class="lines-list-scroll">
-        {% for line in lines %}
-          <div
-            class="card js-line-card"
-            data-line-id="{{ line.line_id }}"
-            data-line-name="{{ line.name }}"
-            data-line-type="{{ line.type or '' }}"
-            data-line-status="{{ 'retired' if line.is_retired else 'active' }}"
-            data-operator-search="{{ line.assigned_operator_names or '' }}"
-            data-operator-labels="{{ line.assigned_operator_labels|join('||') }}"
-            id="line-card-{{ line.line_id }}">
-            <div class="card-body d-flex justify-content-between align-items-center lines-list-card-body">
-              <div class="lines-list-card__content">
-                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                  <h5 class="mb-0">{{ line.name }}</h5>
-                </div>
-                <small class="text-muted">
-                  {{ line.trap_count | default(0) }} active traps &mdash;
-                  {{ line.operator_count | default(0) }} operators
-                </small>
-                <div class="small text-muted mt-1">
-                  {% if line.assigned_operators %}
-                    {% for operator in line.assigned_operators %}
-                      <span>
-                        {{ operator.label }}
-                        {% if session.get('role') == 'Operator' and operator.user_id == session.get('user_id') %}
-                          <span class="badge bg-primary">me</span>
-                        {% endif %}
-                      </span>{% if not loop.last %} | {% endif %}
-                    {% endfor %}
-                  {% else %}
-                    None
-                  {% endif %}
-                </div>
-              </div>
-              <div class="d-flex gap-2 align-items-center lines-list-card__actions">
-                {% if line.is_retired %}
-                  <span class="badge bg-secondary">Retired</span>
-                {% else %}
-                  <span class="badge bg-success">Active</span>
-                {% endif %}
-                <a href="{{ url_for('line_detail', line_id=line.line_id, show_retired=1 if show_retired else None) }}"
-                   class="btn btn-sm btn-outline-secondary">View</a>
-                {% if session.get('role') == 'Admin' and not line.is_retired %}
-                  <a href="{{ url_for('edit_line', line_id=line.line_id) }}"
-                     class="btn btn-sm btn-outline-secondary">Edit</a>
-
-                  <button type="button" 
-                    class="btn btn-sm btn-outline-danger"
-                    data-bs-toggle="modal" 
-                    data-bs-target="#retire-line-modal"
-                    data-line-id="{{ line.line_id }}"
-                    data-line-name="{{ line.name }}"
-                    data-line-action="{{ url_for('retire_line', line_id=line.line_id, active_traps=1 if line.line_id in active_trap_line_ids else None) }}"
-                    data-has-active-traps="{{ 'true' if line.line_id in active_trap_line_ids else 'false' }}">
-                    Retire
-                  </button>
-                {% endif %}
-              </div>
-            </div>
+  <div class="row g-4 lines-overview-layout">
+    <div class="col-12 col-xl-5">
+      {% if lines %}
+        <div class="lines-list-shell">
+          <div class="lines-list-scroll">
+            {% for line in lines %}
+              {% set line_detail_url = url_for('line_detail', line_id=line.line_id, show_retired=1 if show_retired else None) %}
+              {% call pf_panel(
+                panel_class='js-line-card lines-list-card',
+                body_class='d-flex justify-content-between align-items-center lines-list-card-body',
+                attrs={
+                  'data-line-id': line.line_id,
+                  'data-line-name': line.name,
+                  'data-line-type': line.type or '',
+                  'data-line-status': 'retired' if line.is_retired else 'active',
+                  'data-operator-search': line.assigned_operator_names or '',
+                  'data-operator-labels': line.assigned_operator_labels|join('||'),
+                  'id': 'line-card-' ~ line.line_id
+                }
+              ) %}
+                  <div class="lines-list-card__content">
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                      <h5 class="mb-0">{{ line.name }}</h5>
+                      {{ pf_trap_status_badge(line.is_retired) }}
+                    </div>
+                    <small class="text-muted">
+                      {{ line.trap_count | default(0) }} active traps &mdash;
+                      {{ line.operator_count | default(0) }} operators
+                    </small>
+                    <div class="small text-muted mt-1 lines-operator-list">
+                      {% if line.assigned_operators %}
+                        {% for operator in line.assigned_operators %}
+                          <div class="lines-operator-item">
+                            {{ operator.label }}
+                            {% if session.get('role') == 'Operator' and operator.user_id == session.get('user_id') %}
+                              <span class="badge-role-operator">Me</span>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      {% else %}
+                        None
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="d-flex gap-2 align-items-center lines-list-card__actions">
+                    {{ pf_link_button(line_detail_url, 'View', variant='btn-sm-outline') }}
+                    {% if session.get('role') == 'Admin' and not line.is_retired %}
+                      {{ pf_link_button(url_for('edit_line', line_id=line.line_id), 'Edit', variant='btn-sm-outline') }}
+                      {{ pf_button(
+                        'Retire',
+                        variant='btn-sm-danger',
+                        attrs={
+                          'data-bs-toggle': 'modal',
+                          'data-bs-target': '#retire-line-modal',
+                          'data-line-id': line.line_id,
+                          'data-line-name': line.name,
+                          'data-line-action': url_for('retire_line', line_id=line.line_id, active_traps=1 if line.line_id in active_trap_line_ids else None),
+                          'data-has-active-traps': 'true' if line.line_id in active_trap_line_ids else 'false'
+                        }
+                      ) }}
+                    {% endif %}
+                  </div>
+              {% endcall %}
+            {% endfor %}
           </div>
-        {% endfor %}
-      </div>
-    </section>
-  {% else %}
-    <p class="text-muted">No trap lines found.</p>
-  {% endif %}
+        </div>
+      {% else %}
+        <div class="notice blue mb-0">
+          <i class="bi bi-signpost-split"></i>
+          <div>No trap lines found.</div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="col-12 col-xl-7">
+      {% set map_actions %}
+        <div class="d-flex gap-2 align-items-center lines-map-panel-actions">
+          {{ pf_link_button(
+            url_for('lines_index', show_retired=1 if not show_retired else None),
+            toggle_retired_label,
+            variant='btn-sm-outline'
+          ) }}
+        </div>
+      {% endset %}
+      {% call pf_panel(
+        title='All Lines & Traps Map',
+        meta='Click a marker to view trap and line details',
+        actions_html=map_actions,
+        panel_class='mb-0 lines-map-panel-shell',
+        header_class='lines-map-header'
+      ) %}
+          <div id="lines-overview-map"
+               class="lines-overview-map"
+               data-linz-api-key="{{ linz_api_key }}"></div>
+          <script id="lines-overview-traps-data" type="application/json">{{ map_traps|tojson }}</script>
+          <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-line map-legend-line-retired"></span>
+              Retired line
+            </span>
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-dot map-legend-dot-retired"></span>
+              Retired trap
+            </span>
+          </div>
+          <p class="text-muted small mb-0 mt-2">Basemap tiles by LINZ Basemaps.</p>
+      {% endcall %}
+    </div>
+  </div>
 
   <div class="modal fade pop-up-modal" id="retire-line-modal" tabindex="-1">
-    <div class="modal-dialog" style="margin-top: 10vh;">
+    <div class="modal-dialog lines-modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Retire line</h5>
@@ -160,20 +169,20 @@
         <div class="modal-body">
           <p>Are you sure you want to retire line <strong id="modal-line-name"></strong>?</p>
 
-          <p id="modal-warning-active" class="text-danger" style="display:none;">
+          <p id="modal-warning-active" class="lines-modal-warning lines-modal-warning-danger d-none">
             Warning: This line has active traps. Retiring the line will also mark all its traps as retired.
           </p>
-          <p id="modal-warning-no-active" class="text-muted" style="display:none;">
+          <p id="modal-warning-no-active" class="lines-modal-warning text-muted d-none">
             This line will be marked as Retired.
           </p>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
           
           <form method="POST" id="modal-line-action">
             <input type="hidden" name="line_id" id="modal-line-id" value="" />
-            <button type="submit" class="btn btn-danger">Yes, retire</button>
+            {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit') }}
           </form>
         </div>
       </div>
