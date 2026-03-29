@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiaki — UI Component Guide</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Copy of actual custom.css variables ── */
+    :root {
+      --pf-900: #0d2b1a;
+      --pf-800: #1a5c38;
+      --pf-700: #236b43;
+      --pf-600: #2d7a4f;
+      --pf-500: #3d9b67;
+      --pf-400: #6ab98a;
+      --pf-300: #a3d4b5;
+      --pf-200: #c8e6d5;
+      --pf-100: #e6f4ec;
+      --pf-50:  #f4faf6;
+      --amber:        #e8920a;
+      --amber-light:  #fef3dc;
+      --red:          #c0392b;
+      --red-light:    #fdecea;
+      --blue:         #1a6fa8;
+      --blue-light:   #e8f4fd;
+      --sidebar-w:    240px;
+      --navbar-h:     58px;
+    }
+
+    body { font-family: 'DM Sans', sans-serif; font-size: 14px; background: #f5f6f4; color: #1a1f1b; margin: 0; }
+    h1,h2,h3,h4,h5,h6 { font-family: 'Cabin', sans-serif; }
+
+    /* ── Guide layout ── */
+    .guide-nav { background: var(--pf-800); position: sticky; top: 0; z-index: 100; padding: 12px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .guide-nav-title { font-family: 'Cabin', sans-serif; font-size: 16px; font-weight: 700; color: #fff; margin-right: 16px; }
+    .guide-nav a { font-size: 12px; color: var(--pf-300); text-decoration: none; padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+    .guide-nav a:hover { color: #fff; border-bottom-color: var(--pf-400); }
+    .guide-content { max-width: 960px; margin: 0 auto; padding: 40px 28px 80px; }
+    .section { margin-bottom: 64px; scroll-margin-top: 60px; }
+    .section-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+    .section-num { font-size: 11px; color: var(--pf-400); font-weight: 600; letter-spacing: 2px; }
+    .section-title { font-size: 22px; font-weight: 700; color: var(--pf-800); margin: 0; }
+    .section-desc { font-size: 13px; color: #6b7c72; margin: 4px 0 24px; }
+    .demo-box { background: #fff; border: 1px solid var(--pf-200); border-radius: 12px; padding: 28px; margin-bottom: 12px; }
+    .code-label { font-size: 10px; letter-spacing: 2px; color: var(--pf-500); text-transform: uppercase; margin: 20px 0 6px; font-weight: 600; }
+    .code-box { background: #0d2b1a; color: #a3d4b5; border-radius: 8px; padding: 16px 20px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.8; margin-bottom: 24px; overflow-x: auto; white-space: pre; }
+    .code-box .hl { color: #fff; }
+    .code-box .cm { color: #3d9b67; }
+    hr.guide-divider { border: none; border-top: 1px solid var(--pf-200); margin: 56px 0; }
+    .class-pill { display: inline-block; background: var(--pf-50); border: 1px solid var(--pf-200); color: var(--pf-700); font-family: monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin: 0 2px; }
+    .var-pill { display: inline-block; background: #f3e8ff; border: 1px solid #d8b4fe; color: #5b21b6; font-family: monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin: 0 2px; }
+
+    /* ── Actual component classes from custom.css ── */
+    .btn-pf { background: var(--pf-500); color: #fff; border: none; padding: 6px 16px; border-radius: 6px; font-size: 13px; font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-pf:hover { background: var(--pf-400); color: #fff; }
+    .btn-pf-outline { background: transparent; color: var(--pf-200); border: 1px solid var(--pf-600); padding: 6px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-pf-outline:hover { background: var(--pf-700); color: #fff; }
+    .btn-pf-full { background: var(--pf-700); color: #fff; border: none; width: 100%; padding: 10px; border-radius: 8px; font-size: 14px; font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer; }
+    .btn-pf-full:hover { background: var(--pf-800); }
+    .btn-sm-pf { background: var(--pf-700); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer; }
+    .btn-sm-pf:hover { background: var(--pf-800); }
+    .btn-sm-outline { background: transparent; color: var(--pf-700); border: 1px solid var(--pf-400); padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-sm-outline:hover { background: var(--pf-100); }
+    .btn-sm-danger { background: transparent; color: var(--red); border: 1px solid #f0a0a0; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-sm-amber { background: var(--amber); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer; }
+    .stat-card { background: #fff; border: 1px solid #e4ede8; border-radius: 12px; padding: 20px; display: flex; align-items: flex-start; gap: 14px; }
+    .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .stat-icon.green { background: var(--pf-100); color: var(--pf-700); }
+    .stat-icon.amber { background: var(--amber-light); color: var(--amber); }
+    .stat-icon.blue  { background: var(--blue-light); color: var(--blue); }
+    .stat-icon.red   { background: var(--red-light); color: var(--red); }
+    .stat-value { font-size: 26px; font-weight: 700; font-family: 'Cabin', sans-serif; color: var(--pf-900); line-height: 1; margin-bottom: 3px; }
+    .stat-label { font-size: 12px; color: #6b7c72; }
+    .stat-trend { font-size: 11px; margin-top: 6px; }
+    .stat-trend.up { color: var(--pf-600); }
+    .stat-trend.down { color: var(--red); }
+    .panel { background: #fff; border: 1px solid #e4ede8; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+    .panel-header { padding: 14px 20px; border-bottom: 1px solid #e4ede8; display: flex; align-items: center; justify-content: space-between; }
+    .panel-title { font-size: 14px; font-weight: 600; color: var(--pf-900); margin: 0; font-family: 'Cabin', sans-serif; }
+    .panel-meta { font-size: 11px; color: #6b7c72; }
+    .panel-body { padding: 16px 20px; }
+    .pf-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+    .pf-table th { background: var(--pf-50); color: #3d5445; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; border-bottom: 1px solid #e4ede8; text-align: left; }
+    .pf-table td { padding: 11px 14px; border-bottom: 1px solid #f0f5f2; color: #2d3d33; vertical-align: middle; }
+    .pf-table tr:last-child td { border-bottom: none; }
+    .pf-table tr:hover td { background: #fafdfc; }
+    .badge-species { background: var(--pf-100); color: var(--pf-800); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .badge-status-sprung { background: #fdecea; color: #a32d2d; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .badge-status-set { background: var(--pf-100); color: var(--pf-700); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .badge-status-removed { background: var(--amber-light); color: #9a5b00; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .badge-role-admin { background: #f3e8ff; color: #5b21b6; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .badge-role-operator { background: var(--blue-light); color: var(--blue); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .badge-role-observer { background: var(--pf-100); color: var(--pf-700); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .badge-active { background: #dcfce7; color: #166534; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .badge-inactive { background: #f1f5f9; color: #64748b; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .trap-status-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 700; line-height: 1.2; border: 1px solid transparent; }
+    .trap-status-active { color: #0f5132; background: #d1e7dd; border-color: #75b798; }
+    .trap-status-retired { color: #41464b; background: #e2e3e5; border-color: #b8bcc1; }
+    .notice { border-radius: 8px; padding: 12px 14px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .notice.green { background: var(--pf-100); border-left: 3px solid var(--pf-500); color: var(--pf-800); }
+    .notice.amber { background: var(--amber-light); border-left: 3px solid var(--amber); color: #7a4a00; }
+    .notice.blue  { background: var(--blue-light); border-left: 3px solid var(--blue); color: #0d3d6a; }
+    .insight-card { background: var(--pf-50); border: 1px solid var(--pf-200); border-radius: 10px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px; }
+    .insight-icon { width: 32px; height: 32px; background: var(--pf-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--pf-700); font-size: 15px; flex-shrink: 0; }
+    .insight-title { font-size: 12px; font-weight: 600; color: var(--pf-800); margin-bottom: 2px; font-family: 'Cabin', sans-serif; }
+    .insight-text { font-size: 12px; color: #6b7c72; margin: 0; line-height: 1.5; }
+    .form-label { font-size: 12px; font-weight: 600; color: #3d5445; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+    .form-control { border: 1px solid #d0ddd5; border-radius: 8px; font-size: 13px; padding: 8px 12px; background: #fafdfc; }
+    .form-control:focus { border-color: var(--pf-500); box-shadow: 0 0 0 3px rgba(61,155,103,0.12); background: #fff; outline: none; }
+    .form-select { border: 1px solid #d0ddd5; border-radius: 8px; font-size: 13px; padding: 8px 30px 8px 12px; }
+    .form-hint { font-size: 11px; color: #8a9e93; margin-top: 4px; }
+    .field-group { margin-bottom: 16px; }
+    .required-star { color: var(--red); margin-left: 2px; }
+    .form-section-label { font-size: 11px; font-weight: 600; color: var(--pf-600); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .profile-header-card { background: var(--pf-800); border-radius: 12px; padding: 24px; color: #fff; display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<!-- Guide nav -->
+<div class="guide-nav">
+  <span class="guide-nav-title">Tiaki UI Guide</span>
+  <a href="#colours">Colours</a>
+  <a href="#buttons">Buttons</a>
+  <a href="#panels">Panels</a>
+  <a href="#stat-cards">Stat cards</a>
+  <a href="#tables">Tables</a>
+  <a href="#badges">Badges</a>
+  <a href="#notices">Notices</a>
+  <a href="#insights">Insights</a>
+  <a href="#forms">Forms</a>
+  <a href="#profile">Profile</a>
+  <a href="#variables">Variables</a>
+</div>
+
+<div class="guide-content">
+
+  <!-- Header -->
+  <div style="margin-bottom:48px;">
+    <div style="font-size:11px; letter-spacing:3px; color:var(--pf-500); text-transform:uppercase; margin-bottom:8px;">COMP639 Group Project 1 · Team Huhu</div>
+    <h1 style="font-size:36px; color:var(--pf-800); margin:0 0 8px;">UI Component Guide</h1>
+    <p style="color:#6b7c72; font-size:14px; margin:0;">All classes are defined in <code>static/css/custom.css</code>. Use these instead of hardcoding styles inline.</p>
+  </div>
+
+  <!-- ══ 1. COLOURS ══ -->
+  <div class="section" id="colours">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2 class="section-title">CSS variables</h2>
+    </div>
+    <p class="section-desc">Always use CSS variables — never hardcode hex values in templates or stylesheets.</p>
+
+    <div class="demo-box">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:12px; margin-bottom:20px;">
+        <div>
+          <div style="height:40px; background:var(--pf-50); border-radius:6px; border:1px solid var(--pf-200);"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--pf-50</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--pf-100); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--pf-100</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--pf-200); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--pf-200</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--pf-400); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--pf-400</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--pf-500); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--pf-500</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--pf-700); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--pf-700</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--pf-800); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--pf-800</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--pf-900); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--pf-900</div>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:12px;">
+        <div>
+          <div style="height:40px; background:var(--amber); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--amber</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--amber-light); border-radius:6px; border:1px solid #fde8b0;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--amber-light</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--red); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--red</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--red-light); border-radius:6px; border:1px solid #f5c6cb;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--red-light</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--blue); border-radius:6px;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--blue</div>
+        </div>
+        <div>
+          <div style="height:40px; background:var(--blue-light); border-radius:6px; border:1px solid #b5d4f4;"></div>
+          <div style="font-size:10px; color:#6b7c72; margin-top:4px;">--blue-light</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">Usage</div>
+    <div class="code-box"><span class="cm">/* In CSS */</span>
+color: var(--pf-700);
+background: var(--pf-50);
+border: 1px solid var(--pf-200);</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 2. BUTTONS ══ -->
+  <div class="section" id="buttons">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2 class="section-title">Buttons</h2>
+    </div>
+    <p class="section-desc">6 button variants. Use Tiaki classes — not Bootstrap's <code>btn-primary</code>. Buttons in page headers use the <code>sm</code> variants.</p>
+
+    <div class="demo-box">
+      <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px;">
+        <button class="btn-pf">btn-pf</button>
+        <button class="btn-pf-outline">btn-pf-outline</button>
+        <button class="btn-sm-pf"><i class="bi bi-plus-lg me-1"></i>btn-sm-pf</button>
+        <button class="btn-sm-outline"><i class="bi bi-download me-1"></i>btn-sm-outline</button>
+        <button class="btn-sm-danger"><i class="bi bi-trash me-1"></i>btn-sm-danger</button>
+        <button class="btn-sm-amber">btn-sm-amber</button>
+      </div>
+      <div style="max-width:300px;">
+        <button class="btn-pf-full">btn-pf-full (full width)</button>
+      </div>
+    </div>
+
+    <div class="code-label">When to use each</div>
+    <table class="pf-table" style="background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e4ede8;">
+      <thead><tr><th>Class</th><th>Use for</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td><span class="class-pill">btn-pf</span></td><td>Primary action</td><td>Hero, forms</td></tr>
+        <tr><td><span class="class-pill">btn-pf-outline</span></td><td>Secondary action (on dark bg)</td><td>Hero, navbar</td></tr>
+        <tr><td><span class="class-pill">btn-pf-full</span></td><td>Full-width submit</td><td>Auth forms</td></tr>
+        <tr><td><span class="class-pill">btn-sm-pf</span></td><td>Primary small action</td><td>Page headers</td></tr>
+        <tr><td><span class="class-pill">btn-sm-outline</span></td><td>Secondary small action</td><td>Page headers, tables</td></tr>
+        <tr><td><span class="class-pill">btn-sm-danger</span></td><td>Destructive action</td><td>Tables, modals</td></tr>
+        <tr><td><span class="class-pill">btn-sm-amber</span></td><td>Warning action (deactivate etc)</td><td>User management</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box"><span class="cm">&lt;!-- Primary --&gt;</span>
+&lt;a href="..." class="<span class="hl">btn-pf</span>"&gt;Label&lt;/a&gt;
+
+<span class="cm">&lt;!-- Small primary (page header) --&gt;</span>
+&lt;a href="..." class="<span class="hl">btn-sm-pf</span>"&gt;
+  &lt;i class="bi bi-plus-lg me-1"&gt;&lt;/i&gt;New Item
+&lt;/a&gt;
+
+<span class="cm">&lt;!-- Danger in a table row --&gt;</span>
+&lt;button class="<span class="hl">btn-sm-danger</span>"&gt;Delete&lt;/button&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 3. PANELS ══ -->
+  <div class="section" id="panels">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2 class="section-title">Panels</h2>
+    </div>
+    <p class="section-desc">The main content wrapper for dashboard pages. Use <span class="class-pill">panel</span> + <span class="class-pill">panel-header</span> + <span class="class-pill">panel-body</span>.</p>
+
+    <div class="demo-box">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-graph-up me-2"></i>Panel title</div>
+          <span class="panel-meta">Optional meta text</span>
+        </div>
+        <div class="panel-body">
+          Panel body content goes here.
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;div class="<span class="hl">panel</span>"&gt;
+  &lt;div class="<span class="hl">panel-header</span>"&gt;
+    &lt;div class="<span class="hl">panel-title</span>"&gt;
+      &lt;i class="bi bi-icon me-2"&gt;&lt;/i&gt;Title
+    &lt;/div&gt;
+    &lt;span class="<span class="hl">panel-meta</span>"&gt;Optional meta&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="<span class="hl">panel-body</span>"&gt;
+    Content here
+  &lt;/div&gt;
+&lt;/div&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 4. STAT CARDS ══ -->
+  <div class="section" id="stat-cards">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2 class="section-title">Stat cards</h2>
+    </div>
+    <p class="section-desc">Dashboard metric cards. Icon colour options: <span class="class-pill">green</span> <span class="class-pill">amber</span> <span class="class-pill">blue</span> <span class="class-pill">red</span>. Always use inside Bootstrap columns.</p>
+
+    <div class="demo-box">
+      <div class="row g-3">
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+            <div>
+              <div class="stat-value">42</div>
+              <div class="stat-label">Total Captures</div>
+              <div class="stat-trend up"><i class="bi bi-arrow-up"></i> +6 this month</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-geo-alt"></i></div>
+            <div>
+              <div class="stat-value">8</div>
+              <div class="stat-label">Active Lines</div>
+              <div class="stat-trend down"><i class="bi bi-arrow-down"></i> 1 retired</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-cpu"></i></div>
+            <div>
+              <div class="stat-value">64</div>
+              <div class="stat-label">Active Traps</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="bi bi-people"></i></div>
+            <div>
+              <div class="stat-value">12</div>
+              <div class="stat-label">Total Users</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;div class="col-sm-6 col-xl-3"&gt;
+  &lt;div class="<span class="hl">stat-card</span>"&gt;
+    &lt;div class="<span class="hl">stat-icon red</span>"&gt;
+      &lt;i class="bi bi-bug"&gt;&lt;/i&gt;
+    &lt;/div&gt;
+    <span class="cm">&lt;!-- icon colours: green · amber · blue · red --&gt;</span>
+    &lt;div&gt;
+      &lt;div class="<span class="hl">stat-value</span>"&gt;{{ stats.total }}&lt;/div&gt;
+      &lt;div class="<span class="hl">stat-label</span>"&gt;Label&lt;/div&gt;
+      <span class="cm">&lt;!-- optional trend --&gt;</span>
+      &lt;div class="<span class="hl">stat-trend up</span>"&gt;+6 this month&lt;/div&gt;
+      &lt;div class="<span class="hl">stat-trend down</span>"&gt;-2 this week&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 5. TABLES ══ -->
+  <div class="section" id="tables">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2 class="section-title">Tables</h2>
+    </div>
+    <p class="section-desc">Use <span class="class-pill">pf-table</span> inside a panel. Always wrap in <code>style="overflow-x:auto"</code> for mobile. Always include an empty state row.</p>
+
+    <div class="demo-box">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent catches</div>
+          <span class="panel-meta">Last 5 records</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="pf-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Line</th>
+                <th>Trap</th>
+                <th>Species</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-size:12px; color:#6b7c72;">19 Mar 2026</td>
+                <td>North Line</td>
+                <td style="font-family:monospace; font-size:12px;">NL-03</td>
+                <td><span class="badge-species">Stoat</span></td>
+                <td><span class="badge-status-sprung">Sprung</span></td>
+              </tr>
+              <tr>
+                <td style="font-size:12px; color:#6b7c72;">18 Mar 2026</td>
+                <td>Lake Route</td>
+                <td style="font-family:monospace; font-size:12px;">LR-01</td>
+                <td><span class="badge-species">Possum</span></td>
+                <td><span class="badge-status-set">Still set</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;div class="panel"&gt;
+  &lt;div class="panel-header"&gt;...&lt;/div&gt;
+  &lt;div style="overflow-x:auto;"&gt;
+    &lt;table class="<span class="hl">pf-table</span>"&gt;
+      &lt;thead&gt;
+        &lt;tr&gt;&lt;th&gt;Column&lt;/th&gt;&lt;/tr&gt;
+      &lt;/thead&gt;
+      &lt;tbody&gt;
+        {% for row in rows %}
+        &lt;tr&gt;
+          &lt;td&gt;{{ row.value }}&lt;/td&gt;
+        &lt;/tr&gt;
+        {% else %}
+        &lt;tr&gt;
+          &lt;td colspan="X" style="text-align:center; padding:30px; color:#6b7c72;"&gt;
+            No records found.
+          &lt;/td&gt;
+        &lt;/tr&gt;
+        {% endfor %}
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 6. BADGES ══ -->
+  <div class="section" id="badges">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2 class="section-title">Badges</h2>
+    </div>
+    <p class="section-desc">Specific badge classes for species, trap status, account status, and user roles. Don't use Bootstrap's generic <code>.badge</code> for these.</p>
+
+    <div class="demo-box">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px; color:#6b7c72; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Species</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <span class="badge-species">Stoat</span>
+          <span class="badge-species">Possum</span>
+          <span class="badge-species">Ship Rat</span>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px; color:#6b7c72; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trap status</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <span class="badge-status-sprung">Sprung</span>
+          <span class="badge-status-set">Still set</span>
+          <span class="badge-status-removed">Removed</span>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px; color:#6b7c72; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Trap physical status</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <span class="trap-status-badge trap-status-active">Active</span>
+          <span class="trap-status-badge trap-status-retired">Retired</span>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px; color:#6b7c72; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Account status</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <span class="badge-active">Active</span>
+          <span class="badge-inactive">Inactive</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:#6b7c72; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">User roles</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <span class="badge-role-admin">Admin</span>
+          <span class="badge-role-operator">Operator</span>
+          <span class="badge-role-observer">Observer</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">HTML — conditional badge patterns</div>
+    <div class="code-box"><span class="cm">&lt;!-- Species --&gt;</span>
+&lt;span class="<span class="hl">badge-species</span>"&gt;{{ record.species_caught }}&lt;/span&gt;
+
+<span class="cm">&lt;!-- Trap status (use conditional) --&gt;</span>
+{% if 'Sprung' in record.status %}
+  &lt;span class="<span class="hl">badge-status-sprung</span>"&gt;{{ record.status }}&lt;/span&gt;
+{% elif record.status == 'Removed' %}
+  &lt;span class="<span class="hl">badge-status-removed</span>"&gt;{{ record.status }}&lt;/span&gt;
+{% else %}
+  &lt;span class="<span class="hl">badge-status-set</span>"&gt;{{ record.status }}&lt;/span&gt;
+{% endif %}
+
+<span class="cm">&lt;!-- Trap physical status --&gt;</span>
+{% if trap.is_retired %}
+  &lt;span class="<span class="hl">trap-status-badge trap-status-retired</span>"&gt;Retired&lt;/span&gt;
+{% else %}
+  &lt;span class="<span class="hl">trap-status-badge trap-status-active</span>"&gt;Active&lt;/span&gt;
+{% endif %}
+
+<span class="cm">&lt;!-- User role --&gt;</span>
+{% if user.role == 'Admin' %}
+  &lt;span class="<span class="hl">badge-role-admin</span>"&gt;Admin&lt;/span&gt;
+{% elif user.role == 'Operator' %}
+  &lt;span class="<span class="hl">badge-role-operator</span>"&gt;Operator&lt;/span&gt;
+{% else %}
+  &lt;span class="<span class="hl">badge-role-observer</span>"&gt;Observer&lt;/span&gt;
+{% endif %}
+
+<span class="cm">&lt;!-- Account status --&gt;</span>
+{% if user.account_status == 'active' %}
+  &lt;span class="<span class="hl">badge-active</span>"&gt;Active&lt;/span&gt;
+{% else %}
+  &lt;span class="<span class="hl">badge-inactive</span>"&gt;Inactive&lt;/span&gt;
+{% endif %}</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 7. NOTICES ══ -->
+  <div class="section" id="notices">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2 class="section-title">Notices</h2>
+    </div>
+    <p class="section-desc">Inline info/warning banners. Use <span class="class-pill">notice</span> with a colour modifier. Note: <code>red</code> is not defined — use Bootstrap's <code>alert-danger</code> for errors inside forms.</p>
+
+    <div class="demo-box">
+      <div class="notice green"><i class="bi bi-check-circle"></i><span>Green — success or read-only info (Observer notice).</span></div>
+      <div class="notice blue"><i class="bi bi-info-circle"></i><span>Blue — informational message, login redirect notice.</span></div>
+      <div class="notice amber"><i class="bi bi-exclamation-triangle"></i><span>Amber — warning, e.g. not assigned to any lines yet.</span></div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box"><span class="cm">&lt;!-- colour options: green · blue · amber --&gt;</span>
+&lt;div class="<span class="hl">notice blue</span>"&gt;
+  &lt;i class="bi bi-info-circle"&gt;&lt;/i&gt;
+  &lt;span&gt;Message here.&lt;/span&gt;
+&lt;/div&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 8. INSIGHT CARDS ══ -->
+  <div class="section" id="insights">
+    <div class="section-header">
+      <span class="section-num">08</span>
+      <h2 class="section-title">Insight cards</h2>
+    </div>
+    <p class="section-desc">Used on the reports page and dashboards for key callouts. Can be overridden with inline styles for alert variants.</p>
+
+    <div class="demo-box">
+      <div class="insight-card">
+        <div class="insight-icon"><i class="bi bi-arrow-up-circle"></i></div>
+        <div>
+          <div class="insight-title">Busiest line</div>
+          <p class="insight-text">North Line has the highest catch rate — 14 catches this period.</p>
+        </div>
+      </div>
+      <div class="insight-card" style="background:#fdecea; border-color:#f5c6cb;">
+        <div class="insight-icon" style="background:#f8d7da; color:#c0392b;"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+          <div class="insight-title" style="color:#c0392b;">Needs attention</div>
+          <p class="insight-text">2 traps flagged for maintenance: <code>NL-02, WL-04</code></p>
+        </div>
+      </div>
+      <div class="insight-card" style="background:#f8fafc; border-color:#cbd5e1;">
+        <div class="insight-icon" style="background:#e2e8f0; color:#64748b;"><i class="bi bi-archive"></i></div>
+        <div>
+          <div class="insight-title" style="color:#475569;">Retired lines</div>
+          <p class="insight-text">2 lines retired: <strong>West Loop, Lake Route</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box"><span class="cm">&lt;!-- Default green --&gt;</span>
+&lt;div class="<span class="hl">insight-card</span>"&gt;
+  &lt;div class="<span class="hl">insight-icon</span>"&gt;
+    &lt;i class="bi bi-arrow-up-circle"&gt;&lt;/i&gt;
+  &lt;/div&gt;
+  &lt;div&gt;
+    &lt;div class="<span class="hl">insight-title</span>"&gt;Title&lt;/div&gt;
+    &lt;p class="<span class="hl">insight-text</span>"&gt;Description.&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+<span class="cm">&lt;!-- Red alert variant --&gt;</span>
+&lt;div class="insight-card" style="background:#fdecea; border-color:#f5c6cb;"&gt;
+  &lt;div class="insight-icon" style="background:#f8d7da; color:#c0392b;"&gt;
+    &lt;i class="bi bi-exclamation-triangle"&gt;&lt;/i&gt;
+  &lt;/div&gt;
+  ...
+&lt;/div&gt;
+
+<span class="cm">&lt;!-- Grey retired variant --&gt;</span>
+&lt;div class="insight-card" style="background:#f8fafc; border-color:#cbd5e1;"&gt;
+  &lt;div class="insight-icon" style="background:#e2e8f0; color:#64748b;"&gt;
+    &lt;i class="bi bi-archive"&gt;&lt;/i&gt;
+  &lt;/div&gt;
+  ...
+&lt;/div&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 9. FORMS ══ -->
+  <div class="section" id="forms">
+    <div class="section-header">
+      <span class="section-num">09</span>
+      <h2 class="section-title">Forms</h2>
+    </div>
+    <p class="section-desc">Wrap form sections inside a <span class="class-pill">panel</span>. Use <span class="class-pill">field-group</span> per field, <span class="class-pill">form-hint</span> for help text, <span class="class-pill">required-star</span> for required indicators.</p>
+
+    <div class="demo-box">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-person me-2"></i>Personal details</div>
+        </div>
+        <div class="panel-body">
+          <div class="form-section-label">Account</div>
+          <div class="row g-3">
+            <div class="col-md-6 field-group">
+              <label class="form-label">First name <span class="required-star">*</span></label>
+              <input type="text" class="form-control" placeholder="Enter first name">
+            </div>
+            <div class="col-md-6 field-group">
+              <label class="form-label">Last name <span class="required-star">*</span></label>
+              <input type="text" class="form-control" placeholder="Enter last name">
+            </div>
+            <div class="col-12 field-group">
+              <label class="form-label">Role</label>
+              <select class="form-select">
+                <option>Observer</option>
+                <option>Operator</option>
+                <option>Admin</option>
+              </select>
+              <div class="form-hint">Assign the appropriate role for this user.</div>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn-pf"><i class="bi bi-check-lg me-1"></i>Save</button>
+            <a href="#" class="btn-pf-outline">Cancel</a>
+          </div>
+          <p style="font-size:11px; color:#6b7c72; margin-top:8px;"><span class="required-star">*</span> Required fields</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;div class="panel"&gt;
+  &lt;div class="panel-header"&gt;
+    &lt;div class="panel-title"&gt;Section&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="panel-body"&gt;
+    &lt;div class="<span class="hl">form-section-label</span>"&gt;Sub-section&lt;/div&gt;
+    &lt;form method="POST"&gt;
+      &lt;div class="row g-3"&gt;
+        &lt;div class="col-md-6 <span class="hl">field-group</span>"&gt;
+          &lt;label class="form-label"&gt;
+            Label &lt;span class="<span class="hl">required-star</span>"&gt;*&lt;/span&gt;
+          &lt;/label&gt;
+          &lt;input type="text" class="form-control" required&gt;
+          &lt;div class="<span class="hl">form-hint</span>"&gt;Help text.&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class="d-flex gap-2 mt-3"&gt;
+        &lt;button type="submit" class="btn-pf"&gt;Save&lt;/button&gt;
+        &lt;a href="..." class="btn-pf-outline"&gt;Cancel&lt;/a&gt;
+      &lt;/div&gt;
+    &lt;/form&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 10. PROFILE ══ -->
+  <div class="section" id="profile">
+    <div class="section-header">
+      <span class="section-num">10</span>
+      <h2 class="section-title">Profile header card</h2>
+    </div>
+    <p class="section-desc">Dark green header used at the top of the profile page.</p>
+
+    <div class="demo-box">
+      <div class="profile-header-card">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--pf-600); border:3px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:#fff; font-family:'Cabin',sans-serif;">JR</div>
+        <div>
+          <div style="font-size:18px; font-weight:700; font-family:'Cabin',sans-serif;">Jeremiah Ruanes</div>
+          <div style="font-size:12px; color:var(--pf-300); margin-top:4px;">@jeremiah · Operator</div>
+          <div style="font-size:12px; color:var(--pf-300); margin-top:4px;"><i class="bi bi-envelope me-1"></i>jeremiah@example.com</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;div class="<span class="hl">profile-header-card</span>"&gt;
+  <span class="cm">&lt;!-- Avatar circle --&gt;</span>
+  &lt;div style="width:64px; height:64px; border-radius:50%;
+              background:var(--pf-600); ..."&gt;
+    {% if user.profile_photo %}
+      &lt;img src="..." style="width:100%; height:100%; object-fit:cover;"&gt;
+    {% else %}
+      {{ user.first_name[:1] }}{{ user.last_name[:1] }}
+    {% endif %}
+  &lt;/div&gt;
+  <span class="cm">&lt;!-- Info --&gt;</span>
+  &lt;div&gt;
+    &lt;div class="profile-name"&gt;{{ user.first_name }} {{ user.last_name }}&lt;/div&gt;
+    &lt;div class="profile-role"&gt;@{{ user.username }}&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 11. JINJA VARIABLES ══ -->
+  <div class="section" id="variables">
+    <div class="section-header">
+      <span class="section-num">11</span>
+      <h2 class="section-title">Jinja global variables</h2>
+    </div>
+    <p class="section-desc">Available in every template automatically via the context processor in <code>__init__.py</code>. Never pass these from routes — they're already there.</p>
+
+    <div class="demo-box">
+      <table class="pf-table">
+        <thead>
+          <tr><th>Variable</th><th>Returns</th><th>Use for</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="var-pill">{{ site_name }}</span></td>
+            <td style="color:var(--pf-600); font-weight:500;">Tiaki</td>
+            <td style="font-size:12px; color:#6b7c72;">App name in text, titles</td>
+          </tr>
+          <tr>
+            <td><span class="var-pill">{{ site_tagline }}</span></td>
+            <td style="color:var(--pf-600); font-weight:500;">Predator Trapping &amp; Monitoring</td>
+            <td style="font-size:12px; color:#6b7c72;">Subtitle text</td>
+          </tr>
+          <tr>
+            <td><span class="var-pill">{{ logo_url }}</span></td>
+            <td style="color:var(--pf-600); font-weight:500;">static/images/logo.png path</td>
+            <td style="font-size:12px; color:#6b7c72;">Full logo &lt;img&gt; src</td>
+          </tr>
+          <tr>
+            <td><span class="var-pill">{{ icon_url }}</span></td>
+            <td style="color:var(--pf-600); font-weight:500;">static/images/icon.png path</td>
+            <td style="font-size:12px; color:#6b7c72;">Icon, favicon &lt;img&gt; src</td>
+          </tr>
+          <tr>
+            <td><span class="var-pill">{{ nav_first_name }}</span></td>
+            <td style="color:var(--pf-600); font-weight:500;">Logged-in user's first name</td>
+            <td style="font-size:12px; color:#6b7c72;">Navbar display name</td>
+          </tr>
+          <tr>
+            <td><span class="var-pill">{{ nav_full_name }}</span></td>
+            <td style="color:var(--pf-600); font-weight:500;">Logged-in user's full name</td>
+            <td style="font-size:12px; color:#6b7c72;">Sidebar display name</td>
+          </tr>
+          <tr>
+            <td><span class="var-pill">{{ nav_profile_photo }}</span></td>
+            <td style="color:var(--pf-600); font-weight:500;">Photo filename or None</td>
+            <td style="font-size:12px; color:#6b7c72;">Navbar avatar image</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="code-label">Usage examples</div>
+    <div class="code-box"><span class="cm">&lt;!-- Site name in text --&gt;</span>
+&lt;p&gt;Welcome to <span class="hl">{{ site_name }}</span>&lt;/p&gt;
+
+<span class="cm">&lt;!-- Logo image --&gt;</span>
+&lt;img src="<span class="hl">{{ logo_url }}</span>" alt="{{ site_name }}" style="height:36px;"&gt;
+
+<span class="cm">&lt;!-- Icon image --&gt;</span>
+&lt;img src="<span class="hl">{{ icon_url }}</span>" alt="{{ site_name }}" style="height:24px;"&gt;
+
+<span class="cm">&lt;!-- Page title --&gt;</span>
+&lt;title&gt;{% block title %}Page{% endblock %} | <span class="hl">{{ site_name }}</span>&lt;/title&gt;
+
+<span class="cm">&lt;!-- Greeting --&gt;</span>
+&lt;p&gt;Hello, <span class="hl">{{ nav_first_name }}</span>!&lt;/p&gt;</div>
+  </div>
+
+  <!-- Footer -->
+  <div style="border-top:1px solid var(--pf-200); padding-top:24px; margin-top:24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+    <span style="font-family:'Cabin',sans-serif; font-size:14px; font-weight:700; color:var(--pf-700);">Tiaki UI Component Guide</span>
+    <span style="font-size:11px; color:#6b7c72;">COMP639 Group Project 1 · Team Huhu · 2026 · All classes in static/css/custom.css</span>
+  </div>
+
+</div>
+
+</body>
+</html>

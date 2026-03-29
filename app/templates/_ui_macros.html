@@ -1,0 +1,129 @@
+{# app/templates/_ui_macros.html #}
+{#
+  Tiaki UI Macros (Jinja)
+
+  Source of truth:
+  - tiaki_ui_guide.html
+  - static/css/custom.css
+
+  Typical usage:
+    {% from "_ui_macros.html" import pf_button, pf_link_button, pf_panel, pf_panel_simple, pf_trap_status_badge, pf_user_role_badge, pf_account_status_badge, pf_trap_event_status_badge %}
+
+  Notes:
+  - Keep templates free of inline JS per .clinerules/rules.md.
+  - Macros only output HTML markup + Tiaki classes.
+#}
+
+{# -----------------------------
+   Utilities
+   ----------------------------- #}
+
+{% macro _attrs(attrs=None) -%}
+  {%- for k, v in (attrs or {}).items() -%}
+    {{- ' ' ~ k }}{%- if v is not none -%}="{{ v }}"{%- endif -%}
+  {%- endfor -%}
+{%- endmacro %}
+
+{% macro _class_list(classes) -%}
+  {%- set out = [] -%}
+  {%- for c in classes -%}
+    {%- if c -%}{%- set _ = out.append(c) -%}{%- endif -%}
+  {%- endfor -%}
+  {{- ' '.join(out) -}}
+{%- endmacro %}
+
+{# -----------------------------
+   Buttons
+   ----------------------------- #}
+
+{% macro pf_button(label, variant='btn-pf', size='', type='button', icon=None, icon_right=None, extra_classes='', attrs=None) -%}
+  <button type="{{ type }}" class="btn {{ _class_list([variant, size, extra_classes]) }}"{{ _attrs(attrs) }}>
+    {%- if icon -%}<i class="bi {{ icon }} me-1"></i>{%- endif -%}
+    {{ label }}
+    {%- if icon_right -%}<i class="bi {{ icon_right }} ms-1"></i>{%- endif -%}
+  </button>
+{%- endmacro %}
+
+{% macro pf_link_button(href, label, variant='btn-pf', size='', icon=None, icon_right=None, extra_classes='', attrs=None) -%}
+  <a href="{{ href }}" class="btn {{ _class_list([variant, size, extra_classes]) }}"{{ _attrs(attrs) }}>
+    {%- if icon -%}<i class="bi {{ icon }} me-1"></i>{%- endif -%}
+    {{ label }}
+    {%- if icon_right -%}<i class="bi {{ icon_right }} ms-1"></i>{%- endif -%}
+  </a>
+{%- endmacro %}
+
+{# -----------------------------
+   Panels
+   ----------------------------- #}
+
+{% macro pf_panel(title=None, meta=None, actions_html=None, panel_class='', header_class='', body_class='', attrs=None) -%}
+  <div class="panel {{ panel_class }}"{{ _attrs(attrs) }}>
+    {% if title or meta or actions_html %}
+      <div class="panel-header {{ header_class }}">
+        <div>
+          {% if title %}<div class="panel-title">{{ title }}</div>{% endif %}
+          {% if meta %}<div class="panel-meta">{{ meta }}</div>{% endif %}
+        </div>
+        {% if actions_html %}
+          <div class="panel-actions">{{ actions_html | safe }}</div>
+        {% endif %}
+      </div>
+    {% endif %}
+    <div class="panel-body {{ body_class }}">
+      {{ caller() }}
+    </div>
+  </div>
+{%- endmacro %}
+
+{# Convenience macro: panel with just a title, no actions/meta #}
+{% macro pf_panel_simple(title, panel_class='', body_class='', attrs=None) -%}
+  {% call pf_panel(title=title, panel_class=panel_class, body_class=body_class, attrs=attrs) %}
+    {{ caller() }}
+  {% endcall %}
+{%- endmacro %}
+
+{# -----------------------------
+   Badges (Tiaki)
+   ----------------------------- #}
+
+{# Trap physical status: uses trap-status-badge + trap-status-active/retired from custom.css #}
+{% macro pf_trap_status_badge(is_retired, active_text='Active', retired_text='Retired', attrs=None) -%}
+  {% if is_retired %}
+    <span class="trap-status-badge trap-status-retired"{{ _attrs(attrs) }}>{{ retired_text }}</span>
+  {% else %}
+    <span class="trap-status-badge trap-status-active"{{ _attrs(attrs) }}>{{ active_text }}</span>
+  {% endif %}
+{%- endmacro %}
+
+{# Trap event/record status: sprung/removed/set => badge-status-* #}
+{% macro pf_trap_event_status_badge(status_text, attrs=None) -%}
+  {%- if status_text and ('Sprung' in status_text) -%}
+    <span class="badge-status-sprung"{{ _attrs(attrs) }}>{{ status_text }}</span>
+  {%- elif status_text == 'Removed' -%}
+    <span class="badge-status-removed"{{ _attrs(attrs) }}>{{ status_text }}</span>
+  {%- else -%}
+    <span class="badge-status-set"{{ _attrs(attrs) }}>{{ status_text }}</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro pf_species_badge(text, attrs=None) -%}
+  <span class="badge-species"{{ _attrs(attrs) }}>{{ text }}</span>
+{%- endmacro %}
+
+{% macro pf_user_role_badge(role, attrs=None) -%}
+  {% if role == 'Admin' %}
+    <span class="badge-role-admin"{{ _attrs(attrs) }}>Admin</span>
+  {% elif role == 'Operator' %}
+    <span class="badge-role-operator"{{ _attrs(attrs) }}>Operator</span>
+  {% else %}
+    <span class="badge-role-observer"{{ _attrs(attrs) }}>Observer</span>
+  {% endif %}
+{%- endmacro %}
+
+{% macro pf_account_status_badge(account_status, active_text='Active', inactive_text='Inactive', attrs=None) -%}
+  {% if account_status == 'active' %}
+    <span class="badge-active"{{ _attrs(attrs) }}>{{ active_text }}</span>
+  {% else %}
+    <span class="badge-inactive"{{ _attrs(attrs) }}>{{ inactive_text }}</span>
+  {% endif %}
+{%- endmacro %}
