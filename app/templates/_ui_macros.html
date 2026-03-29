@@ -77,9 +77,14 @@
 
 {# Convenience macro: panel with just a title, no actions/meta #}
 {% macro pf_panel_simple(title, panel_class='', body_class='', attrs=None) -%}
-  {% call pf_panel(title=title, panel_class=panel_class, body_class=body_class, attrs=attrs) %}
-    {{ caller() }}
-  {% endcall %}
+  <div class="panel {{ panel_class }}"{{ _attrs(attrs) }}>
+    <div class="panel-header">
+      <div class="panel-title">{{ title }}</div>
+    </div>
+    <div class="panel-body {{ body_class }}">
+      {{ caller() }}
+    </div>
+  </div>
 {%- endmacro %}
 
 {# -----------------------------
