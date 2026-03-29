@@ -9,6 +9,8 @@
 # test     adding or updating tests
 # chore    build/config/dependency/maintenance tasks
 
+# use UK English
+
 # Subject rules:
 # - use imperative mood (e.g., "Add observer role to database")
 # - start with uppercase
