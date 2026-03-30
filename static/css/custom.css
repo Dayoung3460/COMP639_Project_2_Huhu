@@ -745,6 +745,11 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   align-items: stretch;
 }
 
+.lines-overview-layout > .col-12 {
+  display: flex;
+  flex-direction: column;
+}
+
 .lines-map-panel-shell {
   height: 100%;
 }
@@ -756,6 +761,9 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .lines-list-shell {
   --lines-list-gap: 0.9rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border: 1px solid rgba(45, 122, 79, 0.16);
   border-radius: 18px;
@@ -764,8 +772,9 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 
 .lines-list-scroll {
-  max-height: 430px;
+  flex: 1;
   overflow-y: auto;
+  max-height: 550px;
   padding: 2px 8px 2px 0;
   display: flex;
   flex-direction: column;
@@ -993,6 +1002,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   }
 
   .lines-list-scroll {
+    max-height: 320px;
     padding-right: 6px;
   }
 

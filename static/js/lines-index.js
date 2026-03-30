@@ -207,32 +207,33 @@ document.addEventListener('DOMContentLoaded', function () {
       const lineColor = getLineColor(lineId);
       const marker = L.circleMarker(latLng, isRetiredVisual
         ? {
-            radius: 8,
+            radius: 10,
             color: retiredColor,
             fillColor: retiredFillColor,
             fillOpacity: 0.15,
-            weight: 3
+            weight: 3,
+            bubblingMouseEvents: false
           }
         : {
-            radius: 7,
+            radius: 9,
             color: lineColor,
             fillColor: lineColor,
             fillOpacity: 0.9,
-            weight: 1.5
+            weight: 1.5,
+            bubblingMouseEvents: false
           }
       ).addTo(map);
 
       const lineStatusBadge = trap.line_is_retired
-        ? '<span class="trap-status-badge trap-status-retired">Retired line</span>'
-        : '<span class="trap-status-badge trap-status-active">Active line</span>';
+        ? '<span class="trap-status-badge trap-status-retired">Retired</span>'
+        : '<span class="trap-status-badge trap-status-active">Active</span>';
       const trapStatusBadge = trap.trap_is_retired
-        ? '<span class="trap-status-badge trap-status-retired">Retired trap</span>'
-        : '<span class="trap-status-badge trap-status-active">Active trap</span>';
+        ? '<span class="trap-status-badge trap-status-retired">Retired</span>'
+        : '<span class="trap-status-badge trap-status-active">Active</span>';
 
       marker.bindPopup(
-        `<strong>Line:</strong> ${trap.line_name}<br>` +
-        `<div class="mb-1"><strong>Trap Code:</strong> ${trap.code}</div>` +
-        `${lineStatusBadge} ${trapStatusBadge}<br>` +
+        `<div class="mb-1"><strong>Line:</strong> ${trap.line_name} ${lineStatusBadge}</div>` +
+        `<div class="mb-1"><strong>Trap Code:</strong> ${trap.code} ${trapStatusBadge}</div>` +
         `<a href="${trap.detail_url}" class="small">View line details</a>`
       );
 
