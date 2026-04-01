@@ -743,6 +743,13 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .lines-overview-layout {
   align-items: stretch;
+  flex-direction: column-reverse;
+}
+
+@media (min-width: 1200px) {
+  .lines-overview-layout {
+    flex-direction: row;
+  }
 }
 
 .lines-overview-layout > .col-12 {
