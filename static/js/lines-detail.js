@@ -6,6 +6,15 @@
 document.addEventListener('DOMContentLoaded', function () {
   const coordinateInputUtils = window.coordinateInputUtils;
 
+  // Handle status filter dropdown (mobile)
+  var statusFilter = document.getElementById('lines-status-filter');
+  if (statusFilter) {
+    statusFilter.addEventListener('change', function () {
+      var url = statusFilter.dataset['url' + statusFilter.value.charAt(0).toUpperCase() + statusFilter.value.slice(1)];
+      if (url) window.location.href = url;
+    });
+  }
+
   // Handle trap retirement modal
   const retireTrapModal = document.getElementById('retire-trap-modal')
   retireTrapModal.addEventListener('show.bs.modal', function(event) {
@@ -40,26 +49,51 @@ document.addEventListener('DOMContentLoaded', function () {
     attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
   }).addTo(map);
 
+  const lineColor = '#0d6efd';
+  const retiredColor = '#343a40';
+  const retiredFillColor = '#adb5bd';
+
   if (markers.length > 0) {
     const latlngs = [];
 
     markers.forEach(function (trap) {
-      const marker = L.marker([trap.latitude, trap.longitude]).addTo(map);
-      const statusBadge = trap.is_retired
+      const latLng = [trap.latitude, trap.longitude];
+      const isRetired = Boolean(trap.is_retired);
+
+      const marker = L.circleMarker(latLng, isRetired
+        ? {
+            radius: 10,
+            color: retiredColor,
+            fillColor: retiredFillColor,
+            fillOpacity: 0.15,
+            weight: 3,
+            bubblingMouseEvents: false
+          }
+        : {
+            radius: 9,
+            color: lineColor,
+            fillColor: lineColor,
+            fillOpacity: 0.9,
+            weight: 1.5,
+            bubblingMouseEvents: false
+          }
+      ).addTo(map);
+
+      const statusBadge = isRetired
         ? '<span class="trap-status-badge trap-status-retired">Retired</span>'
         : '<span class="trap-status-badge trap-status-active">Active</span>';
 
       marker.bindPopup(`<strong>${trap.code}</strong><br>${trap.trap_type}<br>${statusBadge}`);
-      latlngs.push([trap.latitude, trap.longitude]);
+      latlngs.push(latLng);
     });
 
     if (latlngs.length >= 2) {
       const orderedLatLngs = orderPointsByNearestNeighbor(latlngs);
 
       L.polyline(orderedLatLngs, {
-        color: '#0d6efd',
-        weight: 3,
-        opacity: 0.8,
+        color: lineIsRetired ? retiredColor : lineColor,
+        weight: lineIsRetired ? 4 : 3,
+        opacity: lineIsRetired ? 0.95 : 0.8,
         dashArray: lineIsRetired ? '8 6' : null
       }).addTo(map);
     }
