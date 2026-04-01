@@ -149,6 +149,14 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 
+.btn-sm-pf-soft {
+  background: var(--pf-100); color: var(--pf-700);
+  border: 1px solid var(--pf-400); padding: 5px 12px;
+  border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+  text-decoration: none; display: inline-block;
+}
+.btn-sm-pf-soft:hover { background: var(--pf-200); color: var(--pf-800); text-decoration: none; }
+
 .btn-sm-amber {
   background: var(--amber); color: #fff; border: none;
   padding: 5px 12px; border-radius: 6px; font-size: 12px;
@@ -384,6 +392,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .pf-table tr:last-child td { border-bottom: none; }
 .pf-table tr:hover td { background: #fafdfc; }
+.pf-table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 /* ═══════════════════════════════════════════════
    Badges
@@ -984,12 +993,6 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   }
 
   .lines-map-panel-actions {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch !important;
-  }
-
-  .lines-map-panel-actions .btn {
     width: 100%;
   }
 
