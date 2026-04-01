@@ -109,7 +109,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-pf:hover { background: var(--pf-400); color: #fff; }
 
 .btn-pf-outline {
-  background: transparent; color: var(--pf-200);
+  background: transparent; color: var(--pf-600);
   border: 1px solid var(--pf-600); padding: 6px 16px;
   border-radius: 6px; font-size: 13px; cursor: pointer;
   text-decoration: none; display: inline-block;
