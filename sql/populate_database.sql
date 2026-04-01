@@ -235,13 +235,15 @@ VALUES
      '021 200 0010', 'Henry Emergency', '021 200 0080',
      'Observer', 'active');
 
--- ── Trap lines (5 required) ───────────────────────────────────
+
+-- ── Trap lines (5 active + 1 retired) ─────────────────────────
 INSERT INTO lines (name, type, is_retired) VALUES
     ('North Line',   'Trap', FALSE),
     ('Lake Route',   'Trap', FALSE),
     ('East Track',   'Trap', FALSE),
     ('West Loop',    'Trap', FALSE),
-    ('Central Line', 'Trap', FALSE);
+    ('Central Line', 'Trap', FALSE),
+    ('South Ridge',  'Trap', TRUE);
 
 -- ── Assign operators to lines ─────────────────────────────────
 INSERT INTO operator_lines (operator_id, line_id) VALUES
@@ -301,6 +303,14 @@ INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VA
     ('CL-03', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644500, 172.477000, FALSE),
     ('CL-04', 'A24',            (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.644800, 172.478000, FALSE),
     ('CL-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'Central Line'), -43.645000, 172.479000, TRUE);
+
+-- South Ridge (retired line — all traps retired)
+INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired) VALUES
+    ('SR-01', 'DOC 200',        (SELECT line_id FROM lines WHERE name = 'South Ridge'), -43.650500, 172.468000, TRUE),
+    ('SR-02', 'Trapinator',     (SELECT line_id FROM lines WHERE name = 'South Ridge'), -43.651000, 172.469000, TRUE),
+    ('SR-03', 'A24',            (SELECT line_id FROM lines WHERE name = 'South Ridge'), -43.651500, 172.470000, TRUE),
+    ('SR-04', 'DOC 150',        (SELECT line_id FROM lines WHERE name = 'South Ridge'), -43.652000, 172.471000, TRUE),
+    ('SR-05', 'Victor',         (SELECT line_id FROM lines WHERE name = 'South Ridge'), -43.652500, 172.472000, TRUE);
 
 -- ── Catch records — 5 per line ────────────────────────────────
 -- Sun's column names: recorded_by_id, species_caught, status, bait_type
