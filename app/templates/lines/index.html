@@ -3,7 +3,7 @@
 {% block title %}Trap Lines{% endblock %}
 {% block content %}
 <div class="container py-4">
-  {% set toggle_retired_label = 'Hide retired lines and traps' if show_retired else 'Show retired lines and traps' %}
+  {% set current_filter = line_filter | default('active') %}
   <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
     <h2 class="mb-0">Trap Lines</h2>
     {% if session.get('role') == 'Admin' %}
@@ -54,7 +54,7 @@
         <div class="lines-list-shell">
           <div class="lines-list-scroll">
             {% for line in lines %}
-              {% set line_detail_url = url_for('line_detail', line_id=line.line_id, show_retired=1 if show_retired else None) %}
+              {% set line_detail_url = url_for('line_detail', line_id=line.line_id, filter=current_filter if current_filter != 'active' else None) %}
               {% call pf_panel(
                 panel_class='js-line-card lines-list-card',
                 body_class='d-flex justify-content-between align-items-center lines-list-card-body',
@@ -125,11 +125,31 @@
     <div class="col-12 col-xl-7">
       {% set map_actions %}
         <div class="d-flex gap-2 align-items-center lines-map-panel-actions">
-          {{ pf_link_button(
-            url_for('lines_index', show_retired=1 if not show_retired else None),
-            toggle_retired_label,
-            variant='btn-sm-outline'
-          ) }}
+          <div class="d-none d-md-flex gap-2 align-items-center">
+            {{ pf_link_button(
+              url_for('lines_index', filter='all'),
+              'All',
+              variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline'
+            ) }}
+            {{ pf_link_button(
+              url_for('lines_index'),
+              'Active',
+              variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline'
+            ) }}
+            {{ pf_link_button(
+              url_for('lines_index', filter='retired'),
+              'Retired',
+              variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline'
+            ) }}
+          </div>
+          <select id="lines-status-filter" class="form-select form-select-sm d-md-none"
+                  data-url-all="{{ url_for('lines_index', filter='all') }}"
+                  data-url-active="{{ url_for('lines_index') }}"
+                  data-url-retired="{{ url_for('lines_index', filter='retired') }}">
+            <option value="all"{{ ' selected' if current_filter == 'all' }}>All lines</option>
+            <option value="active"{{ ' selected' if current_filter == 'active' }}>Active lines</option>
+            <option value="retired"{{ ' selected' if current_filter == 'retired' }}>Retired lines</option>
+          </select>
         </div>
       {% endset %}
       {% call pf_panel(
@@ -143,6 +163,7 @@
                class="lines-overview-map"
                data-linz-api-key="{{ linz_api_key }}"></div>
           <script id="lines-overview-traps-data" type="application/json">{{ map_traps|tojson }}</script>
+          {% if current_filter in ('all', 'retired') %}
           <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
             <span class="d-inline-flex align-items-center gap-1">
               <span class="map-legend-line map-legend-line-retired"></span>
@@ -153,6 +174,7 @@
               Retired trap
             </span>
           </div>
+          {% endif %}
           <p class="text-muted small mb-0 mt-2">Basemap tiles by LINZ Basemaps.</p>
       {% endcall %}
     </div>

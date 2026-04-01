@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const clearFiltersButton = document.getElementById('lines-clear-filters');
   const filterSummary = document.getElementById('lines-filter-summary');
   const emptyFilterState = document.getElementById('lines-empty-filter-state');
+  const statusFilter = document.getElementById('lines-status-filter');
+
+  if (statusFilter) {
+    statusFilter.addEventListener('change', function () {
+      var url = statusFilter.dataset['url' + statusFilter.value.charAt(0).toUpperCase() + statusFilter.value.slice(1)];
+      if (url) window.location.href = url;
+    });
+  }
 
   // Handle line retirement modal
   const retireLineModal = document.getElementById('retire-line-modal')
@@ -167,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const markersElement = document.getElementById('lines-overview-traps-data');
     const traps = markersElement ? JSON.parse(markersElement.textContent) : [];
     const linzApiKey = mapElement.dataset.linzApiKey;
-    const showRetired = new URLSearchParams(window.location.search).get('show_retired') === '1';
+    const lineFilter = new URLSearchParams(window.location.search).get('filter') || 'active';
     const mapMinZoom = 5;
     const mapMaxZoom = 19;
     const tileUrl = `https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=${linzApiKey}`;
@@ -188,7 +196,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const lineId = String(trap.line_id);
       const latLng = [trap.latitude, trap.longitude];
       const isRetiredVisual = Boolean(trap.trap_is_retired);
-      const shouldShowMarker = showRetired || !isRetiredVisual;
+      const shouldShowMarker = lineFilter === 'all'
+        || (lineFilter === 'active' && !isRetiredVisual)
+        || (lineFilter === 'retired' && isRetiredVisual);
 
       if (!linePointsByLine[lineId]) {
         linePointsByLine[lineId] = [];

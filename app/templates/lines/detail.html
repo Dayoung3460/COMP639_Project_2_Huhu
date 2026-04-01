@@ -3,10 +3,10 @@
 {% block title %}{{ line.name if line else 'Line Detail' }}{% endblock %}
 {% block content %}
 <div class="container py-4">
-  {{ pf_link_button(url_for('lines_index', show_retired=1 if show_retired else None), 'Back to Lines', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
+  {{ pf_link_button(url_for('lines_index', filter=line_filter if line_filter != 'active' else None), 'Back to Lines', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
 
   {% if line %}
-    {% set toggle_retired_label = 'Hide retired traps' if show_retired else 'Show retired traps' %}
+    {% set current_filter = line_filter | default('active') %}
     <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
       <div>
         <div class="d-flex align-items-center gap-2">
@@ -15,11 +15,6 @@
         </div>
       </div>
       <div class="d-flex gap-2 align-items-center lines-page-header__actions">
-        {{ pf_link_button(
-          url_for('line_detail', line_id=line.line_id, show_retired=1 if not show_retired else None),
-          toggle_retired_label,
-          variant='btn-sm-outline'
-        ) }}
         {% if session.get('role') == 'Admin' and not line.is_retired %}
           {{ pf_button(
             'Add Trap',
@@ -36,7 +31,36 @@
       </div>
     </div>
 
-    {% call pf_panel(title='Trap Map', meta='View the full line path and each trap location.', panel_class='mb-4') %}
+    {% set map_filter_actions %}
+      <div class="d-flex gap-2 align-items-center lines-map-panel-actions">
+        <div class="d-none d-md-flex gap-2 align-items-center">
+          {{ pf_link_button(
+            url_for('line_detail', line_id=line.line_id, filter='all'),
+            'All',
+            variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline'
+          ) }}
+          {{ pf_link_button(
+            url_for('line_detail', line_id=line.line_id),
+            'Active',
+            variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline'
+          ) }}
+          {{ pf_link_button(
+            url_for('line_detail', line_id=line.line_id, filter='retired'),
+            'Retired',
+            variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline'
+          ) }}
+        </div>
+        <select id="lines-status-filter" class="form-select form-select-sm d-md-none"
+                data-url-all="{{ url_for('line_detail', line_id=line.line_id, filter='all') }}"
+                data-url-active="{{ url_for('line_detail', line_id=line.line_id) }}"
+                data-url-retired="{{ url_for('line_detail', line_id=line.line_id, filter='retired') }}">
+          <option value="all"{{ ' selected' if current_filter == 'all' }}>All traps</option>
+          <option value="active"{{ ' selected' if current_filter == 'active' }}>Active traps</option>
+          <option value="retired"{{ ' selected' if current_filter == 'retired' }}>Retired traps</option>
+        </select>
+      </div>
+    {% endset %}
+    {% call pf_panel(title='Trap Map', meta='', actions_html=map_filter_actions, panel_class='mb-4') %}
         <div id="line-map"
              class="line-map-canvas"
              data-line-id="{{ line.line_id }}"
@@ -49,7 +73,8 @@
     {% endcall %}
 
     <div id="traps-list-container">
-      {% call pf_panel(title='Traps On This Line', meta='Manage active and retired traps for this line.', panel_class='mb-4') %}
+      {% call pf_panel(title='Traps On This Line', meta='', panel_class='mb-4') %}
+        <div class="pf-table-responsive">
         <table class="pf-table">
           <thead>
             <tr>
@@ -98,6 +123,7 @@
             {% endfor %}
           </tbody>
         </table>
+        </div>
       {% endcall %}
     </div>
 

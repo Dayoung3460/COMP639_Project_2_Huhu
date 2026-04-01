@@ -10,7 +10,9 @@ linz_api_key = os.getenv('LINZ_API_KEY', '')
 @role_required()
 def lines_index():
     """Display all active trap lines."""
-    show_retired = request.args.get('show_retired') in ('1', 'true', 'on', 'yes')
+    line_filter = request.args.get('filter', 'active')
+    if line_filter not in ('all', 'active', 'retired'):
+        line_filter = 'active'
 
     with db.get_cursor() as cursor:
         cursor.execute(
@@ -111,10 +113,16 @@ def lines_index():
                     ARRAY[]::int[]
                 ) AS assigned_operator_ids
             FROM lines l
-            WHERE (%s OR l.is_retired = FALSE)
+            WHERE (
+                CASE %s
+                    WHEN 'all' THEN TRUE
+                    WHEN 'retired' THEN l.is_retired = TRUE
+                    ELSE l.is_retired = FALSE
+                END
+            )
             ORDER BY l.is_retired ASC, l.name ASC
             """,
-            (show_retired,)
+            (line_filter,)
         )
         lines = cursor.fetchall()
 
@@ -148,22 +156,34 @@ def lines_index():
                 t.is_retired AS trap_is_retired
             FROM lines l
             LEFT JOIN traps t ON t.line_id = l.line_id
-            WHERE (%s OR l.is_retired = FALSE)
+            WHERE (
+                CASE %s
+                    WHEN 'all' THEN TRUE
+                    WHEN 'retired' THEN l.is_retired = TRUE
+                    ELSE l.is_retired = FALSE
+                END
+            )
               AND t.trap_id IS NOT NULL
               AND t.latitude IS NOT NULL
               AND t.longitude IS NOT NULL
-              AND (%s OR t.is_retired = FALSE)
+              AND (
+                CASE %s
+                    WHEN 'all' THEN TRUE
+                    WHEN 'retired' THEN t.is_retired = TRUE
+                    ELSE t.is_retired = FALSE
+                END
+              )
             ORDER BY l.name ASC, t.code ASC
             """,
-            (show_retired, show_retired)
+            (line_filter, line_filter)
         )
         trap_rows = cursor.fetchall()
 
     map_traps = []
     for trap in trap_rows:
         detail_url = url_for('line_detail', line_id=trap['line_id'])
-        if show_retired:
-            detail_url = f"{detail_url}?show_retired=1"
+        if line_filter != 'active':
+            detail_url = f"{detail_url}?filter={line_filter}"
 
         map_traps.append({
             'line_id': trap['line_id'],
@@ -208,7 +228,7 @@ def lines_index():
     return render_template(
         'lines/index.html',
         lines=lines,
-        show_retired=show_retired,
+        line_filter=line_filter,
         map_traps=map_traps,
         linz_api_key=linz_api_key,
         active_trap_line_ids=active_trap_line_ids,
@@ -222,7 +242,9 @@ def lines_index():
 @role_required()
 def line_detail(line_id):
     """Display a single trap line and all its traps."""
-    show_retired = request.args.get('show_retired') in ('1', 'true', 'on', 'yes')
+    line_filter = request.args.get('filter', 'active')
+    if line_filter not in ('all', 'active', 'retired'):
+        line_filter = 'active'
 
     with db.get_cursor() as cursor:
         cursor.execute(
@@ -247,10 +269,16 @@ def line_detail(line_id):
                     is_retired
                 FROM traps
                 WHERE line_id = %s
-                  AND (%s OR is_retired = FALSE)
+                  AND (
+                    CASE %s
+                        WHEN 'all' THEN TRUE
+                        WHEN 'retired' THEN is_retired = TRUE
+                        ELSE is_retired = FALSE
+                    END
+                  )
                 ORDER BY code ASC
                 """,
-                (line_id, show_retired)
+                (line_id, line_filter)
             )
             traps = cursor.fetchall()
 
@@ -289,7 +317,7 @@ def line_detail(line_id):
         line=line,
         traps=traps,
         operators=operators,
-        show_retired=show_retired,
+        line_filter=line_filter,
         trap_markers=trap_markers,
         linz_api_key=linz_api_key,
         trap_types=trap_types,
