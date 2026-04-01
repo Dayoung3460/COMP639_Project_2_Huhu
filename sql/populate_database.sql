@@ -7,6 +7,18 @@
 -- All passwords are bcrypt hashes of: Password1!
 -- =============================================================
 
+-- ── Clear all existing data (reverse FK order) ──────────────
+-- DELETE FROM password_reset_tokens;
+-- DELETE FROM incidental_observations;
+-- DELETE FROM trap_catches;
+-- DELETE FROM operator_lines;
+-- DELETE FROM traps;
+-- DELETE FROM lines;
+-- DELETE FROM users;
+-- DELETE FROM bait_types;
+-- DELETE FROM trap_statuses;
+-- DELETE FROM species;
+
 -- ── Species (lookup table — VARCHAR PRIMARY KEY) ──────────────
 -- Full list from the project brief
 INSERT INTO species (name) VALUES
