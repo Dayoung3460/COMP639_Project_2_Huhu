@@ -445,7 +445,7 @@ def retire_line(line_id):
     delete_confirm = request.form.get('delete-confirm')
 
     if delete_confirm != 'delete':
-        flash('You must type "delete" to confirm retiring the trap.', 'danger')
+        flash('You must type "delete" to confirm retiring line.', 'danger')
         return redirect(url_for('lines_index'))
 
     with db.get_cursor() as cursor:
