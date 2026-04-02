@@ -186,10 +186,24 @@ def change_password():
 
     return render_template('auth/change_password.html')
 
-
-@app.route('/profile', methods=['GET', 'POST'])
+@app.route('/profile')
 def profile():
-    """View and update the logged-in user's profile."""
+    """View the logged-in user's profile."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT * FROM users WHERE user_id = %s',
+            (session['user_id'],)
+        )
+        user = cursor.fetchone()
+
+    return render_template('auth/profile.html', user=user)
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+def edit_profile():
+    """Edit the logged-in user's profile."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -202,13 +216,14 @@ def profile():
         address         = request.form.get('address', '').strip()
         emergency_name  = request.form.get('emergency_name', '').strip()
         emergency_phone = request.form.get('emergency_phone', '').strip()
+        remove_photo    = request.form.get('remove_photo')
 
         # ── Server-side validation ─────────────────────────────
         if not all([username, first_name, last_name, email]):
             flash('Please fill in all required fields.', 'danger')
-            return redirect(url_for('profile'))
+            return redirect(url_for('edit_profile'))
 
-        # ── Check username/email not already taken by another user ──
+        # ── Check username/email not already taken ──────────────
         with db.get_cursor() as cursor:
             cursor.execute('''
                 SELECT user_id FROM users
@@ -218,7 +233,6 @@ def profile():
             conflict = cursor.fetchone()
 
         if conflict:
-            # Find out which one conflicts
             with db.get_cursor() as cursor:
                 cursor.execute(
                     'SELECT user_id FROM users WHERE username = %s AND user_id != %s',
@@ -228,7 +242,7 @@ def profile():
                     flash('That username is already taken. Please choose a different one.', 'danger')
                 else:
                     flash('That email address is already in use by another account.', 'danger')
-            return redirect(url_for('profile'))
+            return redirect(url_for('edit_profile'))
 
         # ── Handle profile photo upload ────────────────────────
         profile_photo = None
@@ -242,10 +256,12 @@ def profile():
                 profile_photo = filename
             else:
                 flash('Profile photo must be a PNG, JPG, JPEG, or GIF.', 'danger')
-                return redirect(url_for('profile'))
+                return redirect(url_for('edit_profile'))
 
+        # ── Update DB ──────────────────────────────────────────
         with db.get_cursor() as cursor:
             if profile_photo:
+                # New photo uploaded
                 cursor.execute('''
                     UPDATE users
                     SET username = %s, first_name = %s, last_name = %s, email = %s,
@@ -257,7 +273,21 @@ def profile():
                       phone or None, address or None,
                       emergency_name or None, emergency_phone or None,
                       profile_photo, session['user_id']))
+            elif remove_photo:
+                # Remove photo — set to NULL
+                cursor.execute('''
+                    UPDATE users
+                    SET username = %s, first_name = %s, last_name = %s, email = %s,
+                        phone = %s, address = %s,
+                        emergency_contact_name = %s, emergency_contact_phone = %s,
+                        profile_photo = NULL
+                    WHERE user_id = %s
+                ''', (username, first_name, last_name, email,
+                      phone or None, address or None,
+                      emergency_name or None, emergency_phone or None,
+                      session['user_id']))
             else:
+                # No photo change
                 cursor.execute('''
                     UPDATE users
                     SET username = %s, first_name = %s, last_name = %s, email = %s,
@@ -282,7 +312,7 @@ def profile():
         )
         user = cursor.fetchone()
 
-    return render_template('auth/profile.html', user=user)
+    return render_template('auth/edit_profile.html', user=user)
 
 
 @app.route('/forgot-password', methods=['GET', 'POST'])

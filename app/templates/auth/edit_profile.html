@@ -1,0 +1,182 @@
+{# templates/auth/edit_profile.html
+   Route: GET/POST /profile/edit  →  edit_profile()
+   Extends base.html — logged-in users only (sidebar layout).
+#}
+{% extends 'base.html' %}
+{% block title %}Edit Profile{% endblock %}
+
+{% block page_title %}Edit Profile{% endblock %}
+
+{% block header_actions %}
+  <a href="{{ url_for('profile') }}" class="btn-sm-outline">
+    <i class="bi bi-arrow-left me-1"></i>Back to Profile
+  </a>
+{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('edit_profile') }}"
+      enctype="multipart/form-data">
+
+  <div class="row g-3">
+
+
+      <p class="mt-4 mb-0" style="font-size:11px; color:#6b7c72; ">
+        <span class="required-star">*</span> Required fields
+      </p>
+    {# ── Left column ── #}
+    <div class="col-lg-8">
+
+      {# Personal Details #}
+      <div class="panel mb-3">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-person me-2"></i>Personal Details</div>
+        </div>
+        <div class="panel-body">
+          <div class="row g-2">
+            <div class="col-6 field-group">
+              <label class="form-label">First Name <span class="required-star">*</span></label>
+              <input type="text" class="form-control form-control-sm" name="first_name"
+                     value="{{ user.first_name if user else '' }}" required>
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">Last Name <span class="required-star">*</span></label>
+              <input type="text" class="form-control form-control-sm" name="last_name"
+                     value="{{ user.last_name if user else '' }}" required>
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">Username <span class="required-star">*</span></label>
+              <input type="text" class="form-control form-control-sm" name="username"
+                     value="{{ user.username if user else '' }}" required>
+              <div class="form-hint">Must be unique</div>
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">Email <span class="required-star">*</span></label>
+              <input type="email" class="form-control form-control-sm" name="email"
+                     value="{{ user.email if user else '' }}" required>
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">Phone</label>
+              <input type="text" class="form-control form-control-sm" name="phone"
+                     placeholder="e.g. 021 123 4567"
+                     value="{{ user.phone or '' }}">
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">Home Address</label>
+              <input type="text" class="form-control form-control-sm" name="address"
+                     placeholder="e.g. 12 Haslemere Road"
+                     value="{{ user.address or '' }}">
+              <div class="form-hint">Emergency use only</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Emergency Contact #}
+      <div class="panel mb-3">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-heart-pulse me-2"></i>Emergency Contact</div>
+        </div>
+        <div class="panel-body">
+          <div class="row g-2">
+            <div class="col-6 field-group">
+              <label class="form-label">Contact Name</label>
+              <input type="text" class="form-control form-control-sm" name="emergency_name"
+                     placeholder="Full name"
+                     value="{{ user.emergency_contact_name or '' }}">
+            </div>
+            <div class="col-6 field-group">
+              <label class="form-label">Contact Phone</label>
+              <input type="text" class="form-control form-control-sm" name="emergency_phone"
+                     placeholder="Phone number"
+                     value="{{ user.emergency_contact_phone or '' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    {# ── Right column ── #}
+    <div class="col-lg-4">
+
+      {# Profile Photo #}
+      <div class="panel mb-3">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-camera me-2"></i>Profile Photo</div>
+        </div>
+        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; gap:14px;">
+
+          {# Avatar preview #}
+          <div id="photoPreview"
+               style="width:80px; height:80px; border-radius:50%;
+                      background:var(--pf-600); border:3px solid var(--pf-300);
+                      display:flex; align-items:center; justify-content:center;
+                      font-size:24px; color:#fff; font-family:'Cabin',sans-serif;
+                      font-weight:700; flex-shrink:0; overflow:hidden;">
+            {% if user.profile_photo %}
+              <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}"
+                   style="width:100%; height:100%; object-fit:cover;">
+            {% else %}
+              {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
+            {% endif %}
+          </div>
+
+          {# Upload #}
+          <div style="width:100%;">
+            <input type="file" class="form-control form-control-sm" name="profile_photo"
+                   id="photoInput" accept=".png,.jpg,.jpeg,.gif">
+            <div class="form-hint text-center">PNG, JPG, GIF. Leave blank to keep current.</div>
+          </div>
+
+          {# Remove option #}
+          {% if user.profile_photo %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="remove_photo" id="removePhoto">
+            <label class="form-check-label" for="removePhoto"
+                   style="font-size:12px; color:#c0392b;">
+              Remove current photo
+            </label>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+      {# Actions #}
+      <div class="d-flex flex-column gap-2">
+        <button type="submit" class="btn-sm-pf" style="justify-content:center; padding:8px;">
+          <i class="bi bi-check-lg me-1"></i>Save Changes
+        </button>
+        <a href="{{ url_for('profile') }}" class="btn-sm-outline"
+           style="justify-content:center; padding:8px; text-align:center;">
+          Cancel
+        </a>
+        <a href="{{ url_for('change_password') }}" class="btn-sm-outline"
+           style="justify-content:center; padding:8px; text-align:center;">
+          <i class="bi bi-key me-1"></i>Change Password
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const photoInput   = document.getElementById('photoInput');
+  const photoPreview = document.getElementById('photoPreview');
+
+  photoInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      photoPreview.innerHTML =
+        `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
+{% endblock %}
