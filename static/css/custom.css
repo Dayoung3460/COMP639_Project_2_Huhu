@@ -148,6 +148,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border: 1px solid #f0a0a0; padding: 5px 12px;
   border-radius: 6px; font-size: 12px; cursor: pointer;
 }
+.btn-sm-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
 
 .btn-sm-pf-soft {
   background: var(--pf-100); color: var(--pf-700);
