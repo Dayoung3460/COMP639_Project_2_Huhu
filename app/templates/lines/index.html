@@ -160,32 +160,37 @@
 
   <div class="modal fade pop-up-modal" id="retire-line-modal" tabindex="-1">
     <div class="modal-dialog lines-modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Retire line</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
+      <form method="POST" id="modal-line-action">
+        <input type="hidden" name="line_id" id="modal-line-id" value="" />
 
-        <div class="modal-body">
-          <p>Are you sure you want to retire line <strong id="modal-line-name"></strong>?</p>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Retire line</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
 
-          <p id="modal-warning-active" class="lines-modal-warning lines-modal-warning-danger d-none">
-            Warning: This line has active traps. Retiring the line will also mark all its traps as retired.
-          </p>
-          <p id="modal-warning-no-active" class="lines-modal-warning text-muted d-none">
-            This line will be marked as Retired.
-          </p>
-        </div>
+          <div class="modal-body">
+            <p>Are you sure you want to retire line <strong id="modal-line-name"></strong>?</p>
 
-        <div class="modal-footer">
-          {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
-          
-          <form method="POST" id="modal-line-action">
-            <input type="hidden" name="line_id" id="modal-line-id" value="" />
+            <p id="modal-warning-active" class="lines-modal-warning lines-modal-warning-danger d-none">
+              Warning: This line has active traps. Retiring the line will also mark all its traps as retired.
+            </p>
+            <p id="modal-warning-no-active" class="lines-modal-warning text-muted d-none">
+              This line will be marked as Retired.
+            </p>
+
+            <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+              <p class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</p>
+              <input type="text" name="delete-confirm" class="w-100" />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
             {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit') }}
-          </form>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </div>
