@@ -384,13 +384,7 @@ def edit_line(line_id):
 
     if request.method == 'POST':
         
-        name = request.form.get('line_name')
-        type = request.form.get('line_type')
-
-        # Basic validation
-        if not name or not type:
-            flash('Line Name and Line Type are required.', 'danger')
-            return redirect(url_for('edit_line', line_id=line_id))
+        name = request.form.get('line_name').strip()
         
         # Check for unique line name (excluding current line)
         with db.get_cursor() as cursor:
@@ -412,10 +406,10 @@ def edit_line(line_id):
             cursor.execute(
                 """
                 UPDATE lines
-                SET name = %s, type = %s
+                SET name = %s
                 WHERE line_id = %s
                 """,
-                (name, type, line_id)
+                (name, line_id)
             )
 
         flash('Trap line updated.', 'success')
@@ -447,8 +441,12 @@ def edit_line(line_id):
 @role_required('Admin')
 def retire_line(line_id):
     """Retire a trap line (set is_retired = TRUE)."""
-    
     has_active_traps = request.args.get('active_traps') == '1'
+    delete_confirm = request.form.get('delete-confirm')
+
+    if delete_confirm != 'delete':
+        flash('You must type "delete" to confirm retiring line.', 'danger')
+        return redirect(url_for('lines_index'))
 
     with db.get_cursor() as cursor:
         cursor.execute(
@@ -662,6 +660,11 @@ def edit_trap(line_id, trap_id):
 def retire_trap(line_id):
     """Retire an individual trap (set is_retired = TRUE)."""
     trap_id = request.form.get('trap_id')
+    delete_confirm = request.form.get('delete-confirm')
+
+    if delete_confirm != 'delete':
+        flash('You must type "delete" to confirm retiring the trap.', 'danger')
+        return redirect(url_for('line_detail', line_id=line_id))
 
     if request.method == 'POST':
         with db.get_cursor() as cursor:
