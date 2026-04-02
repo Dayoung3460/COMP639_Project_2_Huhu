@@ -123,6 +123,7 @@ def add_catch():
             return render_template('operator/add_catch.html', data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
+            flash('Please fix the errors below before submitting.', 'error')
             lines = fetch_operator_lines(db, session['user_id'])
             return render_template('operator/add_catch.html', errors=errors, data=request.form, lines=lines, lookup=lookup)
         
@@ -164,6 +165,7 @@ def edit_catch(catch_id):
             return render_template('operator/edit_catch.html',catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
+            flash('Please fix the errors below before submitting.', 'error')
             lines = fetch_operator_lines(db, session['user_id'])
             return render_template('operator/edit_catch.html',catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
