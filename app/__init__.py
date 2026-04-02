@@ -146,9 +146,9 @@ def nz_date_filter(date):
 
 @app.template_filter('nz_datetime')
 def nz_datetime_filter(dt):
-    """Formats a datetime as DD/MM/YYYY HH:MM."""
+    """Formats a datetime as DD Mon YYYY HH:MM."""
     if dt:
-        return dt.strftime('%d/%m/%Y %H:%M')
+        return dt.strftime('%d %b %Y %H:%M')
     return ''
 
 # ── Error handlers ────────────────────────────────────────────────────────────

@@ -9,13 +9,11 @@
       <label for="lineName" class="form-label">Line Name</label>
       <input type="text" class="form-control" id="lineName" name="line_name" value="{{ line.name }}" required>
     </div>
-    <div class="mb-3">
-      <label for="lineType" class="form-label">Line Type</label>
-      <input type="text" class="form-control" id="lineType" name="line_type" value="{{ line.type }}" required>
-    </div>
 
-    <a href="{{ url_for('lines_index') }}" class="btn btn-secondary">Cancel</a>
-    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-pf">Save Changes</button>
+      <a href="{{ url_for('lines_index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
   </form>
 </div>
 {% endblock %}

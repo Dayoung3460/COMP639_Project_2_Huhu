@@ -13,6 +13,7 @@ def reports():
     period      = request.args.get('period', '3')
     date_from   = request.args.get('date_from', '')
     date_to     = request.args.get('date_to', '')
+    operator_id = request.args.get('operator_id', '')
     line_status = 'all'
 
     # Handle All Active / All Retired coming through line_id dropdown
@@ -37,6 +38,13 @@ def reports():
         line_sql    = 'AND l.line_id = %s'
         line_params = [line_id]
 
+    # ── Build operator filter ─────────────────────────────────
+    operator_sql    = ''
+    operator_params = []
+    if operator_id:
+        operator_sql    = 'AND tc.recorded_by_id = %s'
+        operator_params = [operator_id]
+
     # ── Build retired status filter ───────────────────────────
     status_filter = ''
     if line_status == 'active':
@@ -51,7 +59,8 @@ def reports():
         'top_species':     '—',
     }
 
-    lines = []
+    lines     = []
+    operators = []
 
     try:
         with db.get_cursor() as cursor:
@@ -64,6 +73,18 @@ def reports():
             )
             lines = cursor.fetchall()
 
+            # All operators who have catch records — for filter dropdown
+            cursor.execute('''
+                SELECT DISTINCT u.user_id, u.first_name, u.last_name
+                FROM users u
+                JOIN trap_catches tc ON tc.recorded_by_id = u.user_id
+                ORDER BY u.first_name, u.last_name
+            ''')
+            operators = cursor.fetchall()
+
+            # Combined params for filtered queries
+            all_params = line_params + operator_params
+
             # Total captures (species != None)
             cursor.execute(f'''
                 SELECT COUNT(*) AS count
@@ -71,8 +92,8 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {status_filter}
-            ''', line_params)
+                {period_sql} {line_sql} {operator_sql} {status_filter}
+            ''', all_params)
             stats['total_captures'] = cursor.fetchone()['count']
 
             # Total records
@@ -81,8 +102,8 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {period_sql} {line_sql} {status_filter}
-            ''', line_params)
+                WHERE 1=1 {period_sql} {line_sql} {operator_sql} {status_filter}
+            ''', all_params)
             stats['total_records'] = cursor.fetchone()['count']
 
             # Active trap %
@@ -106,11 +127,11 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {status_filter}
+                {period_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY tc.species_caught
                 ORDER BY cnt DESC
                 LIMIT 1
-            ''', line_params)
+            ''', all_params)
             row = cursor.fetchone()
             if row:
                 stats['top_species'] = row['species_caught']
@@ -136,6 +157,8 @@ def reports():
     try:
         with db.get_cursor() as cursor:
 
+            all_params = line_params + operator_params
+
             # ── Catch trend — grouped by week ─────────────────
             cursor.execute(f'''
                 SELECT
@@ -145,10 +168,10 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {status_filter}
+                {period_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY DATE_TRUNC('week', tc.date)
                 ORDER BY DATE_TRUNC('week', tc.date)
-            ''', line_params)
+            ''', all_params)
             trend_rows    = cursor.fetchall()
             trend_labels  = [r['week_label'] for r in trend_rows]
             trend_values  = [r['cnt'] for r in trend_rows]
@@ -160,10 +183,10 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {status_filter}
+                {period_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY tc.species_caught
                 ORDER BY cnt DESC
-            ''', line_params)
+            ''', all_params)
             species_rows  = cursor.fetchall()
 
             total_catches = sum(r['cnt'] for r in species_rows)
@@ -196,10 +219,10 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {status_filter}
+                {period_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY l.line_id, l.name, l.is_retired
                 ORDER BY l.is_retired ASC, cnt DESC
-            ''', line_params)
+            ''', all_params)
             line_rows      = cursor.fetchall()
             active_palette = ['#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
                               '#0891b2','#d97706','#059669','#dc2626','#6b7280']
@@ -220,10 +243,10 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {period_sql} {line_sql} {status_filter}
+                WHERE 1=1 {period_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY l.line_id, l.name, l.is_retired, tc.status
                 ORDER BY l.is_retired ASC, l.name, tc.status
-            ''', line_params)
+            ''', all_params)
             status_rows = cursor.fetchall()
 
             seen = {}
@@ -271,9 +294,9 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.trap_condition = 'Needs maintenance'
-                {period_sql} {line_sql} {status_filter}
+                {period_sql} {line_sql} {operator_sql} {status_filter}
                 ORDER BY t.code
-            ''', line_params)
+            ''', all_params)
             maintenance_rows              = cursor.fetchall()
             insights['maintenance_count'] = len(maintenance_rows)
             insights['maintenance_traps'] = [r['code'] for r in maintenance_rows]
@@ -292,10 +315,10 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {line_sql} {status_filter}
+                WHERE 1=1 {line_sql} {operator_sql} {status_filter}
                 ORDER BY tc.date DESC
                 LIMIT 1
-            ''', line_params)
+            ''', line_params + operator_params)
             last = cursor.fetchone()
             if last:
                 insights['last_check_line'] = last['line_name']
@@ -319,10 +342,10 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {line_sql} {status_filter}
+                WHERE 1=1 {line_sql} {operator_sql} {status_filter}
                 ORDER BY tc.date DESC
                 LIMIT 10
-            ''', line_params)
+            ''', line_params + operator_params)
             recent_catches = cursor.fetchall()
 
     except Exception as e:
@@ -331,8 +354,10 @@ def reports():
     return render_template('reports/index.html',
                            stats=stats,
                            lines=lines,
+                           operators=operators,
                            selected_line=line_id,
                            selected_line_status=line_status,
+                           selected_operator=operator_id,
                            selected_period=period,
                            date_from=date_from,
                            date_to=date_to,

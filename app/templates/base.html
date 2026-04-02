@@ -134,6 +134,10 @@
 
     {# ── Sidebar ── #}
     <aside class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar">
+          <i class="bi bi-layout-sidebar-reverse" id="sidebarToggleIcon"></i>
+          <span class="toggle-label" id="sidebarToggleLabel">Collapse</span>
+        </button>
       <div class="sidebar-user">
         <div class="user-avatar">
           {{ (nav_first_name or session.get('username', 'U'))[:2].upper() }}
@@ -250,10 +254,6 @@
           <i class="bi bi-box-arrow-right"></i>
           <span class="link-text">Log Out</span>
         </a>
-        <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar">
-          <i class="bi bi-layout-sidebar-reverse" id="sidebarToggleIcon"></i>
-          <span class="toggle-label" id="sidebarToggleLabel">Collapse</span>
-        </button>
       </div>
     </aside>
     {# End sidebar #}

@@ -2,9 +2,12 @@
 
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
+import os
 from app.utils import role_required, LINE_COLOURS
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
 from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation, validate_lookup_table_values, update_catch_record
+
+linz_api_key = os.getenv('LINZ_API_KEY', '')
 
 
 @app.route('/operator/dashboard')
@@ -120,6 +123,7 @@ def add_catch():
             return render_template('operator/add_catch.html', data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
+            flash('Please fix the errors below before submitting.', 'error')
             lines = fetch_operator_lines(db, session['user_id'])
             return render_template('operator/add_catch.html', errors=errors, data=request.form, lines=lines, lookup=lookup)
         
@@ -161,6 +165,7 @@ def edit_catch(catch_id):
             return render_template('operator/edit_catch.html',catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
+            flash('Please fix the errors below before submitting.', 'error')
             lines = fetch_operator_lines(db, session['user_id'])
             return render_template('operator/edit_catch.html',catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
@@ -234,7 +239,7 @@ def add_observation():
         
         if not pass_check:
             lines = fetch_operator_lines(db, session['user_id'])
-            return render_template('operator/add_observation.html', errors=errors, data=request.form, lines=lines, lookup=lookup)
+            return render_template('operator/add_observation.html', errors=errors, data=request.form, lines=lines, lookup=lookup, linz_api_key=linz_api_key)
         
         insert_observation(db, request.form, session['user_id'])
         flash('Observation recorded successfully.', 'success')
@@ -250,4 +255,4 @@ def add_observation():
         if selected_line_id not in valid_line_ids:
             selected_line_id = ''
         
-        return render_template('operator/add_observation.html', lines=lines, data={'line_id': selected_line_id}, lookup=lookup)
+        return render_template('operator/add_observation.html', lines=lines, data={'line_id': selected_line_id}, lookup=lookup, linz_api_key=linz_api_key)

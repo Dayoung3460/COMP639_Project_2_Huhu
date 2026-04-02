@@ -60,6 +60,12 @@ def validate_bait(rebaited, bait_type, valid_baits):
             
     return bait_error
 
+def validate_bait_details(bait_type, bait_details):
+    """Validate bait details - required when bait type starts with 'Other'."""
+    if bait_type and bait_type.startswith('Other') and not (bait_details and bait_details.strip()):
+        return "Bait details are required when bait type is 'Other'."
+    return ""
+
 def validate_all_catch_record_fields(data, db, operator_id):
     """Validate catch record fields. Fetches lookup data from database internally."""
     pass_check = True
@@ -83,7 +89,8 @@ def validate_all_catch_record_fields(data, db, operator_id):
         'trap_condition': validate_lookup_field(data.get('trap_condition'), lookup['valid_conditions'], 'Trap condition'),
         'strikes': strikes_error,
         'sex': validate_optional_lookup_field(data.get('sex'), lookup['valid_sex'], 'Sex'),
-        'maturity': validate_optional_lookup_field(data.get('maturity'), lookup['valid_maturity'], 'Maturity')
+        'maturity': validate_optional_lookup_field(data.get('maturity'), lookup['valid_maturity'], 'Maturity'),
+        'bait_details': validate_bait_details(data.get('bait_type'), data.get('bait_details'))
     }
 
     # Check if any errors exist

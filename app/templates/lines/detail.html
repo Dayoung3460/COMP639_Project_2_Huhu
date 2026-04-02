@@ -129,26 +129,31 @@
 
     <div class="modal fade pop-up-modal" id="retire-trap-modal" tabindex="-1">
       <div class="modal-dialog lines-modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Retire trap</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
+        <form method="POST" action="{{ url_for('retire_trap', line_id=line.line_id) }}">
+          <input type="hidden" name="trap_id" id="modal-trap-id" value="" />
 
-          <div class="modal-body">
-            <p>Are you sure you want to retire trap <strong id="modal-trap-code"></strong>?</p>
-            <p class="text-muted lines-modal-note">This trap will be marked as Retired.</p>
-          </div>
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Retire trap</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
 
-          <div class="modal-footer">
-            {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
-            
-            <form method="POST" action="{{ url_for('retire_trap', line_id=line.line_id) }}">
-              <input type="hidden" name="trap_id" id="modal-trap-id" value="" />
+            <div class="modal-body">
+              <p>Are you sure you want to retire trap <strong id="modal-trap-code"></strong>?</p>
+              <p class="text-muted lines-modal-note">This trap will be marked as Retired.</p>
+
+              <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+                <p class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</p>
+                <input type="text" name="delete-confirm" class="w-100" />
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
               {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit') }}
-            </form>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
 
