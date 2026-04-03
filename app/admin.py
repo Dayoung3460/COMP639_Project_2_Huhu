@@ -757,11 +757,11 @@ def assign_operators(line_id):
 def manage_species():
     """View and manage the species lookup table."""
     if request.method == 'POST':
-        current_species_name = request.form.get('current-species-name', '').strip()
-        species_name = request.form.get('species-name', '').strip()
+        current_item_name = request.form.get('current-item-name', '').strip()
+        item_name = request.form.get('item-name', '').strip()
         modal_action = request.form.get('modal-action')
 
-        if not species_name:
+        if not item_name:
             flash('Please provide a species name.', 'danger')
             return redirect(url_for('manage_species'))
         
@@ -772,9 +772,9 @@ def manage_species():
                 SELECT name
                 FROM species
                 WHERE name = %s
-                """, (species_name,))
+                """, (item_name,))
             if cursor.fetchone():
-                flash(f'A species named "{species_name}" already exists.', 'danger')
+                flash(f'A species named "{item_name}" already exists.', 'danger')
                 return redirect(url_for('manage_species'))
             
             if modal_action == 'add':
@@ -783,8 +783,8 @@ def manage_species():
                     """
                     INSERT INTO species (name)
                     VALUES (%s)
-                    """, (species_name,))
-                flash(f'Species "{species_name}" added successfully.', 'success')
+                    """, (item_name,))
+                flash(f'Species "{item_name}" added successfully.', 'success')
             elif modal_action == 'edit':
                 # Update the new species
                 cursor.execute(
@@ -792,8 +792,8 @@ def manage_species():
                     UPDATE species
                     SET name = %s
                     WHERE name = %s
-                    """, (species_name, current_species_name))
-                flash(f'Species "{current_species_name}" updated to "{species_name}" successfully.', 'success')
+                    """, (item_name, current_item_name))
+                flash(f'Species "{current_item_name}" updated to "{item_name}" successfully.', 'success')
 
     # get list of species for display
     with db.get_cursor() as cursor:
