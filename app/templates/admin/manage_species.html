@@ -24,7 +24,11 @@
   </div>
 
   <!-- table -->
-  {{ pf_manage_list_table(lists=species_list, nameLabel="Enter a new species name") }}
+  {{ pf_manage_list_table(
+    lists=species_list,
+    nameLabel="Enter a new species name",
+    noEditList=["None", "Unspecified"]
+  ) }}
 
   <!-- modal box -->
   <div class="modal fade pop-up-modal" id="edit-modal" tabindex="-1">
