@@ -221,12 +221,21 @@ def my_records():
     """View all catch records created by the logged-in operator."""
     from app.general import get_catch_records
     records, filters, filter_data = get_catch_records(recorded_by_id=session.get('user_id'))
+
+    # Get trap_id to is_retired mapping for all traps to determine if edit action should be shown
+    with db.get_cursor() as cursor:
+        cursor.execute("SELECT trap_id, is_retired FROM traps")
+        traps = cursor.fetchall()
+
+    trap_map = {t["trap_id"]: t for t in traps}
+
     return render_template(
         'observer/catch_records.html', 
         records=records, 
         selected_filters=filters, 
         filter_data=filter_data,
-        is_my_records=True
+        is_my_records=True,
+        trap_map=trap_map
     )
 
 
