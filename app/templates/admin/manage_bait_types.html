@@ -24,7 +24,11 @@
   </div>
 
   <!-- table -->
-  {{ pf_manage_list_table(lists=bait_types, nameLabel="Enter a new bait type name") }}
+  {{ pf_manage_list_table(
+    lists=bait_types,
+    nameLabel="Enter a new bait type name",
+    noEditList=["None", "Other (please specify)"]
+  ) }}
 
   <!-- modal box -->
   <div class="modal fade pop-up-modal" id="edit-modal" tabindex="-1">

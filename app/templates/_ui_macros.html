@@ -137,7 +137,7 @@
    Manage List tables (e.g. species, statuses, bait types) - reusable table
    ----------------------------- #}
 
-{% macro pf_manage_list_table(lists=[], nameLabel="") -%}
+{% macro pf_manage_list_table(lists=[], nameLabel="", noEditList=[]) -%}
   <div class="card mb-4">
     <div class="card-body">
       <section class="table-container">
@@ -151,28 +151,30 @@
 
           <tbody>
             {% for list in lists %}
-            <tr>
-              <td class="name-column">
-                <p class="mb-0">- {{ list.name }}</p>
-              </td>
+              {% if list.name not in noEditList %}
+                <tr>
+                  <td class="name-column">
+                    <p class="mb-0">- {{ list.name }}</p>
+                  </td>
 
-              <td class="text-end">
-                {{ pf_button(
-                  'Edit',
-                  variant='btn-sm btn-outline-secondary',
-                  attrs={
-                    'data-bs-toggle': 'modal',
-                    'data-bs-target': '#edit-modal',
-                    'data-details': '{
-                      "action": "edit",
-                      "title": "Edit - ' ~ list.name ~ '",
-                      "name": "' ~ list.name ~ '",
-                      "nameLabel": "' ~ nameLabel ~ '"
-                    }'
-                  }
-                ) }}
-              </td>
-            </tr>
+                  <td class="text-end">
+                    {{ pf_button(
+                      'Edit',
+                      variant='btn-sm btn-outline-secondary',
+                      attrs={
+                        'data-bs-toggle': 'modal',
+                        'data-bs-target': '#edit-modal',
+                        'data-details': '{
+                          "action": "edit",
+                          "title": "Edit - ' ~ list.name ~ '",
+                          "name": "' ~ list.name ~ '",
+                          "nameLabel": "' ~ nameLabel ~ '"
+                        }'
+                      }
+                    ) }}
+                  </td>
+                </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>
