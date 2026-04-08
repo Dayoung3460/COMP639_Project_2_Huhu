@@ -33,25 +33,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
   const linzApiKey = mapElement.dataset.linzApiKey;
   const lineIsRetired = mapElement.dataset.lineIsRetired === 'true';
-  const mapMinZoom = 5;
-  const mapMaxZoom = 19;
 
-  const map = L.map('line-map', {
-    minZoom: mapMinZoom,
-    maxZoom: mapMaxZoom
-  });
-  const tileUrl = `https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=${linzApiKey}`;
-
-  L.tileLayer(tileUrl, {
-    minZoom: mapMinZoom,
-    maxZoom: mapMaxZoom,
-    noWrap: true,
-    attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
-  }).addTo(map);
+  const map = createLincolnMap('line-map', linzApiKey);
 
   const lineColor = '#0d6efd';
-  const retiredColor = '#343a40';
-  const retiredFillColor = '#adb5bd';
 
   if (markers.length > 0) {
     const latlngs = [];
@@ -60,28 +45,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const latLng = [trap.latitude, trap.longitude];
       const isRetired = Boolean(trap.is_retired);
 
-      const marker = L.circleMarker(latLng, isRetired
-        ? {
-            radius: 10,
-            color: retiredColor,
-            fillColor: retiredFillColor,
-            fillOpacity: 0.15,
-            weight: 3,
-            bubblingMouseEvents: false
-          }
-        : {
-            radius: 9,
-            color: lineColor,
-            fillColor: lineColor,
-            fillOpacity: 0.9,
-            weight: 1.5,
-            bubblingMouseEvents: false
-          }
-      ).addTo(map);
+      const marker = L.circleMarker(latLng, getTrapMarkerStyle(isRetired, lineColor)).addTo(map);
 
-      const statusBadge = isRetired
-        ? '<span class="trap-status-badge trap-status-retired">Retired</span>'
-        : '<span class="trap-status-badge trap-status-active">Active</span>';
+      const statusBadge = statusBadgeHtml(isRetired);
 
       marker.bindPopup(`<strong>${trap.code}</strong><br>${trap.trap_type}<br>${statusBadge}`);
       latlngs.push(latLng);
@@ -90,18 +56,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (latlngs.length >= 2) {
       const orderedLatLngs = orderPointsByNearestNeighbor(latlngs);
 
-      L.polyline(orderedLatLngs, {
-        color: lineIsRetired ? retiredColor : lineColor,
-        weight: lineIsRetired ? 4 : 3,
-        opacity: lineIsRetired ? 0.95 : 0.8,
-        dashArray: lineIsRetired ? '8 6' : null
-      }).addTo(map);
+      L.polyline(orderedLatLngs, getLinePolylineStyle(lineIsRetired, lineColor)).addTo(map);
     }
 
     map.fitBounds(latlngs, { padding: [30, 30] });
   } else {
     // Fallback: Lincoln University area
-    map.setView([-43.6409, 172.4678], 13);
+    map.setView(MAP_DEFAULT_CENTER, 13);
   }
 
   // ── Inline Add Trap Functionality ──────────────────────────────────────────

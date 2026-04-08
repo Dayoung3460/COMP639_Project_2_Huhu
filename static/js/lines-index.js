@@ -44,15 +44,12 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const mapElement = document.getElementById('lines-overview-map');
-  const defaultCenter = [-43.6409, 172.4678];
   let map = null;
   const lineColors = [
     '#0d6efd', '#6610f2', '#20c997', '#fd7e14', '#d63384', '#198754', '#6f42c1',
     '#dc3545', '#0dcaf0', '#ffc107', '#6c757d', '#1982c4', '#8ac926', '#ff595e',
     '#ff924c', '#9b5de5', '#2ec4b6', '#e71d36', '#3a86ff', '#8338ec'
   ];
-  const retiredColor = '#343a40';
-  const retiredFillColor = '#adb5bd';
   const markersByLine = {};
   const linePointsByLine = {};
   const polylinesByLine = {};
@@ -112,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (visibleLatLngs.length > 0) {
       map.fitBounds(visibleLatLngs, { padding: [30, 30] });
     } else {
-      map.setView(defaultCenter, 13);
+      map.setView(MAP_DEFAULT_CENTER, 13);
     }
   }
 
@@ -176,21 +173,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const traps = markersElement ? JSON.parse(markersElement.textContent) : [];
     const linzApiKey = mapElement.dataset.linzApiKey;
     const lineFilter = new URLSearchParams(window.location.search).get('filter') || 'active';
-    const mapMinZoom = 5;
-    const mapMaxZoom = 19;
-    const tileUrl = `https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=${linzApiKey}`;
 
-    map = L.map('lines-overview-map', {
-      minZoom: mapMinZoom,
-      maxZoom: mapMaxZoom
-    });
-
-    L.tileLayer(tileUrl, {
-      minZoom: mapMinZoom,
-      maxZoom: mapMaxZoom,
-      noWrap: true,
-      attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
-    }).addTo(map);
+    map = createLincolnMap('lines-overview-map', linzApiKey);
 
     traps.forEach(function (trap) {
       const lineId = String(trap.line_id);
@@ -215,31 +199,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!shouldShowMarker) return;
 
       const lineColor = getLineColor(lineId);
-      const marker = L.circleMarker(latLng, isRetiredVisual
-        ? {
-            radius: 10,
-            color: retiredColor,
-            fillColor: retiredFillColor,
-            fillOpacity: 0.15,
-            weight: 3,
-            bubblingMouseEvents: false
-          }
-        : {
-            radius: 9,
-            color: lineColor,
-            fillColor: lineColor,
-            fillOpacity: 0.9,
-            weight: 1.5,
-            bubblingMouseEvents: false
-          }
-      ).addTo(map);
+      const marker = L.circleMarker(latLng, getTrapMarkerStyle(isRetiredVisual, lineColor)).addTo(map);
 
-      const lineStatusBadge = trap.line_is_retired
-        ? '<span class="trap-status-badge trap-status-retired">Retired</span>'
-        : '<span class="trap-status-badge trap-status-active">Active</span>';
-      const trapStatusBadge = trap.trap_is_retired
-        ? '<span class="trap-status-badge trap-status-retired">Retired</span>'
-        : '<span class="trap-status-badge trap-status-active">Active</span>';
+      const lineStatusBadge = statusBadgeHtml(Boolean(trap.line_is_retired));
+      const trapStatusBadge = statusBadgeHtml(Boolean(trap.trap_is_retired));
 
       marker.bindPopup(
         `<div class="mb-1"><strong>Line:</strong> ${trap.line_name} ${lineStatusBadge}</div>` +
@@ -255,18 +218,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (linePoints.length < 2) return;
 
-      polylinesByLine[lineId] = L.polyline(linePoints, {
-        color: lineRetiredById[lineId] ? retiredColor : getLineColor(lineId),
-        weight: lineRetiredById[lineId] ? 4 : 3,
-        opacity: lineRetiredById[lineId] ? 0.95 : 0.8,
-        dashArray: lineRetiredById[lineId] ? '8 6' : null
-      }).addTo(map);
+      polylinesByLine[lineId] = L.polyline(linePoints, getLinePolylineStyle(
+        lineRetiredById[lineId], getLineColor(lineId)
+      )).addTo(map);
     });
 
     if (allLatLngs.length > 0) {
       map.fitBounds(allLatLngs, { padding: [30, 30] });
     } else {
-      map.setView(defaultCenter, 13);
+      map.setView(MAP_DEFAULT_CENTER, 13);
     }
   }
 
