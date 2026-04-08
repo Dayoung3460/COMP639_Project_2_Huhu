@@ -129,13 +129,17 @@
               {% endif %}
             </td>
             <td>{{ r.trap_condition }}</td>
-            {% if is_my_records %}
-            <td>
-              <a href="{{ url_for('edit_catch', catch_id=r.catch_id) }}"
-                class="btn btn-outline-secondary btn-sm">
-                Edit
-              </a>
-            </td>
+            {% if is_my_records and trap_map.get(r.trap_id).is_retired == False %}
+              <td>
+                <a href="{{ url_for('edit_catch', catch_id=r.catch_id) }}"
+                  class="btn btn-outline-secondary btn-sm">
+                  Edit
+                </a>
+              </td>
+            {% else %}
+              <td>
+                <span class="trap-status-badge trap-status-retired">Retired</span>
+              </td>
             {% endif %}
           </tr>
         {% else %}
