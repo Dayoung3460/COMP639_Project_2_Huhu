@@ -1,7 +1,99 @@
 /*
  * static/js/lines-map-utils.js
- * Shared helpers for ordering trap coordinates before drawing line polylines.
+ * Shared helpers for Leaflet maps on trap-line pages.
  */
+
+/* ── Map constants ────────────────────────────────────────────────────────── */
+
+var MAP_MIN_ZOOM = 13;
+var MAP_MAX_ZOOM = 19;
+var MAP_DEFAULT_CENTER = [-43.6409, 172.4678];
+var MAP_RETIRED_COLOR = '#343a40';
+var MAP_RETIRED_FILL = '#adb5bd';
+
+/**
+ * Create a Leaflet map with the LINZ aerial tile layer, bounded to Lincoln.
+ * @param {string} elementId  – DOM id of the map container
+ * @param {string} linzApiKey – LINZ basemap API key
+ * @returns {L.Map}
+ */
+function createLincolnMap(elementId, linzApiKey) {
+  var lincolnBounds = L.latLngBounds(
+    L.latLng(-43.70, 172.40),
+    L.latLng(-43.58, 172.55)
+  );
+
+  var map = L.map(elementId, {
+    minZoom: MAP_MIN_ZOOM,
+    maxZoom: MAP_MAX_ZOOM,
+    maxBounds: lincolnBounds,
+    maxBoundsViscosity: 1.0
+  });
+
+  var tileUrl =
+    'https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=' + linzApiKey;
+
+  L.tileLayer(tileUrl, {
+    minZoom: MAP_MIN_ZOOM,
+    maxZoom: MAP_MAX_ZOOM,
+    noWrap: true,
+    attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
+  }).addTo(map);
+
+  return map;
+}
+
+/**
+ * Return Leaflet circleMarker style options for a trap.
+ * @param {boolean} isRetired
+ * @param {string}  color – base colour for active markers
+ */
+function getTrapMarkerStyle(isRetired, color) {
+  if (isRetired) {
+    return {
+      radius: 10,
+      color: MAP_RETIRED_COLOR,
+      fillColor: MAP_RETIRED_FILL,
+      fillOpacity: 0.15,
+      weight: 3,
+      bubblingMouseEvents: false
+    };
+  }
+  return {
+    radius: 9,
+    color: color,
+    fillColor: color,
+    fillOpacity: 0.9,
+    weight: 1.5,
+    bubblingMouseEvents: false
+  };
+}
+
+/**
+ * Return an HTML status badge string.
+ * @param {boolean} isRetired
+ * @param {string}  [label] – defaults to "Active" / "Retired"
+ */
+function statusBadgeHtml(isRetired, label) {
+  if (isRetired) {
+    return '<span class="trap-status-badge trap-status-retired">' + (label || 'Retired') + '</span>';
+  }
+  return '<span class="trap-status-badge trap-status-active">' + (label || 'Active') + '</span>';
+}
+
+/**
+ * Return polyline style options for a trap line.
+ * @param {boolean} isRetired
+ * @param {string}  color – base colour for active lines
+ */
+function getLinePolylineStyle(isRetired, color) {
+  return {
+    color: isRetired ? MAP_RETIRED_COLOR : color,
+    weight: isRetired ? 4 : 3,
+    opacity: isRetired ? 0.95 : 0.8,
+    dashArray: isRetired ? '8 6' : null
+  };
+}
 
 function getDistanceSquared(pointA, pointB) {
   const latDiff = pointA[0] - pointB[0];
