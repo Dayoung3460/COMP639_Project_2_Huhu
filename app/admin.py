@@ -757,11 +757,11 @@ def assign_operators(line_id):
 def manage_species():
     """View and manage the species lookup table."""
     if request.method == 'POST':
-        current_species_name = request.form.get('current-species-name', '').strip()
-        species_name = request.form.get('species-name', '').strip()
+        current_item_name = request.form.get('current-item-name', '').strip()
+        item_name = request.form.get('item-name', '').strip()
         modal_action = request.form.get('modal-action')
 
-        if not species_name:
+        if not item_name:
             flash('Please provide a species name.', 'danger')
             return redirect(url_for('manage_species'))
         
@@ -772,9 +772,9 @@ def manage_species():
                 SELECT name
                 FROM species
                 WHERE name = %s
-                """, (species_name,))
+                """, (item_name,))
             if cursor.fetchone():
-                flash(f'A species named "{species_name}" already exists.', 'danger')
+                flash(f'A species named "{item_name}" already exists.', 'danger')
                 return redirect(url_for('manage_species'))
             
             if modal_action == 'add':
@@ -783,8 +783,8 @@ def manage_species():
                     """
                     INSERT INTO species (name)
                     VALUES (%s)
-                    """, (species_name,))
-                flash(f'Species "{species_name}" added successfully.', 'success')
+                    """, (item_name,))
+                flash(f'Species "{item_name}" added successfully.', 'success')
             elif modal_action == 'edit':
                 # Update the new species
                 cursor.execute(
@@ -792,8 +792,8 @@ def manage_species():
                     UPDATE species
                     SET name = %s
                     WHERE name = %s
-                    """, (species_name, current_species_name))
-                flash(f'Species "{current_species_name}" updated to "{species_name}" successfully.', 'success')
+                    """, (item_name, current_item_name))
+                flash(f'Species "{current_item_name}" updated to "{item_name}" successfully.', 'success')
 
     # get list of species for display
     with db.get_cursor() as cursor:
@@ -814,11 +814,11 @@ def manage_species():
 def manage_statuses():
     """View and manage the trap status lookup table."""
     if request.method == 'POST':
-        current_status_name = request.form.get('current-status-name', '').strip()
-        status_name = request.form.get('status-name', '').strip()
+        current_item_name = request.form.get('current-item-name', '').strip()
+        item_name = request.form.get('item-name', '').strip()
         modal_action = request.form.get('modal-action')
 
-        if not status_name:
+        if not item_name:
             flash('Please provide a trap status name.', 'danger')
             return redirect(url_for('manage_statuses'))
         
@@ -829,20 +829,19 @@ def manage_statuses():
                 SELECT name
                 FROM trap_statuses
                 WHERE name = %s
-                """, (status_name,))
+                """, (item_name,))
             if cursor.fetchone():
-                flash(f'A trap status named "{status_name}" already exists.', 'danger')
+                flash(f'A trap status named "{item_name}" already exists.', 'danger')
                 return redirect(url_for('manage_statuses'))
             
             if modal_action == 'add':
                 # Insert the new status
-                print(f"Adding new status: {status_name}")
                 cursor.execute(
                     """
                     INSERT INTO trap_statuses (name)
                     VALUES (%s)
-                    """, (status_name,))
-                flash(f'Trap status "{status_name}" added successfully.', 'success')
+                    """, (item_name,))
+                flash(f'Trap status "{item_name}" added successfully.', 'success')
             elif modal_action == 'edit':
                 # Update the new status
                 cursor.execute(
@@ -850,8 +849,8 @@ def manage_statuses():
                     UPDATE trap_statuses
                     SET name = %s
                     WHERE name = %s
-                    """, (status_name, current_status_name))
-                flash(f'Trap status "{current_status_name}" updated to "{status_name}" successfully.', 'success')
+                    """, (item_name, current_item_name))
+                flash(f'Trap status "{current_item_name}" updated to "{item_name}" successfully.', 'success')
 
     # get list of statuses for display
     with db.get_cursor() as cursor:
@@ -863,6 +862,7 @@ def manage_statuses():
             """
         )
         statuses_list = cursor.fetchall()
+        
     return render_template('admin/manage_statuses.html', statuses_list=statuses_list)
 
 
@@ -871,11 +871,11 @@ def manage_statuses():
 def manage_bait_types():
     """View and manage the bait type lookup table."""
     if request.method == 'POST':
-        current_bait_type_name = request.form.get('current-bait-type-name', '').strip()
-        bait_type_name = request.form.get('bait-type-name', '').strip()
+        current_item_name = request.form.get('current-item-name', '').strip()
+        item_name = request.form.get('item-name', '').strip()
         modal_action = request.form.get('modal-action')
         
-        if not bait_type_name:
+        if not item_name:
             flash('Please provide a bait type name.', 'danger')
             return redirect(url_for('manage_bait_types'))
         
@@ -886,9 +886,9 @@ def manage_bait_types():
                 SELECT name
                 FROM bait_types
                 WHERE name = %s
-                """, (bait_type_name,))
+                """, (item_name,))
             if cursor.fetchone():
-                flash(f'A bait type named "{bait_type_name}" already exists.', 'danger')
+                flash(f'A bait type named "{item_name}" already exists.', 'danger')
                 return redirect(url_for('manage_bait_types'))
             
             if modal_action == 'add':
@@ -897,8 +897,8 @@ def manage_bait_types():
                     """
                     INSERT INTO bait_types (name)
                     VALUES (%s)
-                    """, (bait_type_name,))
-                flash(f'Bait type "{bait_type_name}" added successfully.', 'success')
+                    """, (item_name,))
+                flash(f'Bait type "{item_name}" added successfully.', 'success')
             elif modal_action == 'edit':
                 # Update the new bait type
                 cursor.execute(
@@ -906,8 +906,8 @@ def manage_bait_types():
                     UPDATE bait_types
                     SET name = %s
                     WHERE name = %s
-                    """, (bait_type_name, current_bait_type_name))
-                flash(f'Bait type "{current_bait_type_name}" updated to "{bait_type_name}" successfully.', 'success')
+                    """, (item_name, current_item_name))
+                flash(f'Bait type "{current_item_name}" updated to "{item_name}" successfully.', 'success')
 
     # get list of bait types for display
     with db.get_cursor() as cursor:

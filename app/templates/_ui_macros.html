@@ -132,3 +132,53 @@
     <span class="badge-inactive"{{ _attrs(attrs) }}>{{ inactive_text }}</span>
   {% endif %}
 {%- endmacro %}
+
+{# -----------------------------
+   Manage List tables (e.g. species, statuses, bait types) - reusable table
+   ----------------------------- #}
+
+{% macro pf_manage_list_table(lists=[], nameLabel="", noEditList=[]) -%}
+  <div class="card mb-4">
+    <div class="card-body">
+      <section class="table-container">
+        <table class="table table-striped align-middle">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for list in lists %}
+              {% if list.name not in noEditList %}
+                <tr>
+                  <td class="name-column">
+                    <p class="mb-0">- {{ list.name }}</p>
+                  </td>
+
+                  <td class="text-end">
+                    {{ pf_button(
+                      'Edit',
+                      variant='btn-sm btn-outline-secondary',
+                      attrs={
+                        'data-bs-toggle': 'modal',
+                        'data-bs-target': '#edit-modal',
+                        'data-details': '{
+                          "action": "edit",
+                          "title": "Edit - ' ~ list.name ~ '",
+                          "name": "' ~ list.name ~ '",
+                          "nameLabel": "' ~ nameLabel ~ '"
+                        }'
+                      }
+                    ) }}
+                  </td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+{%- endmacro %}

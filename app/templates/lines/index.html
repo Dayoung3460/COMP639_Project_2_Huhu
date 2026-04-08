@@ -182,7 +182,7 @@
 
   <div class="modal fade pop-up-modal" id="retire-line-modal" tabindex="-1">
     <div class="modal-dialog lines-modal-dialog">
-      <form method="POST" id="modal-line-action">
+      <form method="POST" id="modal-line-action" autocomplete="off">
         <input type="hidden" name="line_id" id="modal-line-id" value="" />
 
         <div class="modal-content">
@@ -203,7 +203,7 @@
 
             <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
               <p class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</p>
-              <input type="text" name="delete-confirm" class="w-100" />
+              <input type="text" name="delete-confirm" class="w-100 form-control" required />
             </div>
           </div>
 
@@ -226,4 +226,31 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="{{ url_for('static', filename='js/lines-map-utils.js') }}"></script>
   <script src="{{ url_for('static', filename='js/lines-index.js') }}"></script>
+
+  <script>
+    // fix for Safari's "Back-Forward Cache (BFCache)" which can cause modals to get stuck open with backdrop overlay
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) {
+        // Step 1 — instantly hide modal before reload
+        const modal = document.getElementById('retire-line-modal')
+        if (modal) {
+          // Force hide by manipulating CSS directly
+          // This is faster than Bootstrap's hide() method
+          modal.style.display = 'none'
+          modal.classList.remove('show')
+        }
+        // Remove backdrop
+        document.querySelectorAll('.modal-backdrop').forEach(function(b) {
+          b.remove()
+        })
+        // Clean up body
+        document.body.classList.remove('modal-open')
+        document.body.style.removeProperty('overflow')
+        document.body.style.removeProperty('padding-right')
+
+        // Step 2 — then reload
+        window.location.reload()
+      }
+    })
+  </script>
 {% endblock %}
