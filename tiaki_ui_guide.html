@@ -65,7 +65,44 @@
     .btn-sm-outline { background: transparent; color: var(--pf-700); border: 1px solid var(--pf-400); padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
     .btn-sm-outline:hover { background: var(--pf-100); }
     .btn-sm-danger { background: transparent; color: var(--red); border: 1px solid #f0a0a0; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-sm-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
+    .btn-sm-pf-soft { background: var(--pf-100); color: var(--pf-700); border: 1px solid var(--pf-400); padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-sm-pf-soft:hover { background: var(--pf-200); color: var(--pf-800); text-decoration: none; }
     .btn-sm-amber { background: var(--amber); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer; }
+    .pf-navbar { background: var(--pf-800); padding: 0 24px; height: var(--navbar-h); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .pf-navbar .brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+    .pf-navbar .brand-icon { width: 32px; height: 32px; background: var(--pf-500); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .pf-navbar .brand-name { font-family: 'Cabin', sans-serif; font-size: 17px; font-weight: 700; line-height: 1.1; }
+    .pf-navbar .brand-tagline { font-size: 10px; color: var(--pf-300); letter-spacing: 0.5px; }
+    .pf-navbar .nav-links a { color: var(--pf-200); text-decoration: none; font-size: 13px; margin-left: 20px; padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .pf-navbar .nav-links a:hover { color: #fff; border-bottom-color: var(--pf-400); }
+    .pf-navbar .nav-actions { display: flex; gap: 8px; align-items: center; }
+    .sidebar-demo { width: 220px; background: var(--pf-900); border-radius: 12px; overflow: hidden; font-size: 13px; }
+    .sidebar-demo .sidebar-user { padding: 12px 16px; border-bottom: 1px solid var(--pf-800); display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; background: var(--pf-600); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; font-family: 'Cabin', sans-serif; flex-shrink: 0; }
+    .user-name { font-size: 12px; font-weight: 500; color: var(--pf-100); }
+    .user-role { font-size: 10px; color: var(--pf-400); }
+    .sidebar-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--pf-600); padding: 12px 16px 4px; font-weight: 600; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 8px 16px; color: var(--pf-300); text-decoration: none; font-size: 13px; border-left: 3px solid transparent; transition: all 0.12s; cursor: pointer; }
+    .sidebar-link i { font-size: 15px; width: 18px; }
+    .sidebar-link:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .sidebar-link.active { background: rgba(61,155,103,0.18); border-left-color: var(--pf-500); color: #fff; }
+    .sidebar-link .badge-count { margin-left: auto; background: var(--pf-600); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
+    .sidebar-footer-demo { padding: 12px 16px; border-top: 1px solid var(--pf-800); }
+    .sidebar-footer-demo a { display: flex; align-items: center; gap: 8px; color: var(--pf-400); font-size: 12px; text-decoration: none; padding: 6px 0; }
+    .sidebar-footer-demo a:hover { color: #fff; }
+    .app-layout-demo { display: flex; border: 1px solid var(--pf-200); border-radius: 12px; overflow: hidden; height: 200px; }
+    .content-header-demo { background: #fff; padding: 14px 20px; border-bottom: 1px solid #e4ede8; display: flex; align-items: center; justify-content: space-between; }
+    .content-header-demo .page-title { font-size: 16px; font-weight: 700; color: var(--pf-900); margin: 0; }
+    .content-header-demo .breadcrumb { font-size: 12px; margin: 0; }
+    .content-header-demo .breadcrumb-item + .breadcrumb-item::before { color: #a3b5aa; }
+    .content-header-demo .breadcrumb-item a { color: var(--pf-600); text-decoration: none; }
+    .content-header-demo .breadcrumb-item.active { color: #6b7c72; }
+    .modal-demo { background: #fff; border: 1px solid #e4ede8; border-radius: 12px; overflow: hidden; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+    .modal-demo .modal-header { padding: 14px 20px; border-bottom: 1px solid #e4ede8; display: flex; align-items: center; justify-content: space-between; }
+    .modal-demo .modal-header h5 { font-size: 14px; font-weight: 600; color: var(--pf-900); margin: 0; font-family: 'Cabin', sans-serif; }
+    .modal-demo .modal-body { padding: 16px 20px; font-size: 13px; color: #2d3d33; }
+    .modal-demo .modal-footer { padding: 12px 20px; border-top: 1px solid #e4ede8; display: flex; justify-content: flex-end; gap: 8px; }
     .stat-card { background: #fff; border: 1px solid #e4ede8; border-radius: 12px; padding: 20px; display: flex; align-items: flex-start; gap: 14px; }
     .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
     .stat-icon.green { background: var(--pf-100); color: var(--pf-700); }
@@ -133,6 +170,12 @@
   <a href="#insights">Insights</a>
   <a href="#forms">Forms</a>
   <a href="#profile">Profile</a>
+  <a href="#navbar">Navbar</a>
+  <a href="#sidebar">Sidebar</a>
+  <a href="#layout">Layout</a>
+  <a href="#breadcrumbs">Breadcrumbs</a>
+  <a href="#modals">Modals</a>
+  <a href="#responsive">Responsive</a>
   <a href="#variables">Variables</a>
 </div>
 
@@ -231,7 +274,7 @@ border: 1px solid var(--pf-200);</div>
       <span class="section-num">02</span>
       <h2 class="section-title">Buttons</h2>
     </div>
-    <p class="section-desc">6 button variants. Use Tiaki classes — not Bootstrap's <code>btn-primary</code>. Buttons in page headers use the <code>sm</code> variants.</p>
+    <p class="section-desc">8 button variants. Use Tiaki classes — not Bootstrap's <code>btn-primary</code>. Buttons in page headers use the <code>sm</code> variants. Hover any button below to preview its hover state.</p>
 
     <div class="demo-box">
       <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px;">
@@ -239,6 +282,7 @@ border: 1px solid var(--pf-200);</div>
         <button class="btn-pf-outline">btn-pf-outline</button>
         <button class="btn-sm-pf"><i class="bi bi-plus-lg me-1"></i>btn-sm-pf</button>
         <button class="btn-sm-outline"><i class="bi bi-download me-1"></i>btn-sm-outline</button>
+        <button class="btn-sm-pf-soft">btn-sm-pf-soft</button>
         <button class="btn-sm-danger"><i class="bi bi-trash me-1"></i>btn-sm-danger</button>
         <button class="btn-sm-amber">btn-sm-amber</button>
       </div>
@@ -256,6 +300,7 @@ border: 1px solid var(--pf-200);</div>
         <tr><td><span class="class-pill">btn-pf-full</span></td><td>Full-width submit</td><td>Auth forms</td></tr>
         <tr><td><span class="class-pill">btn-sm-pf</span></td><td>Primary small action</td><td>Page headers</td></tr>
         <tr><td><span class="class-pill">btn-sm-outline</span></td><td>Secondary small action</td><td>Page headers, tables</td></tr>
+        <tr><td><span class="class-pill">btn-sm-pf-soft</span></td><td>Active filter / soft emphasis</td><td>Filter bars, toggle groups</td></tr>
         <tr><td><span class="class-pill">btn-sm-danger</span></td><td>Destructive action</td><td>Tables, modals</td></tr>
         <tr><td><span class="class-pill">btn-sm-amber</span></td><td>Warning action (deactivate etc)</td><td>User management</td></tr>
       </tbody>
@@ -743,10 +788,337 @@ border: 1px solid var(--pf-200);</div>
 
   <hr class="guide-divider">
 
-  <!-- ══ 11. JINJA VARIABLES ══ -->
-  <div class="section" id="variables">
+  <!-- ══ 11. NAVBAR ══ -->
+  <div class="section" id="navbar">
     <div class="section-header">
       <span class="section-num">11</span>
+      <h2 class="section-title">Navbar</h2>
+    </div>
+    <p class="section-desc">The top navigation bar. Uses <span class="class-pill">pf-navbar</span> with brand, nav links, and action buttons. Sticks to the top of the viewport at <code>z-index: 2000</code>.</p>
+
+    <div class="demo-box">
+      <div class="pf-navbar" style="position:relative; border-radius:8px;">
+        <a href="#" class="brand">
+          <div class="brand-icon"><i class="bi bi-tree"></i></div>
+          <div>
+            <div class="brand-name">Tiaki</div>
+            <div class="brand-tagline">Predator Trapping</div>
+          </div>
+        </a>
+        <div class="nav-links" style="display:flex;">
+          <a href="#">Dashboard</a>
+          <a href="#">Lines</a>
+          <a href="#">Reports</a>
+        </div>
+        <div class="nav-actions">
+          <button class="btn-pf-outline" style="font-size:12px; padding:4px 12px;">Sign Out</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;nav class="<span class="hl">pf-navbar</span>"&gt;
+  &lt;a href="/" class="<span class="hl">brand</span>"&gt;
+    &lt;div class="<span class="hl">brand-icon</span>"&gt;&lt;i class="bi bi-tree"&gt;&lt;/i&gt;&lt;/div&gt;
+    &lt;div&gt;
+      &lt;div class="<span class="hl">brand-name</span>"&gt;{{ site_name }}&lt;/div&gt;
+      &lt;div class="<span class="hl">brand-tagline</span>"&gt;{{ site_tagline }}&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/a&gt;
+  &lt;div class="<span class="hl">nav-links</span>"&gt;
+    &lt;a href="..."&gt;Dashboard&lt;/a&gt;
+    &lt;a href="..."&gt;Lines&lt;/a&gt;
+  &lt;/div&gt;
+  &lt;div class="<span class="hl">nav-actions</span>"&gt;
+    &lt;a href="..." class="btn-pf-outline"&gt;Sign Out&lt;/a&gt;
+  &lt;/div&gt;
+&lt;/nav&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 12. SIDEBAR ══ -->
+  <div class="section" id="sidebar">
+    <div class="section-header">
+      <span class="section-num">12</span>
+      <h2 class="section-title">Sidebar</h2>
+    </div>
+    <p class="section-desc">Dashboard sidebar navigation. Uses <span class="class-pill">sidebar</span> with user info, section labels, links, and a footer. Supports a <span class="class-pill">collapsed</span> state that hides text and centres icons.</p>
+
+    <div class="demo-box">
+      <div class="sidebar-demo">
+        <div class="sidebar-user">
+          <div class="user-avatar">JR</div>
+          <div>
+            <div class="user-name">Jeremiah Ruanes</div>
+            <div class="user-role">Operator</div>
+          </div>
+        </div>
+        <div class="sidebar-section-label">Navigation</div>
+        <a href="#" class="sidebar-link active"><i class="bi bi-speedometer2"></i><span class="link-text">Dashboard</span></a>
+        <a href="#" class="sidebar-link"><i class="bi bi-map"></i><span class="link-text">Lines</span><span class="badge-count">3</span></a>
+        <a href="#" class="sidebar-link"><i class="bi bi-bar-chart"></i><span class="link-text">Reports</span></a>
+        <div class="sidebar-section-label">Account</div>
+        <a href="#" class="sidebar-link"><i class="bi bi-person"></i><span class="link-text">Profile</span></a>
+        <div class="sidebar-footer-demo">
+          <a href="#"><i class="bi bi-box-arrow-left"></i><span>Sign Out</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">Key classes</div>
+    <table class="pf-table" style="background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e4ede8;">
+      <thead><tr><th>Class</th><th>Use for</th></tr></thead>
+      <tbody>
+        <tr><td><span class="class-pill">sidebar</span></td><td>Outer container — sticky, full height</td></tr>
+        <tr><td><span class="class-pill">sidebar-user</span></td><td>Avatar + name + role block at top</td></tr>
+        <tr><td><span class="class-pill">sidebar-section-label</span></td><td>Uppercase section divider label</td></tr>
+        <tr><td><span class="class-pill">sidebar-link</span></td><td>Nav item — add <span class="class-pill">active</span> for current page</td></tr>
+        <tr><td><span class="class-pill">sidebar-link .badge-count</span></td><td>Count pill aligned right</td></tr>
+        <tr><td><span class="class-pill">sidebar-footer</span></td><td>Bottom links (sign out, settings)</td></tr>
+        <tr><td><span class="class-pill">sidebar-toggle</span></td><td>Expand/collapse toggle button</td></tr>
+        <tr><td><span class="class-pill">sidebar.collapsed</span></td><td>Collapsed state — hides text, centres icons</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;aside class="<span class="hl">sidebar</span>"&gt;
+  &lt;div class="<span class="hl">sidebar-user</span>"&gt;
+    &lt;div class="<span class="hl">user-avatar</span>"&gt;JR&lt;/div&gt;
+    &lt;div&gt;
+      &lt;div class="<span class="hl">user-name</span>"&gt;{{ nav_full_name }}&lt;/div&gt;
+      &lt;div class="<span class="hl">user-role</span>"&gt;{{ session.role }}&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class="<span class="hl">sidebar-section-label</span>"&gt;Navigation&lt;/div&gt;
+
+  &lt;a href="..." class="<span class="hl">sidebar-link active</span>"&gt;
+    &lt;i class="bi bi-speedometer2"&gt;&lt;/i&gt;
+    &lt;span class="link-text"&gt;Dashboard&lt;/span&gt;
+  &lt;/a&gt;
+
+  &lt;a href="..." class="<span class="hl">sidebar-link</span>"&gt;
+    &lt;i class="bi bi-map"&gt;&lt;/i&gt;
+    &lt;span class="link-text"&gt;Lines&lt;/span&gt;
+    &lt;span class="<span class="hl">badge-count</span>"&gt;3&lt;/span&gt;
+  &lt;/a&gt;
+
+  &lt;div class="<span class="hl">sidebar-footer</span>"&gt;
+    &lt;a href="..."&gt;&lt;i class="bi bi-box-arrow-left"&gt;&lt;/i&gt;&lt;span&gt;Sign Out&lt;/span&gt;&lt;/a&gt;
+  &lt;/div&gt;
+&lt;/aside&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 13. LAYOUT ══ -->
+  <div class="section" id="layout">
+    <div class="section-header">
+      <span class="section-num">13</span>
+      <h2 class="section-title">App layout</h2>
+    </div>
+    <p class="section-desc">The dashboard shell: navbar on top, then a flex row of sidebar + main content. Controlled by <span class="class-pill">app-layout</span>, <span class="class-pill">main-content</span>, <span class="class-pill">content-header</span>, and <span class="class-pill">content-body</span>.</p>
+
+    <div class="demo-box">
+      <div style="border:1px solid var(--pf-200); border-radius:8px; overflow:hidden; font-size:11px;">
+        <div style="background:var(--pf-800); color:#fff; padding:8px 16px; font-weight:600;">pf-navbar (sticky top)</div>
+        <div style="display:flex; min-height:140px;">
+          <div style="width:120px; background:var(--pf-900); color:var(--pf-300); padding:10px; flex-shrink:0;">
+            <div style="font-weight:600; color:var(--pf-400); margin-bottom:6px;">sidebar</div>
+            <div>Links...</div>
+          </div>
+          <div style="flex:1;">
+            <div style="background:#fff; padding:8px 14px; border-bottom:1px solid #e4ede8;">
+              <span style="font-weight:600; color:var(--pf-900);">content-header</span>
+              <span style="color:#6b7c72; margin-left:8px;">breadcrumb / page title</span>
+            </div>
+            <div style="padding:14px; background:#f5f6f4; color:#6b7c72;">
+              content-body (panels, tables, etc.)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">Key classes</div>
+    <table class="pf-table" style="background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e4ede8;">
+      <thead><tr><th>Class</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><span class="class-pill">app-layout</span></td><td>Flex container below navbar — holds sidebar + main</td></tr>
+        <tr><td><span class="class-pill">main-content</span></td><td><code>flex: 1</code> — fills remaining width</td></tr>
+        <tr><td><span class="class-pill">content-header</span></td><td>White bar with page title and breadcrumb</td></tr>
+        <tr><td><span class="class-pill">content-body</span></td><td>Padded area for page content</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box"><span class="cm">&lt;!-- In base template --&gt;</span>
+&lt;nav class="pf-navbar"&gt;...&lt;/nav&gt;
+
+&lt;div class="<span class="hl">app-layout</span>"&gt;
+  &lt;aside class="sidebar"&gt;...&lt;/aside&gt;
+
+  &lt;div class="<span class="hl">main-content</span>"&gt;
+    &lt;div class="<span class="hl">content-header</span>"&gt;
+      &lt;h1 class="<span class="hl">page-title</span>"&gt;Page Title&lt;/h1&gt;
+      &lt;nav class="breadcrumb"&gt;...&lt;/nav&gt;
+    &lt;/div&gt;
+
+    &lt;div class="<span class="hl">content-body</span>"&gt;
+      {% block content %}{% endblock %}
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</div>
+
+    <div class="code-label">CSS variables used</div>
+    <div class="code-box"><span class="cm">/* Layout dimensions — use these, not magic numbers */</span>
+--sidebar-w: 240px;   <span class="cm">/* sidebar width */</span>
+--navbar-h:  58px;     <span class="cm">/* navbar height */</span>
+
+<span class="cm">/* Sidebar height = viewport minus navbar */</span>
+height: calc(100vh - var(--navbar-h));</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 14. BREADCRUMBS ══ -->
+  <div class="section" id="breadcrumbs">
+    <div class="section-header">
+      <span class="section-num">14</span>
+      <h2 class="section-title">Breadcrumbs</h2>
+    </div>
+    <p class="section-desc">Breadcrumbs live inside <span class="class-pill">content-header</span>. Uses Bootstrap's <code>.breadcrumb</code> with Tiaki overrides for colour and separator.</p>
+
+    <div class="demo-box">
+      <div class="content-header-demo" style="border-radius:8px; border:1px solid #e4ede8;">
+        <h1 class="page-title" style="font-size:16px; font-weight:700; color:var(--pf-900); margin:0;">North Line</h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb" style="font-size:12px; margin:0;">
+            <li class="breadcrumb-item"><a href="#" style="color:var(--pf-600); text-decoration:none;">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="#" style="color:var(--pf-600); text-decoration:none;">Lines</a></li>
+            <li class="breadcrumb-item active" style="color:#6b7c72;">North Line</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;div class="<span class="hl">content-header</span>"&gt;
+  &lt;h1 class="<span class="hl">page-title</span>"&gt;{{ line.name }}&lt;/h1&gt;
+  &lt;nav aria-label="breadcrumb"&gt;
+    &lt;ol class="<span class="hl">breadcrumb</span>"&gt;
+      &lt;li class="breadcrumb-item"&gt;&lt;a href="..."&gt;Dashboard&lt;/a&gt;&lt;/li&gt;
+      &lt;li class="breadcrumb-item"&gt;&lt;a href="..."&gt;Lines&lt;/a&gt;&lt;/li&gt;
+      &lt;li class="breadcrumb-item active"&gt;{{ line.name }}&lt;/li&gt;
+    &lt;/ol&gt;
+  &lt;/nav&gt;
+&lt;/div&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 15. MODALS ══ -->
+  <div class="section" id="modals">
+    <div class="section-header">
+      <span class="section-num">15</span>
+      <h2 class="section-title">Modals</h2>
+    </div>
+    <p class="section-desc">Confirmation modals use Bootstrap Modal with <span class="class-pill">pop-up-modal</span> for correct z-index layering above the sidebar. Use <span class="class-pill">btn-sm-outline</span> for Cancel and <span class="class-pill">btn-sm-danger</span> for destructive confirms.</p>
+
+    <div class="demo-box">
+      <div class="modal-demo">
+        <div class="modal-header">
+          <h5>Retire trap</h5>
+        </div>
+        <div class="modal-body">
+          <p style="margin:0 0 4px;">Are you sure you want to retire trap <strong>NL-03</strong>?</p>
+          <p style="font-size:12px; color:#6b7c72; margin:0;">This trap will be marked as Retired.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-sm-outline">Cancel</button>
+          <button class="btn-sm-danger">Yes, retire</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-label">Key rules</div>
+    <table class="pf-table" style="background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e4ede8;">
+      <thead><tr><th>Rule</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td>Z-index</td><td>Add <span class="class-pill">pop-up-modal</span> to the modal so it appears above the sidebar (z-index 2001)</td></tr>
+        <tr><td>Cancel button</td><td>Use <span class="class-pill">btn-sm-outline</span> with <code>data-bs-dismiss="modal"</code></td></tr>
+        <tr><td>Confirm button</td><td>Use <span class="class-pill">btn-sm-danger</span> for destructive actions, <span class="class-pill">btn-sm-pf</span> for safe actions</td></tr>
+        <tr><td>Footer layout</td><td>Right-align buttons with <code>d-flex justify-content-end gap-2</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-label">HTML</div>
+    <div class="code-box">&lt;div class="modal fade <span class="hl">pop-up-modal</span>" id="retire-trap-modal" tabindex="-1"&gt;
+  &lt;div class="modal-dialog"&gt;
+    &lt;div class="modal-content"&gt;
+      &lt;div class="modal-header"&gt;
+        &lt;h5 class="modal-title"&gt;Retire trap&lt;/h5&gt;
+        &lt;button class="btn-close" data-bs-dismiss="modal"&gt;&lt;/button&gt;
+      &lt;/div&gt;
+      &lt;div class="modal-body"&gt;
+        &lt;p&gt;Are you sure you want to retire trap &lt;strong&gt;{{ code }}&lt;/strong&gt;?&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class="modal-footer"&gt;
+        &lt;button class="<span class="hl">btn-sm-outline</span>" data-bs-dismiss="modal"&gt;Cancel&lt;/button&gt;
+        &lt;button type="submit" class="<span class="hl">btn-sm-danger</span>"&gt;Yes, retire&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+<span class="cm">&lt;!-- CSS (already in custom.css) --&gt;</span>
+.modal-backdrop  { z-index: 2000; }
+.modal.pop-up-modal { z-index: 2001; }</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 16. RESPONSIVE ══ -->
+  <div class="section" id="responsive">
+    <div class="section-header">
+      <span class="section-num">16</span>
+      <h2 class="section-title">Responsive breakpoints</h2>
+    </div>
+    <p class="section-desc">Key breakpoints used in <code>custom.css</code>. The sidebar collapses on mobile, page headers stack vertically, and tables get horizontal scroll.</p>
+
+    <div class="demo-box">
+      <table class="pf-table" style="background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e4ede8;">
+        <thead><tr><th>Breakpoint</th><th>What changes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="class-pill">&lt; 768px</span></td><td>Sidebar hidden, page headers stack vertically, action buttons go full width</td></tr>
+          <tr><td><span class="class-pill">&lt; 960px</span></td><td>Group photo reduced height, tighter spacing</td></tr>
+          <tr><td><span class="class-pill">&lt; 576px</span></td><td>Smallest layout — minimal padding, compact cards</td></tr>
+          <tr><td><span class="class-pill">&gt; 1200px</span></td><td>Auth card max-width applied, wider stat card grid</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="code-label">Patterns to follow</div>
+    <div class="code-box"><span class="cm">/* Always wrap tables for mobile scroll */</span>
+&lt;div class="<span class="hl">pf-table-responsive</span>"&gt;
+  &lt;table class="pf-table"&gt;...&lt;/table&gt;
+&lt;/div&gt;
+
+<span class="cm">/* Use d-none/d-md-flex to show/hide elements */</span>
+&lt;div class="<span class="hl">d-none d-md-flex</span>"&gt;Desktop only&lt;/div&gt;
+&lt;select class="<span class="hl">d-md-none</span>"&gt;Mobile only&lt;/select&gt;
+
+<span class="cm">/* Sidebar collapses via JS toggle + .collapsed class */</span>
+&lt;aside class="sidebar <span class="hl">collapsed</span>"&gt;...&lt;/aside&gt;</div>
+  </div>
+
+  <hr class="guide-divider">
+
+  <!-- ══ 17. JINJA VARIABLES ══ -->
+  <div class="section" id="variables">
+    <div class="section-header">
+      <span class="section-num">17</span>
       <h2 class="section-title">Jinja global variables</h2>
     </div>
     <p class="section-desc">Available in every template automatically via the context processor in <code>__init__.py</code>. Never pass these from routes — they're already there.</p>
