@@ -145,7 +145,7 @@ def add_catch():
 
 
 @app.route('/operator/edit-catch/<int:catch_id>', methods=['GET', 'POST'])
-@role_required('Operator')
+@role_required('Operator', 'Admin')
 def edit_catch(catch_id):
     """Edit an existing catch record (own records only)."""
     if request.method == 'POST':
