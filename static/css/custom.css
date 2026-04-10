@@ -96,6 +96,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .pf-navbar .nav-links a:hover { color: #fff; border-bottom-color: var(--pf-400); }
 .pf-navbar .nav-actions { display: flex; gap: 8px; align-items: center; }
+.pf-navbar .btn-pf-outline { color: var(--pf-200); border-color: var(--pf-200); }
 
 /* ═══════════════════════════════════════════════
    Buttons
@@ -550,6 +551,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .hero h1 { font-size: 42px; font-weight: 700; line-height: 1.15; margin-bottom: 16px; }
 .hero p  { font-size: 16px; color: var(--pf-200); max-width: 500px; line-height: 1.7; }
+.hero .btn-pf-outline { color: var(--pf-200); border-color: var(--pf-200); }
 .hero-stats {
   display: flex; gap: 32px; margin-top: 40px; padding-top: 32px;
   border-top: 1px solid rgba(255,255,255,0.1);
