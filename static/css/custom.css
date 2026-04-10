@@ -755,12 +755,19 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .lines-overview-layout {
   align-items: stretch;
-  flex-direction: column-reverse;
+  flex-direction: column;
+}
+
+.lines-map-col {
+  order: -1;
 }
 
 @media (min-width: 1200px) {
   .lines-overview-layout {
     flex-direction: row;
+  }
+  .lines-map-col {
+    order: 0;
   }
 }
 
@@ -1051,6 +1058,12 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
   .lines-list-card__actions .btn {
     width: 100%;
+  }
+
+  .lines-map-panel-shell {
+    position: sticky;
+    top: var(--navbar-h);
+    z-index: 100;
   }
 
   .lines-overview-map,
