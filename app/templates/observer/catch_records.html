@@ -122,8 +122,10 @@
             <td>
               {% set bt = r.bait_type or '—' %}
               {% if bt|length > 20 %}
-                <span class="text-truncate-cell" role="button" data-bs-toggle="modal" data-bs-target="#textDetailModal"
-                      data-full-text="{{ bt }}" title="Click to view full text">{{ bt[:20] }}…</span>
+                <span class="text-truncate-cell">{{ bt[:20] }}</span>
+                <a href="#" class="badge bg-success bg-opacity-10 text-success text-decoration-none ms-1" style="font-size:0.7rem;"
+                   data-bs-toggle="modal" data-bs-target="#textDetailModal"
+                   data-full-text="{{ bt }}" title="Click to view full text"><i class="bi bi-eye me-1"></i>View more</a>
               {% else %}
                 {{ bt }}
               {% endif %}
@@ -158,7 +160,7 @@
 
 {# ── Text detail modal ── #}
 <div class="modal fade" id="textDetailModal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Full Details</h5>
