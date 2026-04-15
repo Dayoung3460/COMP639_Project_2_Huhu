@@ -243,6 +243,7 @@ def lines_index():
 def line_detail(line_id):
     """Display a single trap line and all its traps."""
     line_filter = request.args.get('filter', 'active')
+    source = request.args.get('source')
     if line_filter not in ('all', 'active', 'retired'):
         line_filter = 'active'
 
@@ -318,6 +319,7 @@ def line_detail(line_id):
         traps=traps,
         operators=operators,
         line_filter=line_filter,
+        source=source,
         trap_markers=trap_markers,
         linz_api_key=linz_api_key,
         trap_types=trap_types,

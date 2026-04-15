@@ -3,7 +3,11 @@
 {% block title %}{{ line.name if line else 'Line Detail' }}{% endblock %}
 {% block content %}
 <div class="container py-4">
-  {{ pf_link_button(url_for('lines_index', filter=line_filter if line_filter != 'active' else None), 'Back to Lines', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
+  {% if source == 'my_lines' %}
+    {{ pf_link_button(url_for('my_lines'), 'Back to My Lines', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
+  {% else %}
+    {{ pf_link_button(url_for('lines_index', filter=line_filter if line_filter != 'active' else None), 'Back to Lines', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
+  {% endif %}
 
   {% if line %}
     {% set current_filter = line_filter | default('active') %}

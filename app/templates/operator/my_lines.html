@@ -63,7 +63,7 @@
           // Construct the URL to the line detail page.
           // We use a placeholder '0' and replace it, which is a safe way to
           // use url_for in JavaScript without complex escaping.
-          const url = `{{ url_for('line_detail', line_id=0) }}`.replace('0', lineId);
+          const url = `{{ url_for('line_detail', line_id=0, source='my_lines') }}`.replace('0', lineId);
           window.location.href = url;
         }
       });
