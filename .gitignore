@@ -218,3 +218,7 @@ CLAUDE.md
 run_local.py
 
 .DS_Store
+
+prompt.md
+
+add_retirement_audit.sql
