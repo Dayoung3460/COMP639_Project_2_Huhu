@@ -853,6 +853,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .lines-list-card__actions {
   flex-wrap: wrap;
   justify-content: flex-end;
+  padding-left: 1rem;
 }
 
 .lines-operator-list {
