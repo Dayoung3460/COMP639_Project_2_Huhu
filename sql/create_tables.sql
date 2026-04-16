@@ -122,7 +122,9 @@ CREATE TABLE lines (
     line_id    SERIAL PRIMARY KEY,
     name       VARCHAR(255) NOT NULL UNIQUE,
     type       VARCHAR(255) NOT NULL,
-    is_retired BOOLEAN      NOT NULL DEFAULT FALSE
+    is_retired BOOLEAN      NOT NULL DEFAULT FALSE,
+    retired_at TIMESTAMP    DEFAULT NULL,
+    retired_by INTEGER      DEFAULT NULL REFERENCES users(user_id)
 );
 
 CREATE TABLE traps (
@@ -132,7 +134,9 @@ CREATE TABLE traps (
     line_id    INTEGER        NOT NULL REFERENCES lines(line_id),
     latitude   NUMERIC(9, 6)  NOT NULL,
     longitude  NUMERIC(9, 6)  NOT NULL,
-    is_retired BOOLEAN        NOT NULL DEFAULT FALSE
+    is_retired BOOLEAN        NOT NULL DEFAULT FALSE,
+    retired_at TIMESTAMP      DEFAULT NULL,
+    retired_by INTEGER        DEFAULT NULL REFERENCES users(user_id)
 );
 
 -- Many-to-many: Operators assigned to Lines
