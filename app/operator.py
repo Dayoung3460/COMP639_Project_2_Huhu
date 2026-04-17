@@ -3,7 +3,7 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 import os
-from app.utils import role_required, LINE_COLOURS
+from app.utils import role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE, LINCOLN_NZ_CENTER
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
 from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation, validate_lookup_table_values, update_catch_record
 
@@ -229,7 +229,8 @@ def add_observation():
         
         if not pass_check:
             lines = fetch_operator_lines(db, session['user_id'])
-            return render_template('operator/add_observation.html', errors=errors, data=request.form, lines=lines, lookup=lookup, linz_api_key=linz_api_key)
+            return render_template('operator/add_observation.html', errors=errors, data=request.form, lines=lines, lookup=lookup, linz_api_key=linz_api_key,
+                                   lat_range=LINCOLN_NZ_LAT_RANGE, lon_range=LINCOLN_NZ_LON_RANGE, map_center=LINCOLN_NZ_CENTER)
         
         insert_observation(db, request.form, session['user_id'])
         flash('Observation recorded successfully.', 'success')
@@ -245,4 +246,5 @@ def add_observation():
         if selected_line_id not in valid_line_ids:
             selected_line_id = ''
         
-        return render_template('operator/add_observation.html', lines=lines, data={'line_id': selected_line_id}, lookup=lookup, linz_api_key=linz_api_key)
+        return render_template('operator/add_observation.html', lines=lines, data={'line_id': selected_line_id}, lookup=lookup, linz_api_key=linz_api_key,
+                               lat_range=LINCOLN_NZ_LAT_RANGE, lon_range=LINCOLN_NZ_LON_RANGE, map_center=LINCOLN_NZ_CENTER)

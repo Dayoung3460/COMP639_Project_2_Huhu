@@ -16,7 +16,11 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 LINCOLN_NZ_LAT_RANGE = (-43.6600, -43.6350)
 LINCOLN_NZ_LON_RANGE = (172.4550, 172.4900)
-LINCOLN_NZ_COORDINATES_ERROR = 'Trap coordinates must be within the allowed Lincoln, New Zealand boundary.'
+LINCOLN_NZ_CENTER = (
+    (LINCOLN_NZ_LAT_RANGE[0] + LINCOLN_NZ_LAT_RANGE[1]) / 2,
+    (LINCOLN_NZ_LON_RANGE[0] + LINCOLN_NZ_LON_RANGE[1]) / 2,
+)
+LINCOLN_NZ_COORDINATES_ERROR = 'Coordinates must be within the allowed Lincoln, New Zealand boundary.'
 LINE_COLOURS = [
     '#0d6efd', '#6610f2', '#20c997', '#fd7e14', '#d63384', '#198754', '#6f42c1',
     '#dc3545', '#0dcaf0', '#ffc107', '#6c757d', '#1982c4', '#8ac926', '#ff595e',

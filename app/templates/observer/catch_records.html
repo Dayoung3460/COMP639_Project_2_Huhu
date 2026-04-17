@@ -5,12 +5,12 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">{% if is_my_records %}My Records{% else %}Catch Records{% endif %}</h2>
     {% if records %}
-      <button id="downloadCsvBtn" class="btn btn-pf btn-sm">
+      <button id="downloadCsvBtn" class="btn-sm-pf">
         <i class="bi bi-download me-1"></i>Download CSV
       </button>
     {% else %}
       <span class="d-inline-block" tabindex="0" title="There is no data to download">
-        <button class="btn btn-secondary btn-sm" disabled style="pointer-events: none;">
+        <button class="btn-sm-outline" disabled style="pointer-events: none; opacity: 0.55;">
           <i class="bi bi-download me-1"></i>Download CSV
         </button>
       </span>
@@ -18,8 +18,8 @@
   </div>
 
   {# ── Search & Filters ── #}
-  <div class="card mb-3">
-    <div class="card-body py-2 px-3">
+  <div class="panel">
+    <div class="panel-body py-2 px-3">
       <form method="GET" action="{{ url_for('my_records' if is_my_records else 'catch_records') }}" class="row g-2 align-items-center">
 
         <div class="col-auto d-flex align-items-center">
@@ -83,16 +83,21 @@
         </div>
 
         <div class="col-auto">
-          <a href="{{ url_for('my_records' if is_my_records else 'catch_records') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+          <a href="{{ url_for('my_records' if is_my_records else 'catch_records') }}" class="btn-sm-outline text-decoration-none">Clear Filters</a>
         </div>
       </form>
     </div>
   </div>
 
-  <p class="text-muted small mb-2"><i class="bi bi-arrow-down-up me-1"></i>Click a column header to sort</p>
-
-  <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
-    <table class="table table-striped table-hover pf-table mb-0" id="recordsTable">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">{% if is_my_records %}My Records{% else %}All Catch Records{% endif %}</h3>
+      </div>
+      <span class="panel-meta"><i class="bi bi-arrow-down-up me-1"></i>Click a column header to sort</span>
+    </div>
+    <div class="pf-table-responsive" style="max-height: 60vh; overflow-y: auto;">
+      <table class="pf-table" id="recordsTable">
       <thead class="sticky-top bg-white">
         <tr>
           <th role="button" data-sort-col="0" class="sortable">Trap Code <i class="bi bi-chevron-expand text-muted small"></i></th>
@@ -111,19 +116,33 @@
       <tbody>
         {% for r in records %}
           <tr>
-            <td><strong>{{ r.trap_code }}</strong></td>
+            <td style="font-family:monospace; font-size:12px;"><strong>{{ r.trap_code }}</strong></td>
             <td>{{ r.trap_type }}</td>
-            <td data-sort-value="{{ r.date.strftime('%Y%m%d%H%M') if r.date else '' }}">{{ r.date | nz_datetime }}</td>
+            <td data-sort-value="{{ r.date.strftime('%Y%m%d%H%M') if r.date else '' }}" style="font-size:12px; color:#6b7c72;">{{ r.date | nz_datetime }}</td>
             <td>{{ r.line_name }}</td>
-            <td>{{ r.species_caught }}</td>
-            <td>{{ r.status }}</td>
+            <td>
+              {% if r.species_caught and r.species_caught != 'None' %}
+                <span class="badge-species">{{ r.species_caught }}</span>
+              {% else %}
+                <span class="text-muted">None</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.status and 'Sprung' in r.status %}
+                <span class="badge-status-sprung">{{ r.status }}</span>
+              {% elif r.status == 'Removed' %}
+                <span class="badge-status-removed">{{ r.status }}</span>
+              {% elif r.status %}
+                <span class="badge-status-set">{{ r.status }}</span>
+              {% endif %}
+            </td>
             <td>{{ r.strikes }}</td>
             <td>{{ r.rebaited }}</td>
             <td>
               {% set bt = r.bait_type or '—' %}
               {% if bt|length > 20 %}
                 <span class="text-truncate-cell">{{ bt[:20] }}</span>
-                <a href="#" class="badge bg-success bg-opacity-10 text-success text-decoration-none ms-1" style="font-size:0.7rem;"
+                <a href="#" class="btn-sm-pf-soft ms-1" style="font-size:11px; padding:2px 8px;"
                    data-bs-toggle="modal" data-bs-target="#textDetailModal"
                    data-full-text="{{ bt }}" title="Click to view full text"><i class="bi bi-eye me-1"></i>View more</a>
               {% else %}
@@ -134,8 +153,7 @@
             {% if is_my_records %}
               {% if trap_map and trap_map.get(r.trap_id).is_retired == False %}
                 <td>
-                  <a href="{{ url_for('edit_catch', catch_id=r.catch_id) }}"
-                    class="btn btn-outline-secondary btn-sm">
+                  <a href="{{ url_for('edit_catch', catch_id=r.catch_id) }}" class="btn-sm-outline">
                     Edit
                   </a>
                 </td>
@@ -148,13 +166,14 @@
           </tr>
         {% else %}
           <tr>
-            <td colspan="{% if is_my_records %}11{% else %}10{% endif %}" class="text-center text-muted py-3">
+            <td colspan="{% if is_my_records %}11{% else %}10{% endif %}" style="text-align:center; padding:30px; color:#6b7c72;">
               No records found.
             </td>
           </tr>
         {% endfor %}
       </tbody>
-    </table>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -197,7 +216,16 @@
 </script>
 
 <script>
-// ── Search ──────────────────────────────────────────────────────────────
+// ── Cap date filters at today ───────────────────────────────────────────────
+(function() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateFrom = document.getElementById('date_from');
+  const dateTo = document.getElementById('date_to');
+  if (dateFrom) dateFrom.max = today;
+  if (dateTo) dateTo.max = today;
+})();
+
+// ── Search ─────────────────────────────────────────────────────────────────────
 document.getElementById('trapCodeSearch').addEventListener('input', function() {
   const searchTerm = this.value.toLowerCase().trim();
   const rows = document.querySelectorAll('#recordsTable tbody tr');
