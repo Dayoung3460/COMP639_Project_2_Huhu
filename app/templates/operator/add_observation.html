@@ -8,9 +8,22 @@
     <!-- Form (Left) -->
     <div class="col-lg-5">
       <form id="observation-form" method="POST" action="{{ url_for('add_observation') }}" novalidate>
+        {% if errors and errors.values() | select | list %}
+          <div class="notice amber mb-3">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+              <strong>Please fix the following:</strong>
+              <ul class="mb-0 ps-3 mt-1">
+                {% for field, msg in errors.items() if msg %}
+                  <li>{{ msg }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
         <div class="mb-3">
           <label class="form-label">Line <span class="text-danger">*</span></label>
-          <select name="line_id" id="lineSelect" class="form-select {% if errors and errors.get('line_id') %}is-invalid{% endif %}" required>
+          <select name="line_id" id="lineSelect" class="form-select" required>
             <option value="">— select line —</option>
             {% for line in lines %}
             <option value="{{ line.line_id }}" {% if data and data.get('line_id')|string == line.line_id|string %}selected{% endif %}>
@@ -18,11 +31,10 @@
             </option>
             {% endfor %}
           </select>
-          {% if errors and errors.get('line_id') %}<div class="text-danger small">{{ errors.get('line_id') }}</div>{% endif %}
         </div>
         <div class="mb-3">
           <label class="form-label">Trap</label>
-          <select name="trap_id" id="trapSelect" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}">
+          <select name="trap_id" id="trapSelect" class="form-select">
             <option value="">— optional —</option>
             {% for line in lines %}
               {% for trap in line.traps %}
@@ -34,36 +46,33 @@
               {% endfor %}
             {% endfor %}
           </select>
-          {% if errors and errors.get('trap_id') %}<div class="text-danger small">{{ errors.get('trap_id') }}</div>{% endif %}
         </div>
         <div class="mb-3">
           <label class="form-label">Date &amp; Time <span class="text-danger">*</span></label>
-          <input type="datetime-local" class="form-control {% if errors and errors.get('date') %}is-invalid{% endif %}" name="date" 
+          <input type="datetime-local" class="form-control" name="date"
                  value="{{ data.get('date', '') if data else '' }}" required>
-          {% if errors and errors.get('date') %}<div class="text-danger small">{{ errors.get('date') }}</div>{% endif %}
         </div>
         <div class="mb-3">
           <label class="form-label">Observation Type <span class="text-danger">*</span></label>
-          <select name="observation_type" class="form-select {% if errors and errors.get('observation_type') %}is-invalid{% endif %}" required>
+          <select name="observation_type" class="form-select" required>
             <option value="">— select —</option>
             {% for obs_type in lookup.valid_observation_types %}
               <option value="{{ obs_type }}" {% if data and data.get('observation_type') == obs_type %}selected{% endif %}>{{ obs_type }}</option>
             {% endfor %}
           </select>
-          {% if errors and errors.get('observation_type') %}<div class="text-danger small">{{ errors.get('observation_type') }}</div>{% endif %}
         </div>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label">Latitude</label>
-            <input type="text" id="obs-lat" class="form-control {% if errors and errors.get('latitude') %}is-invalid{% endif %}" 
+            <input type="text" id="obs-lat" class="form-control"
                    name="latitude" inputmode="decimal" value="{{ data.get('latitude', '') if data else '' }}" placeholder="e.g. -43.640914">
-            {% if errors and errors.get('latitude') %}<div class="text-danger small">{{ errors.get('latitude') }}</div>{% endif %}
+            {% if lat_range %}<div class="form-text">Allowed Lincoln boundary: {{ lat_range[0] }} to {{ lat_range[1] }}</div>{% endif %}
           </div>
           <div class="col-md-6">
             <label class="form-label">Longitude</label>
-            <input type="text" id="obs-lng" class="form-control {% if errors and errors.get('longitude') %}is-invalid{% endif %}" 
+            <input type="text" id="obs-lng" class="form-control"
                    name="longitude" inputmode="decimal" value="{{ data.get('longitude', '') if data else '' }}" placeholder="e.g. 172.475682">
-            {% if errors and errors.get('longitude') %}<div class="text-danger small">{{ errors.get('longitude') }}</div>{% endif %}
+            {% if lon_range %}<div class="form-text">Allowed Lincoln boundary: {{ lon_range[0] }} to {{ lon_range[1] }}</div>{% endif %}
           </div>
         </div>
         <p class="text-muted small mb-3"><i class="bi bi-geo-alt-fill"></i> Click on the map to set coordinates, or type them in.</p>
@@ -84,7 +93,10 @@
       <div class="card shadow-sm">
         <div class="card-body p-2">
           <div id="observation-map" style="height: 520px; border-radius: 6px;"
-               data-linz-api-key="{{ linz_api_key }}"></div>
+               data-linz-api-key="{{ linz_api_key }}"
+               {% if map_center %}data-center-lat="{{ map_center[0] }}" data-center-lng="{{ map_center[1] }}"{% endif %}
+               {% if lat_range %}data-lat-min="{{ lat_range[0] }}" data-lat-max="{{ lat_range[1] }}"{% endif %}
+               {% if lon_range %}data-lng-min="{{ lon_range[0] }}" data-lng-max="{{ lon_range[1] }}"{% endif %}></div>
           <p class="text-muted small mb-0 mt-2">Click the map to set observation location. Basemap tiles by LINZ.</p>
         </div>
       </div>
@@ -119,6 +131,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="{{ url_for('static', filename='js/coordinate-input.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/lines-map-utils.js') }}"></script>
   <script src="{{ url_for('static', filename='js/observation-map.js') }}"></script>
   <script>
     document.getElementById('confirm-save-btn').addEventListener('click', function () {

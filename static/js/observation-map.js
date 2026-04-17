@@ -10,25 +10,17 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!mapElement || typeof L === 'undefined') return;
 
   const linzApiKey = mapElement.dataset.linzApiKey;
-  const mapMinZoom = 5;
-  const mapMaxZoom = 19;
 
-  // ── Initialise map (same pattern as lines-detail.js) ────────────────────
-  const map = L.map('observation-map', {
-    minZoom: mapMinZoom,
-    maxZoom: mapMaxZoom
-  });
+  // ── Initialise bounded Lincoln map (shared with trap line pages) ────────
+  const map = createLincolnMap('observation-map', linzApiKey);
 
-  const tileUrl = `https://basemaps.linz.govt.nz/v1/tiles/aerial/WebMercatorQuad/{z}/{x}/{y}.webp?api=${linzApiKey}`;
-  L.tileLayer(tileUrl, {
-    minZoom: mapMinZoom,
-    maxZoom: mapMaxZoom,
-    noWrap: true,
-    attribution: '&copy; <a href="https://www.linz.govt.nz/">LINZ</a>'
-  }).addTo(map);
-
-  // Default view: Lincoln University area
-  map.setView([-43.6409, 172.4678], 13);
+  // Default view: Lincoln University area (or server-provided center)
+  const centerLat = parseFloat(mapElement.dataset.centerLat);
+  const centerLng = parseFloat(mapElement.dataset.centerLng);
+  const defaultCenter = (!isNaN(centerLat) && !isNaN(centerLng))
+    ? [centerLat, centerLng]
+    : MAP_DEFAULT_CENTER;
+  map.setView(defaultCenter, 14);
 
   // ── References ──────────────────────────────────────────────────────────
   const latInput = document.getElementById('obs-lat');
@@ -71,12 +63,35 @@ document.addEventListener('DOMContentLoaded', function () {
     setMarker(lat, lng);
   });
 
-  // ── Lat/Lng input change → update marker ────────────────────────────────
+  // ── Lat/Lng input change → update marker (or re-center if invalid) ──────
+  const latMin = parseFloat(mapElement.dataset.latMin);
+  const latMax = parseFloat(mapElement.dataset.latMax);
+  const lngMin = parseFloat(mapElement.dataset.lngMin);
+  const lngMax = parseFloat(mapElement.dataset.lngMax);
+  const hasAllowedRange = ![latMin, latMax, lngMin, lngMax].some(isNaN);
+
+  function isWithinAllowedRange(lat, lng) {
+    if (isNaN(lat) || isNaN(lng)) return false;
+    if (!hasAllowedRange) return true;
+    return lat >= latMin && lat <= latMax && lng >= lngMin && lng <= lngMax;
+  }
+
   function onCoordinateInput() {
-    const lat = parseFloat(latInput.value);
-    const lng = parseFloat(lngInput.value);
-    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+    const latRaw = latInput ? latInput.value.trim() : '';
+    const lngRaw = lngInput ? lngInput.value.trim() : '';
+    if (!latRaw && !lngRaw) {
+      clearMarker();
+      map.setView(defaultCenter, 14);
+      return;
+    }
+    const lat = parseFloat(latRaw);
+    const lng = parseFloat(lngRaw);
+    if (isWithinAllowedRange(lat, lng)) {
       setMarker(lat, lng);
+    } else {
+      // Out of Lincoln boundary — drop marker and recenter to Lincoln.
+      clearMarker();
+      map.setView(defaultCenter, 14);
     }
   }
 
@@ -119,12 +134,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // ── If lat/lng already have values on load, show marker ─────────────────
+  // ── If lat/lng already have values on load, show marker (or recenter) ───
   if (latInput && lngInput && latInput.value && lngInput.value) {
     const lat = parseFloat(latInput.value);
     const lng = parseFloat(lngInput.value);
-    if (!isNaN(lat) && !isNaN(lng)) {
+    if (isWithinAllowedRange(lat, lng)) {
       setMarker(lat, lng);
+    } else {
+      map.setView(defaultCenter, 14);
     }
   }
 });

@@ -1,5 +1,6 @@
 from datetime import datetime
 from app.helpers.dbHelper import fetch_lookup_data, fetch_operator_trap_ids, fetch_operator_line_ids
+from app.utils import LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE
 
 ################# validate catch data #################
 def validate_trap_id(trap_id, valid_trap_ids):
@@ -120,23 +121,29 @@ def validate_coordinates(latitude, longitude):
     if latitude:
         try:
             lat = float(latitude)
-            if lat < -90 or lat > 90:
-                lat_error = "Latitude must be between -90 and 90."
+            if not (LINCOLN_NZ_LAT_RANGE[0] <= lat <= LINCOLN_NZ_LAT_RANGE[1]):
+                lat_error = (
+                    f"Latitude must be within Lincoln, NZ boundary "
+                    f"({LINCOLN_NZ_LAT_RANGE[0]} to {LINCOLN_NZ_LAT_RANGE[1]})."
+                )
         except ValueError:
             lat_error = "Invalid latitude value."
-    
+
     if longitude:
         try:
             lon = float(longitude)
-            if lon < -180 or lon > 180:
-                lon_error = "Longitude must be between -180 and 180."
+            if not (LINCOLN_NZ_LON_RANGE[0] <= lon <= LINCOLN_NZ_LON_RANGE[1]):
+                lon_error = (
+                    f"Longitude must be within Lincoln, NZ boundary "
+                    f"({LINCOLN_NZ_LON_RANGE[0]} to {LINCOLN_NZ_LON_RANGE[1]})."
+                )
         except ValueError:
             lon_error = "Invalid longitude value."
-    
+
     # If one is provided, both should be provided
     if (latitude and not longitude) or (longitude and not latitude):
         return "Both latitude and longitude are required if either is provided.", ""
-    
+
     return lat_error, lon_error
 
 def validate_line_id(line_id, valid_line_ids):
