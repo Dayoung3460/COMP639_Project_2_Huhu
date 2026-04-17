@@ -6,11 +6,11 @@
   {% set current_filter = line_filter | default('active') %}
   <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
     <h2 class="mb-0">Trap Lines</h2>
-    {% if session.get('role') == 'Admin' %}
-      <div class="d-flex gap-2 align-items-center lines-page-header__actions">
+    <div class="d-flex gap-2 align-items-center lines-page-header__actions">
+      {% if session.get('role') == 'Admin' %}
         {{ pf_link_button(url_for('new_line'), 'New Line', variant='btn-sm-pf', icon='bi-plus-lg') }}
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
 
   {% if lines %}
@@ -28,11 +28,16 @@
           </div>
         </div>
         <div class="col-sm-8 col-lg-3">
-          <label for="lines-operator-filter" class="form-label mb-1">Assigned operator</label>
+          <label for="lines-operator-filter" class="form-label mb-1">
+            Assigned operator
+            <span id="operator-me-badge" class="badge-role-operator ms-1 {% if not (operator_filter and session.username in operator_filter) %}d-none{% endif %}">Me</span>
+          </label>
           <select id="lines-operator-filter" class="form-select">
             <option value="">All operators</option>
             {% for operator_name in available_operators %}
-              <option value="{{ operator_name }}">{{ operator_name }}</option>
+              <option value="{{ operator_name }}" {% if operator_filter and operator_filter in operator_name %}selected{% endif %}>
+                {{ operator_name }}{% if session.username in operator_name %} (Me){% endif %}
+              </option>
             {% endfor %}
           </select>
         </div>
@@ -229,6 +234,23 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="{{ url_for('static', filename='js/lines-map-utils.js') }}"></script>
   <script src="{{ url_for('static', filename='js/lines-index.js') }}"></script>
+
+  <script>
+    // If the operator filter was set via URL, trigger the change event and flash the dropdown
+    document.addEventListener('DOMContentLoaded', function() {
+      const operatorFilter = document.getElementById('lines-operator-filter');
+      if (operatorFilter && operatorFilter.value) {
+        // Trigger the change event to update the list/map
+        operatorFilter.dispatchEvent(new Event('change'));
+
+        // Add a flash effect to highlight the filter
+        operatorFilter.classList.add('pf-flash-highlight');
+        operatorFilter.addEventListener('animationend', () => {
+          operatorFilter.classList.remove('pf-flash-highlight');
+        }, { once: true });
+      }
+    });
+  </script>
 
   <script>
     // fix for Safari's "Back-Forward Cache (BFCache)" which can cause modals to get stuck open with backdrop overlay

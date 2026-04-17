@@ -1125,6 +1125,20 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .modal { z-index: 2001; }
 .modal.pop-up-modal { z-index: 2001; }
 
+/* ── Flash highlight for filters ──────────────────────── */
+.pf-flash-highlight {
+  animation: pf-flash-highlight-anim 1.5s ease-out;
+}
+
+@keyframes pf-flash-highlight-anim {
+  from {
+    background-color: var(--pf-400);
+  }
+  to {
+    background-color: rgba(255,255,255,0.84);
+  }
+}
+
 /* ═══════════════════════════════════════════════
    bait-types page - make table header sticky
    ═══════════════════════════════════════════════ */

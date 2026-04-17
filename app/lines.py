@@ -11,6 +11,7 @@ linz_api_key = os.getenv('LINZ_API_KEY', '')
 def lines_index():
     """Display all active trap lines."""
     line_filter = request.args.get('filter', 'active')
+    operator_filter = request.args.get('operator')
     if line_filter not in ('all', 'active', 'retired'):
         line_filter = 'active'
 
@@ -232,6 +233,7 @@ def lines_index():
         'lines/index.html',
         lines=lines,
         line_filter=line_filter,
+        operator_filter=operator_filter,
         map_traps=map_traps,
         linz_api_key=linz_api_key,
         active_trap_line_ids=active_trap_line_ids,
