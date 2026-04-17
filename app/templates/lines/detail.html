@@ -27,7 +27,7 @@
             icon='bi-plus-lg',
             attrs={
               'id': 'inline-add-trap-btn',
-              'data-trap-types': trap_types | tojson,
+              'data-trap-types': trap_types | tojson | forceescape,
               'data-new-trap-url': url_for('new_trap', line_id=line.line_id)
             }
           ) }}

@@ -80,7 +80,17 @@ document.addEventListener('DOMContentLoaded', function () {
       // Extract line ID and trap types (fallback to a default list if not provided)
       const lineId = mapElement.dataset.lineId || '0';
       const newTrapUrl = addTrapBtn.dataset.newTrapUrl || '#';
-      let trapTypes = ['SA200', 'SA250', 'DOC150', 'DOC200', 'DOC250', 'Timms', 'Live Capture', 'Goodnature A24', 'Other'];
+      let trapTypes = [
+        'A24',
+        'DOC 150',
+        'DOC 200',
+        'DOC 250',
+        'Flipping Timmy',
+        'Rat trap',
+        'T-Rex Rat Trap',
+        'Trapinator',
+        'Victor'
+      ];
       if (addTrapBtn.dataset.trapTypes) {
         try { trapTypes = JSON.parse(addTrapBtn.dataset.trapTypes); } catch (e) {}
       }
