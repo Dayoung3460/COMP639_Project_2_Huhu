@@ -209,7 +209,7 @@ def admin_user_detail(user_id):
         user = cursor.fetchone()
 
     if not user:
-        flash('User not found', 'danger')
+        flash('<i class="bi bi-exclamation-triangle"></i> User not found', 'danger')
         return redirect(url_for('admin_users'))
 
     # Handle optional data defaults (display "None provided" for missing text fields)
@@ -269,33 +269,22 @@ def toggle_active(user_id):
     """Activate or deactivate a user account."""
     # Prevent admin from deactivating themselves
     if user_id == session.get('user_id'):
-        flash('You cannot deactivate your own account.', 'danger')
+        flash('<i class="bi bi-exclamation-triangle"></i> You cannot deactivate your own account.', 'danger')
         return redirect(url_for('admin_users'))
     
     with db.get_cursor() as cursor:
         cursor.execute("SELECT account_status FROM users WHERE user_id = %s", (user_id,))
         user = cursor.fetchone()
         if not user:
-            flash('User not found.', 'danger')
+            flash('<i class="bi bi-exclamation-triangle"></i> User not found.', 'danger')
             return redirect(url_for('admin_users'))
         
         # Toggle between 'active' and 'inactive'
         new_status = 'inactive' if user['account_status'] == 'active' else 'active'
         update_user_active(db, user_id, new_status)
     
-    flash(f'User account {"activated" if new_status == "active" else "deactivated"}.', 'success')
+    flash(f'<i class="bi bi-check-circle"></i> User account {"activated" if new_status == "active" else "deactivated"}.', 'success')
     return redirect(url_for('admin_users'))
-
-
-@app.route('/admin/users/<int:user_id>/change-role', methods=['POST'])
-@role_required('Admin')
-def change_role(user_id):
-    """Change a user's role. Admin cannot change their own role."""
-    # TODO: get new_role from form
-    # TODO: prevent changing own role
-    # TODO: UPDATE role_id
-    flash('User role updated.', 'success')
-    return redirect(url_for('admin_user_detail', user_id=user_id))
 
 
 @app.route('/admin/users/<int:user_id>/edit-role', methods=['GET', 'POST'])
@@ -304,12 +293,12 @@ def edit_role(user_id):
     """Edit a user's role."""
     # Prevent admin from changing their own role
     if user_id == session.get('user_id'):
-        flash('You cannot change your own role.', 'danger')
+        flash('<i class="bi bi-exclamation-triangle"></i> You cannot change your own role.', 'danger')
         return redirect(url_for('admin_users'))
     
     user = fetch_user_info(db, user_id)
     if not user:
-        flash('User not found.', 'danger')
+        flash('<i class="bi bi-exclamation-triangle"></i> User not found.', 'danger')
         return redirect(url_for('admin_users'))
     
     lookup = fetch_lookup_data(db)
@@ -317,11 +306,11 @@ def edit_role(user_id):
     if request.method == 'POST':
         new_role = request.form.get('role')
         if new_role not in lookup['valid_roles']:
-            flash('Invalid role selected.', 'danger')
+            flash('<i class="bi bi-exclamation-triangle"></i> Invalid role selected.', 'danger')
             return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
         
         update_user_role(db, user_id, new_role)
-        flash(f'Role updated to "{new_role}" for {user["first_name"]} {user["last_name"]}.', 'success')
+        flash(f'<i class="bi bi-check-circle"></i> Role updated to "{new_role}" for {user["first_name"]} {user["last_name"]}.', 'success')
         return redirect(url_for('admin_users'))
     
     return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
@@ -333,7 +322,7 @@ def update_user_notes(user_id):
     notes = request.form.get('notes', '').strip()
     
     if len(notes) > 2000:
-        flash('Admin notes cannot exceed 2000 characters', 'danger')
+        flash('<i class="bi bi-exclamation-triangle"></i> Admin notes cannot exceed 2000 characters', 'danger')
         return redirect(url_for('admin_user_detail', user_id=user_id))
         
     with db.get_cursor() as cursor:
@@ -342,7 +331,7 @@ def update_user_notes(user_id):
             SET notes = %s
             WHERE user_id = %s
         ''', (notes if notes else None, user_id))
-    flash('Admin notes updated', 'success')
+    flash('<i class="bi bi-check-circle"></i> Admin notes updated', 'success')
     return redirect(url_for('admin_user_detail', user_id=user_id))
 
 
@@ -932,27 +921,15 @@ def set_user_active():
     user_id = request.form.get('user_id')
     set_active = request.form.get('setUserActiveSelect')
     lookup = fetch_lookup_data(db)
+    
+    if str(user_id) == str(session.get('user_id')) and set_active == 'inactive':
+        flash('<i class="bi bi-exclamation-triangle"></i> You cannot deactivate your own account', 'danger')
+        return redirect(url_for('admin_users'))
+        
     if set_active not in lookup['valid_account_status']:
-        flash('Invalid account status value.', 'error')
+        flash('<i class="bi bi-exclamation-triangle"></i> Invalid account status value.', 'danger')
         return redirect(url_for('admin_users'))
     
     update_user_active(db, user_id, set_active)
-    flash('User account status updated.', 'success')
-    return redirect(url_for('admin_users'))
-
-def set_user_role():
-    """Set a user's role."""
-    user_id = request.form.get('user_id')
-    role = request.form.get('setUserRoleSelect')
-    fetched_user = fetch_user_info(db, user_id)
-    if fetched_user['role'] == 'Admin':
-        flash('Cannot change Admin role.', 'error')
-        return redirect(url_for('admin_users'))
-    lookup = fetch_lookup_data(db)
-    if role not in lookup['valid_roles']:
-        flash('Invalid role value.', 'error')
-        return redirect(url_for('admin_users'))
-    
-    update_user_role(db, user_id, role)
-    flash('User role updated.', 'success')
+    flash('<i class="bi bi-check-circle"></i> User account status updated.', 'success')
     return redirect(url_for('admin_users'))

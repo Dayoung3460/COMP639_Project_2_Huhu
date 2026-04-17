@@ -1,163 +1,240 @@
 {% extends 'base.html' %}
 {% block title %}User Management{% endblock %}
+{% block page_title %}    
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-people"></i>
+  </div>
+  User Management
+</div>
+{% endblock %}
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">User Management</li>
+  </ol>
+</nav>
+{% endblock %}
 {% block content %}
 <div class="container py-4">
-  <h2 class="mb-4">User Management</h2>
 
   <!-- Filter and Search Form -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body bg-light">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <span class="text-muted fw-bold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Search & Filters</span>
-        <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-secondary">Clear All</a>
-      </div>
-      <form method="GET" action="{{ url_for('admin_users') }}">
+  <section class="mb-4">
+    <div class="lines-filter-shell">
+      <form id="filter-form" method="GET" action="{{ url_for('admin_users') }}">
         {% if sort_by %}
         <input type="hidden" name="sort_by" value="{{ sort_by }}">
         <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
         {% endif %}
-        <div class="row g-4 align-items-end">
+        <div class="row g-3 align-items-end">
           
-          <!-- Search Section (Left) -->
-          <div class="col-md-5 border-end">
-            <label for="search" class="form-label fw-bold">Search Users</label>
+          <div class="col-lg-5">
+            <label for="search" class="form-label mb-1">Search Users</label>
             <div class="input-group">
-              <input type="text" class="form-control border-end-0" id="search" name="search" value="{{ search }}" placeholder="Search name or username...">
-              <button class="btn border border-start-0 bg-white" type="button" id="clear-search-btn" style="border-color: #dee2e6; color: #6c757d;" title="Clear search">
-                <span aria-hidden="true" style="font-weight: bold;">&times;</span>
-              </button>
-              <button class="btn btn-primary" type="submit">Search</button>
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Search by name or username">
             </div>
           </div>
 
-          <!-- Filter Section (Right) -->
-          <div class="col-md-7">
-            <div class="row g-3 align-items-end">
-              <div class="col-sm-5">
-                <label for="role" class="form-label fw-bold">Filter by Role</label>
-                <select class="form-select" id="role" name="role">
-                  <option value="">All Roles</option>
-                  <option value="Admin" {% if role_filter == 'Admin' %}selected{% endif %}>Admin</option>
-                  <option value="Operator" {% if role_filter == 'Operator' %}selected{% endif %}>Operator</option>
-                  <option value="Observer" {% if role_filter == 'Observer' %}selected{% endif %}>Observer</option>
-                </select>
-              </div>
-              <div class="col-sm-4">
-                <label for="status" class="form-label fw-bold">Filter by Status</label>
-                <select class="form-select" id="status" name="status">
-                  <option value="">All Statuses</option>
-                  <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-                  <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
-                </select>
-              </div>
-              <div class="col-sm-3">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
-              </div>
+          <div class="col-sm-6 col-lg-3">
+            <label for="role" class="form-label mb-1">Role</label>
+            <div class="position-relative">
+              <select class="form-select" id="role" name="role" style="background-image: none;">
+                <option value="">All Roles</option>
+                <option value="Admin" {% if role_filter == 'Admin' %}selected{% endif %}>Admin</option>
+                <option value="Operator" {% if role_filter == 'Operator' %}selected{% endif %}>Operator</option>
+                <option value="Observer" {% if role_filter == 'Observer' %}selected{% endif %}>Observer</option>
+              </select>
+              <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y" style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;"></i>
             </div>
+          </div>
+          
+          <div class="col-sm-6 col-lg-3">
+            <label for="status" class="form-label mb-1">Status</label>
+            <div class="position-relative">
+              <select class="form-select" id="status" name="status" style="background-image: none;">
+                <option value="">All Statuses</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+              </select>
+              <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y" style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;"></i>
+            </div>
+          </div>
+          
+          <div class="col-lg-1 d-grid">
+            <button type="button" id="clear-all-btn" class="btn btn-sm-outline lines-filter-shell__clear-btn w-100">Clear</button>
           </div>
 
         </div>
       </form>
     </div>
-  </div>
+  </section>
 
-  <div class="table-responsive">
-    <table class="table table-striped table-hover">
+  <div class="panel">
+    <div class="panel-body p-0">
+      <div class="pf-table-responsive">
+        <table class="pf-table">
       <thead>
         <tr>
-          {% for field, label in [('name', 'Name'), ('username', 'Username'), ('role', 'Role'), ('status', 'Status'), ('date_joined', 'Date Joined'), ('last_login', 'Last Login'), ('Action', 'Action')] %}
+          {% for field, label in [('name', 'Name'), ('username', 'Username'), ('role', 'Role'), ('status', 'Status'), ('date_joined', 'Date Joined'), ('last_login', 'Last Login'), ('', 'Actions')] %}
             {% set next_dir = 'asc' %}
             {% if sort_by == field %}
               {% set next_dir = 'desc' if sort_dir == 'asc' else '' %}
             {% endif %}
-            <th>
-              <a href="{{ url_for('admin_users', search=search, role=role_filter, status=status_filter, sort_by=field if next_dir else '', sort_dir=next_dir) }}" class="text-decoration-none d-inline-flex align-items-center gap-1" style="color: inherit;">
+            <th class="{{ 'text-center' if field != 'name' else '' }}">
+              {% if field %}
+                <a href="{{ url_for('admin_users', search=search, role=role_filter, status=status_filter, sort_by=field if next_dir else '', sort_dir=next_dir) }}" class="text-decoration-none d-inline-flex align-items-center gap-1" style="color: inherit;">
                 {{ label }}
                 {% if sort_by == field %}
                   <i class="bi bi-arrow-{{ 'up' if sort_dir == 'asc' else 'down' }}"></i>
                 {% endif %}
               </a>
+              {% else %}
+                {{ label }}
+              {% endif %}
             </th>
           {% endfor %}
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
-          <tr>
+          <tr class="user-row" data-search="{{ u.first_name }} {{ u.last_name }} @{{ u.username }}" data-role="{{ u.role }}" data-status="{{ u.account_status }}">
             <td>
               <strong>
                 <a href="{{ url_for('admin_user_detail', user_id=u.user_id) }}" class="text-decoration-none">{{ u.first_name }} {{ u.last_name }}</a>
               </strong>
             </td>
-            <td>@{{ u.username }}</td>
-            <td>
-              <span class="badge{% if u.role == 'Admin' %}-role-admin{% elif u.role == 'Operator' %}-role-operator{% else %}-role-observer{% endif %}">
+            <td class="text-center">@{{ u.username }}</td>
+            <td class="text-center">
+              <span class="badge-role-{{ u.role|lower }}">
                 {{ u.role }}
               </span>
             </td>
-            <td>
-              <span class="badge {% if u.account_status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+            <td class="text-center">
+              <span class="badge-{{ u.account_status }}">
                 {{ u.account_status | capitalize }}
               </span>
             </td>
-            <td>{{ u.date_joined.strftime('%d %b %Y') if u.date_joined else 'Unknown' }}</td>
-            <td>{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
-            <td>
-              <a href="{{ url_for('admin_user_detail', user_id=u.user_id) }}"
-                 class="btn btn-sm btn-outline-secondary">View</a>
+            <td class="text-center">{{ u.date_joined.strftime('%d %b %Y') if u.date_joined else 'Unknown' }}</td>
+            <td class="text-center">{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
+            <td class="text-center lines-table-actions">
               {% if u.role != 'Admin' %}
               <a href="{{ url_for('edit_role', user_id=u.user_id) }}"
-                 class="btn btn-sm btn-outline-primary">Edit Role</a>
+                 class="btn btn-sm-amber">Edit Role</a>
               {% endif %}
-              <button type="button" class="btn btn-sm btn-outline-{{ 'warning' if u.account_status == 'active' else 'success' }}"
+              {% if u.user_id != session.get('user_id') %}
+              <button type="button" class="btn {{ 'btn-sm-danger' if u.account_status == 'active' else 'btn-sm-pf' }}"
                       data-bs-toggle="modal" data-bs-target="#toggle-active-modal"
                       data-user-id="{{ u.user_id }}"
                       data-user-name="{{ u.first_name }} {{ u.last_name }}"
                       data-action="{{ 'deactivate' if u.account_status == 'active' else 'activate' }}">
                 {{ 'Deactivate' if u.account_status == 'active' else 'Activate' }}
               </button>
+              {% endif %}            
             </td>
           </tr>
         {% else %}
           <tr>
-            <td colspan="6" class="text-center text-muted py-4">No users found matching those criteria</td>
+            <td colspan="7" class="text-center text-muted py-4">No users found matching those criteria</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
-  </div>
-</div>
-
-<div class="modal fade pop-up-modal" id="toggle-active-modal" tabindex="-1">
-  <div class="modal-dialog" style="margin-top: 10vh;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="toggle-active-title">Confirm</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p>Are you sure you want to <strong id="toggle-active-action"></strong> user <strong id="toggle-active-name"></strong>?</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <form method="POST" id="toggle-active-form">
-          <button type="submit" class="btn btn-pf" id="toggle-active-btn">Yes</button>
-        </form>
       </div>
     </div>
   </div>
 </div>
 
+<div class="modal fade pop-up-modal" id="toggle-active-modal" tabindex="-1">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="toggle-active-form" autocomplete="off">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="toggle-active-title">Confirm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to <strong id="toggle-active-action"></strong> user <strong id="toggle-active-name"></strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm-outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm-danger" id="toggle-active-btn">Yes</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const clearBtn = document.getElementById('clear-search-btn');
+    const filterForm = document.getElementById('filter-form');
+    const roleFilter = document.getElementById('role');
+    const statusFilter = document.getElementById('status');
     const searchInput = document.getElementById('search');
-    if (clearBtn && searchInput) {
-      clearBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        searchInput.focus();
+    const clearAllBtn = document.getElementById('clear-all-btn');
+    const userRows = document.querySelectorAll('.user-row');
+
+    // Create a 'no results' row dynamically
+    const tbody = document.querySelector('table tbody');
+    const noResultsRow = document.createElement('tr');
+    noResultsRow.id = 'no-results-row';
+    noResultsRow.style.display = 'none';
+    noResultsRow.innerHTML = '<td colspan="7" class="text-center text-muted py-4">No users match the current search or filters.</td>';
+    if(tbody) tbody.appendChild(noResultsRow);
+
+    function filterUsers() {
+      const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      const role = roleFilter ? roleFilter.value : '';
+      const status = statusFilter ? statusFilter.value : '';
+      let visibleCount = 0;
+
+      userRows.forEach(row => {
+        const searchData = row.getAttribute('data-search').toLowerCase();
+        const roleData = row.getAttribute('data-role');
+        const statusData = row.getAttribute('data-status');
+
+        const matchesSearch = !query || searchData.includes(query);
+        const matchesRole = !role || roleData === role;
+        const matchesStatus = !status || statusData === status;
+
+        if (matchesSearch && matchesRole && matchesStatus) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      if (noResultsRow) {
+        noResultsRow.style.display = (visibleCount === 0 && userRows.length > 0) ? '' : 'none';
+      }
+    }
+
+    if (roleFilter) roleFilter.addEventListener('change', filterUsers);
+    if (statusFilter) statusFilter.addEventListener('change', filterUsers);
+
+    if (searchInput) {
+      searchInput.addEventListener('input', filterUsers);
+    }
+
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener('click', function() {
+        if (searchInput) searchInput.value = '';
+        if (roleFilter) roleFilter.value = '';
+        if (statusFilter) statusFilter.value = '';
+        filterUsers();
+        if (searchInput) searchInput.focus();
       });
     }
+
+    if (filterForm) {
+      filterForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent page reload if they hit 'Enter'
+      });
+    }
+
+    filterUsers(); // Run once on load in case browser pre-filled inputs
 
     var toggleModal = document.getElementById('toggle-active-modal');
     toggleModal.addEventListener('show.bs.modal', function(event) {
@@ -169,7 +246,11 @@
       document.getElementById('toggle-active-title').textContent = (action === 'deactivate' ? 'Deactivate' : 'Activate') + ' User';
       document.getElementById('toggle-active-action').textContent = action;
       document.getElementById('toggle-active-name').textContent = userName;
-      document.getElementById('toggle-active-btn').textContent = action.charAt(0).toUpperCase() + action.slice(1);
+      
+      var submitBtn = document.getElementById('toggle-active-btn');
+      submitBtn.textContent = action === 'deactivate' ? 'Yes, deactivate' : 'Yes, activate';
+      submitBtn.className = action === 'deactivate' ? 'btn btn-sm-danger' : 'btn btn-sm-pf';
+
       document.getElementById('toggle-active-form').action = '/admin/users/' + userId + '/toggle-active';
     });
   });
