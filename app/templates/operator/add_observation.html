@@ -8,13 +8,18 @@
     <!-- Form (Left) -->
     <div class="col-lg-5">
       <form id="observation-form" method="POST" action="{{ url_for('add_observation') }}" novalidate>
-        {% if errors and errors.values() | select | list %}
+        {% set coord_errors = [] %}
+        {% if errors %}
+          {% if errors.get('latitude') %}{% set _ = coord_errors.append(errors.get('latitude')) %}{% endif %}
+          {% if errors.get('longitude') %}{% set _ = coord_errors.append(errors.get('longitude')) %}{% endif %}
+        {% endif %}
+        {% if coord_errors %}
           <div class="notice amber mb-3">
             <i class="bi bi-exclamation-triangle-fill"></i>
             <div>
-              <strong>Please fix the following:</strong>
+              <strong>Coordinates outside allowed region:</strong>
               <ul class="mb-0 ps-3 mt-1">
-                {% for field, msg in errors.items() if msg %}
+                {% for msg in coord_errors %}
                   <li>{{ msg }}</li>
                 {% endfor %}
               </ul>
@@ -23,7 +28,7 @@
         {% endif %}
         <div class="mb-3">
           <label class="form-label">Line <span class="text-danger">*</span></label>
-          <select name="line_id" id="lineSelect" class="form-select" required>
+          <select name="line_id" id="lineSelect" class="form-select {% if errors and errors.get('line_id') %}is-invalid{% endif %}" required>
             <option value="">— select line —</option>
             {% for line in lines %}
             <option value="{{ line.line_id }}" {% if data and data.get('line_id')|string == line.line_id|string %}selected{% endif %}>
@@ -31,10 +36,11 @@
             </option>
             {% endfor %}
           </select>
+          {% if errors and errors.get('line_id') %}<div class="text-danger small mt-1">{{ errors.get('line_id') }}</div>{% endif %}
         </div>
         <div class="mb-3">
           <label class="form-label">Trap</label>
-          <select name="trap_id" id="trapSelect" class="form-select">
+          <select name="trap_id" id="trapSelect" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}">
             <option value="">— optional —</option>
             {% for line in lines %}
               {% for trap in line.traps %}
@@ -46,15 +52,17 @@
               {% endfor %}
             {% endfor %}
           </select>
+          {% if errors and errors.get('trap_id') %}<div class="text-danger small mt-1">{{ errors.get('trap_id') }}</div>{% endif %}
         </div>
         <div class="mb-3">
           <label class="form-label">Date &amp; Time <span class="text-danger">*</span></label>
-          <input type="datetime-local" class="form-control" name="date"
+          <input type="datetime-local" id="obs-date" class="form-control {% if errors and errors.get('date') %}is-invalid{% endif %}" name="date"
                  value="{{ data.get('date', '') if data else '' }}" required>
+          {% if errors and errors.get('date') %}<div class="text-danger small mt-1">{{ errors.get('date') }}</div>{% endif %}
         </div>
         <div class="mb-3">
           <label class="form-label">Observation Type <span class="text-danger">*</span></label>
-          <select name="observation_type" class="form-select" required>
+          <select name="observation_type" class="form-select {% if errors and errors.get('observation_type') %}is-invalid{% endif %}" required>
             <option value="">— select —</option>
             {% for obs_type in lookup.valid_observation_types %}
               <option value="{{ obs_type }}" {% if data and data.get('observation_type') == obs_type %}selected{% endif %}>{{ obs_type }}</option>
@@ -75,6 +83,7 @@
             {% if lon_range %}<div class="form-text">Allowed Lincoln boundary: {{ lon_range[0] }} to {{ lon_range[1] }}</div>{% endif %}
           </div>
         </div>
+
         <p class="text-muted small mb-3"><i class="bi bi-geo-alt-fill"></i> Click on the map to set coordinates, or type them in.</p>
         <div class="mb-3">
           <label class="form-label">Notes</label>
@@ -134,6 +143,19 @@
   <script src="{{ url_for('static', filename='js/lines-map-utils.js') }}"></script>
   <script src="{{ url_for('static', filename='js/observation-map.js') }}"></script>
   <script>
+    // Cap date/time at "now" (no future observations)
+    (function() {
+      const dateInput = document.getElementById('obs-date');
+      if (!dateInput) return;
+      const setMax = () => {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        dateInput.max = now.toISOString().slice(0, 16);
+      };
+      setMax();
+      dateInput.addEventListener('focus', setMax);
+    })();
+
     document.getElementById('confirm-save-btn').addEventListener('click', function () {
       document.getElementById('observation-form').submit();
     });
