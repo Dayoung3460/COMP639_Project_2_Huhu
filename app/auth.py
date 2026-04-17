@@ -135,6 +135,12 @@ def login():
 @app.route('/logout')
 def logout():
     """Clear the session and redirect to the home page."""
+    if 'user_id' in session:
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                'UPDATE users SET last_login = NOW() WHERE user_id = %s',
+                (session['user_id'],)
+            )
     session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
