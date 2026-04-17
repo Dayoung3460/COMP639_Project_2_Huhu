@@ -11,6 +11,7 @@ linz_api_key = os.getenv('LINZ_API_KEY', '')
 def lines_index():
     """Display all active trap lines."""
     line_filter = request.args.get('filter', 'active')
+    operator_filter = request.args.get('operator')
     if line_filter not in ('all', 'active', 'retired'):
         line_filter = 'active'
 
@@ -229,6 +230,7 @@ def lines_index():
         'lines/index.html',
         lines=lines,
         line_filter=line_filter,
+        operator_filter=operator_filter,
         map_traps=map_traps,
         linz_api_key=linz_api_key,
         active_trap_line_ids=active_trap_line_ids,
@@ -243,7 +245,6 @@ def lines_index():
 def line_detail(line_id):
     """Display a single trap line and all its traps."""
     line_filter = request.args.get('filter', 'active')
-    source = request.args.get('source')
     if line_filter not in ('all', 'active', 'retired'):
         line_filter = 'active'
 
@@ -319,7 +320,6 @@ def line_detail(line_id):
         traps=traps,
         operators=operators,
         line_filter=line_filter,
-        source=source,
         trap_markers=trap_markers,
         linz_api_key=linz_api_key,
         trap_types=trap_types,

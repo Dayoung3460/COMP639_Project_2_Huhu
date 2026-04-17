@@ -148,6 +148,17 @@ document.addEventListener('DOMContentLoaded', function () {
       emptyFilterState.classList.toggle('d-none', visibleCount !== 0);
     }
 
+    // Update "Me" badge visibility on the dropdown label
+    const meBadge = document.getElementById('operator-me-badge');
+    if (meBadge && operatorFilter) {
+      const selectedOption = operatorFilter.options[operatorFilter.selectedIndex];
+      if (selectedOption && selectedOption.text.includes('(Me)')) {
+        meBadge.classList.remove('d-none');
+      } else {
+        meBadge.classList.add('d-none');
+      }
+    }
+
     updateMapVisibility(visibleLineIds);
   }
 

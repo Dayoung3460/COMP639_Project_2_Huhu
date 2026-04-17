@@ -1,9 +1,35 @@
 {% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_link_button %}
 {% block title %}My Lines{% endblock %}
 {% block content %}
 <div class="container py-4">
+ {% set current_filter = line_filter | default('active') %}
  <div class="d-flex justify-content-between align-items-center mb-4">
    <h2 class="mb-0">My Assigned Trap Lines</h2>
+   <div class="d-flex gap-2 align-items-center lines-page-header__actions">
+     <div class="d-none d-md-flex gap-2 align-items-center">
+       {{ pf_link_button(
+         url_for('my_lines', filter='all'),
+         'All',
+         variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline'
+       ) }}
+       {{ pf_link_button(
+         url_for('my_lines'),
+         'Active',
+         variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline'
+       ) }}
+       {{ pf_link_button(
+         url_for('my_lines', filter='retired'),
+         'Retired',
+         variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline'
+       ) }}
+     </div>
+     <select id="lines-status-filter" class="form-select form-select-sm d-md-none" onchange="window.location.href=this.value;">
+       <option value="{{ url_for('my_lines', filter='all') }}"{{ ' selected' if current_filter == 'all' }}>All lines</option>
+       <option value="{{ url_for('my_lines') }}"{{ ' selected' if current_filter == 'active' }}>Active lines</option>
+       <option value="{{ url_for('my_lines', filter='retired') }}"{{ ' selected' if current_filter == 'retired' }}>Retired lines</option>
+     </select>
+   </div>
  </div>
 
  {% if assigned_lines %}
@@ -42,7 +68,7 @@
      </div>
    </section>
  {% else %}
-   <p class="text-muted">No trap lines assigned to you.</p>
+   <p class="text-muted">No {% if current_filter != 'all' %}{{ current_filter }} {% endif %}trap lines assigned to you.</p>
  {% endif %}
 </div>
 {% endblock %}

@@ -76,7 +76,7 @@
           <div class="panel-title">
             <i class="bi bi-geo-alt me-2"></i>My Assigned Lines
           </div>
-          <a href="{{ url_for('lines_index') }}"
+          <a href="{{ url_for('lines_index', operator=session.username) }}"
              style="font-size:11px; color:var(--pf-600); text-decoration:none;">
             View all →
           </a>

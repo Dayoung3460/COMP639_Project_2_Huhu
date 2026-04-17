@@ -185,13 +185,17 @@
                class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
               <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
             </a>
+            <a href="{{ url_for('lines_index', operator=session.username) }}" class="sidebar-link">
+              <i class="bi bi-person-lines-fill"></i>
+              <span class="link-text">My Trap Lines</span>
+            </a>
           {% endif %}
         {% endif %}
 
         {# View data — all roles #}
         <div class="sidebar-section-label">Data</div>
         <a href="{{ url_for('lines_index') }}"
-           class="sidebar-link {{ 'active' if request.endpoint in ['lines_index','line_detail'] }}">
+           class="sidebar-link {% if request.endpoint == 'lines_index' %}active{% endif %}">
           <i class="bi bi-geo-alt"></i> <span class="link-text">Trap Lines</span>
         </a>
         <a href="{{ url_for('catch_records') }}"
