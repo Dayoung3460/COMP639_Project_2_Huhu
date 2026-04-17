@@ -78,8 +78,11 @@
                       <h5 class="mb-0">{{ line.name }}</h5>
                       {{ pf_trap_status_badge(line.is_retired) }}
                     </div>
+                    {% if line.is_retired and line.retired_at %}
+                      <small class="text-muted d-block border-bottom pb-1 mb-1">Retired {{ line.retired_at.strftime('%d %b %Y %H:%M') }}{% if line.retired_by_username %} by @{{ line.retired_by_username }}{% endif %}</small>
+                    {% endif %}
                     <small class="text-muted">
-                      {{ line.trap_count | default(0) }} active traps &mdash;
+                      {{ line.trap_count | default(0) }} active traps -
                       {{ line.operator_count | default(0) }} operators
                     </small>
                     <div class="small text-muted mt-1 lines-operator-list">

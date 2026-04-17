@@ -386,13 +386,26 @@
       btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
     }
 
-    applyState(localStorage.getItem('sidebarCollapsed') === 'true');
+    const isMobile = window.innerWidth < 768;
+    const savedState = localStorage.getItem('sidebarCollapsed') === 'true';
+    applyState(isMobile ? true : savedState);
 
     btn.addEventListener('click', function () {
       const collapsed = !sidebar.classList.contains('collapsed');
       applyState(collapsed);
-      localStorage.setItem('sidebarCollapsed', collapsed);
+      if (window.innerWidth >= 768) {
+        localStorage.setItem('sidebarCollapsed', collapsed);
+      }
     });
+
+    window.addEventListener('resize', function () {
+      if (window.innerWidth < 768) {
+        applyState(true);
+      } else {
+        applyState(localStorage.getItem('sidebarCollapsed') === 'true');
+      }
+    });
+    
   })();
 </script>
 

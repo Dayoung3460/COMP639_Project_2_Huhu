@@ -23,6 +23,8 @@ def lines_index():
                 l.name,
                 l.type,
                 l.is_retired,
+                l.retired_at,
+                u_ret.username AS retired_by_username,
                 (
                     SELECT COUNT(*)
                     FROM traps t
@@ -114,6 +116,7 @@ def lines_index():
                     ARRAY[]::int[]
                 ) AS assigned_operator_ids
             FROM lines l
+            LEFT JOIN users u_ret ON u_ret.user_id = l.retired_by
             WHERE (
                 CASE %s
                     WHEN 'all' THEN TRUE
@@ -251,9 +254,12 @@ def line_detail(line_id):
     with db.get_cursor() as cursor:
         cursor.execute(
             """
-            SELECT line_id, name, type, is_retired
-            FROM lines
-            WHERE line_id = %s
+            SELECT l.line_id, l.name, l.type, l.is_retired,
+                   l.retired_at,
+                   u_ret.username AS retired_by_username
+            FROM lines l
+            LEFT JOIN users u_ret ON u_ret.user_id = l.retired_by
+            WHERE l.line_id = %s
             """,
             (line_id,)
         )
@@ -263,22 +269,25 @@ def line_detail(line_id):
             cursor.execute(
                 """
                 SELECT
-                    trap_id,
-                    code,
-                    trap_type,
-                    latitude,
-                    longitude,
-                    is_retired
-                FROM traps
-                WHERE line_id = %s
+                    t.trap_id,
+                    t.code,
+                    t.trap_type,
+                    t.latitude,
+                    t.longitude,
+                    t.is_retired,
+                    t.retired_at,
+                    u_ret.username AS retired_by_username
+                FROM traps t
+                LEFT JOIN users u_ret ON u_ret.user_id = t.retired_by
+                WHERE t.line_id = %s
                   AND (
                     CASE %s
                         WHEN 'all' THEN TRUE
-                        WHEN 'retired' THEN is_retired = TRUE
-                        ELSE is_retired = FALSE
+                        WHEN 'retired' THEN t.is_retired = TRUE
+                        ELSE t.is_retired = FALSE
                     END
                   )
-                ORDER BY code ASC
+                ORDER BY t.code ASC
                 """,
                 (line_id, line_filter)
             )

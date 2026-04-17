@@ -13,6 +13,11 @@
           <h2 class="mb-0">{{ line.name }}</h2>
           {{ pf_trap_status_badge(line.is_retired) }}
         </div>
+        {% if line.is_retired and line.retired_at %}
+          <small class="text-muted">
+            Retired {{ line.retired_at.strftime('%d %b %Y %H:%M') }}{% if line.retired_by_username %} by @{{ line.retired_by_username }}{% endif %}
+          </small>
+        {% endif %}
       </div>
       <div class="d-flex gap-2 align-items-center lines-page-header__actions">
         {% if session.get('role') == 'Admin' and not line.is_retired %}
@@ -83,6 +88,8 @@
               <th>Latitude</th>
               <th>Longitude</th>
               <th>Status</th>
+              <th>Retired Date</th>
+              <th>Retired By</th>
               {% if session.get('role') == 'Admin' %}
                 <th>Actions</th>
               {% endif %}
@@ -96,6 +103,8 @@
                 <td>{{ trap.latitude }}</td>
                 <td>{{ trap.longitude }}</td>
                 <td>{{ pf_trap_status_badge(trap.is_retired) }}</td>
+                <td>{{ trap.retired_at.strftime('%d %b %Y %H:%M') if trap.retired_at else '-' }}</td>
+                <td>{{ '@' ~ trap.retired_by_username if trap.retired_by_username else '-' }}</td>
                 {% if session.get('role') == 'Admin' %}
                   <td class="lines-table-actions">
                     {% if not trap.is_retired %}
@@ -116,7 +125,7 @@
               </tr>
             {% else %}
               <tr>
-                <td colspan="{{ 6 if session.get('role') == 'Admin' else 5 }}" class="text-center text-muted py-3">
+                <td colspan="{{ 8 if session.get('role') == 'Admin' else 7 }}" class="text-center text-muted py-3">
                   No traps on this line yet.
                 </td>
               </tr>

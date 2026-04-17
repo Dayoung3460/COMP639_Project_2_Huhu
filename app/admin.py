@@ -448,24 +448,26 @@ def retire_line(line_id):
         flash('You must type "delete" to confirm retiring line.', 'danger')
         return redirect(url_for('lines_index'))
 
+    retired_by = session['user_id']
+
     with db.get_cursor() as cursor:
         cursor.execute(
             """
             UPDATE lines
-            SET is_retired = TRUE
+            SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
             WHERE line_id = %s
             """,
-            (line_id,)
+            (retired_by, line_id)
         )
 
         if has_active_traps:
             cursor.execute(
                 """
                 UPDATE traps
-                SET is_retired = TRUE
+                SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
                 WHERE line_id = %s AND is_retired = FALSE
                 """,
-                (line_id,)
+                (retired_by, line_id)
             )
 
     flash('Trap line retired.', 'success')
@@ -666,16 +668,17 @@ def retire_trap(line_id):
         flash('You must type "delete" to confirm retiring the trap.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    if request.method == 'POST':
-        with db.get_cursor() as cursor:
-            cursor.execute(
-                """
-                UPDATE traps
-                SET is_retired = TRUE
-                WHERE trap_id = %s
-                """,
-                (trap_id,)
-            )
+    retired_by = session['user_id']
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE traps
+            SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
+            WHERE trap_id = %s
+            """,
+            (retired_by, trap_id)
+        )
 
     flash('Trap retired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
