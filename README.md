@@ -182,9 +182,18 @@ Visit `http://127.0.0.1:5000`
 
 Claude (Anthropic) was used during development to accelerate specific tasks:
 
-- **Complex SQL queries** — multi-join queries for reports and dashboards. Schema and requirements were provided; Claude assisted with syntax.
-- **Repetitive boilerplate** — similar route structures and template patterns across multiple files.
-- **Sample data generation** — generating realistic NZ-context population data for `populate_database.sql`.
-- **Debugging** — identifying errors in Flask routes and Jinja2 templates.
+**Used AI for:**
+- Complex multi-join SQL queries for reports and dashboards
+- Repetitive boilerplate across similar route structures
+- Generating realistic NZ-context sample data for `populate_database.sql`
+- Debugging Flask routes and Jinja2 template errors
+- CSS component design and `custom.css` structure
 
-All architecture decisions, CSS design, application logic, and feature design were made independently by the team. Claude was used as a development aid — not to generate complete features.
+**Done independently:**
+- All application architecture and route design decisions
+- Database schema design and ERD
+- Feature decisions and UI/UX design choices
+- All template structure and layout decisions
+- Scrum ceremonies, sprint planning, and team coordination
+
+Claude was used as a development accelerator for specific, well-defined tasks — not to generate complete features end-to-end. All logic, design, and architectural decisions remained with the team.

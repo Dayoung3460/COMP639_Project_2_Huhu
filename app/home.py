@@ -54,3 +54,7 @@ def index():
 
     return render_template('home.html', stats=stats,
                            recent_activity=recent_activity)
+
+@app.route('/documentation')
+def documentation():
+    return render_template('documentation.html')

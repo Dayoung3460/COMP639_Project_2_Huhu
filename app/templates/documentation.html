@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiaki — Project Documentation</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pf-900: #0d2b1a;
+      --pf-800: #1a5c38;
+      --pf-700: #236b43;
+      --pf-600: #2d7a4f;
+      --pf-500: #3d9b67;
+      --pf-400: #6ab98a;
+      --pf-300: #a3d4b5;
+      --pf-200: #c8e6d5;
+      --pf-100: #e6f4ec;
+      --pf-50:  #f4faf6;
+      --amber:  #e8920a;
+      --red:    #c0392b;
+      --blue:   #1a6fa8;
+      --nav-w:  260px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: #1a1f1b;
+      background: #f5f6f4;
+      margin: 0;
+      display: flex;
+    }
+
+    /* ── Side nav ── */
+    .doc-nav {
+      width: var(--nav-w);
+      background: var(--pf-900);
+      min-height: 100vh;
+      position: fixed;
+      top: 0; left: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .doc-nav-brand {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .doc-nav-brand .site-name {
+      font-family: 'Cabin', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      display: block;
+    }
+    .doc-nav-brand .site-tag {
+      font-size: 10px;
+      color: var(--pf-400);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .doc-nav-section {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--pf-600);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 16px 20px 4px;
+    }
+    .doc-nav a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 20px;
+      color: var(--pf-300);
+      text-decoration: none;
+      font-size: 13px;
+      border-left: 3px solid transparent;
+      transition: all 0.12s;
+    }
+    .doc-nav a:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .doc-nav a.active { color: #fff; border-left-color: var(--pf-500); background: rgba(61,155,103,0.15); }
+    .doc-nav a i { font-size: 14px; width: 16px; }
+    .doc-nav-footer {
+      margin-top: auto;
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 11px;
+      color: var(--pf-600);
+    }
+
+    /* ── Main content ── */
+    .doc-main {
+      margin-left: var(--nav-w);
+      flex: 1;
+      min-height: 100vh;
+    }
+
+    /* ── Hero ── */
+    .doc-hero {
+      background: linear-gradient(135deg, var(--pf-900) 0%, var(--pf-800) 60%, var(--pf-700) 100%);
+      padding: 72px 64px 64px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .doc-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .doc-hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--pf-300);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 18px;
+    }
+    .doc-hero h1 {
+      font-family: 'Cabin', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      margin: 0 0 8px;
+      position: relative;
+    }
+    .doc-hero-sub {
+      font-size: 16px;
+      color: var(--pf-200);
+      margin: 0 0 28px;
+      position: relative;
+    }
+    .doc-hero-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .btn-hero {
+      background: var(--pf-500);
+      color: #fff;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-family: 'Cabin', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-hero:hover { background: var(--pf-400); color: #fff; }
+    .btn-hero-outline {
+      background: transparent;
+      color: var(--pf-200);
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-family: 'Cabin', sans-serif;
+      font-size: 13px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-hero-outline:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .doc-hero-meta {
+      display: flex;
+      gap: 32px;
+      margin-top: 40px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .doc-hero-meta-item .label { font-size: 10px; color: var(--pf-400); text-transform: uppercase; letter-spacing: 1px; }
+    .doc-hero-meta-item .value { font-size: 14px; color: #fff; font-weight: 500; margin-top: 2px; }
+
+    /* ── Sections ── */
+    .doc-section {
+      padding: 56px 64px;
+      border-bottom: 1px solid #e4ede8;
+      background: #fff;
+    }
+    .doc-section:nth-child(even) { background: var(--pf-50); }
+    .section-eyebrow {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--pf-500);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .section-title {
+      font-family: 'Cabin', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--pf-900);
+      margin: 0 0 8px;
+    }
+    .section-desc {
+      color: #6b7c72;
+      font-size: 14px;
+      line-height: 1.7;
+      margin: 0 0 36px;
+      max-width: 680px;
+    }
+
+    /* ── Cards ── */
+    .card-grid { display: grid; gap: 16px; }
+    .card-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .card-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .card-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .doc-card {
+      background: #fff;
+      border: 1px solid var(--pf-200);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .doc-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--pf-100);
+      color: var(--pf-700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+    .doc-card h4 {
+      font-family: 'Cabin', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--pf-900);
+      margin: 0 0 6px;
+    }
+    .doc-card p { font-size: 12px; color: #6b7c72; line-height: 1.6; margin: 0; }
+
+    /* ── Tech stack table ── */
+    .tech-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tech-table th {
+      background: var(--pf-50);
+      color: var(--pf-700);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--pf-200);
+      text-align: left;
+    }
+    .tech-table td {
+      padding: 11px 16px;
+      border-bottom: 1px solid #f0f5f2;
+      color: #2d3d33;
+      vertical-align: middle;
+    }
+    .tech-table tr:last-child td { border-bottom: none; }
+    .tech-table tr:hover td { background: var(--pf-50); }
+    .tech-badge {
+      display: inline-block;
+      background: var(--pf-100);
+      color: var(--pf-800);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── Role cards ── */
+    .role-card {
+      background: #fff;
+      border: 1px solid var(--pf-200);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .role-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--pf-200);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .role-badge {
+      font-family: 'Cabin', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .role-card-body { padding: 16px 20px; }
+    .role-card-body li { font-size: 13px; color: #4a5c50; padding: 4px 0; }
+
+    /* ── User stories ── */
+    .story-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .story-table th {
+      background: var(--pf-900);
+      color: var(--pf-300);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    .story-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f5f2;
+      vertical-align: top;
+    }
+    .story-table tr:hover td { background: var(--pf-50); }
+    .story-table .story-id { font-family: monospace; font-size: 12px; color: var(--pf-600); font-weight: 600; white-space: nowrap; }
+    .story-table .story-text { color: #2d3d33; line-height: 1.5; }
+    .priority-high   { background: #fdecea; color: #a32d2d; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .priority-medium { background: #fef3dc; color: #9a5b00; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .priority-low    { background: var(--pf-100); color: var(--pf-700); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .status-done { background: #dcfce7; color: #166534; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .story-group-header td {
+      background: var(--pf-800);
+      color: var(--pf-200);
+      font-family: 'Cabin', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 8px 14px;
+    }
+
+    /* ── DB tables ── */
+    .db-table-card {
+      background: #fff;
+      border: 1px solid var(--pf-200);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .db-table-header {
+      background: var(--pf-800);
+      color: #fff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .db-table-name { font-family: 'Cabin', sans-serif; font-size: 14px; font-weight: 700; }
+    .db-table-body { padding: 0; }
+    .db-field { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid #f0f5f2; font-size: 12px; }
+    .db-field:last-child { border-bottom: none; }
+    .db-field-name { font-family: monospace; color: var(--pf-700); font-weight: 600; min-width: 180px; }
+    .db-field-type { color: #6b7c72; min-width: 120px; }
+    .db-field-note { color: #9aaa9f; font-style: italic; }
+    .db-pk { background: #fef3dc; color: #9a5b00; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+    .db-fk { background: var(--pf-100); color: var(--pf-700); font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+
+    /* ── Team ── */
+    .team-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+    .team-card {
+      background: #fff;
+      border: 1px solid var(--pf-200);
+      border-radius: 12px;
+      overflow: hidden;
+      text-align: center;
+    }
+    .team-photo img {
+        object-fit: cover;
+        width: 100%;
+        height: 100%;
+    }
+    .team-photo {
+        height: 277px;
+        overflow: hidden;
+    }
+    .team-avatar {
+      width: 100%;
+      aspect-ratio: 1/1;
+      background: var(--pf-700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cabin', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+    }
+    .team-body { padding: 12px 14px; }
+    .team-name { font-family: 'Cabin', sans-serif; font-size: 13px; font-weight: 700; color: #1a1f1b; margin-bottom: 2px; }
+    .team-country { font-size: 10px; color: var(--pf-500); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── Test accounts ── */
+    .accounts-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .accounts-table th { background: var(--pf-50); color: var(--pf-700); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; border-bottom: 1px solid var(--pf-200); text-align: left; }
+    .accounts-table td { padding: 10px 16px; border-bottom: 1px solid #f0f5f2; }
+    .accounts-table tr:last-child td { border-bottom: none; }
+    .accounts-table code { background: var(--pf-50); border: 1px solid var(--pf-200); padding: 2px 8px; border-radius: 4px; font-size: 12px; color: var(--pf-800); }
+
+    /* ── Sprint cards ── */
+    .sprint-card {
+      background: #fff;
+      border: 1px solid var(--pf-200);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .sprint-card h4 { font-family: 'Cabin', sans-serif; font-size: 16px; font-weight: 700; color: var(--pf-800); margin: 0 0 4px; }
+    .sprint-card .sprint-dates { font-size: 12px; color: #6b7c72; margin-bottom: 16px; }
+    .sprint-item { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; font-size: 13px; color: #4a5c50; }
+    .sprint-item i { color: var(--pf-500); margin-top: 2px; flex-shrink: 0; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .doc-nav { display: none; }
+      .doc-main { margin-left: 0; }
+      .doc-section { padding: 40px 24px; }
+      .doc-hero { padding: 48px 24px; }
+      .card-grid-3, .card-grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .card-grid-2 { grid-template-columns: 1fr; }
+      .team-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Side nav ── -->
+<nav class="doc-nav">
+  <div class="doc-nav-brand">
+    <span class="site-name">Tiaki</span>
+    <span class="site-tag">Project Documentation</span>
+  </div>
+
+  <div class="doc-nav-section">Introduction</div>
+  <a href="#overview"><i class="bi bi-house"></i> Overview</a>
+  <a href="#team"><i class="bi bi-people"></i> The Team</a>
+  <a href="#tech"><i class="bi bi-stack"></i> Tech Stack</a>
+
+  <div class="doc-nav-section">System</div>
+  <a href="#roles"><i class="bi bi-person-badge"></i> User Roles</a>
+  <a href="#stories"><i class="bi bi-list-check"></i> User Stories</a>
+  <a href="#features"><i class="bi bi-stars"></i> Features</a>
+
+  <div class="doc-nav-section">Technical</div>
+  <a href="#database"><i class="bi bi-database"></i> Database Design</a>
+  <a href="#scrum"><i class="bi bi-kanban"></i> Scrum Process</a>
+
+  <div class="doc-nav-section">Reference</div>
+  <a href="#accounts"><i class="bi bi-key"></i> Test Accounts</a>
+  <a href="#genai"><i class="bi bi-robot"></i> GenAI Acknowledgement</a>
+
+  <div class="doc-nav-footer">
+    COMP639 Group Project 1<br>
+    Team Huhu · Semester 1, 2026
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<main class="doc-main">
+
+  <!-- Hero -->
+  <div class="doc-hero" id="overview">
+    <div class="doc-hero-badge">🌿 COMP639 Group Project 1 — Semester 1, 2026</div>
+    <h1>Tiaki</h1>
+    <p class="doc-hero-sub">Predator Trapping &amp; Monitoring — Lincoln University, New Zealand</p>
+    <div class="doc-hero-links">
+      <a href="http://pflu.pythonanywhere.com" target="_blank" class="btn-hero">
+        <i class="bi bi-globe"></i> View Live App
+      </a>
+      <a href="https://github.com/COMP639-StudioProjects-26S1/COMP639_Project_1_Huhu" target="_blank" class="btn-hero-outline">
+        <i class="bi bi-github"></i> GitHub Repository
+      </a>
+    </div>
+    <div class="doc-hero-meta">
+      <div class="doc-hero-meta-item">
+        <div class="label">Group</div>
+        <div class="value">Team Huhu</div>
+      </div>
+      <div class="doc-hero-meta-item">
+        <div class="label">Client</div>
+        <div class="value">Predator Free Lincoln University (PF-LU)</div>
+      </div>
+      <div class="doc-hero-meta-item">
+        <div class="label">Type</div>
+        <div class="value">Beta Web Application</div>
+      </div>
+      <div class="doc-hero-meta-item">
+        <div class="label">Delivered</div>
+        <div class="value">April 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview -->
+  <div class="doc-section">
+    <div class="section-eyebrow">The Problem</div>
+    <h2 class="section-title">What is Tiaki?</h2>
+    <p class="section-desc">
+      Predator Free Lincoln University (PF-LU) is a fictional volunteer group running a predator-control initiative across the Lincoln University campus.
+      They maintain a network of traps targeting introduced predator species — possums, stoats, rats, and weasels — that threaten New Zealand's native wildlife.
+      Previously, PF-LU relied on paper-based forms and spreadsheets, causing data errors, slow reporting, and difficulty tracking trends over time.
+    </p>
+    <p class="section-desc" style="margin-top:-16px;">
+      <strong>Tiaki</strong> (Māori for "to guard" or "to protect") is a custom beta web application that replaces this manual process.
+      It allows field operators to log trap checks from the field, generates visual reports automatically, tracks individual trap status,
+      and aligns data with the <a href="https://trap.nz" target="_blank" style="color:var(--pf-600);">trap.nz</a> national CSV import format.
+    </p>
+
+    <div class="card-grid card-grid-3" style="margin-top:32px;">
+      <div class="doc-card">
+        <div class="doc-card-icon"><i class="bi bi-geo-alt"></i></div>
+        <h4>Trap Network Management</h4>
+        <p>Admins create and manage trap lines and individual traps with GPS coordinates across the Lincoln University campus.</p>
+      </div>
+      <div class="doc-card">
+        <div class="doc-card-icon"><i class="bi bi-clipboard2-check"></i></div>
+        <h4>Field Data Entry</h4>
+        <p>Operators log trap check results from the field — species caught, trap status, bait type, condition, and strikes.</p>
+      </div>
+      <div class="doc-card">
+        <div class="doc-card-icon"><i class="bi bi-graph-up"></i></div>
+        <h4>Reporting &amp; Analytics</h4>
+        <p>Visual charts and filterable tables give all users a clear view of predator activity trends across all trap lines.</p>
+      </div>
+      <div class="doc-card">
+        <div class="doc-card-icon"><i class="bi bi-download"></i></div>
+        <h4>CSV Export</h4>
+        <p>Download catch record data as CSV — formatted to be compatible with trap.nz's national data import requirements.</p>
+      </div>
+      <div class="doc-card">
+        <div class="doc-card-icon"><i class="bi bi-people"></i></div>
+        <h4>Role-Based Access</h4>
+        <p>Three roles — Observer, Operator, Admin — each with the right level of access for their responsibilities.</p>
+      </div>
+      <div class="doc-card">
+        <div class="doc-card-icon"><i class="bi bi-phone"></i></div>
+        <h4>Mobile Friendly</h4>
+        <p>Fully responsive design so field operators can log data directly from their phones while checking traps on campus.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Team -->
+  <div class="doc-section" id="team">
+    <div class="section-eyebrow">The People</div>
+    <h2 class="section-title">Meet Team Huhu</h2>
+    <p class="section-desc">Five Master of Applied Computing students at Lincoln University, New Zealand.</p>
+
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-photo">
+        <img src="{{ url_for('static', filename='images/team/ben.jpg') }}"
+                alt="Jeremiah Ruanes"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        </div>
+        <div class="team-body">
+          <div class="team-name">Ben Fitzgerald</div>
+          <div class="team-country">New Zealand</div>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar" style="background:#1a5c38;">MH</div>
+        <div class="team-body">
+          <div class="team-name">Ming-Cheng Hsiao</div>
+          <div class="team-country">Taiwan</div>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo">
+        <img src="{{ url_for('static', filename='images/team/dayoung.jpg') }}"
+                alt="Jeremiah Ruanes"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        </div>
+        <div class="team-body">
+          <div class="team-name">Da-young Kim</div>
+          <div class="team-country">South Korea</div>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo">
+        <img src="{{ url_for('static', filename='images/team/jeremiah.jpg') }}"
+                alt="Jeremiah Ruanes"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        </div>
+        <div class="team-body">
+        <div class="team-name">Jeremiah Ruanes</div>
+        <div class="team-country">Philippines</div>
+        </div>
+    </div>
+      <div class="team-card">
+        <div class="team-avatar" style="background:#e8920a;">ZS</div>
+        <div class="team-body">
+          <div class="team-name">Ziyuan Sun</div>
+          <div class="team-country">China</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="doc-section" id="tech">
+    <div class="section-eyebrow">Technology</div>
+    <h2 class="section-title">Tech Stack</h2>
+    <p class="section-desc">Built using the technologies taught in the COMP639 curriculum. No SQLAlchemy, no ReactJS.</p>
+
+    <div style="background:#fff; border:1px solid var(--pf-200); border-radius:12px; overflow:hidden;">
+      <table class="tech-table">
+        <thead>
+          <tr><th>Layer</th><th>Technology</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Backend</td><td><span class="tech-badge">Python 3</span> <span class="tech-badge">Flask</span></td><td>Web framework, routing, session management</td></tr>
+          <tr><td>Database</td><td><span class="tech-badge">PostgreSQL</span> <span class="tech-badge">psycopg2</span></td><td>Relational data storage, ENUMs, FK constraints</td></tr>
+          <tr><td>Frontend</td><td><span class="tech-badge">Bootstrap 5</span> <span class="tech-badge">Jinja2</span></td><td>Responsive layout, templating, components</td></tr>
+          <tr><td>Charting</td><td><span class="tech-badge">Chart.js</span></td><td>Interactive reports — line, doughnut, bar charts</td></tr>
+          <tr><td>Maps</td><td><span class="tech-badge">Leaflet.js</span></td><td>Interactive trap location maps with LINZ base tiles</td></tr>
+          <tr><td>Email</td><td><span class="tech-badge">Flask-Mail</span></td><td>Password reset via Gmail SMTP</td></tr>
+          <tr><td>Auth</td><td><span class="tech-badge">Flask-Bcrypt</span></td><td>Password hashing (bcrypt, 12 rounds)</td></tr>
+          <tr><td>Hosting</td><td><span class="tech-badge">PythonAnywhere</span></td><td>Web app and PostgreSQL database hosting</td></tr>
+          <tr><td>Version Control</td><td><span class="tech-badge">Git</span> <span class="tech-badge">GitHub</span></td><td>Collaborative development with branch-per-feature workflow</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- User Roles -->
+  <div class="doc-section" id="roles">
+    <div class="section-eyebrow">Access Control</div>
+    <h2 class="section-title">User Roles</h2>
+    <p class="section-desc">Three roles with role-based permissions enforced via a custom <code>@role_required()</code> decorator on every route.</p>
+
+    <div class="card-grid card-grid-3">
+      <div class="role-card">
+        <div class="role-card-header">
+          <span class="role-badge" style="background:var(--pf-100); color:var(--pf-800);">👁 Observer</span>
+          <span style="font-size:11px; color:#6b7c72;">Volunteer / Visitor</span>
+        </div>
+        <div class="role-card-body">
+          <ul class="list-unstyled">
+            <li>✅ View trap lines and traps on map</li>
+            <li>✅ Browse and filter catch records</li>
+            <li>✅ View incidental observations</li>
+            <li>✅ Download CSV data</li>
+            <li>✅ View reports and charts</li>
+            <li>✅ View own profile</li>
+            <li>❌ Cannot add or edit records</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="role-card" style="border-color:var(--pf-400); border-width:2px;">
+        <div class="role-card-header" style="background:var(--pf-50);">
+          <span class="role-badge" style="background:#e8f4fd; color:#1a6fa8;">🔧 Operator</span>
+          <span style="font-size:11px; color:#6b7c72;">Field Worker</span>
+        </div>
+        <div class="role-card-body">
+          <ul class="list-unstyled">
+            <li>✅ Everything Observers can do</li>
+            <li>✅ Add new trap catch records</li>
+            <li>✅ Edit own catch records</li>
+            <li>✅ Record incidental observations</li>
+            <li>✅ View assigned lines with map</li>
+            <li>✅ View operator dashboard</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="role-card">
+        <div class="role-card-header">
+          <span class="role-badge" style="background:#f3e8ff; color:#5b21b6;">⚙️ Admin</span>
+          <span style="font-size:11px; color:#6b7c72;">System Administrator</span>
+        </div>
+        <div class="role-card-body">
+          <ul class="list-unstyled">
+            <li>✅ Everything Operators can do</li>
+            <li>✅ Create &amp; manage trap lines/traps</li>
+            <li>✅ Assign operators to lines</li>
+            <li>✅ Retire lines and traps</li>
+            <li>✅ Manage all users &amp; roles</li>
+            <li>✅ Manage species, statuses, bait types</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Stories -->
+  <div class="doc-section" id="stories">
+    <div class="section-eyebrow">Requirements</div>
+    <h2 class="section-title">User Stories</h2>
+    <p class="section-desc">All 27 user stories from the planning report, with priority and implementation status. Story numbers match the planning report submitted 22 March 2026.</p>
+
+    <div style="background:#fff; border:1px solid var(--pf-200); border-radius:12px; overflow:hidden;">
+      <table class="story-table">
+        <thead>
+          <tr>
+            <th style="width:60px;">#</th>
+            <th>As a...</th>
+            <th>I want to...</th>
+            <th style="width:100px;">Priority</th>
+            <th style="width:90px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="story-group-header"><td colspan="5">Registration &amp; Authentication</td></tr>
+          <tr>
+            <td class="story-id">US-09</td>
+            <td>Visitor</td>
+            <td class="story-text">Register as an Observer so I can view project information and participate in activities</td>
+            <td><span class="priority-high">High</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-04</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">Log in so I can access features specific to my role</td>
+            <td><span class="priority-high">High</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-03</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">Log out so others using my device cannot access my account</td>
+            <td><span class="priority-high">High</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+
+          <tr class="story-group-header"><td colspan="5">User Profile</td></tr>
+          <tr>
+            <td class="story-id">US-08</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">Change my password so others who know my current password can no longer access my account</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-10</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">Reset my password via email so I can regain access to my account if I forget my password</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-07</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">View and update my own user profile so I can control how I am represented and keep contact and emergency details up to date</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+
+          <tr class="story-group-header"><td colspan="5">Lines &amp; Traps</td></tr>
+          <tr>
+            <td class="story-id">US-05</td>
+            <td>Admin</td>
+            <td class="story-text">Create new trap lines so I can expand the network</td>
+            <td><span class="priority-high">High</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-12</td>
+            <td>Admin</td>
+            <td class="story-text">Add traps to lines so I can complete and maintain the network for effective monitoring</td>
+            <td><span class="priority-high">High</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-01</td>
+            <td>Admin</td>
+            <td class="story-text">Edit lines and individual traps so information remains accurate</td>
+            <td><span class="priority-high">High</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-02</td>
+            <td>Admin</td>
+            <td class="story-text">Retire existing lines and individual traps so outdated equipment can be removed from active use</td>
+            <td><span class="priority-high">High</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-13</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">View a list of lines and all traps on a specific line to understand the layout of the network</td>
+            <td><span class="priority-high">High</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-27</td>
+            <td>Operator / Admin</td>
+            <td class="story-text">View which operators are assigned to what lines to understand network management and prepare for fieldwork</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-11</td>
+            <td>Admin</td>
+            <td class="story-text">Assign or reassign lines to operators so they are only responsible for lines they are trained and approved to work on</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+
+          <tr class="story-group-header"><td colspan="5">Add Data</td></tr>
+          <tr>
+            <td class="story-id">US-15</td>
+            <td>Operator</td>
+            <td class="story-text">Add new trap catch records to the lines I am assigned to so I can keep predator-control records accurate and up to date</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-17</td>
+            <td>Operator</td>
+            <td class="story-text">Record incidental observations (bird sightings, predator tracks, native species) during fieldwork so important biodiversity information is not lost</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+
+          <tr class="story-group-header"><td colspan="5">Manage Data</td></tr>
+          <tr>
+            <td class="story-id">US-06</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">Browse, filter, and view the trap catch data collected on each of the lines so I can understand predator activity</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-18</td>
+            <td>Operator</td>
+            <td class="story-text">Edit my trap catch records to correct any errors I have made so my data remains accurate</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-14</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">Download all trap catch record data as a CSV file so I can analyse it further</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-19</td>
+            <td>Admin</td>
+            <td class="story-text">Manage the types of species caught so that all catches are accurately classified</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-21</td>
+            <td>Admin</td>
+            <td class="story-text">Manage the trap catch record status so that all statuses are accurately classified</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-20</td>
+            <td>Admin</td>
+            <td class="story-text">Manage the bait type so that all bait types are accurately classified</td>
+            <td><span class="priority-medium">Medium</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+
+          <tr class="story-group-header"><td colspan="5">Data Graphs</td></tr>
+          <tr>
+            <td class="story-id">US-26</td>
+            <td>Observer / Operator / Admin</td>
+            <td class="story-text">View graphical summaries of predator trap catch data so I can quickly understand trends across different lines</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+
+          <tr class="story-group-header"><td colspan="5">Managing Users</td></tr>
+          <tr>
+            <td class="story-id">US-22</td>
+            <td>Admin</td>
+            <td class="story-text">View a list of all registered users along with their role and account status</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-23</td>
+            <td>Admin</td>
+            <td class="story-text">View the complete profile details of any registered user including contact, system status, and emergency contact information</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-16</td>
+            <td>Admin</td>
+            <td class="story-text">View operator's assigned lines and activity history so I can understand each operator's involvement and monitor their performance</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-24</td>
+            <td>Admin</td>
+            <td class="story-text">Activate or deactivate user accounts so I can prevent inappropriate users from accessing the system</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+          <tr>
+            <td class="story-id">US-25</td>
+            <td>Admin</td>
+            <td class="story-text">Change the roles of other users between Observer, Operator, and Admin so I can give users the roles necessary to do their work</td>
+            <td><span class="priority-low">Low</span></td>
+            <td><span class="status-done">✓ Done</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="doc-section" id="features">
+    <div class="section-eyebrow">Product</div>
+    <h2 class="section-title">Key Features</h2>
+    <p class="section-desc">A walkthrough of the major features built across both sprints.</p>
+
+    <div style="display:flex; flex-direction:column; gap:28px;">
+
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:24px; align-items:start; background:#fff; border:1px solid var(--pf-200); border-radius:12px; overflow:hidden;">
+        <div style="background:var(--pf-800); padding:28px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:32px; margin-bottom:12px;">🗺️</div>
+          <div style="font-family:'Cabin',sans-serif; font-size:16px; font-weight:700; color:#fff; margin-bottom:6px;">Interactive Trap Maps</div>
+          <div style="font-size:12px; color:var(--pf-300);">Leaflet.js + LINZ base tiles</div>
+        </div>
+        <div style="padding:24px;">
+          <p style="font-size:13px; color:#4a5c50; line-height:1.7; margin:0 0 12px;">Every trap line and individual trap is plotted on an interactive map using Leaflet.js with LINZ topographic base tiles. Users can click traps to view details and navigate to the line detail page. Active and retired traps are visually differentiated.</p>
+          <ul style="font-size:13px; color:#4a5c50; line-height:1.8; margin:0; padding-left:18px;">
+            <li>Lines index — all trap lines with map overview</li>
+            <li>Line detail — individual trap locations per line</li>
+            <li>My Lines — operator's assigned lines with map</li>
+            <li>Trap retirement preserved on map with visual cue</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:24px; align-items:start; background:#fff; border:1px solid var(--pf-200); border-radius:12px; overflow:hidden;">
+        <div style="background:var(--pf-700); padding:28px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:32px; margin-bottom:12px;">📊</div>
+          <div style="font-family:'Cabin',sans-serif; font-size:16px; font-weight:700; color:#fff; margin-bottom:6px;">Reports &amp; Charts</div>
+          <div style="font-size:12px; color:var(--pf-300);">Chart.js with live DB queries</div>
+        </div>
+        <div style="padding:24px;">
+          <p style="font-size:13px; color:#4a5c50; line-height:1.7; margin:0 0 12px;">The reports page features four interactive Chart.js charts with filters for line, operator, and date range. All data updates dynamically from the PostgreSQL database.</p>
+          <ul style="font-size:13px; color:#4a5c50; line-height:1.8; margin:0; padding-left:18px;">
+            <li>Catch trend over time — weekly line chart</li>
+            <li>Captures by species — doughnut chart with 5% threshold grouping</li>
+            <li>Catches by trap line — horizontal bar chart, top 10 with "Others" modal</li>
+            <li>Trap status distribution — stacked bar chart per line</li>
+            <li>Key insights panel — busiest line, maintenance alerts, capture rate</li>
+            <li>Print/PDF export — charts captured as PNG via canvas</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:24px; align-items:start; background:#fff; border:1px solid var(--pf-200); border-radius:12px; overflow:hidden;">
+        <div style="background:var(--pf-600); padding:28px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:32px; margin-bottom:12px;">👥</div>
+          <div style="font-family:'Cabin',sans-serif; font-size:16px; font-weight:700; color:#fff; margin-bottom:6px;">User Management</div>
+          <div style="font-size:12px; color:var(--pf-300);">Admin role — full control</div>
+        </div>
+        <div style="padding:24px;">
+          <p style="font-size:13px; color:#4a5c50; line-height:1.7; margin:0 0 12px;">Admins have a full user management interface with search, filtering, sorting, and the ability to view detailed profiles, change roles, and activate/deactivate accounts.</p>
+          <ul style="font-size:13px; color:#4a5c50; line-height:1.8; margin:0; padding-left:18px;">
+            <li>Search by name or username</li>
+            <li>Filter by role and account status</li>
+            <li>Sort by name, role, status, date joined, last login</li>
+            <li>Modal confirmation for activate/deactivate</li>
+            <li>Role badge styling on edit role modal</li>
+            <li>Admin cannot deactivate own account</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:24px; align-items:start; background:#fff; border:1px solid var(--pf-200); border-radius:12px; overflow:hidden;">
+        <div style="background:var(--pf-500); padding:28px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:32px; margin-bottom:12px;">🔐</div>
+          <div style="font-family:'Cabin',sans-serif; font-size:16px; font-weight:700; color:#fff; margin-bottom:6px;">Authentication</div>
+          <div style="font-size:12px; color:var(--pf-100);">Secure, session-based</div>
+        </div>
+        <div style="padding:24px;">
+          <p style="font-size:13px; color:#4a5c50; line-height:1.7; margin:0 0 12px;">Full authentication system with role-based access control enforced via a custom decorator on every route. Password reset via email link.</p>
+          <ul style="font-size:13px; color:#4a5c50; line-height:1.8; margin:0; padding-left:18px;">
+            <li>Bcrypt password hashing (12 rounds)</li>
+            <li>Custom <code>@role_required()</code> decorator</li>
+            <li>Back-button protection after logout (cache headers)</li>
+            <li>Account deactivation check on every request</li>
+            <li>Password reset via Gmail SMTP token link</li>
+            <li>Read-only profile view + separate edit profile</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Database -->
+  <div class="doc-section" id="database">
+    <div class="section-eyebrow">Data Layer</div>
+    <h2 class="section-title">Database Design</h2>
+    <p class="section-desc">PostgreSQL with ENUMs for fixed value sets, foreign key constraints, and a normalised schema. Data fields align with the trap.nz CSV import format.</p>
+
+    <div class="card-grid card-grid-2">
+
+      <div class="db-table-card">
+        <div class="db-table-header">
+          <i class="bi bi-people" style="font-size:16px;"></i>
+          <span class="db-table-name">users</span>
+        </div>
+        <div class="db-table-body">
+          <div class="db-field"><span class="db-field-name">user_id</span><span class="db-field-type">SERIAL</span><span class="db-pk">PK</span></div>
+          <div class="db-field"><span class="db-field-name">username</span><span class="db-field-type">VARCHAR</span><span class="db-field-note">unique</span></div>
+          <div class="db-field"><span class="db-field-name">email</span><span class="db-field-type">VARCHAR</span><span class="db-field-note">unique</span></div>
+          <div class="db-field"><span class="db-field-name">password_hash</span><span class="db-field-type">VARCHAR</span><span class="db-field-note">bcrypt</span></div>
+          <div class="db-field"><span class="db-field-name">first_name, last_name</span><span class="db-field-type">VARCHAR</span></div>
+          <div class="db-field"><span class="db-field-name">role</span><span class="db-field-type">ENUM</span><span class="db-field-note">Observer / Operator / Admin</span></div>
+          <div class="db-field"><span class="db-field-name">account_status</span><span class="db-field-type">ENUM</span><span class="db-field-note">active / inactive</span></div>
+          <div class="db-field"><span class="db-field-name">date_joined, last_login</span><span class="db-field-type">TIMESTAMP</span></div>
+        </div>
+      </div>
+
+      <div class="db-table-card">
+        <div class="db-table-header">
+          <i class="bi bi-geo-alt" style="font-size:16px;"></i>
+          <span class="db-table-name">lines</span>
+        </div>
+        <div class="db-table-body">
+          <div class="db-field"><span class="db-field-name">line_id</span><span class="db-field-type">SERIAL</span><span class="db-pk">PK</span></div>
+          <div class="db-field"><span class="db-field-name">name</span><span class="db-field-type">VARCHAR</span><span class="db-field-note">unique</span></div>
+          <div class="db-field"><span class="db-field-name">type</span><span class="db-field-type">VARCHAR</span><span class="db-field-note">Grassland / Forest / Wetland / Urban / Mixed</span></div>
+          <div class="db-field"><span class="db-field-name">is_retired</span><span class="db-field-type">BOOLEAN</span></div>
+          <div class="db-field"><span class="db-field-name">retired_at</span><span class="db-field-type">TIMESTAMP</span></div>
+          <div class="db-field"><span class="db-field-name">retired_by</span><span class="db-field-type">INTEGER</span><span class="db-fk">FK → users</span></div>
+        </div>
+      </div>
+
+      <div class="db-table-card">
+        <div class="db-table-header">
+          <i class="bi bi-cpu" style="font-size:16px;"></i>
+          <span class="db-table-name">traps</span>
+        </div>
+        <div class="db-table-body">
+          <div class="db-field"><span class="db-field-name">trap_id</span><span class="db-field-type">SERIAL</span><span class="db-pk">PK</span></div>
+          <div class="db-field"><span class="db-field-name">code</span><span class="db-field-type">VARCHAR</span><span class="db-field-note">unique</span></div>
+          <div class="db-field"><span class="db-field-name">trap_type</span><span class="db-field-type">ENUM</span><span class="db-field-note">A24, DOC 150/200/250, Victor...</span></div>
+          <div class="db-field"><span class="db-field-name">line_id</span><span class="db-field-type">INTEGER</span><span class="db-fk">FK → lines</span></div>
+          <div class="db-field"><span class="db-field-name">latitude, longitude</span><span class="db-field-type">NUMERIC(9,6)</span></div>
+          <div class="db-field"><span class="db-field-name">is_retired</span><span class="db-field-type">BOOLEAN</span></div>
+          <div class="db-field"><span class="db-field-name">retired_at, retired_by</span><span class="db-field-type">TIMESTAMP / FK</span></div>
+        </div>
+      </div>
+
+      <div class="db-table-card">
+        <div class="db-table-header">
+          <i class="bi bi-clipboard2-check" style="font-size:16px;"></i>
+          <span class="db-table-name">trap_catches</span>
+        </div>
+        <div class="db-table-body">
+          <div class="db-field"><span class="db-field-name">catch_id</span><span class="db-field-type">SERIAL</span><span class="db-pk">PK</span></div>
+          <div class="db-field"><span class="db-field-name">trap_id</span><span class="db-field-type">INTEGER</span><span class="db-fk">FK → traps</span></div>
+          <div class="db-field"><span class="db-field-name">recorded_by_id</span><span class="db-field-type">INTEGER</span><span class="db-fk">FK → users</span></div>
+          <div class="db-field"><span class="db-field-name">species_caught</span><span class="db-field-type">VARCHAR</span><span class="db-fk">FK → species</span></div>
+          <div class="db-field"><span class="db-field-name">sex, maturity</span><span class="db-field-type">ENUM</span><span class="db-field-note">optional</span></div>
+          <div class="db-field"><span class="db-field-name">status</span><span class="db-field-type">VARCHAR</span><span class="db-fk">FK → trap_statuses</span></div>
+          <div class="db-field"><span class="db-field-name">rebaited, bait_type</span><span class="db-field-type">ENUM / VARCHAR</span></div>
+          <div class="db-field"><span class="db-field-name">trap_condition</span><span class="db-field-type">ENUM</span><span class="db-field-note">OK / Needs maintenance...</span></div>
+          <div class="db-field"><span class="db-field-name">strikes</span><span class="db-field-type">INTEGER</span><span class="db-field-note">0 = no catch</span></div>
+        </div>
+      </div>
+
+      <div class="db-table-card">
+        <div class="db-table-header">
+          <i class="bi bi-link-45deg" style="font-size:16px;"></i>
+          <span class="db-table-name">operator_lines</span>
+          <span style="font-size:11px; color:var(--pf-300); margin-left:8px;">junction table</span>
+        </div>
+        <div class="db-table-body">
+          <div class="db-field"><span class="db-field-name">operator_id</span><span class="db-field-type">INTEGER</span><span class="db-fk">FK → users</span></div>
+          <div class="db-field"><span class="db-field-name">line_id</span><span class="db-field-type">INTEGER</span><span class="db-fk">FK → lines</span></div>
+          <div class="db-field"><span class="db-field-name" style="color:#9aaa9f;">PK</span><span class="db-field-type" style="color:#9aaa9f;">Composite (operator_id, line_id)</span></div>
+        </div>
+      </div>
+
+      <div class="db-table-card">
+        <div class="db-table-header">
+          <i class="bi bi-binoculars" style="font-size:16px;"></i>
+          <span class="db-table-name">incidental_observations</span>
+        </div>
+        <div class="db-table-body">
+          <div class="db-field"><span class="db-field-name">observation_id</span><span class="db-field-type">SERIAL</span><span class="db-pk">PK</span></div>
+          <div class="db-field"><span class="db-field-name">operator_id</span><span class="db-field-type">INTEGER</span><span class="db-fk">FK → users</span></div>
+          <div class="db-field"><span class="db-field-name">line_id</span><span class="db-field-type">INTEGER</span><span class="db-fk">FK → lines</span></div>
+          <div class="db-field"><span class="db-field-name">observation_type</span><span class="db-field-type">ENUM</span><span class="db-field-note">Bird sighting / Predator tracks...</span></div>
+          <div class="db-field"><span class="db-field-name">latitude, longitude</span><span class="db-field-type">NUMERIC(9,6)</span></div>
+          <div class="db-field"><span class="db-field-name">notes</span><span class="db-field-type">TEXT</span><span class="db-field-note">optional</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:20px; background:var(--pf-50); border:1px solid var(--pf-200); border-radius:10px; padding:16px 20px;">
+      <div style="font-family:'Cabin',sans-serif; font-size:13px; font-weight:600; color:var(--pf-800); margin-bottom:8px;">Lookup tables</div>
+      <p style="font-size:12px; color:#6b7c72; margin:0;">
+        <code>species</code>, <code>trap_statuses</code>, and <code>bait_types</code> are managed lookup tables with <code>name</code> as the primary key.
+        Foreign key constraints with <code>ON UPDATE CASCADE</code> ensure data consistency if a lookup value is renamed by an Admin.
+      </p>
+    </div>
+  </div>
+
+  <!-- Scrum -->
+  <div class="doc-section" id="scrum">
+    <div class="section-eyebrow">Methodology</div>
+    <h2 class="section-title">Scrum Process</h2>
+    <p class="section-desc">Team Huhu followed the Scrum agile methodology across two sprints, with weekly Sprint Review meetings with the Product Owner.</p>
+
+    <div class="card-grid card-grid-2">
+      <div class="sprint-card">
+        <h4>Sprint 1</h4>
+        <div class="sprint-dates">Mid-March – late March 2026</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Database schema design and ERD</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>User registration, login, logout</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Role-based access control decorator</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Trap lines and traps — create, edit, retire</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Interactive Leaflet maps</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Add catch records and observations</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Observer, Operator, Admin dashboards</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>User management — list, view, role, activate</div>
+      </div>
+      <div class="sprint-card">
+        <h4>Sprint 2</h4>
+        <div class="sprint-dates">April 2026 – Sprint Review 20/21 April</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Reports page — 4 Chart.js charts with filters</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Operator filter, line status filter on reports</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Print/PDF export for reports</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Read-only profile + separate edit profile</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Remove profile photo feature</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Password reset via email token</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Sidebar scroll fix, collapse toggle</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Home page Meet the Team section</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Tiaki branding — CSS variables, site name</div>
+        <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Last login timestamp on logout</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px; background:#fff; border:1px solid var(--pf-200); border-radius:10px; padding:20px;">
+      <div style="font-family:'Cabin',sans-serif; font-size:13px; font-weight:600; color:var(--pf-800); margin-bottom:12px;">GitHub Workflow</div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:10px 14px; font-size:12px; color:#4a5c50;">
+          <strong style="color:var(--pf-700);">Branch per feature</strong><br>
+          Each user story worked on a dedicated branch
+        </div>
+        <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:10px 14px; font-size:12px; color:#4a5c50;">
+          <strong style="color:var(--pf-700);">Pull requests</strong><br>
+          PRs used for code review before merging to main
+        </div>
+        <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:10px 14px; font-size:12px; color:#4a5c50;">
+          <strong style="color:var(--pf-700);">Conventional commits</strong><br>
+          feat/ fix/ chore/ prefix convention
+        </div>
+        <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:10px 14px; font-size:12px; color:#4a5c50;">
+          <strong style="color:var(--pf-700);">Jira board</strong><br>
+          User stories tracked in real-time with story points
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Accounts -->
+  <div class="doc-section" id="accounts">
+    <div class="section-eyebrow">Live Demo</div>
+    <h2 class="section-title">Test Accounts</h2>
+    <p class="section-desc">Use these accounts to demonstrate the live application at <a href="http://pflu.pythonanywhere.com" target="_blank" style="color:var(--pf-600);">pflu.pythonanywhere.com</a>. All passwords are <code>Password1!</code></p>
+
+    <div style="background:#fff; border:1px solid var(--pf-200); border-radius:12px; overflow:hidden;">
+      <table class="accounts-table">
+        <thead>
+          <tr><th>Role</th><th>Username</th><th>Name</th><th>Password</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="background:#f3e8ff; color:#5b21b6; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:600;">Admin</span></td>
+            <td><code>smitchell</code></td>
+            <td>Sarah Mitchell</td>
+            <td><code>Password1!</code></td>
+            <td style="font-size:12px; color:#6b7c72;">Full admin access</td>
+          </tr>
+          <tr>
+            <td><span style="background:#f3e8ff; color:#5b21b6; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:600;">Admin</span></td>
+            <td><code>jthornton</code></td>
+            <td>James Thornton</td>
+            <td><code>Password1!</code></td>
+            <td style="font-size:12px; color:#6b7c72;">Full admin access</td>
+          </tr>
+          <tr>
+            <td><span style="background:#e8f4fd; color:#1a6fa8; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:600;">Operator</span></td>
+            <td><code>landerson</code></td>
+            <td>Liam Anderson</td>
+            <td><code>Password1!</code></td>
+            <td style="font-size:12px; color:#6b7c72;">Assigned: North Paddock, Shelter Belt, Heritage Walk</td>
+          </tr>
+          <tr>
+            <td><span style="background:#e8f4fd; color:#1a6fa8; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:600;">Operator</span></td>
+            <td><code>owalker</code></td>
+            <td>Olivia Walker</td>
+            <td><code>Password1!</code></td>
+            <td style="font-size:12px; color:#6b7c72;">Assigned: Main Campus, Library, Administration, Conference</td>
+          </tr>
+          <tr>
+            <td><span style="background:#e8f4fd; color:#1a6fa8; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:600;">Operator</span></td>
+            <td><code>ncampbell</code></td>
+            <td>Noah Campbell</td>
+            <td><code>Password1!</code></td>
+            <td style="font-size:12px; color:#6b7c72;">Assigned: South Boundary, Shelter Belt, Orchards</td>
+          </tr>
+          <tr>
+            <td><span style="background:#e6f4ec; color:#1a5c38; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:600;">Observer</span></td>
+            <td><code>ataylor</code></td>
+            <td>Ava Taylor</td>
+            <td><code>Password1!</code></td>
+            <td style="font-size:12px; color:#6b7c72;">View only access</td>
+          </tr>
+          <tr>
+            <td><span style="background:#e6f4ec; color:#1a5c38; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:600;">Observer</span></td>
+            <td><code>mharris</code></td>
+            <td>Mason Harris</td>
+            <td><code>Password1!</code></td>
+            <td style="font-size:12px; color:#6b7c72;">View only access</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:16px; background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:14px 16px; font-size:12px; color:#6b7c72;">
+      <i class="bi bi-info-circle" style="color:var(--pf-600); margin-right:6px;"></i>
+      The database contains 34 users total — 4 admins, 10 operators (2 inactive), 20 observers (5 inactive) — with catch records spanning January 2024 to April 2026 across 50 trap lines on Lincoln University campus.
+    </div>
+  </div>
+
+  <!-- GenAI -->
+  <div class="doc-section" id="genai">
+    <div class="section-eyebrow">Transparency</div>
+    <h2 class="section-title">GenAI Acknowledgement</h2>
+    <p class="section-desc">As required by the COMP639 brief, the following acknowledges use of Generative AI tools during this project.</p>
+
+    <div style="background:#fff; border:1px solid var(--pf-200); border-radius:12px; padding:28px;">
+      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+
+        <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:16px;">
+          <div style="font-family:'Cabin',sans-serif; font-size:13px; font-weight:700; color:var(--pf-800); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <i class="bi bi-check2-circle" style="color:var(--pf-500);"></i> What we used AI for
+          </div>
+          <ul style="font-size:12px; color:#4a5c50; line-height:1.8; margin:0; padding-left:16px;">
+            <li>Complex multi-join SQL queries for reports and dashboards</li>
+            <li>Repetitive boilerplate across similar route structures</li>
+            <li>Generating realistic NZ-context sample data for populate_database.sql</li>
+            <li>Debugging Flask routes and Jinja2 template errors</li>
+            <li>CSS component design and custom.css structure</li>
+          </ul>
+        </div>
+
+        <div style="background:#fdecea; border:1px solid #f5c6cb; border-radius:8px; padding:16px;">
+          <div style="font-family:'Cabin',sans-serif; font-size:13px; font-weight:700; color:#a32d2d; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <i class="bi bi-x-circle"></i> What we did independently
+          </div>
+          <ul style="font-size:12px; color:#6b3030; line-height:1.8; margin:0; padding-left:16px;">
+            <li>All application architecture and route design decisions</li>
+            <li>Database schema design and ERD</li>
+            <li>Feature decisions and UI/UX design choices</li>
+            <li>All template structure and layout decisions</li>
+            <li>Scrum ceremonies, sprint planning, and team coordination</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div style="margin-top:16px; font-size:12px; color:#6b7c72; border-top:1px solid var(--pf-200); padding-top:16px;">
+        <strong style="color:#1a1f1b;">Tool used:</strong> Claude (Anthropic) — used as a development accelerator for specific, well-defined tasks, not to generate complete features end-to-end. All logic, design, and architectural decisions remained with the team.
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="background:var(--pf-900); padding:32px 64px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <div style="font-family:'Cabin',sans-serif; font-size:16px; font-weight:700; color:#fff;">Tiaki</div>
+      <div style="font-size:11px; color:var(--pf-500); margin-top:2px;">Predator Trapping &amp; Monitoring · Lincoln University</div>
+    </div>
+    <div style="font-size:11px; color:var(--pf-600);">
+      COMP639 Group Project 1 · Team Huhu · Semester 1, 2026
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const sections = document.querySelectorAll('[id]');
+  const navLinks = document.querySelectorAll('.doc-nav a');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(section => {
+      if (window.scrollY >= section.offsetTop - 80) {
+        current = section.getAttribute('id');
+      }
+    });
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+
+</body>
+</html>
