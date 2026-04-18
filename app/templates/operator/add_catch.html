@@ -207,6 +207,13 @@
 </div>
 
 <script>
+  // Prevent 'e', 'E', '+', and '-' from being typed
+  document.querySelector('input[type="number"]').addEventListener('keydown', (e) => {
+      if (['e', 'E', '+', '-'].includes(e.key)) {
+          e.preventDefault();
+      }
+  });
+
   document.addEventListener('DOMContentLoaded', function() {
     // ── Line → Trap filter ──────────────────────────────────────────────
     const lineSelect = document.getElementById('lineSelect');

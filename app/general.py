@@ -115,7 +115,6 @@ def catch_records():
         records=records, 
         selected_filters=filters, 
         filter_data=filter_data,
-        is_my_records=True if session.get('role') == 'Admin' else False,
         trap_map=trap_map if session.get('role') == 'Admin' else None
     )
 
