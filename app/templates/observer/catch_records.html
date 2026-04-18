@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}{% if is_my_records %}My Records{% else %}Catch Records{% endif %}{% endblock %}
+{% block title %}{% if is_my_records %}My Catch Records{% else %}Catch Records{% endif %}{% endblock %}
 {% block content %}
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">{% if is_my_records %}My Records{% else %}Catch Records{% endif %}</h2>
+    <h2 class="mb-0">{% if is_my_records %}My Catch Records{% else %}Catch Records{% endif %}</h2>
     {% if records %}
       <button id="downloadCsvBtn" class="btn-sm-pf">
         <i class="bi bi-download me-1"></i>Download CSV
@@ -33,9 +33,17 @@
         <div class="col-auto">
           <select name="line_id" class="form-select form-select-sm" onchange="this.form.submit()">
             <option value="">All Lines</option>
-            {% for line in filter_data.lines %}
-              <option value="{{ line.line_id }}" {% if selected_filters.line_id|string == line.line_id|string %}selected{% endif %}>{{ line.name }}</option>
-            {% endfor %}
+            {% if is_my_records %}
+              {% for line in filter_data.lines %}
+                {% if line.line_id in line_ids_for_operator %}
+                  <option value="{{ line.line_id }}" {% if selected_filters.line_id|string == line.line_id|string %}selected{% endif %}>{{ line.name }}</option>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              {% for line in filter_data.lines %}
+                <option value="{{ line.line_id }}" {% if selected_filters.line_id|string == line.line_id|string %}selected{% endif %}>{{ line.name }}</option>
+              {% endfor %}
+            {% endif %}
           </select>
         </div>
 
@@ -92,7 +100,7 @@
   <div class="panel">
     <div class="panel-header">
       <div>
-        <h3 class="panel-title">{% if is_my_records %}My Records{% else %}All Catch Records{% endif %}</h3>
+        <h3 class="panel-title">{% if is_my_records %}My Catch Records{% else %}All Catch Records{% endif %}</h3>
       </div>
       <span class="panel-meta"><i class="bi bi-arrow-down-up me-1"></i>Click a column header to sort</span>
     </div>
@@ -110,7 +118,7 @@
           <th role="button" data-sort-col="7" class="sortable">Rebaited <i class="bi bi-chevron-expand text-muted small"></i></th>
           <th role="button" data-sort-col="8" class="sortable">Bait Type <i class="bi bi-chevron-expand text-muted small"></i></th>
           <th role="button" data-sort-col="9" class="sortable">Condition <i class="bi bi-chevron-expand text-muted small"></i></th>
-          {% if is_my_records %}<th>Action</th>{% endif %}
+          {% if is_my_records or session.get('role') == 'Admin' %}<th>Action</th>{% endif %}
         </tr>
       </thead>
       <tbody>
@@ -150,7 +158,7 @@
               {% endif %}
             </td>
             <td>{{ r.trap_condition }}</td>
-            {% if is_my_records %}
+            {% if is_my_records or session.get('role') == 'Admin' %}
               {% if trap_map and trap_map.get(r.trap_id).is_retired == False %}
                 <td>
                   <a href="{{ url_for('edit_catch', catch_id=r.catch_id) }}" class="btn-sm-outline">

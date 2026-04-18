@@ -208,6 +208,12 @@ def my_records():
         cursor.execute("SELECT trap_id, is_retired FROM traps")
         traps = cursor.fetchall()
 
+    # Get line_ids that belong to this operator to determine if they should be shown in line filter dropdown
+    user_id = session.get('user_id')
+    with db.get_cursor() as cursor:
+        cursor.execute("SELECT line_id FROM operator_lines WHERE operator_id = %s", (user_id,))
+        line_ids_for_operator = [row['line_id'] for row in cursor.fetchall()]
+
     trap_map = {t["trap_id"]: t for t in traps}
 
     return render_template(
@@ -216,7 +222,8 @@ def my_records():
         selected_filters=filters, 
         filter_data=filter_data,
         is_my_records=True,
-        trap_map=trap_map
+        trap_map=trap_map,
+        line_ids_for_operator=line_ids_for_operator
     )
 
 
