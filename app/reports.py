@@ -106,19 +106,16 @@ def reports():
             ''', all_params)
             stats['total_records'] = cursor.fetchone()['count']
 
-            # Active trap %
-            cursor.execute('SELECT COUNT(*) AS total FROM traps WHERE is_retired = FALSE')
-            total_traps = cursor.fetchone()['total']
-            cursor.execute('''
-                SELECT COUNT(DISTINCT tc.trap_id) AS active
-                FROM trap_catches tc
-                JOIN traps t ON tc.trap_id = t.trap_id
+            # Active traps — count of non-retired traps on non-retired lines
+            cursor.execute(f'''
+                SELECT COUNT(*) AS total
+                FROM traps t
+                JOIN lines l ON t.line_id = l.line_id
                 WHERE t.is_retired = FALSE
-                AND tc.date >= NOW() - INTERVAL '30 days'
-            ''')
-            active_traps = cursor.fetchone()['active']
-            if total_traps > 0:
-                stats['active_trap_pct'] = round((active_traps / total_traps) * 100)
+                AND l.is_retired = FALSE
+                {line_sql} {status_filter}
+            ''', line_params)
+            stats['active_trap_pct'] = cursor.fetchone()['total']
 
             # Top species
             cursor.execute(f'''
