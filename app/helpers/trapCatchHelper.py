@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.helpers.dbHelper import fetch_lookup_data, fetch_operator_trap_ids, fetch_operator_line_ids
+from app.helpers.dbHelper import fetch_lookup_data, fetch_operator_trap_ids, fetch_operator_line_ids, fetch_all_trap_ids
 from app.utils import LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE
 
 ################# validate catch data #################
@@ -67,21 +67,22 @@ def validate_bait_details(bait_type, bait_details):
         return "Bait details are required when bait type is 'Other'."
     return ""
 
-def validate_all_catch_record_fields(data, db, operator_id):
+def validate_all_catch_record_fields(data, db, operator_id, role='Operator'):
     """Validate catch record fields. Fetches lookup data from database internally."""
     pass_check = True
-    
+
     # Fetch general lookup data (no user context needed)
     lookup = fetch_lookup_data(db)
-    
+
     strikes_error, species_error = validate_strikes_and_species(
-        data.get('strikes'), 
-        data.get('species_caught'), 
+        data.get('strikes'),
+        data.get('species_caught'),
         lookup['valid_species']
     )
 
+    valid_trap_ids = fetch_all_trap_ids(db) if role == 'Admin' else fetch_operator_trap_ids(db, operator_id)
     errors = {
-        'trap_id': validate_trap_id(data.get('trap_id'), fetch_operator_trap_ids(db, operator_id)),
+        'trap_id': validate_trap_id(data.get('trap_id'), valid_trap_ids),
         'date': validate_date(data.get('date', '')),
         'species_caught': species_error,
         'status': validate_lookup_field(data.get('status'), lookup['valid_statuses'], 'Status'),
