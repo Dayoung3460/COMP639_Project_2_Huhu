@@ -669,10 +669,10 @@
           <ul class="list-unstyled">
             <li>✅ Everything Observers can do</li>
             <li>✅ Add new trap catch records</li>
-            <li>✅ Edit own catch records</li>
             <li>✅ Record incidental observations</li>
+            <li>✅ Edit own catch/observation records</li>
             <li>✅ View assigned lines with map</li>
-            <li>✅ View operator dashboard</li>
+            <li>✅ View Operator dashboard</li>
           </ul>
         </div>
       </div>
@@ -684,9 +684,9 @@
         </div>
         <div class="role-card-body">
           <ul class="list-unstyled">
-            <li>✅ Everything Operators can do</li>
+            <li>✅ Everything Observers can do</li>
             <li>✅ Create &amp; manage trap lines/traps</li>
-            <li>✅ Assign operators to lines</li>
+            <li>✅ Assign Operators to lines</li>
             <li>✅ Retire lines and traps</li>
             <li>✅ Manage all users &amp; roles</li>
             <li>✅ Manage species, statuses, bait types</li>
@@ -1123,7 +1123,7 @@
   <div class="doc-section" id="scrum">
     <div class="section-eyebrow">Methodology</div>
     <h2 class="section-title">Scrum Process</h2>
-    <p class="section-desc">Team Huhu followed the Scrum agile methodology across two sprints, with weekly Sprint Review meetings with the Product Owner.</p>
+    <p class="section-desc">Team Huhu followed the Scrum Agile methodology across two Sprints, with daily Stand Ups and Sprint Planning/Review Meetings with the Product Owner at the start/end of each Sprint.</p>
 
     <div class="card-grid card-grid-2">
       <div class="sprint-card">
@@ -1140,7 +1140,7 @@
       </div>
       <div class="sprint-card">
         <h4>Sprint 2</h4>
-        <div class="sprint-dates">April 2026 – Sprint Review 20/21 April</div>
+        <div class="sprint-dates">Late March – Mid April 2026</div>
         <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Reports page — 4 Chart.js charts with filters</div>
         <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Operator filter, line status filter on reports</div>
         <div class="sprint-item"><i class="bi bi-check-circle-fill"></i>Print/PDF export for reports</div>
@@ -1159,7 +1159,7 @@
       <div style="display:flex; gap:12px; flex-wrap:wrap;">
         <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:10px 14px; font-size:12px; color:#4a5c50;">
           <strong style="color:var(--pf-700);">Branch per feature</strong><br>
-          Each user story worked on a dedicated branch
+          Each user story on a dedicated branch
         </div>
         <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:10px 14px; font-size:12px; color:#4a5c50;">
           <strong style="color:var(--pf-700);">Pull requests</strong><br>
@@ -1167,7 +1167,7 @@
         </div>
         <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:10px 14px; font-size:12px; color:#4a5c50;">
           <strong style="color:var(--pf-700);">Conventional commits</strong><br>
-          feat/ fix/ chore/ prefix convention
+          feat/ fix/ chore/ docs/ prefix convention
         </div>
         <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:10px 14px; font-size:12px; color:#4a5c50;">
           <strong style="color:var(--pf-700);">Jira board</strong><br>
@@ -1252,42 +1252,38 @@
   <div class="doc-section" id="genai">
     <div class="section-eyebrow">Transparency</div>
     <h2 class="section-title">GenAI Acknowledgement</h2>
-    <p class="section-desc">As required by the COMP639 brief, the following acknowledges use of Generative AI tools during this project.</p>
+    <p class="section-desc">Generative AI tools (including ChatGPT, Claude, and Gemini) were utilised throughout the project lifecycle to assist with various development tasks.</p>
 
     <div style="background:#fff; border:1px solid var(--pf-200); border-radius:12px; padding:28px;">
       <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
 
         <div style="background:var(--pf-50); border:1px solid var(--pf-200); border-radius:8px; padding:16px;">
           <div style="font-family:'Cabin',sans-serif; font-size:13px; font-weight:700; color:var(--pf-800); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-            <i class="bi bi-check2-circle" style="color:var(--pf-500);"></i> What we used AI for
+            <i class="bi bi-check2-circle" style="color:var(--pf-500);"></i> AI was primarily used by the team for:
           </div>
           <ul style="font-size:12px; color:#4a5c50; line-height:1.8; margin:0; padding-left:16px;">
             <li>Complex multi-join SQL queries for reports and dashboards</li>
             <li>Repetitive boilerplate across similar route structures</li>
-            <li>Generating realistic NZ-context sample data for populate_database.sql</li>
+            <li>Generating realistic NZ-context sample data</li>
             <li>Debugging Flask routes and Jinja2 template errors</li>
-            <li>CSS component design and custom.css structure</li>
+            <li>CSS component design and the structure of Tiaki's dedicated CSS style guide</li>
           </ul>
         </div>
 
         <div style="background:#fdecea; border:1px solid #f5c6cb; border-radius:8px; padding:16px;">
           <div style="font-family:'Cabin',sans-serif; font-size:13px; font-weight:700; color:#a32d2d; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-            <i class="bi bi-x-circle"></i> What we did independently
+            <i class="bi bi-x-circle"></i> What was mostly independently managed
           </div>
           <ul style="font-size:12px; color:#6b3030; line-height:1.8; margin:0; padding-left:16px;">
-            <li>All application architecture and route design decisions</li>
-            <li>Database schema design and ERD</li>
+            <li>Application architecture and route design decisions</li>
+            <li>Database schema design</li>
             <li>Feature decisions and UI/UX design choices</li>
-            <li>All template structure and layout decisions</li>
+            <li>Template structure and layout decisions</li>
             <li>Scrum ceremonies, sprint planning, and team coordination</li>
           </ul>
         </div>
 
-      </div>
-
-      <div style="margin-top:16px; font-size:12px; color:#6b7c72; border-top:1px solid var(--pf-200); padding-top:16px;">
-        <strong style="color:#1a1f1b;">Tool used:</strong> Claude (Anthropic) — used as a development accelerator for specific, well-defined tasks, not to generate complete features end-to-end. All logic, design, and architectural decisions remained with the team.
-      </div>
+      </div>      
     </div>
   </div>
 

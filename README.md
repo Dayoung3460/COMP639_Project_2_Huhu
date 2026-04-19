@@ -12,11 +12,11 @@ Built as part of **COMP639 Group Project 1, Semester 1, 2026** by Team Huhu at L
 
 | Name | GitHub |
 |---|---|
-| Ben Fitzgerald | @Ben-Fitzgerald |
-| Da-young Kim | @Da-young-Kim |
-| Ming-Cheng Hsiao | @Ming-Cheng-Hsiao |
-| Ziyuan Sun | @ziyuansun |
-| Jeremiah Ruanes | @jeremiahruanes |
+| Ben Fitzgerald | @Ben-Fitzgerald-1170063 |
+| Da-young Kim | @Dayoung-Kim-1171294 |
+| Ming-Cheng Hsiao | @hsiaomingcheng |
+| Ziyuan Sun | @Ziyuan-Sun-1172292 |
+| Jeremiah Ruanes | @Jeremiah-Ruanes-1172832 |
 
 ---
 
@@ -37,20 +37,20 @@ Built as part of **COMP639 Group Project 1, Semester 1, 2026** by Team Huhu at L
 ## Features
 
 **All roles**
-- View trap lines and traps on an interactive map
-- Browse and filter catch records and incidental observations
+- View all trap lines and traps on an interactive map
+- Browse and filter all catch records and incidental observations
 - View reports and charts with filters by line, operator, and date range
 - Download catch records as CSV
 
 **Operator** (field worker)
-- Add and edit catch records for assigned trap lines
+- Add and edit own catch records for assigned trap lines
 - Record incidental observations
 - View assigned lines with map
 
 **Admin** (system administrator)
-- Manage users — create, assign roles, activate/deactivate
-- Create and manage trap lines and traps
-- Assign operators to lines
+- Manage users — assign roles, activate/deactivate
+- Create and edit trap lines and traps
+- Assign/deassign operators to lines
 - Manage lookup data — species, trap statuses, bait types
 - Retire lines and traps
 
@@ -85,7 +85,6 @@ COMP639_Project_1_Huhu/
 │   └── populate_database.sql       # Sample data script
 └── app/
     ├── __init__.py                 # App factory, context processor, filters
-    ├── connect.py                  # DB connection config
     ├── db.py                       # PostgreSQL connection handler
     ├── utils.py                    # Decorators, validators, helpers
     ├── auth.py                     # Register, login, logout, profile, password
@@ -157,9 +156,7 @@ psql -U postgres -d your_database -f sql/create_database.sql
 psql -U postgres -d your_database -f sql/populate_database.sql
 ```
 
-6. **Update `app/connect.py`** with your local DB connection details.
-
-7. **Run the application**
+6. **Run the application**
 ```bash
 python3 run.py
 ```
@@ -171,29 +168,22 @@ Visit `http://127.0.0.1:5000`
 ## PythonAnywhere Deployment
 
 1. Upload all project files via the PythonAnywhere Files tab or GitHub pull
-2. Set the WSGI file to point to `run.py`
-3. Add `lincolnmac` as a teacher via the site configuration
-4. Configure the `.env` file on PythonAnywhere with production DB credentials
-5. Reload the web app
+2. Edit the WSGI configuration file to import your app (e.g., `from app import app as application`)
+3. Add `lincolnmac` as a teacher via the Account -> Education tab
+4. Create and configure the `.env` file in your project root with production DB credentials and a secure `SECRET_KEY`
+5. Reload the web app from the Web tab
 
 ---
 
 ## GenAI Acknowledgement
 
-Claude (Anthropic) was used during development to accelerate specific tasks:
+All team members utilised Generative AI tools (including ChatGPT, Claude, and Gemini) throughout the project lifecycle to assist with various development tasks. 
 
-**Used AI for:**
+**AI was primarily used by the team for:**
 - Complex multi-join SQL queries for reports and dashboards
 - Repetitive boilerplate across similar route structures
 - Generating realistic NZ-context sample data for `populate_database.sql`
 - Debugging Flask routes and Jinja2 template errors
 - CSS component design and `custom.css` structure
 
-**Done independently:**
-- All application architecture and route design decisions
-- Database schema design and ERD
-- Feature decisions and UI/UX design choices
-- All template structure and layout decisions
-- Scrum ceremonies, sprint planning, and team coordination
-
-Claude was used as a development accelerator for specific, well-defined tasks — not to generate complete features end-to-end. All logic, design, and architectural decisions remained with the team.
+While GenAI served as a valuable development accelerator for everyone, the team mostly independently managed core application architecture, database schema design, UI/UX decisions, and final code reviews to ensure the project met all requirements.
