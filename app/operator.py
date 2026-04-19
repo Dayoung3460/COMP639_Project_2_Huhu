@@ -5,7 +5,7 @@ from app import app, db
 import os
 from app.utils import role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE, LINCOLN_NZ_CENTER
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
-from app.helpers.dbHelper import fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation, validate_lookup_table_values, update_catch_record
+from app.helpers.dbHelper import fetch_all_lines, fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation, validate_lookup_table_values, update_catch_record
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
 
@@ -131,34 +131,42 @@ def edit_catch(catch_id):
     """Edit an existing catch record (own records only)."""
     if request.method == 'POST':
         # Security check: ensure the recorded_by_id in form matches session user_id to prevent tampering
-        if str(request.form.get('recorded_by_id')) != str(session['user_id']):
+        if session.get('role') == 'Operator' and str(request.form.get('recorded_by_id')) != str(session['user_id']):
             flash("You can only edit your own catch records.", 'error')
             return redirect(url_for('my_records'))
-        
-        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'])
+
+        # Fetch record from DB early — needed for template re-renders on validation error
+        with db.get_cursor() as cursor:
+            cursor.execute("SELECT catch_id, recorded_by_id FROM trap_catches WHERE catch_id = %s", (catch_id,))
+            record = cursor.fetchone()
+
+        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'], role=session.get('role'))
 
         # Additional check for lookup tables, in case the data inconsistency of database values
         lookup_valid_msg = validate_lookup_table_values(db, request.form)
 
         if lookup_valid_msg:
             flash(lookup_valid_msg, 'error')
-            lines = fetch_operator_lines(db, session['user_id'])
-            return render_template('operator/edit_catch.html',catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
+            lines = fetch_all_lines(db) if session.get('role') == 'Admin' else fetch_operator_lines(db, session['user_id'])
+            return render_template('operator/edit_catch.html', record=record, catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
             flash('Please fix the errors below before submitting.', 'error')
-            lines = fetch_operator_lines(db, session['user_id'])
-            return render_template('operator/edit_catch.html',catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
+            lines = fetch_all_lines(db) if session.get('role') == 'Admin' else fetch_operator_lines(db, session['user_id'])
+            return render_template('operator/edit_catch.html', record=record, catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         # Update the catch record in the database
-        update_catch_record(db, data={**request.form, 'catch_id': catch_id}, user_id=session['user_id'])
+        update_catch_record(db, data={**request.form, 'catch_id': catch_id}, user_id=record['recorded_by_id'])
         flash('Catch record updated successfully.', 'success')
-        return redirect(url_for('my_records'))
+        return redirect(url_for('my_records') if session.get('role') == 'Operator' else url_for('catch_records'))
 
 
     lookup = fetch_lookup_data(db)
     lines = fetch_operator_lines(db, session['user_id'])
     record = None
+
+    if session.get('role') == 'Admin':
+        lines = fetch_all_lines(db)  # Admin can see all lines, not just assigned ones
 
     # Fetch the catch record and its associated line_id for pre-filling the form
     with db.get_cursor() as cursor:
