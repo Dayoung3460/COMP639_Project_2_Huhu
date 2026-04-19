@@ -270,17 +270,6 @@ def toggle_active(user_id):
     return redirect(url_for('admin_users'))
 
 
-@app.route('/admin/users/<int:user_id>/change-role', methods=['POST'])
-@role_required('Admin')
-def change_role(user_id):
-    """Change a user's role. Admin cannot change their own role."""
-    # TODO: get new_role from form
-    # TODO: prevent changing own role
-    # TODO: UPDATE role_id
-    flash('User role updated.', 'success')
-    return redirect(url_for('admin_user_detail', user_id=user_id))
-
-
 @app.route('/admin/users/<int:user_id>/edit-role', methods=['GET', 'POST'])
 @role_required('Admin')
 def edit_role(user_id):
@@ -908,35 +897,3 @@ def manage_bait_types():
         bait_types = cursor.fetchall()
 
     return render_template('admin/manage_bait_types.html', bait_types=bait_types)
-
-@app.route('/admin/set-user-active', methods=['POST'])
-@role_required('Admin')
-def set_user_active():
-    """Set a user's account status."""
-    user_id = request.form.get('user_id')
-    set_active = request.form.get('setUserActiveSelect')
-    lookup = fetch_lookup_data(db)
-    if set_active not in lookup['valid_account_status']:
-        flash('Invalid account status value.', 'error')
-        return redirect(url_for('admin_users'))
-    
-    update_user_active(db, user_id, set_active)
-    flash('User account status updated.', 'success')
-    return redirect(url_for('admin_users'))
-
-def set_user_role():
-    """Set a user's role."""
-    user_id = request.form.get('user_id')
-    role = request.form.get('setUserRoleSelect')
-    fetched_user = fetch_user_info(db, user_id)
-    if fetched_user['role'] == 'Admin':
-        flash('Cannot change Admin role.', 'error')
-        return redirect(url_for('admin_users'))
-    lookup = fetch_lookup_data(db)
-    if role not in lookup['valid_roles']:
-        flash('Invalid role value.', 'error')
-        return redirect(url_for('admin_users'))
-    
-    update_user_role(db, user_id, role)
-    flash('User role updated.', 'success')
-    return redirect(url_for('admin_users'))

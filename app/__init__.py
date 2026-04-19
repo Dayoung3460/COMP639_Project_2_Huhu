@@ -17,7 +17,7 @@ def load_env_file(env_path):
     if not os.path.exists(env_path):
         return
 
-    with open(env_path, 'r', encoding='utf-8') as env_file:
+    with open(env_path, 'r', encoding='utf-8-sig') as env_file:
         for raw_line in env_file:
             line = raw_line.strip()
             if not line or line.startswith('#') or '=' not in line:
@@ -27,7 +27,7 @@ def load_env_file(env_path):
             key = key.strip()
             value = value.strip().strip('"').strip("'")
             if key:
-                os.environ.setdefault(key, value)
+                os.environ[key] = value
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 
@@ -38,19 +38,18 @@ app = Flask(__name__,
 load_env_file(os.path.join(app.root_path, '..', '.env'))
 
 bcrypt = Bcrypt(app)
-app.secret_key = 'pflu_secret_key_change_in_production'
+app.secret_key = os.environ.get('SECRET_KEY', 'pflu_secret_key_change_in_production')
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
-from app import connect
 from app import db
 
 db.init_db(app,
-           connect.dbuser,
-           connect.dbpass,
-           connect.dbhost,
-           connect.dbname,
-           connect.dbport)
+           os.environ.get('DB_USER'),
+           os.environ.get('DB_PASSWORD'),
+           os.environ.get('DB_HOST'),
+           os.environ.get('DB_NAME'),
+           int(os.environ.get('DB_PORT', 5432)))
 
 # ── Mail (Gmail SMTP) ─────────────────────────────────────────────────────────
 
