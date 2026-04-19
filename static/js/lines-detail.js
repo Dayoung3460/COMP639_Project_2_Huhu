@@ -104,29 +104,29 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill"></i>Click on the map above to set coordinates</div>
           <form id="new-trap-inline-form" method="POST" action="${newTrapUrl}">
             <div class="row g-2 align-items-end">
-              <div class="col-md-1">
+              <div class="col-12 col-md-1">
                 <label class="form-label small mb-1">Code</label>
                 <input type="text" name="code" class="form-control form-control-sm" required placeholder="e.g. CL-01">
               </div>
-              <div class="col-md-2 ms-3">
+              <div class="col-12 col-md-2 ms-md-3">
                 <label class="form-label small mb-1">Type</label>
                 <select name="trap_type" class="form-select form-select-sm" required>
                   <option value="">Select...</option>
                   ${trapTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
                 </select>
               </div>
-              <div class="col-md-2 ms-5">
+              <div class="col-12 col-md-2 ms-md-5">
                 <label class="form-label small mb-1">Latitude</label>
                 <input type="text" name="latitude" id="inline-lat" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. -43.640914">
               </div>
-              <div class="col-md-2 ms-4">
+              <div class="col-12 col-md-2 ms-md-4">
                 <label class="form-label small mb-1">Longitude</label>
                 <input type="text" name="longitude" id="inline-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. 172.475682">
               </div>
-              <div class="col-md-1 ms-auto">
+              <div class="col-6 col-md-1 ms-md-auto mt-3 mt-md-0">
                 <button type="button" class="btn btn-sm-outline w-100" id="cancel-add-trap">Cancel</button>
               </div>
-              <div class="col-md-1">
+              <div class="col-6 col-md-1 mt-3 mt-md-0">
               <button type="submit" class="btn btn-sm-pf w-100">Save</button>
               </div>
             </div>
