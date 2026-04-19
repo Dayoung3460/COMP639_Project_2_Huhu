@@ -23,17 +23,13 @@
   <section class="mb-4">
     <div class="lines-filter-shell">
       <form id="filter-form" method="GET" action="{{ url_for('admin_users') }}">
-        {% if sort_by %}
-        <input type="hidden" name="sort_by" value="{{ sort_by }}">
-        <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
-        {% endif %}
         <div class="row g-3 align-items-end">
           
           <div class="col-lg-5">
             <label for="search" class="form-label mb-1">Search Users</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
-              <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Search by name or username">
+              <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Name or username">
             </div>
           </div>
 
@@ -78,18 +74,13 @@
       <thead>
         <tr>
           {% for field, label in [('name', 'Name'), ('username', 'Username'), ('role', 'Role'), ('status', 'Status'), ('date_joined', 'Date Joined'), ('last_login', 'Last Login'), ('', 'Actions')] %}
-            {% set next_dir = 'asc' %}
-            {% if sort_by == field %}
-              {% set next_dir = 'desc' if sort_dir == 'asc' else '' %}
-            {% endif %}
-            <th class="{{ 'text-center' if field != 'name' else '' }}">
+            <th class="{{ 'text-center' if field != 'name' else '' }} {{ 'sortable-header' if field else '' }}"
+                {% if field %}data-field="{{ field }}" style="cursor: pointer;"{% endif %}>
               {% if field %}
-                <a href="{{ url_for('admin_users', search=search, role=role_filter, status=status_filter, sort_by=field if next_dir else '', sort_dir=next_dir) }}" class="text-decoration-none d-inline-flex align-items-center gap-1" style="color: inherit;">
-                {{ label }}
-                {% if sort_by == field %}
-                  <i class="bi bi-arrow-{{ 'up' if sort_dir == 'asc' else 'down' }}"></i>
-                {% endif %}
-              </a>
+                <div class="d-inline-flex align-items-center gap-1 user-select-none">
+                  {{ label }}
+                  <i class="bi sort-icon {{ 'bi-arrow-down' if field == 'name' else '' }}"></i>
+                </div>
               {% else %}
                 {{ label }}
               {% endif %}
@@ -99,7 +90,14 @@
       </thead>
       <tbody>
         {% for u in users %}
-          <tr class="user-row" data-search="{{ u.first_name }} {{ u.last_name }} @{{ u.username }}" data-role="{{ u.role }}" data-status="{{ u.account_status }}">
+          <tr class="user-row" 
+              data-search="{{ u.first_name }} {{ u.last_name }} @{{ u.username }}" 
+              data-role="{{ u.role }}" 
+              data-status="{{ u.account_status }}"
+              data-sort-name="{{ u.first_name|lower }} {{ u.last_name|lower }}"
+              data-sort-username="{{ u.username|lower }}"
+              data-sort-date_joined="{{ u.date_joined.isoformat() if u.date_joined else '0000-00-00' }}"
+              data-sort-last_login="{{ u.last_login.isoformat() if u.last_login else '0000-00-00' }}">
             <td>
               <strong>
                 <a href="{{ url_for('admin_user_detail', user_id=u.user_id) }}" class="text-decoration-none">{{ u.first_name }} {{ u.last_name }}</a>
@@ -253,6 +251,62 @@
 
       document.getElementById('toggle-active-form').action = '/admin/users/' + userId + '/toggle-active';
     });
+
+    // --- Client-Side Sorting ---
+    let currentSortField = 'name';
+    let currentSortDir = 'asc';
+
+    const headers = document.querySelectorAll('.sortable-header');
+    headers.forEach(header => {
+      header.addEventListener('click', () => {
+        const field = header.getAttribute('data-field');
+        if (currentSortField === field) {
+          currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSortField = field;
+          currentSortDir = 'asc';
+        }
+        
+        // Update header icons
+        headers.forEach(h => {
+          const icon = h.querySelector('.sort-icon');
+          if (icon) icon.className = 'bi sort-icon';
+        });
+        const activeIcon = header.querySelector('.sort-icon');
+        if (activeIcon) {
+          activeIcon.classList.add(currentSortDir === 'asc' ? 'bi-arrow-down' : 'bi-arrow-up');
+        }
+        
+        sortUsers();
+      });
+    });
+
+    function sortUsers() {
+      const tableBody = document.querySelector('table tbody');
+      if (!tableBody) return;
+      
+      const rows = Array.from(tableBody.querySelectorAll('.user-row'));
+      const noResultsRow = document.getElementById('no-results-row');
+      
+      rows.sort((a, b) => {
+        let valA, valB;
+        if (currentSortField === 'role' || currentSortField === 'status') {
+          valA = a.getAttribute('data-' + currentSortField).toLowerCase();
+          valB = b.getAttribute('data-' + currentSortField).toLowerCase();
+        } else {
+          valA = a.getAttribute('data-sort-' + currentSortField) || '';
+          valB = b.getAttribute('data-sort-' + currentSortField) || '';
+        }
+        
+        if (valA < valB) return currentSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return currentSortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+      
+      rows.forEach(row => tableBody.appendChild(row));
+      // Always ensure the empty state message stays at the absolute bottom
+      if (noResultsRow) tableBody.appendChild(noResultsRow);
+    }
   });
 </script>
 {% endblock %}
