@@ -5,9 +5,9 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Edit Catch Record</h2>
     {% if session.get('role') == 'Admin' %}
-      <a href="{{ url_for('catch_records') }}" class="btn btn-secondary">Back</a>
+      <a href="{{ url_for('catch_records') }}" class="btn btn-gray">Back</a>
     {% else %}
-      <a href="{{ url_for('my_records') }}" class="btn btn-secondary">Back</a>
+      <a href="{{ url_for('my_records') }}" class="btn btn-gray">Back</a>
     {% endif %}
   </div>
 
@@ -208,7 +208,12 @@
       <button type="submit" class="btn btn-pf">
         <i class="bi bi-check-lg me-1"></i>Save Record
       </button>
-      <a href="{{ url_for('my_records') }}" class="btn btn-secondary">Cancel</a>
+
+      {% if session.get('role') == 'Admin' %}
+        <a href="{{ url_for('catch_records') }}" class="btn btn-gray">Cancel</a>
+      {% else %}
+        <a href="{{ url_for('my_records') }}" class="btn btn-gray">Cancel</a>
+      {% endif %}
     </div>
   </form>
 </div>
