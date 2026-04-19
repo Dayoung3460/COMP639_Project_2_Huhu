@@ -566,7 +566,12 @@
         </div>
       </div>
       <div class="team-card">
-        <div class="team-avatar" style="background:#1a5c38;">MH</div>
+        <div class="team-photo">
+        <img src="{{ url_for('static', filename='images/team/mingcheng.jpg') }}"
+                alt="Ming-Cheng Hsiao"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="team-initials" style="background:#1a5c38; display:none;">MH</div>
+        </div>
         <div class="team-body">
           <div class="team-name">Ming-Cheng Hsiao</div>
           <div class="team-country">Taiwan</div>

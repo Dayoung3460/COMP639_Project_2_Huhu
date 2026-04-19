@@ -31,8 +31,13 @@
 <nav class="pf-navbar">
   <a class="brand" href="{{ url_for('index') }}">
     <img src="{{ logo_url }}"
-         alt="{{ site_name }}"
-         style="height:36px; width:auto;">
+        alt="{{ site_name }}"
+        class="d-none d-md-block"
+        style="height:36px; width:auto;">
+    <img src="{{ icon_url }}"
+        alt="{{ site_name }}"
+        class="d-md-none"
+        style="height:36px; width:auto;">
   </a>
 
   {% if not session.get('user_id') %}
@@ -332,7 +337,6 @@
           <a href="{{ url_for('index') }}#about">About {{ site_name }}</a>
           <a href="{{ url_for('index') }}#how-it-works">How It Works</a>
           <a href="{{ url_for('index') }}#contact">Contact</a>
-          <a href="{{ url_for('documentation') }}">Documentation</a>
         </div>
         <div class="col-md-4">
           <h6>Compatibility</h6>
