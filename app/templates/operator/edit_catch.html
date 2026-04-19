@@ -23,10 +23,11 @@
         <div class="row g-3">
           <div class="col-sm-6">
             <label class="form-label">Trap Line <span class="text-danger">*</span></label>
-            <select name="line_id" class="form-select" required id="lineSelect">
-              <option value="">— select line —</option>
+            <select name="line_id" class="form-select" required id="lineSelect" disabled>
               {% for line in lines %}
-                <option value="{{ line.line_id }}" {% if data and data.get('line_id')|string == line.line_id|string %}selected{% endif %}>{{ line.line_name }}</option>
+                {% if data and data.get('line_id')|string == line.line_id|string %}
+                  <option value="{{ line.line_id }}" {% if data and data.get('line_id')|string == line.line_id|string %}selected{% endif %}>{{ line.line_name }}</option>
+                {% endif %}
               {% endfor %}
             </select>
           </div>

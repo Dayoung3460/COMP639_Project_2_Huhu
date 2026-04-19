@@ -57,6 +57,17 @@ def fetch_operator_trap_ids(db, operator_id):
         """, (operator_id,))
         return [row['trap_id'] for row in cursor.fetchall()]
 
+def fetch_all_trap_ids(db):
+    """Fetch all valid (non-retired) trap IDs (for admin access)."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            SELECT t.trap_id::text
+            FROM traps t
+            JOIN lines l ON t.line_id = l.line_id
+            WHERE l.is_retired = FALSE AND t.is_retired = FALSE
+        """)
+        return [row['trap_id'] for row in cursor.fetchall()]
+
 def fetch_operator_line_ids(db, operator_id):
     """Fetch valid line IDs for a specific operator (role-based access)."""
     with db.get_cursor() as cursor:
@@ -93,6 +104,31 @@ def fetch_operator_lines(db, user_id):
             GROUP BY l.line_id, l.name, l.type
             ORDER BY l.name
         """, (user_id,))
+        return cursor.fetchall()
+    
+def fetch_all_lines(db):
+    """Fetch all lines with traps (for admin view)."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            SELECT 
+                l.line_id, 
+                l.name AS line_name, 
+                l.type,
+                json_agg(
+                    json_build_object(
+                        'trap_id', t.trap_id,
+                        'trap_code', t.code,
+                        'trap_type', t.trap_type,
+                        'latitude', t.latitude,
+                        'longitude', t.longitude
+                    ) ORDER BY t.code
+                ) AS traps
+            FROM lines l
+            JOIN traps t ON l.line_id = t.line_id
+            WHERE l.is_retired = FALSE AND t.is_retired = FALSE
+            GROUP BY l.line_id, l.name, l.type
+            ORDER BY l.name
+        """)
         return cursor.fetchall()
 
 #validate catch data before call this!
