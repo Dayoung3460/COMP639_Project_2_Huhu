@@ -763,6 +763,13 @@ def manage_species():
         if not item_name:
             flash('Please provide a species name.', 'danger')
             return redirect(url_for('manage_species'))
+        
+        # Define reserved names that cannot be used for species
+        reserved = ['none', 'unspecified']
+
+        if item_name.lower() in reserved:
+            flash(f'"{item_name}" is a system-reserved value and cannot be added.', 'danger')
+            return redirect(url_for('manage_species'))
 
         with db.get_cursor() as cursor:
             # Check for existing species with the same name
@@ -910,6 +917,13 @@ def manage_bait_types():
 
         if not item_name:
             flash('Please provide a bait type name.', 'danger')
+            return redirect(url_for('manage_bait_types'))
+        
+        # Define reserved names that cannot be used for bait types
+        reserved = ['none', 'other']
+
+        if item_name.lower() in reserved:
+            flash(f'"{item_name}" is a system-reserved value and cannot be added.', 'danger')
             return redirect(url_for('manage_bait_types'))
         
         with db.get_cursor() as cursor:
