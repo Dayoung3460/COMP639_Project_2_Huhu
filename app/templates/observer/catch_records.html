@@ -118,6 +118,7 @@
           <th role="button" data-sort-col="7" class="sortable">Rebaited <i class="bi bi-chevron-expand text-muted small"></i></th>
           <th role="button" data-sort-col="8" class="sortable">Bait Type <i class="bi bi-chevron-expand text-muted small"></i></th>
           <th role="button" data-sort-col="9" class="sortable">Condition <i class="bi bi-chevron-expand text-muted small"></i></th>
+          <th>Notes</th>
           {% if is_my_records or session.get('role') == 'Admin' %}<th>Action</th>{% endif %}
         </tr>
       </thead>
@@ -158,6 +159,15 @@
               {% endif %}
             </td>
             <td>{{ r.trap_condition }}</td>
+            <td>
+              {% if r.notes %}
+                <a href="#" class="btn-sm-pf-soft" style="font-size:11px; padding:2px 8px;"
+                   data-bs-toggle="modal" data-bs-target="#textDetailModal"
+                   data-full-text="{{ r.notes }}" title="Click to view notes">View</a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
             {% if is_my_records or session.get('role') == 'Admin' %}
               {% if trap_map and trap_map.get(r.trap_id).is_retired == False %}
                 <td>
@@ -174,7 +184,7 @@
           </tr>
         {% else %}
           <tr>
-            <td colspan="{% if is_my_records %}11{% else %}10{% endif %}" style="text-align:center; padding:30px; color:#6b7c72;">
+            <td colspan="{% if is_my_records or session.get('role') == 'Admin' %}12{% else %}11{% endif %}" style="text-align:center; padding:30px; color:#6b7c72;">
               No records found.
             </td>
           </tr>
