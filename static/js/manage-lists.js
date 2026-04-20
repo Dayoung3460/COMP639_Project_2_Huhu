@@ -1,5 +1,6 @@
 // Edit modal
 const editModal = document.getElementById('edit-modal');
+const deleteModal = document.getElementById('delete-modal');
 
 editModal.addEventListener('show.bs.modal', (event) => {
   const button = event.relatedTarget;
@@ -17,6 +18,20 @@ editModal.addEventListener('show.bs.modal', (event) => {
   currentItemNameInput.value = details?.name;
   nameLabel.textContent = details?.nameLabel;
   itemNameInput.value = details?.name;
+});
+
+deleteModal.addEventListener('show.bs.modal', (event) => {
+  const button = event.relatedTarget;
+
+  const details = JSON.parse(button.getAttribute('data-details'));
+
+  const modalActionInput = deleteModal.querySelector('#delete-modal-action');
+  const modalTitle = deleteModal.querySelector('.modal-title');
+  const currentItemNameInput = deleteModal.querySelector('#delete-current-item-name');
+
+  modalActionInput.value =  details?.action;
+  modalTitle.textContent = details?.title;
+  currentItemNameInput.value = details?.name;
 });
 
 // Search function

@@ -737,10 +737,33 @@ def manage_species():
         item_name = request.form.get('item-name', '').strip()
         modal_action = request.form.get('modal-action')
 
+        if modal_action == 'delete':
+            # check that user typed "delete" to confirm deletion
+            if request.form.get('delete-confirm', '').strip().lower() != 'delete':
+                flash('Please type "delete" to confirm deletion.', 'danger')
+                return redirect(url_for('manage_species'))
+            
+            # check if this species is used in any catch records
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    "SELECT COUNT(*) AS cnt FROM trap_catches WHERE species_caught = %s",
+                    (current_item_name,))
+                count = cursor.fetchone()['cnt']
+
+            # if it is used, prevent deletion and show error message with count of records using it
+            # if it is not used, proceed with deletion and show success message
+            if count > 0:
+                flash(f'Cannot delete "{current_item_name}" — it is used in {count} catch record(s).', 'danger')
+            else:
+                with db.get_cursor() as cursor:
+                    cursor.execute("DELETE FROM species WHERE name = %s", (current_item_name,))
+                flash(f'Species "{current_item_name}" deleted successfully.', 'success')
+            return redirect(url_for('manage_species'))
+
         if not item_name:
             flash('Please provide a species name.', 'danger')
             return redirect(url_for('manage_species'))
-        
+
         with db.get_cursor() as cursor:
             # Check for existing species with the same name
             cursor.execute(
@@ -752,7 +775,7 @@ def manage_species():
             if cursor.fetchone():
                 flash(f'A species named "{item_name}" already exists.', 'danger')
                 return redirect(url_for('manage_species'))
-            
+
             if modal_action == 'add':
                 # Insert the new species
                 cursor.execute(

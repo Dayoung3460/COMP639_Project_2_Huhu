@@ -172,6 +172,20 @@
                         }'
                       }
                     ) }}
+
+                    {{ pf_button(
+                      'Delete',
+                      variant='btn-sm btn-sm-danger',
+                      attrs={
+                        'data-bs-toggle': 'modal',
+                        'data-bs-target': '#delete-modal',
+                        'data-details': '{
+                          "action": "delete",
+                          "title": "Delete - ' ~ list.name ~ '",
+                          "name": "' ~ list.name ~ '"
+                        }'
+                      }
+                    ) }}
                   </td>
                 </tr>
               {% endif %}
