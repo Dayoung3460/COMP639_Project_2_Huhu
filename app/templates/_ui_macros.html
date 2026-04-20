@@ -135,64 +135,62 @@
 
 {# -----------------------------
    Manage List tables (e.g. species, statuses, bait types) - reusable table
+   NOTE: .table class and td.name-column MUST be kept — manage-lists.js depends on them
    ----------------------------- #}
 
 {% macro pf_manage_list_table(lists=[], nameLabel="", noEditList=[]) -%}
-  <div class="card mb-4">
-    <div class="card-body">
-      <section class="table-container">
-        <table class="table table-striped align-middle">
+  <div class="panel mb-0">
+    <div class="panel-body" style="padding: 0;">
+      <div class="pf-table-responsive">
+        <table class="pf-table table">
           <thead>
             <tr>
               <th>Name</th>
               <th class="text-end">Actions</th>
             </tr>
           </thead>
-
           <tbody>
-            {% for list in lists %}
-              {% if list.name not in noEditList %}
+            {% for item in lists %}
+              {% if item.name not in noEditList %}
                 <tr>
-                  <td class="name-column">
-                    <p class="mb-0">- {{ list.name }}</p>
-                  </td>
-
+                  <td class="name-column">{{ item.name }}</td>
                   <td class="text-end">
-                    {{ pf_button(
-                      'Edit',
-                      variant='btn-sm btn-outline-secondary',
-                      attrs={
-                        'data-bs-toggle': 'modal',
-                        'data-bs-target': '#edit-modal',
-                        'data-details': '{
-                          "action": "edit",
-                          "title": "Edit - ' ~ list.name ~ '",
-                          "name": "' ~ list.name ~ '",
-                          "nameLabel": "' ~ nameLabel ~ '"
-                        }'
-                      }
-                    ) }}
-
-                    {{ pf_button(
-                      'Delete',
-                      variant='btn-sm btn-sm-danger',
-                      attrs={
-                        'data-bs-toggle': 'modal',
-                        'data-bs-target': '#delete-modal',
-                        'data-details': '{
-                          "action": "delete",
-                          "title": "Delete - ' ~ list.name ~ '",
-                          "name": "' ~ list.name ~ '"
-                        }'
-                      }
-                    ) }}
+                    <div class="d-flex gap-2 justify-content-end">
+                      {{ pf_button(
+                        'Edit',
+                        variant='btn-sm-outline',
+                        attrs={
+                          'data-bs-toggle': 'modal',
+                          'data-bs-target': '#edit-modal',
+                          'data-details': '{
+                            "action": "edit",
+                            "title": "Edit - ' ~ item.name ~ '",
+                            "name": "' ~ item.name ~ '",
+                            "nameLabel": "' ~ nameLabel ~ '"
+                          }'
+                        }
+                      ) }}
+                      {{ pf_button(
+                        'Delete',
+                        variant='btn-sm-danger',
+                        attrs={
+                          'data-bs-toggle': 'modal',
+                          'data-bs-target': '#delete-modal',
+                          'data-details': '{
+                            "action": "delete",
+                            "title": "Delete - ' ~ item.name ~ '",
+                            "name": "' ~ item.name ~ '"
+                          }'
+                        }
+                      ) }}
+                    </div>
                   </td>
                 </tr>
               {% endif %}
             {% endfor %}
           </tbody>
         </table>
-      </section>
+      </div>
     </div>
   </div>
 {%- endmacro %}
