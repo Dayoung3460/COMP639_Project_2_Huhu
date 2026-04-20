@@ -817,6 +817,23 @@ def manage_statuses():
         item_name = request.form.get('item-name', '').strip()
         modal_action = request.form.get('modal-action')
 
+        if modal_action == 'delete':
+            if request.form.get('delete-confirm', '').strip().lower() != 'delete':
+                flash('Please type "delete" to confirm deletion.', 'danger')
+                return redirect(url_for('manage_statuses'))
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    "SELECT COUNT(*) AS cnt FROM trap_catches WHERE status = %s",
+                    (current_item_name,))
+                count = cursor.fetchone()['cnt']
+            if count > 0:
+                flash(f'Cannot delete "{current_item_name}" — it is used in {count} catch record(s).', 'danger')
+            else:
+                with db.get_cursor() as cursor:
+                    cursor.execute("DELETE FROM trap_statuses WHERE name = %s", (current_item_name,))
+                flash(f'Trap status "{current_item_name}" deleted successfully.', 'success')
+            return redirect(url_for('manage_statuses'))
+
         if not item_name:
             flash('Please provide a trap status name.', 'danger')
             return redirect(url_for('manage_statuses'))
@@ -874,6 +891,23 @@ def manage_bait_types():
         item_name = request.form.get('item-name', '').strip()
         modal_action = request.form.get('modal-action')
         
+        if modal_action == 'delete':
+            if request.form.get('delete-confirm', '').strip().lower() != 'delete':
+                flash('Please type "delete" to confirm deletion.', 'danger')
+                return redirect(url_for('manage_bait_types'))
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    "SELECT COUNT(*) AS cnt FROM trap_catches WHERE bait_type = %s",
+                    (current_item_name,))
+                count = cursor.fetchone()['cnt']
+            if count > 0:
+                flash(f'Cannot delete "{current_item_name}" — it is used in {count} catch record(s).', 'danger')
+            else:
+                with db.get_cursor() as cursor:
+                    cursor.execute("DELETE FROM bait_types WHERE name = %s", (current_item_name,))
+                flash(f'Bait type "{current_item_name}" deleted successfully.', 'success')
+            return redirect(url_for('manage_bait_types'))
+
         if not item_name:
             flash('Please provide a bait type name.', 'danger')
             return redirect(url_for('manage_bait_types'))
