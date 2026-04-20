@@ -600,7 +600,11 @@
         </div>
     </div>
       <div class="team-card">
-        <div class="team-avatar" style="background:#e8920a;">ZS</div>
+        <div class="team-photo">
+        <img src="{{ url_for('static', filename='images/team/Sun.jpg') }}"
+                alt="Ziyuan Sun"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        </div>
         <div class="team-body">
           <div class="team-name">Ziyuan Sun</div>
           <div class="team-country">China</div>
