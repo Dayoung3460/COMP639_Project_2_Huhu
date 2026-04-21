@@ -65,6 +65,8 @@ document.addEventListener('DOMContentLoaded', function () {
     map.setView(MAP_DEFAULT_CENTER, 13);
   }
 
+  setTimeout(function () { map.invalidateSize(); }, 0);
+
   // ── Inline Add Trap Functionality ──────────────────────────────────────────
   let isAddingTrap = false;
   let tempMarker = null;
