@@ -85,11 +85,11 @@
             <tr>
               <th>Code</th>
               <th>Type</th>
-              <th>Latitude</th>
-              <th>Longitude</th>
+              <th class="d-none d-md-table-cell">Latitude</th>
+              <th class="d-none d-md-table-cell">Longitude</th>
               <th>Status</th>
-              <th>Retired Date</th>
-              <th>Retired By</th>
+              <th class="d-none d-md-table-cell">Retired Date</th>
+              <th class="d-none d-md-table-cell">Retired By</th>
               {% if session.get('role') == 'Admin' %}
                 <th>Actions</th>
               {% endif %}
@@ -100,11 +100,11 @@
               <tr>
                 <td><strong>{{ trap.code }}</strong></td>
                 <td>{{ trap.trap_type }}</td>
-                <td>{{ trap.latitude }}</td>
-                <td>{{ trap.longitude }}</td>
+                <td class="d-none d-md-table-cell">{{ trap.latitude }}</td>
+                <td class="d-none d-md-table-cell">{{ trap.longitude }}</td>
                 <td>{{ pf_trap_status_badge(trap.is_retired) }}</td>
-                <td>{{ trap.retired_at.strftime('%d %b %Y %H:%M') if trap.retired_at else '-' }}</td>
-                <td>{{ '@' ~ trap.retired_by_username if trap.retired_by_username else '-' }}</td>
+                <td class="d-none d-md-table-cell">{{ trap.retired_at.strftime('%d %b %Y %H:%M') if trap.retired_at else '-' }}</td>
+                <td class="d-none d-md-table-cell">{{ '@' ~ trap.retired_by_username if trap.retired_by_username else '-' }}</td>
                 {% if session.get('role') == 'Admin' %}
                   <td class="lines-table-actions">
                     {% if not trap.is_retired %}
