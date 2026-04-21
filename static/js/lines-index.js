@@ -239,6 +239,15 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       map.setView(MAP_DEFAULT_CENTER, 13);
     }
+
+    // Recalculate container size after CSS layout settles, then re-fit bounds
+    // so tiles fill the full container and markers are placed correctly
+    requestAnimationFrame(function () {
+      map.invalidateSize();
+      if (allLatLngs.length > 0) {
+        map.fitBounds(allLatLngs, { padding: [30, 30] });
+      }
+    });
   }
 
   lineCards.forEach(function (card) {
