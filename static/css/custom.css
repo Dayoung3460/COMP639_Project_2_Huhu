@@ -282,6 +282,9 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 /* ── Sidebar transition ──────────────────────── */
 .sidebar { transition: width 0.2s ease; }
+.sidebar.no-transition { transition: none !important; }
+/* Applied before first paint via <head> script to prevent collapsed flash */
+.sidebar-pre-collapsed .sidebar { width: 52px; transition: none; }
 
 /* ── Collapsed state ─────────────────────────── */
 .sidebar.collapsed { width: 52px; }
