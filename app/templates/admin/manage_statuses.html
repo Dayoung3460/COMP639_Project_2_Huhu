@@ -31,6 +31,7 @@
         <div class="panel-title">Statuses List</div>
         <div class="panel-meta">{{ statuses_list | length }} total</div>
       </div>
+      <label for="search-input" class="visually-hidden">Search statuses</label>
       <input type="text"
              id="search-input"
              placeholder="Search statuses..."
@@ -45,12 +46,12 @@
   </div>
 
   <!-- edit / add modal -->
-  <div class="modal fade pop-up-modal" id="edit-modal" tabindex="-1">
+  <div class="modal fade pop-up-modal" id="edit-modal" tabindex="-1" aria-labelledby="edit-modal-title" aria-modal="true" role="dialog">
     <div class="modal-dialog" style="margin-top: 10vh;">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <h5 class="modal-title" id="edit-modal-title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form method="POST" action="{{ url_for('manage_statuses') }}">
           <input type="hidden" name="current-item-name" id="current-item-name" value="" />
@@ -71,12 +72,12 @@
   </div>
 
   <!-- delete modal -->
-  <div class="modal fade pop-up-modal" id="delete-modal" tabindex="-1">
+  <div class="modal fade pop-up-modal" id="delete-modal" tabindex="-1" aria-labelledby="delete-modal-title" aria-modal="true" role="dialog">
     <div class="modal-dialog" style="margin-top: 10vh;">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <h5 class="modal-title" id="delete-modal-title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form method="POST" action="{{ url_for('manage_statuses') }}" autocomplete="off">
           <input type="hidden" name="current-item-name" id="delete-current-item-name" value="" />
@@ -84,8 +85,8 @@
           <div class="modal-body">
             <p>Are you sure you want to delete this status?</p>
             <div class="field-group mt-3">
-              <p class="mb-1 text-muted" style="font-size: 13px;">Type <strong class="text-danger">delete</strong> to continue</p>
-              <input type="text" name="delete-confirm" class="form-control" autocomplete="off" required />
+              <label for="delete-confirm" class="mb-1 text-muted" style="font-size: 13px;">Type <strong class="text-danger">delete</strong> to continue</label>
+              <input type="text" id="delete-confirm" name="delete-confirm" class="form-control" autocomplete="off" required />
             </div>
           </div>
           <div class="modal-footer">
