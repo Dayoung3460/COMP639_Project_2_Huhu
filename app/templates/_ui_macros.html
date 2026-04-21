@@ -162,6 +162,7 @@
                         attrs={
                           'data-bs-toggle': 'modal',
                           'data-bs-target': '#edit-modal',
+                          'aria-label': 'Edit ' ~ item.name,
                           'data-details': '{
                             "action": "edit",
                             "title": "Edit - ' ~ item.name ~ '",
@@ -176,6 +177,7 @@
                         attrs={
                           'data-bs-toggle': 'modal',
                           'data-bs-target': '#delete-modal',
+                          'aria-label': 'Delete ' ~ item.name,
                           'data-details': '{
                             "action": "delete",
                             "title": "Delete - ' ~ item.name ~ '",

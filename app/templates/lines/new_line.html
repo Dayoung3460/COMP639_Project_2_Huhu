@@ -4,15 +4,15 @@
 <div class="container py-4" style="max-width:560px;">
   <h2 class="mb-4">New Trap Line</h2>
   
-  <form method="POST" action="{{ url_for('new_line') }}">
+  <form method="POST" action="{{ url_for('new_line') }}" aria-label="Create new trap line">
     <div class="mb-3">
-      <label for="name" class="form-label">Line Name <span class="text-danger">*</span></label>
-      <input type="text" class="form-control" id="name" name="name" value="{{ name | default('') }}" required pattern=".*\S+.*" autofocus>
+      <label for="name" class="form-label">Line Name <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">(required)</span></label>
+      <input type="text" class="form-control" id="name" name="name" value="{{ name | default('') }}" required pattern=".*\S+.*" autofocus aria-required="true">
     </div>
 
     <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-pf">Create</button>
-      <a href="{{ url_for('lines_index') }}" class="btn btn-pf-outline">Cancel</a>
+      <button type="submit" class="btn btn-pf" aria-label="Create new trap line">Create</button>
+      <a href="{{ url_for('lines_index') }}" class="btn btn-pf-outline" aria-label="Cancel and go back to lines">Cancel</a>
     </div>
   </form>
 </div>

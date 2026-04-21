@@ -138,7 +138,7 @@
   <div class="app-layout">
 
     {# ── Sidebar ── #}
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar collapsed no-transition" id="sidebar">
         <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar">
           <i class="bi bi-layout-sidebar-reverse" id="sidebarToggleIcon"></i>
           <span class="toggle-label" id="sidebarToggleLabel">Collapse</span>
@@ -392,6 +392,10 @@
     const isMobile = window.innerWidth < 768;
     const savedState = localStorage.getItem('sidebarCollapsed') === 'true';
     applyState(isMobile ? true : savedState);
+    // Re-enable transitions after initial state is set so user toggles animate
+    requestAnimationFrame(function () {
+      sidebar.classList.remove('no-transition');
+    });
 
     btn.addEventListener('click', function () {
       const collapsed = !sidebar.classList.contains('collapsed');

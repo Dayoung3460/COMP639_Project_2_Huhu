@@ -103,33 +103,33 @@ document.addEventListener('DOMContentLoaded', function () {
       newRow.innerHTML = `
         <div class="panel-body lines-inline-form-body">
           <div class="lines-inline-form-title">Add Trap</div>
-          <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill"></i>Click on the map above to set coordinates</div>
-          <form id="new-trap-inline-form" method="POST" action="${newTrapUrl}">
+          <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Click on the map above to set coordinates</div>
+          <form id="new-trap-inline-form" method="POST" action="${newTrapUrl}" aria-label="Add new trap">
             <div class="row g-2 align-items-end">
               <div class="col-12 col-md-1">
-                <label class="form-label small mb-1">Code</label>
-                <input type="text" name="code" class="form-control form-control-sm" required placeholder="e.g. CL-01">
+                <label for="inline-code" class="form-label small mb-1">Code</label>
+                <input type="text" name="code" id="inline-code" class="form-control form-control-sm" required placeholder="e.g. CL-01" aria-required="true">
               </div>
               <div class="col-12 col-md-2 ms-md-3">
-                <label class="form-label small mb-1">Type</label>
-                <select name="trap_type" class="form-select form-select-sm" required>
+                <label for="inline-type" class="form-label small mb-1">Type</label>
+                <select name="trap_type" id="inline-type" class="form-select form-select-sm" required aria-required="true">
                   <option value="">Select...</option>
                   ${trapTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
                 </select>
               </div>
               <div class="col-12 col-md-2 ms-md-5">
-                <label class="form-label small mb-1">Latitude</label>
-                <input type="text" name="latitude" id="inline-lat" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. -43.640914">
+                <label for="inline-lat" class="form-label small mb-1">Latitude</label>
+                <input type="text" name="latitude" id="inline-lat" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. -43.640914" aria-required="true">
               </div>
               <div class="col-12 col-md-2 ms-md-4">
-                <label class="form-label small mb-1">Longitude</label>
-                <input type="text" name="longitude" id="inline-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. 172.475682">
+                <label for="inline-lng" class="form-label small mb-1">Longitude</label>
+                <input type="text" name="longitude" id="inline-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. 172.475682" aria-required="true">
               </div>
               <div class="col-6 col-md-1 ms-md-auto mt-3 mt-md-0">
-                <button type="button" class="btn btn-sm-outline w-100" id="cancel-add-trap">Cancel</button>
+                <button type="button" class="btn btn-sm-outline w-100" id="cancel-add-trap" aria-label="Cancel adding trap">Cancel</button>
               </div>
               <div class="col-6 col-md-1 mt-3 mt-md-0">
-              <button type="submit" class="btn btn-sm-pf w-100">Save</button>
+              <button type="submit" class="btn btn-sm-pf w-100" aria-label="Save new trap">Save</button>
               </div>
             </div>
           </form>
@@ -156,15 +156,52 @@ document.addEventListener('DOMContentLoaded', function () {
         window.scrollBy({ top: 40, behavior: 'smooth' });
       }, 250);
 
-      // Handle Cancel
-      document.getElementById('cancel-add-trap').addEventListener('click', function () {
+      // Focus the first input without triggering a competing scroll
+      const firstInput = newRow.querySelector('input, select, button, a[href]');
+      if (firstInput) firstInput.focus({ preventScroll: true });
+
+      // Focus trap: keep Tab/Shift+Tab inside the form; Escape cancels
+      const focusTrapHandler = function (e) {
+        const focusable = Array.from(newRow.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+
+        if (e.key === 'Escape') {
+          cancelAddTrap();
+        }
+      };
+      document.addEventListener('keydown', focusTrapHandler);
+
+      function cancelAddTrap() {
+        document.removeEventListener('keydown', focusTrapHandler);
         newRow.remove();
         isAddingTrap = false;
         if (tempMarker) {
           map.removeLayer(tempMarker);
           tempMarker = null;
         }
-      });
+        addTrapBtn.focus();
+      }
+
+      // Handle Cancel
+      document.getElementById('cancel-add-trap').addEventListener('click', cancelAddTrap);
     });
   }
 
