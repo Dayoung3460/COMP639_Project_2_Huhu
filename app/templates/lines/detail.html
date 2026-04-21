@@ -28,7 +28,8 @@
             attrs={
               'id': 'inline-add-trap-btn',
               'data-trap-types': trap_types | tojson | forceescape,
-              'data-new-trap-url': url_for('new_trap', line_id=line.line_id)
+              'data-new-trap-url': url_for('new_trap', line_id=line.line_id),
+              'aria-label': 'Add new trap to ' ~ line.name
             }
           ) }}
           {{ pf_link_button(url_for('assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
@@ -55,7 +56,7 @@
             variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline'
           ) }}
         </div>
-        <select id="lines-status-filter" class="form-select form-select-sm d-md-none"
+        <select id="lines-status-filter" class="form-select form-select-sm d-md-none" aria-label="Filter traps by status"
                 data-url-all="{{ url_for('line_detail', line_id=line.line_id, filter='all') }}"
                 data-url-active="{{ url_for('line_detail', line_id=line.line_id) }}"
                 data-url-retired="{{ url_for('line_detail', line_id=line.line_id, filter='retired') }}">

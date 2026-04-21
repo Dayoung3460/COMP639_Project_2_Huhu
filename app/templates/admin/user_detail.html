@@ -76,8 +76,8 @@
                     
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="form-section-label mb-0">Admin Notes</div>
-                        <button type="button" class="btn-sm-outline p-1" style="line-height: 1;" id="edit-notes-btn" title="Edit Notes">
-                            <i class="bi bi-pencil-square"></i>
+                        <button type="button" class="btn-sm-outline p-1" style="line-height: 1;" id="edit-notes-btn" title="Edit Notes" aria-label="Edit admin notes">
+                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
                         </button>
                     </div>
                     <div id="notes-display">
@@ -85,10 +85,11 @@
                     </div>
                     <div id="notes-edit" class="d-none">
                         <form method="POST" action="{{ url_for('update_user_notes', user_id=user.user_id) }}">
-                            <textarea class="form-control mb-2" name="notes" id="notes-textarea" rows="4" maxlength="2000">{% if user.notes != 'None provided' %}{{ user.notes }}{% endif %}</textarea>
+                            <label for="notes-textarea" class="visually-hidden">Admin notes</label>
+                            <textarea class="form-control mb-2" name="notes" id="notes-textarea" rows="4" maxlength="2000" aria-label="Admin notes">{% if user.notes != 'None provided' %}{{ user.notes }}{% endif %}</textarea>
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn-sm-outline" id="cancel-notes-btn">Cancel</button>
-                                <button type="submit" class="btn-sm-pf">Save</button>
+                                <button type="button" class="btn-sm-outline" id="cancel-notes-btn" aria-label="Cancel editing notes">Cancel</button>
+                                <button type="submit" class="btn-sm-pf" aria-label="Save admin notes">Save</button>
                             </div>
                         </form>
                     </div>
@@ -180,7 +181,7 @@
                             <div class="form-section-label">Catches</div>
                             {% if catches %}
                                 <div class="pf-table-responsive" style="border: 1px solid #e4ede8; border-radius: 8px;">
-                                    <table class="pf-table mb-0">
+                                    <table class="pf-table mb-0" aria-label="Operator catches history">
                                         <thead>
                                             <tr>
                                                 <th class="text-center">Date</th>
@@ -211,7 +212,7 @@
                             <div class="form-section-label">Observations</div>
                             {% if observations %}
                                 <div class="pf-table-responsive" style="border: 1px solid #e4ede8; border-radius: 8px;">
-                                    <table class="pf-table mb-0">
+                                    <table class="pf-table mb-0" aria-label="Operator observations history">
                                         <thead>
                                             <tr>
                                                 <th class="text-center">Date</th>
