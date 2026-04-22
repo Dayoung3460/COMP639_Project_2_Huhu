@@ -28,7 +28,7 @@
           <div class="col-lg-5">
             <label for="search" class="form-label mb-1">Search Users</label>
             <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
               <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Name or username">
             </div>
           </div>
@@ -42,7 +42,7 @@
                 <option value="Operator" {% if role_filter == 'Operator' %}selected{% endif %}>Operator</option>
                 <option value="Observer" {% if role_filter == 'Observer' %}selected{% endif %}>Observer</option>
               </select>
-              <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y" style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;"></i>
+              <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y" style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;" aria-hidden="true"></i>
             </div>
           </div>
           
@@ -54,12 +54,12 @@
                 <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
                 <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
               </select>
-              <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y" style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;"></i>
+              <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y" style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;" aria-hidden="true"></i>
             </div>
           </div>
           
           <div class="col-lg-1 d-grid">
-            <button type="button" id="clear-all-btn" class="btn btn-sm-outline lines-filter-shell__clear-btn w-100">Clear</button>
+            <button type="button" id="clear-all-btn" class="btn btn-sm-outline lines-filter-shell__clear-btn w-100" aria-label="Clear all filters">Clear</button>
           </div>
 
         </div>
@@ -70,16 +70,16 @@
   <div class="panel">
     <div class="panel-body p-0">
       <div class="pf-table-responsive">
-        <table class="pf-table">
+        <table class="pf-table" aria-label="User management list">
       <thead>
         <tr>
           {% for field, label in [('name', 'Name'), ('username', 'Username'), ('role', 'Role'), ('status', 'Status'), ('date_joined', 'Date Joined'), ('last_login', 'Last Login'), ('', 'Actions')] %}
             <th class="{{ 'text-center' if field != 'name' else '' }} {{ 'sortable-header' if field else '' }}"
-                {% if field %}data-field="{{ field }}" style="cursor: pointer;"{% endif %}>
+                {% if field %}data-field="{{ field }}" style="cursor: pointer;" aria-sort="none"{% endif %}>
               {% if field %}
                 <div class="d-inline-flex align-items-center gap-1 user-select-none">
                   {{ label }}
-                  <i class="bi sort-icon {{ 'bi-arrow-down' if field == 'name' else '' }}"></i>
+                  <i class="bi sort-icon {{ 'bi-arrow-down' if field == 'name' else '' }}" aria-hidden="true"></i>
                 </div>
               {% else %}
                 {{ label }}
@@ -119,14 +119,16 @@
             <td class="text-center lines-table-actions">
               {% if u.role != 'Admin' %}
               <a href="{{ url_for('edit_role', user_id=u.user_id) }}"
-                 class="btn btn-sm-amber">Edit Role</a>
+                 class="btn btn-sm-amber"
+                 aria-label="Edit role for {{ u.first_name }} {{ u.last_name }}">Edit Role</a>
               {% endif %}
               {% if u.user_id != session.get('user_id') %}
               <button type="button" class="btn {{ 'btn-sm-danger' if u.account_status == 'active' else 'btn-sm-pf' }}"
                       data-bs-toggle="modal" data-bs-target="#toggle-active-modal"
                       data-user-id="{{ u.user_id }}"
                       data-user-name="{{ u.first_name }} {{ u.last_name }}"
-                      data-action="{{ 'deactivate' if u.account_status == 'active' else 'activate' }}">
+                      data-action="{{ 'deactivate' if u.account_status == 'active' else 'activate' }}"
+                      aria-label="{{ 'Deactivate' if u.account_status == 'active' else 'Activate' }} {{ u.first_name }} {{ u.last_name }}">
                 {{ 'Deactivate' if u.account_status == 'active' else 'Activate' }}
               </button>
               {% endif %}            
@@ -144,13 +146,13 @@
   </div>
 </div>
 
-<div class="modal fade pop-up-modal" id="toggle-active-modal" tabindex="-1">
+<div class="modal fade pop-up-modal" id="toggle-active-modal" tabindex="-1" role="dialog" aria-labelledby="toggle-active-title" aria-modal="true">
   <div class="modal-dialog lines-modal-dialog">
     <form method="POST" id="toggle-active-form" autocomplete="off">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="toggle-active-title">Confirm</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close dialog"></button>
         </div>
         <div class="modal-body">
           <p>Are you sure you want to <strong id="toggle-active-action"></strong> user <strong id="toggle-active-name"></strong>?</p>
@@ -267,15 +269,17 @@
           currentSortDir = 'asc';
         }
         
-        // Update header icons
+        // Update header icons and aria-sort
         headers.forEach(h => {
           const icon = h.querySelector('.sort-icon');
           if (icon) icon.className = 'bi sort-icon';
+          h.setAttribute('aria-sort', 'none');
         });
         const activeIcon = header.querySelector('.sort-icon');
         if (activeIcon) {
           activeIcon.classList.add(currentSortDir === 'asc' ? 'bi-arrow-down' : 'bi-arrow-up');
         }
+        header.setAttribute('aria-sort', currentSortDir === 'asc' ? 'ascending' : 'descending');
         
         sortUsers();
       });

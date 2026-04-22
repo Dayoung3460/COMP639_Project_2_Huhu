@@ -5,8 +5,8 @@
 {% block page_title %}
 <div class="d-flex align-items-center gap-3">
   <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
-    <i class="bi bi-person"></i>
-  </div>
+    <i class="bi bi-person" aria-hidden="true"></i>
+</div>
   User Profile
 </div>
 {% endblock %}
@@ -30,7 +30,7 @@
             <div class="profile-header-card mb-4">
                 <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--pf-600); border: 3px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #fff; font-family: 'Cabin', sans-serif; flex-shrink: 0; overflow: hidden;">
                     {% if user.profile_photo and user.profile_photo != 'None provided' %}
-                        <img src="{{ url_for('static', filename='images/uploads/' ~ user.profile_photo) }}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img src="{{ url_for('static', filename='images/uploads/' ~ user.profile_photo) }}" alt="{{ user.first_name }} {{ user.last_name }}'s profile photo" style="width: 100%; height: 100%; object-fit: cover;">
                     {% else %}
                         {{ user.first_name[:1] }}{{ user.last_name[:1] }}
                     {% endif %}
@@ -44,7 +44,7 @@
             <!-- System Info Card -->
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title"><i class="bi bi-display me-2"></i>System Info</div>
+                    <div class="panel-title"><i class="bi bi-display me-2" aria-hidden="true"></i>System Info</div>
                 </div>
                 <div class="panel-body" style="font-size: 13px;">
                     <div class="d-flex mb-2">
@@ -76,8 +76,8 @@
                     
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="form-section-label mb-0">Admin Notes</div>
-                        <button type="button" class="btn-sm-outline p-1" style="line-height: 1;" id="edit-notes-btn" title="Edit Notes">
-                            <i class="bi bi-pencil-square"></i>
+                        <button type="button" class="btn-sm-outline p-1" style="line-height: 1;" id="edit-notes-btn" title="Edit Notes" aria-label="Edit admin notes">
+                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
                         </button>
                     </div>
                     <div id="notes-display">
@@ -85,10 +85,11 @@
                     </div>
                     <div id="notes-edit" class="d-none">
                         <form method="POST" action="{{ url_for('update_user_notes', user_id=user.user_id) }}">
-                            <textarea class="form-control mb-2" name="notes" id="notes-textarea" rows="4" maxlength="2000">{% if user.notes != 'None provided' %}{{ user.notes }}{% endif %}</textarea>
+                            <label for="notes-textarea" class="visually-hidden">Admin notes</label>
+                            <textarea class="form-control mb-2" name="notes" id="notes-textarea" rows="4" maxlength="2000" aria-label="Admin notes">{% if user.notes != 'None provided' %}{{ user.notes }}{% endif %}</textarea>
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn-sm-outline" id="cancel-notes-btn">Cancel</button>
-                                <button type="submit" class="btn-sm-pf">Save</button>
+                                <button type="button" class="btn-sm-outline" id="cancel-notes-btn" aria-label="Cancel editing notes">Cancel</button>
+                                <button type="submit" class="btn-sm-pf" aria-label="Save admin notes">Save</button>
                             </div>
                         </form>
                     </div>
@@ -101,7 +102,7 @@
             <!-- Contact Info Card -->
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title"><i class="bi bi-person-lines-fill me-2"></i>Contact</div>
+                    <div class="panel-title"><i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Contact</div>
                 </div>
                 <div class="panel-body" style="font-size: 13px;">
                     <div class="d-flex mb-2">
@@ -125,7 +126,7 @@
             <!-- Emergency Info Card -->
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title"><i class="bi bi-heart-pulse me-2"></i>Emergency Contact Person</div>
+                    <div class="panel-title"><i class="bi bi-heart-pulse me-2" aria-hidden="true"></i>Emergency Contact Person</div>
                 </div>
                 <div class="panel-body" style="font-size: 13px;">
                     <div class="d-flex mb-2">
@@ -145,14 +146,14 @@
             <!-- Assigned Lines Card -->
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title"><i class="bi bi-geo-alt me-2"></i>Assigned Lines</div>
+                    <div class="panel-title"><i class="bi bi-geo-alt me-2" aria-hidden="true"></i>Assigned Lines</div>
                 </div>
                 <div class="panel-body">
                     {% if assigned_lines %}
                         <div class="d-flex flex-wrap gap-2">
                             {% for line in assigned_lines %}
                                 <a href="{{ url_for('line_detail', line_id=line.line_id) }}" class="text-decoration-none px-2 py-1 rounded" style="background: rgba(0,0,0,0.04); font-size: 13px; color: {{ line_colours[line.line_id % (line_colours|length)] }}; font-weight: 600;">
-                                    <i class="bi bi-signpost-2 me-1"></i>{{ line.name }}
+                                    <i class="bi bi-signpost-2 me-1" aria-hidden="true"></i>{{ line.name }}
                                 </a>
                             {% endfor %}
                         </div>
@@ -171,7 +172,7 @@
         <div class="col-12">
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title"><i class="bi bi-clock-history me-2"></i>Activity History</div>
+                    <div class="panel-title"><i class="bi bi-clock-history me-2" aria-hidden="true"></i>Activity History</div>
                 </div>
                 <div class="panel-body">
                     <div class="row">
@@ -180,7 +181,7 @@
                             <div class="form-section-label">Catches</div>
                             {% if catches %}
                                 <div class="pf-table-responsive" style="border: 1px solid #e4ede8; border-radius: 8px;">
-                                    <table class="pf-table mb-0">
+                                    <table class="pf-table mb-0" aria-label="Operator catches history">
                                         <thead>
                                             <tr>
                                                 <th class="text-center">Date</th>
@@ -211,7 +212,7 @@
                             <div class="form-section-label">Observations</div>
                             {% if observations %}
                                 <div class="pf-table-responsive" style="border: 1px solid #e4ede8; border-radius: 8px;">
-                                    <table class="pf-table mb-0">
+                                    <table class="pf-table mb-0" aria-label="Operator observations history">
                                         <thead>
                                             <tr>
                                                 <th class="text-center">Date</th>

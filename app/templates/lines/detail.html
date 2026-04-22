@@ -28,7 +28,8 @@
             attrs={
               'id': 'inline-add-trap-btn',
               'data-trap-types': trap_types | tojson | forceescape,
-              'data-new-trap-url': url_for('new_trap', line_id=line.line_id)
+              'data-new-trap-url': url_for('new_trap', line_id=line.line_id),
+              'aria-label': 'Add new trap to ' ~ line.name
             }
           ) }}
           {{ pf_link_button(url_for('assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
@@ -42,20 +43,23 @@
           {{ pf_link_button(
             url_for('line_detail', line_id=line.line_id, filter='all'),
             'All',
-            variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline'
+            variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline',
+            attrs={'aria-current': 'page'} if current_filter == 'all' else None
           ) }}
           {{ pf_link_button(
             url_for('line_detail', line_id=line.line_id),
             'Active',
-            variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline'
+            variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline',
+            attrs={'aria-current': 'page'} if current_filter == 'active' else None
           ) }}
           {{ pf_link_button(
             url_for('line_detail', line_id=line.line_id, filter='retired'),
             'Retired',
-            variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline'
+            variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline',
+            attrs={'aria-current': 'page'} if current_filter == 'retired' else None
           ) }}
         </div>
-        <select id="lines-status-filter" class="form-select form-select-sm d-md-none"
+        <select id="lines-status-filter" class="form-select form-select-sm d-md-none" aria-label="Filter traps by status"
                 data-url-all="{{ url_for('line_detail', line_id=line.line_id, filter='all') }}"
                 data-url-active="{{ url_for('line_detail', line_id=line.line_id) }}"
                 data-url-retired="{{ url_for('line_detail', line_id=line.line_id, filter='retired') }}">
@@ -80,18 +84,18 @@
     <div id="traps-list-container">
       {% call pf_panel(title='Traps On This Line', meta='', panel_class='mb-4') %}
         <div class="pf-table-responsive">
-        <table class="pf-table">
+        <table class="pf-table" aria-label="Traps on this line">
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Type</th>
-              <th>Latitude</th>
-              <th>Longitude</th>
-              <th>Status</th>
-              <th>Retired Date</th>
-              <th>Retired By</th>
+              <th scope="col">Code</th>
+              <th scope="col">Type</th>
+              <th scope="col" class="d-none d-md-table-cell">Latitude</th>
+              <th scope="col" class="d-none d-md-table-cell">Longitude</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="d-none d-md-table-cell">Retired Date</th>
+              <th scope="col" class="d-none d-md-table-cell">Retired By</th>
               {% if session.get('role') == 'Admin' %}
-                <th>Actions</th>
+                <th scope="col">Actions</th>
               {% endif %}
             </tr>
           </thead>
@@ -100,23 +104,24 @@
               <tr>
                 <td><strong>{{ trap.code }}</strong></td>
                 <td>{{ trap.trap_type }}</td>
-                <td>{{ trap.latitude }}</td>
-                <td>{{ trap.longitude }}</td>
+                <td class="d-none d-md-table-cell">{{ trap.latitude }}</td>
+                <td class="d-none d-md-table-cell">{{ trap.longitude }}</td>
                 <td>{{ pf_trap_status_badge(trap.is_retired) }}</td>
-                <td>{{ trap.retired_at.strftime('%d %b %Y %H:%M') if trap.retired_at else '-' }}</td>
-                <td>{{ '@' ~ trap.retired_by_username if trap.retired_by_username else '-' }}</td>
+                <td class="d-none d-md-table-cell">{{ trap.retired_at.strftime('%d %b %Y %H:%M') if trap.retired_at else '-' }}</td>
+                <td class="d-none d-md-table-cell">{{ '@' ~ trap.retired_by_username if trap.retired_by_username else '-' }}</td>
                 {% if session.get('role') == 'Admin' %}
                   <td class="lines-table-actions">
                     {% if not trap.is_retired %}
-                      {{ pf_link_button(url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id), 'Edit', variant='btn-sm-outline') }}
+                      {{ pf_link_button(url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit trap ' ~ trap.code}) }}
                       {{ pf_button(
                         'Retire',
                         variant='btn-sm-danger',
                         attrs={
+                          'aria-label': 'Retire trap ' ~ trap.code,
                           'data-bs-toggle': 'modal',
                           'data-bs-target': '#retire-trap-modal',
                           'data-trap-id': trap.trap_id,
-                          'data-trap-code': trap.code
+                          'data-trap-code': trap.code,
                         }
                       ) }}
                     {% endif %}
@@ -136,15 +141,15 @@
       {% endcall %}
     </div>
 
-    <div class="modal fade pop-up-modal" id="retire-trap-modal" tabindex="-1">
+    <div class="modal fade pop-up-modal" id="retire-trap-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="retire-trap-modal-title">
       <div class="modal-dialog lines-modal-dialog">
         <form method="POST" action="{{ url_for('retire_trap', line_id=line.line_id) }}" autocomplete="off">
           <input type="hidden" name="trap_id" id="modal-trap-id" value="" />
 
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Retire trap</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <h5 class="modal-title" id="retire-trap-modal-title">Retire trap</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <div class="modal-body">
@@ -152,14 +157,14 @@
               <p class="text-muted lines-modal-note">This trap will be marked as Retired.</p>
 
               <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
-                <p class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</p>
-                <input type="text" name="delete-confirm" class="w-100 form-control" required />
+                <label for="retire-trap-confirm" class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</label>
+                <input type="text" id="retire-trap-confirm" name="delete-confirm" class="w-100 form-control" required />
               </div>
             </div>
 
             <div class="modal-footer">
-              {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
-              {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit') }}
+              {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel retirement'}) }}
+              {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit', attrs={'aria-label': 'Confirm retirement'}) }}
             </div>
           </div>
         </form>
@@ -190,7 +195,7 @@
     {% endcall %}
   {% else %}
     <div class="notice amber">
-      <i class="bi bi-signpost-2"></i>
+      <i class="bi bi-signpost-2" aria-hidden="true"></i>
       <div>Line not found.</div>
     </div>
   {% endif %}

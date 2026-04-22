@@ -38,17 +38,17 @@
 
 {% macro pf_button(label, variant='btn-pf', size='', type='button', icon=None, icon_right=None, extra_classes='', attrs=None) -%}
   <button type="{{ type }}" class="btn {{ _class_list([variant, size, extra_classes]) }}"{{ _attrs(attrs) }}>
-    {%- if icon -%}<i class="bi {{ icon }} me-1"></i>{%- endif -%}
+    {%- if icon -%}<i class="bi {{ icon }} me-1" aria-hidden="true"></i>{%- endif -%}
     {{ label }}
-    {%- if icon_right -%}<i class="bi {{ icon_right }} ms-1"></i>{%- endif -%}
+    {%- if icon_right -%}<i class="bi {{ icon_right }} ms-1" aria-hidden="true"></i>{%- endif -%}
   </button>
 {%- endmacro %}
 
 {% macro pf_link_button(href, label, variant='btn-pf', size='', icon=None, icon_right=None, extra_classes='', attrs=None) -%}
   <a href="{{ href }}" class="btn {{ _class_list([variant, size, extra_classes]) }}"{{ _attrs(attrs) }}>
-    {%- if icon -%}<i class="bi {{ icon }} me-1"></i>{%- endif -%}
+    {%- if icon -%}<i class="bi {{ icon }} me-1" aria-hidden="true"></i>{%- endif -%}
     {{ label }}
-    {%- if icon_right -%}<i class="bi {{ icon_right }} ms-1"></i>{%- endif -%}
+    {%- if icon_right -%}<i class="bi {{ icon_right }} ms-1" aria-hidden="true"></i>{%- endif -%}
   </a>
 {%- endmacro %}
 
@@ -162,6 +162,7 @@
                         attrs={
                           'data-bs-toggle': 'modal',
                           'data-bs-target': '#edit-modal',
+                          'aria-label': 'Edit ' ~ item.name,
                           'data-details': '{
                             "action": "edit",
                             "title": "Edit - ' ~ item.name ~ '",
@@ -176,6 +177,7 @@
                         attrs={
                           'data-bs-toggle': 'modal',
                           'data-bs-target': '#delete-modal',
+                          'aria-label': 'Delete ' ~ item.name,
                           'data-details': '{
                             "action": "delete",
                             "title": "Delete - ' ~ item.name ~ '",

@@ -17,13 +17,14 @@
     <!-- Trap Details -->
     <div class="card mb-3">
       <div class="card-header fw-semibold">
-        <i class="bi bi-geo-alt me-2"></i>Trap Details
+        <i class="bi bi-geo-alt me-2" aria-hidden="true"></i>Trap Details
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-sm-6">
-            <label class="form-label">Trap Line <span class="text-danger">*</span></label>
-            <select name="line_id" class="form-select" required id="lineSelect" disabled>
+            <label class="form-label" for="lineSelect">Trap Line <span class="text-danger" aria-hidden="true">*</span></label>
+            <input type="hidden" name="line_id" value="{{ data.get('line_id', '') if data else '' }}">
+            <select id="lineSelect" class="form-select" disabled>
               {% for line in lines %}
                 {% if data and data.get('line_id')|string == line.line_id|string %}
                   <option value="{{ line.line_id }}" {% if data and data.get('line_id')|string == line.line_id|string %}selected{% endif %}>{{ line.line_name }}</option>
@@ -32,25 +33,22 @@
             </select>
           </div>
           <div class="col-sm-6">
-            <label class="form-label">Trap Code <span class="text-danger">*</span></label>
-            <select name="trap_id" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}" required id="trapSelect">
-              <option value="">— select line first —</option>
+            <label class="form-label" for="trapSelect">Trap Code <span class="text-danger" aria-hidden="true">*</span></label>
+            <input type="hidden" name="trap_id" value="{{ data.get('trap_id', '') if data else '' }}">
+            <select id="trapSelect" class="form-select" disabled>
               {% for line in lines %}
                 {% for trap in line.traps %}
-                <option value="{{ trap.trap_id }}" data-line-id="{{ line.line_id }}" 
+                <option value="{{ trap.trap_id }}" data-line-id="{{ line.line_id }}"
                         {% if data and data.get('trap_id')|string == trap.trap_id|string %}selected{% endif %}>
                   {{ trap.trap_code }} ({{ trap.trap_type }})
                 </option>
                 {% endfor %}
               {% endfor %}
             </select>
-            {% if errors and errors.get('trap_id') %}
-            <div class="invalid-feedback">{{ errors.get('trap_id') }}</div>
-            {% endif %}
           </div>
           <div class="col-sm-6">
-            <label class="form-label">Date &amp; Time <span class="text-danger">*</span></label>
-            <input type="datetime-local" class="form-control {% if errors and errors.get('date') %}is-invalid{% endif %}" name="date" value="{{ data.get('date', '') if data else '' }}" required>
+            <label class="form-label" for="dateInput">Date &amp; Time <span class="text-danger" aria-hidden="true">*</span></label>
+            <input type="datetime-local" class="form-control {% if errors and errors.get('date') %}is-invalid{% endif %}" name="date" id="dateInput" value="{{ data.get('date', '') if data else '' }}" required>
             {% if errors and errors.get('date') %}
             <div class="invalid-feedback">{{ errors.get('date') }}</div>
             {% endif %}
@@ -62,12 +60,12 @@
     <!-- Catch Details -->
     <div class="card mb-3">
       <div class="card-header fw-semibold">
-        <i class="bi bi-bug me-2"></i>Catch Details
+        <i class="bi bi-bug me-2" aria-hidden="true"></i>Catch Details
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-sm-6">
-            <label class="form-label">Species Caught <span class="text-danger">*</span></label>
+            <label class="form-label" for="speciesSelect">Species Caught <span class="text-danger" aria-hidden="true">*</span></label>
             <select name="species_caught" id="speciesSelect" class="form-select {% if errors and errors.get('species_caught') %}is-invalid{% endif %}" required>
               <option value="">— select —</option>
               {% for s in lookup.species_list %}
@@ -80,7 +78,7 @@
             {% endif %}
           </div>
           <div class="col-sm-6">
-            <label class="form-label">Strikes <span class="text-danger">*</span></label>
+            <label class="form-label" for="strikesInput">Strikes <span class="text-danger" aria-hidden="true">*</span></label>
             <input type="number" class="form-control {% if errors and errors.get('strikes') %}is-invalid{% endif %}" name="strikes" id="strikesInput"
                    min="0" value="{{ data.get('strikes', '0') if data else '0' }}" required>
             <div class="form-text">0 = no catch</div>
@@ -89,8 +87,8 @@
             {% endif %}
           </div>
           <div class="col-sm-6">
-            <label class="form-label">Sex</label>
-            <select name="sex" class="form-select">
+            <label class="form-label" for="sexSelect">Sex</label>
+            <select name="sex" id="sexSelect" class="form-select">
               <option value="">— optional —</option>
               {% for value in lookup.valid_sex %}
               <option value="{{ value }}" {% if data and data.get('sex') == value %}selected{% endif %}>{{ value }}</option>
@@ -98,8 +96,8 @@
             </select>
           </div>
           <div class="col-sm-6">
-            <label class="form-label">Maturity</label>
-            <select name="maturity" class="form-select">
+            <label class="form-label" for="maturitySelect">Maturity</label>
+            <select name="maturity" id="maturitySelect" class="form-select">
               <option value="">— optional —</option>
               {% for value in lookup.valid_maturity %}
               <option value="{{ value }}" {% if data and data.get('maturity') == value %}selected{% endif %}>{{ value }}</option>
@@ -113,13 +111,13 @@
     <!-- Trap Status & Condition -->
     <div class="card mb-3">
       <div class="card-header fw-semibold">
-        <i class="bi bi-clipboard2-check me-2"></i>Trap Status &amp; Condition
+        <i class="bi bi-clipboard2-check me-2" aria-hidden="true"></i>Trap Status &amp; Condition
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-sm-6">
-            <label class="form-label">Status <span class="text-danger">*</span></label>
-            <select name="status" class="form-select {% if errors and errors.get('status') %}is-invalid{% endif %}" required>
+            <label class="form-label" for="statusSelect">Status <span class="text-danger" aria-hidden="true">*</span></label>
+            <select name="status" id="statusSelect" class="form-select {% if errors and errors.get('status') %}is-invalid{% endif %}" required>
               <option value="">— select —</option>
               {% for s in lookup.status_list %}
                 <option value="{{ s.name }}" {% if data and data.get('status') == s.name %}selected{% endif %}>{{ s.name }}</option>
@@ -130,8 +128,8 @@
             {% endif %}
           </div>
           <div class="col-sm-6">
-            <label class="form-label">Trap Condition <span class="text-danger">*</span></label>
-            <select name="trap_condition" class="form-select {% if errors and errors.get('trap_condition') %}is-invalid{% endif %}" required>
+            <label class="form-label" for="trapConditionSelect">Trap Condition <span class="text-danger" aria-hidden="true">*</span></label>
+            <select name="trap_condition" id="trapConditionSelect" class="form-select {% if errors and errors.get('trap_condition') %}is-invalid{% endif %}" required>
               <option value="">— select —</option>
               {% for c in lookup.valid_conditions %}
                 <option value="{{ c }}" {% if data and data.get('trap_condition') == c %}selected{% endif %}>{{ c }}</option>
@@ -148,12 +146,12 @@
     <!-- Bait -->
     <div class="card mb-3">
       <div class="card-header fw-semibold">
-        <i class="bi bi-egg-fried me-2"></i>Bait Used
+        <i class="bi bi-egg-fried me-2" aria-hidden="true"></i>Bait Used
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-sm-6">
-            <label class="form-label">Rebaited? <span class="text-danger">*</span></label>
+            <label class="form-label" for="rebaitedSelect">Rebaited? <span class="text-danger" aria-hidden="true">*</span></label>
             <select name="rebaited" id="rebaitedSelect" class="form-select {% if errors and errors.get('rebaited') %}is-invalid{% endif %}" required>
               <option value="">— select —</option>
               {% for value in lookup.valid_rebaited %}
@@ -165,7 +163,7 @@
             {% endif %}
           </div>
           <div class="col-sm-6">
-            <label class="form-label">Bait Type <span class="text-danger">*</span></label>
+            <label class="form-label" for="baitTypeSelect">Bait Type <span class="text-danger" aria-hidden="true">*</span></label>
             <select name="bait_type" id="baitTypeSelect" class="form-select {% if errors and errors.get('bait_type') %}is-invalid{% endif %}" required>
               <option value="">— select —</option>
               {% for b in lookup.bait_list if b.name == 'None' %}
@@ -184,7 +182,7 @@
             {% endif %}
           </div>
           <div class="col-sm-12" id="baitDetailsGroup">
-            <label class="form-label" id="baitDetailsLabel">Bait Details</label>
+            <label class="form-label" id="baitDetailsLabel" for="baitDetailsInput">Bait Details</label>
             <input type="text" class="form-control {% if errors and errors.get('bait_details') %}is-invalid{% endif %}" name="bait_details" id="baitDetailsInput" value="{{ data.get('bait_details', '') if data else '' }}" placeholder="Details about bait used...">
             {% if errors and errors.get('bait_details') %}
             <div class="invalid-feedback">{{ errors.get('bait_details') }}</div>
@@ -197,17 +195,18 @@
     <!-- Notes -->
     <div class="card mb-4">
       <div class="card-header fw-semibold">
-        <i class="bi bi-sticky me-2"></i>Notes
+        <i class="bi bi-sticky me-2" aria-hidden="true"></i>Notes
       </div>
       <div class="card-body">
-        <textarea class="form-control" name="notes" rows="3"
+        <label for="notesInput" class="visually-hidden">Notes</label>
+        <textarea class="form-control" name="notes" id="notesInput" rows="3"
                   placeholder="Optional notes about this trap check...">{{ data.get('notes', '') if data else '' }}</textarea>
       </div>
     </div>
 
     <div class="d-flex gap-2">
       <button type="submit" class="btn btn-pf">
-        <i class="bi bi-check-lg me-1"></i>Save Record
+        <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Save Record
       </button>
 
       {% if session.get('role') == 'Admin' %}
@@ -296,7 +295,7 @@
 
     function handleBaitTypeChange() {
       if (baitTypeSelect.value.startsWith('Other')) {
-        baitDetailsLabel.innerHTML = 'Bait Details <span class="text-danger">*</span>';
+        baitDetailsLabel.innerHTML = 'Bait Details <span class="text-danger" aria-hidden="true">*</span>';
         baitDetailsInput.required = true;
         baitDetailsInput.placeholder = 'Required — describe the bait used...';
       } else {

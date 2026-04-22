@@ -282,6 +282,9 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 /* ── Sidebar transition ──────────────────────── */
 .sidebar { transition: width 0.2s ease; }
+.sidebar.no-transition { transition: none !important; }
+/* Applied before first paint via <head> script to prevent collapsed flash */
+.sidebar-pre-collapsed .sidebar { width: 52px; transition: none; }
 
 /* ── Collapsed state ─────────────────────────── */
 .sidebar.collapsed { width: 52px; }
@@ -818,6 +821,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .lines-list-scroll {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   max-height: 550px;
   padding: 2px 8px 2px 0;
   display: flex;
@@ -866,12 +870,20 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .lines-list-card__content {
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
+}
+
+.lines-list-card__title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .lines-list-card__actions {
+  margin-top: 12px;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  padding-left: 1rem;
+  gap: 8px;
 }
 
 .lines-operator-list {
@@ -880,10 +892,6 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .lines-operator-item + .lines-operator-item {
   margin-top: 2px;
-}
-
-.lines-list-card__actions .trap-status-badge {
-  margin-right: 4px;
 }
 
 .operator-assignment-item {
@@ -1046,37 +1054,24 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   }
 
   .lines-list-card-body {
-    display: block !important;
-    flex: initial;
-    flex-direction: column;
     padding-top: 20px;
     padding-bottom: 20px;
   }
 
-  .lines-list-card__content {
-    width: 100%;
-    margin-bottom: 14px;
+  .lines-list-card__name-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   .lines-list-card__actions {
-    display: flex;
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch !important;
-    gap: 10px !important;
+    justify-content: center;
   }
 
-  .lines-list-card__actions .badge {
-    align-self: flex-start;
-  }
-
-  .lines-list-card__actions .trap-status-badge {
-    align-self: flex-start;
-    margin-right: 0;
-  }
-
-  .lines-list-card__actions .btn {
-    width: 100%;
+  .lines-list-card__title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
   }
 
   .lines-map-panel-shell {

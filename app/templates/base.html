@@ -71,6 +71,7 @@
                     font-family:'Cabin',sans-serif;">
           {% if nav_profile_photo %}
             <img src="{{ url_for('static', filename='images/uploads/' + nav_profile_photo) }}"
+                 alt="{{ nav_first_name or session.get('username') }}'s profile photo"
                  style="width:100%; height:100%; object-fit:cover;">
           {% else %}
             {{ (nav_first_name or session.get('username', 'U'))[:2].upper() }}
@@ -93,7 +94,7 @@
                 border-radius:6px; transition:color 0.15s;"
          onmouseover="this.style.color='#fff'"
          onmouseout="this.style.color='var(--pf-300)'">
-        <i class="bi bi-box-arrow-right"></i>
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
         <span style="font-size:12px;">Logout</span>
       </a>
     </div>
@@ -121,7 +122,7 @@
                       border-left:4px solid {{ color }};">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"
-                    style="font-size:11px;"></button>
+                    aria-label="Close" style="font-size:11px;"></button>
           </div>
         {% endfor %}
       </div>
@@ -138,9 +139,9 @@
   <div class="app-layout">
 
     {# ── Sidebar ── #}
-    <aside class="sidebar" id="sidebar">
-        <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar">
-          <i class="bi bi-layout-sidebar-reverse" id="sidebarToggleIcon"></i>
+    <aside class="sidebar collapsed no-transition" id="sidebar" aria-label="Main navigation">
+        <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar" aria-label="Collapse sidebar">
+          <i class="bi bi-layout-sidebar-reverse" id="sidebarToggleIcon" aria-hidden="true"></i>
           <span class="toggle-label" id="sidebarToggleLabel">Collapse</span>
         </button>
       <div class="sidebar-user">
@@ -160,17 +161,17 @@
         {% if session.get('role') == 'Admin' %}
           <a href="{{ url_for('admin_dashboard') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
-            <i class="bi bi-house"></i> <span class="link-text">Dashboard</span>
+            <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
           </a>
         {% elif session.get('role') == 'Operator' %}
           <a href="{{ url_for('operator_dashboard') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'operator_dashboard' }}">
-            <i class="bi bi-house"></i> <span class="link-text">Dashboard</span>
+            <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
           </a>
         {% else %}
           <a href="{{ url_for('observer_dashboard') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'observer_dashboard' }}">
-            <i class="bi bi-house"></i> <span class="link-text">Dashboard</span>
+            <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
           </a>
         {% endif %}
 
@@ -179,18 +180,18 @@
           <div class="sidebar-section-label">My Work</div>
           <a href="{{ url_for('add_catch') }}"
               class="sidebar-link {{ 'active' if request.endpoint == 'add_catch' }}">
-            <i class="bi bi-plus-circle"></i> <span class="link-text">Add Catch Record</span>
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> <span class="link-text">Add Catch Record</span>
           </a>
           <a href="{{ url_for('add_observation') }}"
               class="sidebar-link {{ 'active' if request.endpoint == 'add_observation' }}">
-            <i class="bi bi-binoculars"></i> <span class="link-text">Add Observation</span>
+            <i class="bi bi-binoculars" aria-hidden="true"></i> <span class="link-text">Add Observation</span>
           </a>
           <a href="{{ url_for('my_records') }}"
               class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
-            <i class="bi bi-pencil-square"></i> <span class="link-text">My Catch Records</span>
+            <i class="bi bi-pencil-square" aria-hidden="true"></i> <span class="link-text">My Catch Records</span>
           </a>
           <a href="{{ url_for('lines_index', operator=session.username) }}" class="sidebar-link">
-            <i class="bi bi-person-lines-fill"></i>
+            <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
             <span class="link-text">My Trap Lines</span>
           </a>
         {% endif %}
@@ -199,22 +200,22 @@
         <div class="sidebar-section-label">Data</div>
         <a href="{{ url_for('lines_index') }}"
            class="sidebar-link {% if request.endpoint == 'lines_index' %}active{% endif %}">
-          <i class="bi bi-geo-alt"></i> <span class="link-text">Trap Lines</span>
+          <i class="bi bi-geo-alt" aria-hidden="true"></i> <span class="link-text">Trap Lines</span>
         </a>
         <a href="{{ url_for('catch_records') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'catch_records' }}">
-          <i class="bi bi-table"></i> <span class="link-text">Catch Records</span>
+          <i class="bi bi-table" aria-hidden="true"></i> <span class="link-text">Catch Records</span>
         </a>
         <a href="{{ url_for('observations') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'observations' }}">
-          <i class="bi bi-binoculars"></i> <span class="link-text">Observations</span>
+          <i class="bi bi-binoculars" aria-hidden="true"></i> <span class="link-text">Observations</span>
         </a>
 
         {# Reports — all roles #}
         <div class="sidebar-section-label">Reports</div>
         <a href="{{ url_for('reports') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
-          <i class="bi bi-graph-up"></i> <span class="link-text">Reports &amp; Charts</span>
+          <i class="bi bi-graph-up" aria-hidden="true"></i> <span class="link-text">Reports &amp; Charts</span>
         </a>
 
         {# Admin-only system links #}
@@ -222,24 +223,24 @@
           <div class="sidebar-section-label">System</div>
           <a href="{{ url_for('admin_users') }}"
              class="sidebar-link {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
-            <i class="bi bi-people"></i> <span class="link-text">User Management</span>
+            <i class="bi bi-people" aria-hidden="true"></i> <span class="link-text">User Management</span>
           </a>
           <a href="{{ url_for('new_line') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'new_line' }}">
-            <i class="bi bi-plus-circle-dotted"></i> <span class="link-text">New Trap Line</span>
+            <i class="bi bi-plus-circle-dotted" aria-hidden="true"></i> <span class="link-text">New Trap Line</span>
           </a>
           <div class="sidebar-section-label">Manage Lists</div>
           <a href="{{ url_for('manage_species') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'manage_species' }}">
-            <i class="bi bi-bug"></i> <span class="link-text">Species</span>
+            <i class="bi bi-bug" aria-hidden="true"></i> <span class="link-text">Species</span>
           </a>
           <a href="{{ url_for('manage_statuses') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'manage_statuses' }}">
-            <i class="bi bi-tags"></i> <span class="link-text">Statuses</span>
+            <i class="bi bi-tags" aria-hidden="true"></i> <span class="link-text">Statuses</span>
           </a>
           <a href="{{ url_for('manage_bait_types') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'manage_bait_types' }}">
-            <i class="bi bi-basket"></i> <span class="link-text">Bait Types</span>
+            <i class="bi bi-basket" aria-hidden="true"></i> <span class="link-text">Bait Types</span>
           </a>
         {% endif %}
 
@@ -247,18 +248,18 @@
         <div class="sidebar-section-label">Account</div>
         <a href="{{ url_for('profile') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'profile' }}">
-          <i class="bi bi-person"></i> <span class="link-text">My Profile</span>
+          <i class="bi bi-person" aria-hidden="true"></i> <span class="link-text">My Profile</span>
         </a>
         <a href="{{ url_for('change_password') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'change_password' }}">
-          <i class="bi bi-key"></i> <span class="link-text">Change Password</span>
+          <i class="bi bi-key" aria-hidden="true"></i> <span class="link-text">Change Password</span>
         </a>
 
       </nav>
 
       <div class="sidebar-footer">
         <a href="{{ url_for('logout') }}">
-          <i class="bi bi-box-arrow-right"></i>
+          <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
           <span class="link-text">Log Out</span>
         </a>
       </div>
@@ -289,7 +290,7 @@
               <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
                    role="alert" style="font-size:13px; border-radius:8px;">
                 {{ message | safe }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
               </div>
             {% endfor %}
           </div>
@@ -392,6 +393,10 @@
     const isMobile = window.innerWidth < 768;
     const savedState = localStorage.getItem('sidebarCollapsed') === 'true';
     applyState(isMobile ? true : savedState);
+    // Re-enable transitions after initial state is set so user toggles animate
+    requestAnimationFrame(function () {
+      sidebar.classList.remove('no-transition');
+    });
 
     btn.addEventListener('click', function () {
       const collapsed = !sidebar.classList.contains('collapsed');

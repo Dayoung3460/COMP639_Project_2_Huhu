@@ -239,6 +239,11 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       map.setView(MAP_DEFAULT_CENTER, 13);
     }
+
+    // Leaflet reads container dimensions at init time, before CSS layout is
+    // fully resolved. Deferring invalidateSize to the next paint cycle ensures
+    // the container has its final width and tiles fill the whole map area.
+    setTimeout(function () { map.invalidateSize(); }, 0);
   }
 
   lineCards.forEach(function (card) {
