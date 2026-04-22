@@ -62,7 +62,7 @@
               {% set line_detail_url = url_for('line_detail', line_id=line.line_id, filter=current_filter if current_filter != 'active' else None) %}
               {% call pf_panel(
                 panel_class='js-line-card lines-list-card',
-                body_class='d-flex justify-content-between align-items-center lines-list-card-body',
+                body_class='d-flex flex-column lines-list-card-body',
                 attrs={
                   'data-line-id': line.line_id,
                   'data-line-name': line.name,
@@ -74,8 +74,8 @@
                 }
               ) %}
                   <div class="lines-list-card__content">
-                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                      <h5 class="mb-0">{{ line.name }}</h5>
+                    <div class="d-flex align-items-center gap-2 mb-1 lines-list-card__name-row">
+                      <h5 class="mb-0 lines-list-card__title">{{ line.name }}</h5>
                       {{ pf_trap_status_badge(line.is_retired) }}
                     </div>
                     {% if line.is_retired and line.retired_at %}
@@ -85,8 +85,8 @@
                       {{ line.trap_count | default(0) }} active traps -
                       {{ line.operator_count | default(0) }} operators
                     </small>
-                    <div class="small text-muted mt-1 lines-operator-list">
-                      {% if line.assigned_operators %}
+                    {% if line.assigned_operators %}
+                      <div class="small text-muted mt-1 lines-operator-list">
                         {% for operator in line.assigned_operators %}
                           <div class="lines-operator-item">
                             {{ operator.label }}
@@ -95,10 +95,8 @@
                             {% endif %}
                           </div>
                         {% endfor %}
-                      {% else %}
-                        No operator assigned
-                      {% endif %}
-                    </div>
+                      </div>
+                    {% endif %}
                   </div>
                   <div class="d-flex gap-2 align-items-center lines-list-card__actions">
                     {{ pf_link_button(line_detail_url, 'View', variant='btn-sm-outline', attrs={'aria-label': 'View ' ~ line.name}) }}
