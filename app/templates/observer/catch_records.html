@@ -6,12 +6,12 @@
     <h2 class="mb-0">{% if is_my_records %}My Catch Records{% else %}Catch Records{% endif %}</h2>
     {% if records %}
       <button id="downloadCsvBtn" class="btn-sm-pf">
-        <i class="bi bi-download me-1"></i>Download CSV
+        <i class="bi bi-download me-1" aria-hidden="true"></i>Download CSV
       </button>
     {% else %}
       <span class="d-inline-block" tabindex="0" title="There is no data to download">
-        <button class="btn-sm-outline" disabled style="pointer-events: none; opacity: 0.55;">
-          <i class="bi bi-download me-1"></i>Download CSV
+        <button class="btn-sm-outline" disabled style="pointer-events: none; opacity: 0.55;" aria-label="Download CSV (no data available)">
+          <i class="bi bi-download me-1" aria-hidden="true"></i>Download CSV
         </button>
       </span>
     {% endif %}
@@ -23,7 +23,7 @@
       <form method="GET" action="{{ url_for('my_records' if is_my_records else 'catch_records') }}" class="row g-2 align-items-center">
 
         <div class="col-auto d-flex align-items-center">
-          <label class="form-label mb-0 me-2" style="font-size: 0.875rem; white-space: nowrap;"><i class="bi bi-search me-1"></i>Search</label>
+          <label class="form-label mb-0 me-2" for="trapCodeSearch" style="font-size: 0.875rem; white-space: nowrap;"><i class="bi bi-search me-1" aria-hidden="true"></i>Search</label>
           <input type="text" id="trapCodeSearch" class="form-control form-control-sm"
                  placeholder="Search by trap code..." autocomplete="off">
         </div>
@@ -31,7 +31,7 @@
         <div class="col-auto" style="border-left: 2px solid #e4ede8; height: 28px;"></div>
 
         <div class="col-auto">
-          <select name="line_id" class="form-select form-select-sm" onchange="this.form.submit()">
+          <select name="line_id" class="form-select form-select-sm" aria-label="Filter by line" onchange="this.form.submit()">
             <option value="">All Lines</option>
             {% if is_my_records %}
               {% for line in filter_data.lines %}
@@ -48,7 +48,7 @@
         </div>
 
         <div class="col-auto">
-          <select name="species_caught" class="form-select form-select-sm" onchange="this.form.submit()">
+          <select name="species_caught" class="form-select form-select-sm" aria-label="Filter by species" onchange="this.form.submit()">
             <option value="">All Species</option>
             {% for sp in filter_data.species %}
               <option value="{{ sp }}" {% if selected_filters.species_caught == sp %}selected{% endif %}>{{ sp }}</option>
@@ -57,7 +57,7 @@
         </div>
 
         <div class="col-auto">
-          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+          <select name="status" class="form-select form-select-sm" aria-label="Filter by status" onchange="this.form.submit()">
             <option value="">All Statuses</option>
             {% for st in filter_data.statuses %}
               <option value="{{ st }}" {% if selected_filters.status == st %}selected{% endif %}>{{ st }}</option>
@@ -66,7 +66,7 @@
         </div>
 
         <div class="col-auto">
-          <select name="trap_condition" class="form-select form-select-sm" onchange="this.form.submit()">
+          <select name="trap_condition" class="form-select form-select-sm" aria-label="Filter by trap condition" onchange="this.form.submit()">
             <option value="">All Conditions</option>
             {% for cond in filter_data.conditions %}
               <option value="{{ cond }}" {% if selected_filters.trap_condition == cond %}selected{% endif %}>{{ cond }}</option>
@@ -102,22 +102,22 @@
       <div>
         <h3 class="panel-title">{% if is_my_records %}My Catch Records{% else %}All Catch Records{% endif %}</h3>
       </div>
-      <span class="panel-meta"><i class="bi bi-arrow-down-up me-1"></i>Click a column header to sort</span>
+      <span class="panel-meta"><i class="bi bi-arrow-down-up me-1" aria-hidden="true"></i>Click a column header to sort</span>
     </div>
     <div class="pf-table-responsive" style="max-height: 60vh; overflow-y: auto;">
       <table class="pf-table" id="recordsTable">
       <thead class="sticky-top bg-white">
         <tr>
-          <th role="button" data-sort-col="0" class="sortable">Trap Code <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="1" class="sortable">Trap Type <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="2" class="sortable">Date <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="3" class="sortable">Line <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="4" class="sortable">Species <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="5" class="sortable">Status <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="6" class="sortable">Strikes <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="7" class="sortable">Rebaited <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="8" class="sortable">Bait Type <i class="bi bi-chevron-expand text-muted small"></i></th>
-          <th role="button" data-sort-col="9" class="sortable">Condition <i class="bi bi-chevron-expand text-muted small"></i></th>
+          <th role="button" data-sort-col="0" class="sortable">Trap Code <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="1" class="sortable">Trap Type <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="2" class="sortable">Date <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="3" class="sortable">Line <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="4" class="sortable">Species <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="5" class="sortable">Status <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="6" class="sortable">Strikes <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="7" class="sortable">Rebaited <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="8" class="sortable">Bait Type <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          <th role="button" data-sort-col="9" class="sortable">Condition <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
           <th>Notes</th>
           {% if is_my_records or session.get('role') == 'Admin' %}<th>Action</th>{% endif %}
         </tr>
@@ -153,7 +153,7 @@
                 <span class="text-truncate-cell">{{ bt[:20] }}</span>
                 <a href="#" class="btn-sm-pf-soft ms-1" style="font-size:11px; padding:2px 8px;"
                    data-bs-toggle="modal" data-bs-target="#textDetailModal"
-                   data-full-text="{{ bt }}" title="Click to view full text"><i class="bi bi-eye me-1"></i>View more</a>
+                   data-full-text="{{ bt }}" title="Click to view full text"><i class="bi bi-eye me-1" aria-hidden="true"></i>View more</a>
               {% else %}
                 {{ bt }}
               {% endif %}
@@ -163,7 +163,8 @@
               {% if r.notes %}
                 <a href="#" class="btn-sm-pf-soft" style="font-size:11px; padding:2px 8px;"
                    data-bs-toggle="modal" data-bs-target="#textDetailModal"
-                   data-full-text="{{ r.notes }}" title="Click to view notes">View</a>
+                   data-full-text="{{ r.notes }}" title="Click to view notes"
+                   aria-label="View notes for {{ r.trap_code }} on {{ r.date | nz_datetime }}">View</a>
               {% else %}
                 —
               {% endif %}
@@ -171,7 +172,8 @@
             {% if is_my_records or session.get('role') == 'Admin' %}
               {% if trap_map and trap_map.get(r.trap_id).is_retired == False %}
                 <td>
-                  <a href="{{ url_for('edit_catch', catch_id=r.catch_id) }}" class="btn-sm-outline">
+                  <a href="{{ url_for('edit_catch', catch_id=r.catch_id) }}" class="btn-sm-outline"
+                     aria-label="Edit catch record for {{ r.trap_code }} on {{ r.date | nz_datetime }}">
                     Edit
                   </a>
                 </td>
@@ -196,12 +198,12 @@
 </div>
 
 {# ── Text detail modal ── #}
-<div class="modal fade" id="textDetailModal" tabindex="-1">
+<div class="modal fade" id="textDetailModal" tabindex="-1" aria-labelledby="textDetailModal-title" aria-modal="true" role="dialog">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Full Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title" id="textDetailModal-title">Full Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" id="textDetailBody" style="white-space:pre-wrap;"></div>
       <div class="modal-footer">
