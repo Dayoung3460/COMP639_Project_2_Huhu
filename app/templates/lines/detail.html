@@ -72,8 +72,6 @@
     {% call pf_panel(title='Trap Map', meta='', actions_html=map_filter_actions, panel_class='mb-4') %}
         <div id="line-map"
              class="line-map-canvas"
-             role="img"
-             aria-label="Map showing traps on {{ line.name }}"
              data-line-id="{{ line.line_id }}"
              data-linz-api-key="{{ linz_api_key }}"
              data-line-is-retired="{{ 'true' if line.is_retired else 'false' }}"></div>
@@ -123,7 +121,7 @@
                           'data-bs-toggle': 'modal',
                           'data-bs-target': '#retire-trap-modal',
                           'data-trap-id': trap.trap_id,
-                          'data-trap-code': trap.code
+                          'data-trap-code': trap.code,
                         }
                       ) }}
                     {% endif %}
@@ -151,7 +149,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="retire-trap-modal-title">Retire trap</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close retire trap dialog"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <div class="modal-body">
@@ -159,8 +157,8 @@
               <p class="text-muted lines-modal-note">This trap will be marked as Retired.</p>
 
               <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
-                <p class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</p>
-                <input type="text" name="delete-confirm" class="w-100 form-control" aria-label="Type delete to confirm retirement" required />
+                <label for="retire-trap-confirm" class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</label>
+                <input type="text" id="retire-trap-confirm" name="delete-confirm" class="w-100 form-control" required />
               </div>
             </div>
 

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container py-4" style="max-width: 500px;">
   <h2 class="mb-4">Edit User Role</h2>
-  
+
   <div class="card mb-4">
     <div class="card-body">
       <h5 class="card-title">{{ user.first_name }} {{ user.last_name }}</h5>
@@ -16,15 +16,15 @@
 
   <form id="edit-role-form" method="POST" action="{{ url_for('edit_role', user_id=user.user_id) }}">
     <div class="mb-3">
-      <label class="form-label">New Role <span class="text-danger">*</span></label>
-      <select name="role" class="form-select" required>
+      <label class="form-label" for="roleSelect">New Role <span class="text-danger" aria-hidden="true">*</span></label>
+      <select name="role" id="roleSelect" class="form-select" required>
         <option value="">— select role —</option>
         {% for role in roles %}
           <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>{{ role }}</option>
         {% endfor %}
       </select>
     </div>
-    
+
     <div class="d-flex gap-2">
       <button type="button" class="btn btn-pf" data-bs-toggle="modal" data-bs-target="#confirm-role-modal">Save Changes</button>
       <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">Cancel</a>
@@ -32,12 +32,12 @@
   </form>
 </div>
 
-<div class="modal fade pop-up-modal" id="confirm-role-modal" tabindex="-1">
+<div class="modal fade pop-up-modal" id="confirm-role-modal" tabindex="-1" aria-labelledby="confirm-role-title" aria-modal="true" role="dialog">
   <div class="modal-dialog" style="margin-top: 10vh;">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Change Role</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title" id="confirm-role-title">Change Role</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <p>Are you sure you want to change this user's role?</p>

@@ -47,7 +47,7 @@
       </div>
     </section>
 
-    <div id="lines-empty-filter-state" class="notice blue d-none lines-empty-filter-state" role="status" aria-live="polite">
+    <div id="lines-empty-filter-state" class="notice blue d-none lines-empty-filter-state">
       <i class="bi bi-funnel" aria-hidden="true"></i>
       <div>No lines match the current search or filters.</div>
     </div>
@@ -192,7 +192,7 @@
     </div>
   </div>
 
-  <div class="modal fade pop-up-modal" id="retire-line-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="retire-line-modal-title">
+  <div class="modal fade pop-up-modal" id="retire-line-modal" tabindex="-1" aria-labelledby="retire-line-modal-title" aria-modal="true" role="dialog">
     <div class="modal-dialog lines-modal-dialog">
       <form method="POST" id="modal-line-action" autocomplete="off">
         <input type="hidden" name="line_id" id="modal-line-id" value="" />
@@ -200,7 +200,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="retire-line-modal-title">Retire line</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close retire line dialog"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
           <div class="modal-body">
@@ -214,8 +214,8 @@
             </p>
 
             <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
-              <p class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</p>
-              <input type="text" name="delete-confirm" class="w-100 form-control" aria-label="Type delete to confirm retirement" required />
+              <label for="retire-line-confirm" class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</label>
+              <input type="text" id="retire-line-confirm" name="delete-confirm" class="w-100 form-control" required />
             </div>
           </div>
 
