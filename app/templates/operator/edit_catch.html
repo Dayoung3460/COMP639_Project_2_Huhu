@@ -33,14 +33,14 @@
           </div>
           <div class="col-sm-6">
             <label class="form-label" for="trapSelect">Trap Code <span class="text-danger" aria-hidden="true">*</span></label>
-            <select name="trap_id" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}" required id="trapSelect">
-              <option value="">— select line first —</option>
+            <select name="trap_id" id="trapSelect" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}" required disabled>
               {% for line in lines %}
                 {% for trap in line.traps %}
-                <option value="{{ trap.trap_id }}" data-line-id="{{ line.line_id }}" 
-                        {% if data and data.get('trap_id')|string == trap.trap_id|string %}selected{% endif %}>
-                  {{ trap.trap_code }} ({{ trap.trap_type }})
-                </option>
+                  {% if data and data.get('trap_id')|string == trap.trap_id|string %}
+                    <option value="{{ trap.trap_id }}" data-line-id="{{ line.line_id }}">
+                      {{ trap.trap_code }} ({{ trap.trap_type }})
+                    </option>
+                  {% endif %}
                 {% endfor %}
               {% endfor %}
             </select>
