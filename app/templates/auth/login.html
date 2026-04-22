@@ -31,7 +31,7 @@
                           alert-dismissible fade show mb-3"
                    style="font-size:13px; border-radius:8px;">
                 {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
               </div>
             {% endfor %}
           {% endif %}
@@ -39,7 +39,7 @@
 
         {# Info notice #}
         <div class="notice green mb-3">
-          <i class="bi bi-info-circle"></i>
+          <i class="bi bi-info-circle" aria-hidden="true"></i>
           <span>You will be redirected to the dashboard for your role after login.</span>
         </div>
 
@@ -47,10 +47,11 @@
 
           {# Username #}
           <div class="field-group">
-            <label class="form-label">Username</label>
+            <label class="form-label" for="usernameInput">Username</label>
             <input type="text"
                    class="form-control"
                    name="username"
+                   id="usernameInput"
                    placeholder="Enter your username"
                    value="{{ username if username else '' }}"
                    required autofocus>
@@ -58,7 +59,7 @@
 
           {# Password with show/hide toggle #}
           <div class="field-group">
-            <label class="form-label">Password</label>
+            <label class="form-label" for="passwordInput">Password</label>
             <div style="position:relative;">
               <input type="password"
                      class="form-control"
@@ -69,17 +70,18 @@
                      style="padding-right:40px;">
               <button type="button"
                       id="togglePassword"
+                      aria-label="Show password"
                       style="position:absolute;right:10px;top:50%;
                              transform:translateY(-50%);background:none;
                              border:none;color:#6b7c72;cursor:pointer;">
-                <i class="bi bi-eye" id="toggleIcon"></i>
+                <i class="bi bi-eye" id="toggleIcon" aria-hidden="true"></i>
               </button>
             </div>
           </div>
 
           {# Submit #}
           <button type="submit" class="btn-pf-full mt-3">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+            <i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>Log In
           </button>
 
         </form>
@@ -87,7 +89,7 @@
         {% if quick_login_enabled %}
         <div class="notice green mt-3" id="quickLoginSection">
           <div class="d-flex align-items-center gap-2 mb-2">
-            <i class="bi bi-lightning-charge"></i>
+            <i class="bi bi-lightning-charge" aria-hidden="true"></i>
             <strong style="font-size:13px;">Quick Login (Testing)</strong>
           </div>
           <div class="d-grid gap-2">
@@ -124,13 +126,13 @@
 
         <div class="auth-footer-link" style="margin-top:6px;">
           <a href="{{ url_for('forgot_password') }}" style="color:#6b7c72;">
-            <i class="bi bi-key me-1"></i>Lost your password?
+            <i class="bi bi-key me-1" aria-hidden="true"></i>Lost your password?
           </a>
         </div>
 
         <div class="auth-footer-link" style="margin-top:6px;">
           <a href="{{ url_for('index') }}" style="color:#6b7c72;">
-            <i class="bi bi-arrow-left me-1"></i>Back to Home
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to Home
           </a>
         </div>
 
