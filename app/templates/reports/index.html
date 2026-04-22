@@ -13,7 +13,7 @@
         id="reportsForm">
 
     {# Line filter #}
-    <select name="line_id" class="form-control"
+    <select name="line_id" class="form-control" aria-label="Filter by line"
             style="width:160px; font-size:13px;"
             onchange="this.form.submit()">
       <option value=""        {{ 'selected' if not selected_line and selected_line_status == 'all' }}>All Lines</option>
@@ -45,7 +45,7 @@
 
     {# Operator filter #}
     {% if operators %}
-    <select name="operator_id" class="form-control"
+    <select name="operator_id" class="form-control" aria-label="Filter by operator"
             style="width:160px; font-size:13px;"
             onchange="this.form.submit()">
       <option value="">All Operators</option>
@@ -59,7 +59,7 @@
     {% endif %}
 
     {# Period filter #}
-    <select name="period" class="form-control"
+    <select name="period" class="form-control" aria-label="Filter by time period"
             style="width:150px; font-size:13px;"
             id="periodSelect"
             onchange="toggleDatePicker(this.value); if(this.value !== 'custom') this.form.submit();">
@@ -91,11 +91,11 @@
     {# Refresh — only shown when custom date range is active and both dates filled #}
     <button type="submit" class="btn-sm-pf" id="refreshBtn"
             style="display:{{ 'inline-flex' if selected_period == 'custom' and date_from and date_to else 'none' }};">
-      <i class="bi bi-arrow-clockwise me-1"></i>Apply
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Apply
     </button>
 
     <button type="button" onclick="printReport()" class="btn-sm-outline">
-      <i class="bi bi-printer me-1"></i>Print / PDF
+      <i class="bi bi-printer me-1" aria-hidden="true"></i>Print / PDF
     </button>
 
   </form>
@@ -107,7 +107,7 @@
   <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+        <div class="stat-icon red"><i class="bi bi-bug" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.total_captures }}</div>
           <div class="stat-label">Total Captures</div>
@@ -116,7 +116,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon amber"><i class="bi bi-clipboard2-check"></i></div>
+        <div class="stat-icon amber"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.total_records }}</div>
           <div class="stat-label">Total Records</div>
@@ -125,7 +125,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-icon green"><i class="bi bi-check-circle" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.active_trap_pct }}%</div>
           <div class="stat-label">Active Traps</div>
@@ -134,7 +134,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon blue"><i class="bi bi-trophy"></i></div>
+        <div class="stat-icon blue"><i class="bi bi-trophy" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value" style="font-size:20px;">{{ stats.top_species }}</div>
           <div class="stat-label">Most Caught Species</div>
@@ -156,7 +156,7 @@
             <div style="position:relative; height:400px; width:100%;"><canvas id="trendChart" style="width:100% !important;"></canvas></div>
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
-              <i class="bi bi-graph-up" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              <i class="bi bi-graph-up" aria-hidden="true" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
               No catch data available for this period.
             </div>
           {% endif %}
@@ -173,7 +173,7 @@
             <div style="position:relative; height:400px; width:100%;"><canvas id="speciesChart" style="width:100% !important;"></canvas></div>
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
-              <i class="bi bi-pie-chart" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              <i class="bi bi-pie-chart" aria-hidden="true" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
               No captures recorded yet.
             </div>
           {% endif %}
@@ -209,7 +209,7 @@
             </div>
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
-              <i class="bi bi-bar-chart-horizontal" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              <i class="bi bi-bar-chart-horizontal" aria-hidden="true" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
               No data for selected filters.
             </div>
           {% endif %}
@@ -233,7 +233,7 @@
             {% endif %}
           {% else %}
             <div style="text-align:center; padding:40px 0; color:#6b7c72;">
-              <i class="bi bi-bar-chart" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              <i class="bi bi-bar-chart" aria-hidden="true" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
               No data for selected filters.
             </div>
           {% endif %}
@@ -254,7 +254,7 @@
 
           {% if insights.busiest_line is defined %}
           <div class="insight-card">
-            <div class="insight-icon"><i class="bi bi-arrow-up-circle"></i></div>
+            <div class="insight-icon"><i class="bi bi-arrow-up-circle" aria-hidden="true"></i></div>
             <div>
               <div class="insight-title">Busiest Line</div>
               <p class="insight-text">
@@ -267,7 +267,7 @@
 
           <div class="insight-card">
             <div class="insight-icon" style="background:#fdecea; color:#c0392b;">
-              <i class="bi bi-exclamation-triangle"></i>
+              <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
             </div>
             <div>
               <div class="insight-title">Needs Attention</div>
@@ -285,7 +285,7 @@
           </div>
 
           <div class="insight-card">
-            <div class="insight-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="insight-icon"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></div>
             <div>
               <div class="insight-title">Capture Rate</div>
               <p class="insight-text">
@@ -297,7 +297,7 @@
 
           {% if insights.last_check_date is defined %}
           <div class="insight-card">
-            <div class="insight-icon"><i class="bi bi-calendar-check"></i></div>
+            <div class="insight-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></div>
             <div>
               <div class="insight-title">Last Check</div>
               <p class="insight-text">
@@ -311,7 +311,7 @@
           {% if insights.retired_lines %}
           <div class="insight-card" style="background:#f8fafc; border-color:#cbd5e1;">
             <div class="insight-icon" style="background:#e2e8f0; color:#64748b;">
-              <i class="bi bi-archive"></i>
+              <i class="bi bi-archive" aria-hidden="true"></i>
             </div>
             <div>
               <div class="insight-title" style="color:#475569;">Retired Lines</div>
@@ -337,7 +337,7 @@
         </div>
         {% if recent_catches %}
           <div style="overflow-x:auto;">
-            <table class="pf-table">
+            <table class="pf-table" aria-label="Recent catch records">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -374,7 +374,7 @@
           </div>
         {% else %}
           <div class="panel-body" style="text-align:center; padding:40px 0; color:#6b7c72;">
-            <i class="bi bi-table" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+            <i class="bi bi-table" aria-hidden="true" style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
             No records found for selected filters.
           </div>
         {% endif %}
@@ -384,14 +384,14 @@
   </div>
 
   {# ── Others Lines Modal ── #}
-  <div class="modal fade" id="othersModal" tabindex="-1" aria-labelledby="othersModalLabel" aria-hidden="true">
+  <div class="modal fade" id="othersModal" tabindex="-1" aria-labelledby="othersModalLabel" aria-modal="true" role="dialog">
     <div class="modal-dialog modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header" style="background:var(--pf-50); border-bottom:1px solid var(--pf-200);">
           <h5 class="modal-title" id="othersModalLabel" style="font-family:'Cabin',sans-serif; font-size:15px; color:var(--pf-800);">
-            <i class="bi bi-bar-chart-horizontal me-2"></i>Other Lines — Breakdown
+            <i class="bi bi-bar-chart-horizontal me-2" aria-hidden="true"></i>Other Lines — Breakdown
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" style="padding:0;">
           <table class="pf-table" id="othersTable">
