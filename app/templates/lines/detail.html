@@ -109,7 +109,7 @@
                 {% if session.get('role') == 'Admin' %}
                   <td class="lines-table-actions">
                     {% if not trap.is_retired %}
-                      {{ pf_link_button(url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id), 'Edit', variant='btn-sm-outline') }}
+                      {{ pf_link_button(url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit trap ' ~ trap.code}) }}
                       {{ pf_button(
                         'Retire',
                         variant='btn-sm-danger',
@@ -117,7 +117,8 @@
                           'data-bs-toggle': 'modal',
                           'data-bs-target': '#retire-trap-modal',
                           'data-trap-id': trap.trap_id,
-                          'data-trap-code': trap.code
+                          'data-trap-code': trap.code,
+                          'aria-label': 'Retire trap ' ~ trap.code
                         }
                       ) }}
                     {% endif %}
@@ -137,15 +138,15 @@
       {% endcall %}
     </div>
 
-    <div class="modal fade pop-up-modal" id="retire-trap-modal" tabindex="-1">
+    <div class="modal fade pop-up-modal" id="retire-trap-modal" tabindex="-1" aria-labelledby="retire-trap-modal-title" aria-modal="true" role="dialog">
       <div class="modal-dialog lines-modal-dialog">
         <form method="POST" action="{{ url_for('retire_trap', line_id=line.line_id) }}" autocomplete="off">
           <input type="hidden" name="trap_id" id="modal-trap-id" value="" />
 
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Retire trap</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <h5 class="modal-title" id="retire-trap-modal-title">Retire trap</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <div class="modal-body">
@@ -153,8 +154,8 @@
               <p class="text-muted lines-modal-note">This trap will be marked as Retired.</p>
 
               <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
-                <p class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</p>
-                <input type="text" name="delete-confirm" class="w-100 form-control" required />
+                <label for="retire-trap-confirm" class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</label>
+                <input type="text" id="retire-trap-confirm" name="delete-confirm" class="w-100 form-control" required />
               </div>
             </div>
 
@@ -191,7 +192,7 @@
     {% endcall %}
   {% else %}
     <div class="notice amber">
-      <i class="bi bi-signpost-2"></i>
+      <i class="bi bi-signpost-2" aria-hidden="true"></i>
       <div>Line not found.</div>
     </div>
   {% endif %}

@@ -9,10 +9,10 @@
 
 {% block header_actions %}
   <a href="{{ url_for('new_line') }}" class="btn-sm-pf">
-    <i class="bi bi-plus-lg me-1"></i>New Line
+    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New Line
   </a>
   <a href="{{ url_for('admin_users') }}" class="btn-sm-outline">
-    <i class="bi bi-people me-1"></i>Manage Users
+    <i class="bi bi-people me-1" aria-hidden="true"></i>Manage Users
   </a>
 {% endblock %}
 
@@ -22,7 +22,7 @@
   <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon blue"><i class="bi bi-people"></i></div>
+        <div class="stat-icon blue"><i class="bi bi-people" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.total_users }}</div>
           <div class="stat-label">Total Users</div>
@@ -34,7 +34,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon green"><i class="bi bi-geo-alt"></i></div>
+        <div class="stat-icon green"><i class="bi bi-geo-alt" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.total_lines - stats.retired_lines }}</div>
           <div class="stat-label">Active Lines</div>
@@ -48,7 +48,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon amber"><i class="bi bi-cpu"></i></div>
+        <div class="stat-icon amber"><i class="bi bi-cpu" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.total_traps - stats.retired_traps }}</div>
           <div class="stat-label">Active Traps</div>
@@ -62,7 +62,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+        <div class="stat-icon red"><i class="bi bi-bug" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.catches_month }}</div>
           <div class="stat-label">Catches This Month</div>
@@ -81,7 +81,7 @@
     <div class="col-lg-6">
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title"><i class="bi bi-bell me-2"></i>Alerts</div>
+          <div class="panel-title"><i class="bi bi-bell me-2" aria-hidden="true"></i>Alerts</div>
         </div>
         <div class="panel-body d-flex flex-column gap-3">
 
@@ -90,7 +90,7 @@
                style="{{ 'background:#fdecea; border-color:#f5c6cb;' if stats.maintenance_traps else '' }}">
             <div class="insight-icon"
                  style="{{ 'background:#f8d7da; color:#c0392b;' if stats.maintenance_traps else '' }}">
-              <i class="bi bi-tools"></i>
+              <i class="bi bi-tools" aria-hidden="true"></i>
             </div>
             <div>
               <div class="insight-title"
@@ -113,7 +113,7 @@
                style="{{ 'background:#fef3dc; border-color:#fde8b0;' if stats.inactive_users else '' }}">
             <div class="insight-icon"
                  style="{{ 'background:#fde8b0; color:#e8920a;' if stats.inactive_users else '' }}">
-              <i class="bi bi-person-x"></i>
+              <i class="bi bi-person-x" aria-hidden="true"></i>
             </div>
             <div>
               <div class="insight-title"
@@ -137,7 +137,7 @@
           {# Retired lines #}
           <div class="insight-card" style="background:#f8fafc; border-color:#cbd5e1;">
             <div class="insight-icon" style="background:#e2e8f0; color:#64748b;">
-              <i class="bi bi-archive"></i>
+              <i class="bi bi-archive" aria-hidden="true"></i>
             </div>
             <div>
               <div class="insight-title" style="color:#475569;">Retired Lines</div>
@@ -160,7 +160,7 @@
     <div class="col-lg-6">
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title"><i class="bi bi-lightning me-2"></i>Quick Actions</div>
+          <div class="panel-title"><i class="bi bi-lightning me-2" aria-hidden="true"></i>Quick Actions</div>
         </div>
         <div class="panel-body d-flex flex-column gap-2">
 
@@ -173,14 +173,14 @@
              onmouseout="this.style.background='var(--pf-50)'">
             <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
                         display:flex; align-items:center; justify-content:center;
-                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;" aria-hidden="true">
               <i class="bi bi-people"></i>
             </div>
             <div>
               <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Manage Users</div>
               <div style="font-size:11px; color:#6b7c72;">View, edit roles and account status</div>
             </div>
-            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
           </a>
 
           <a href="{{ url_for('new_line') }}"
@@ -192,14 +192,14 @@
              onmouseout="this.style.background='var(--pf-50)'">
             <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
                         display:flex; align-items:center; justify-content:center;
-                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;" aria-hidden="true">
               <i class="bi bi-plus-circle-dotted"></i>
             </div>
             <div>
               <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Create New Trap Line</div>
               <div style="font-size:11px; color:#6b7c72;">Add a new line to the monitoring network</div>
             </div>
-            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
           </a>
 
           <a href="{{ url_for('manage_species') }}"
@@ -211,14 +211,14 @@
              onmouseout="this.style.background='var(--pf-50)'">
             <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
                         display:flex; align-items:center; justify-content:center;
-                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;" aria-hidden="true">
               <i class="bi bi-bug"></i>
             </div>
             <div>
               <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">Manage Lookup Lists</div>
               <div style="font-size:11px; color:#6b7c72;">Species, statuses, bait types</div>
             </div>
-            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
           </a>
 
           <a href="{{ url_for('reports') }}"
@@ -230,14 +230,14 @@
              onmouseout="this.style.background='var(--pf-50)'">
             <div style="width:36px; height:36px; background:var(--pf-100); border-radius:8px;
                         display:flex; align-items:center; justify-content:center;
-                        color:var(--pf-700); font-size:16px; flex-shrink:0;">
+                        color:var(--pf-700); font-size:16px; flex-shrink:0;" aria-hidden="true">
               <i class="bi bi-graph-up"></i>
             </div>
             <div>
               <div style="font-size:13px; font-weight:600; font-family:'Cabin',sans-serif;">View Reports</div>
               <div style="font-size:11px; color:#6b7c72;">Charts and catch data analytics</div>
             </div>
-            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);"></i>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
           </a>
 
         </div>
@@ -293,9 +293,9 @@
                   </td>
                   <td>
                     {% if user.account_status == 'active' %}
-                      <span style="color:var(--pf-600); font-size:11px; font-weight:600;">● Active</span>
+                      <span style="color:var(--pf-600); font-size:11px; font-weight:600;"><span aria-hidden="true">● </span>Active</span>
                     {% else %}
-                      <span style="color:#e8920a; font-size:11px; font-weight:600;">● Inactive</span>
+                      <span style="color:#e8920a; font-size:11px; font-weight:600;"><span aria-hidden="true">● </span>Inactive</span>
                     {% endif %}
                   </td>
                 </tr>
