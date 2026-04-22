@@ -23,7 +23,8 @@
         <div class="row g-3">
           <div class="col-sm-6">
             <label class="form-label" for="lineSelect">Trap Line <span class="text-danger" aria-hidden="true">*</span></label>
-            <select name="line_id" class="form-select" required id="lineSelect" disabled>
+            <input type="hidden" name="line_id" value="{{ data.get('line_id', '') if data else '' }}">
+            <select id="lineSelect" class="form-select" disabled>
               {% for line in lines %}
                 {% if data and data.get('line_id')|string == line.line_id|string %}
                   <option value="{{ line.line_id }}" {% if data and data.get('line_id')|string == line.line_id|string %}selected{% endif %}>{{ line.line_name }}</option>
@@ -33,20 +34,17 @@
           </div>
           <div class="col-sm-6">
             <label class="form-label" for="trapSelect">Trap Code <span class="text-danger" aria-hidden="true">*</span></label>
-            <select name="trap_id" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}" required id="trapSelect">
-              <option value="">— select line first —</option>
+            <input type="hidden" name="trap_id" value="{{ data.get('trap_id', '') if data else '' }}">
+            <select id="trapSelect" class="form-select" disabled>
               {% for line in lines %}
                 {% for trap in line.traps %}
-                <option value="{{ trap.trap_id }}" data-line-id="{{ line.line_id }}" 
+                <option value="{{ trap.trap_id }}" data-line-id="{{ line.line_id }}"
                         {% if data and data.get('trap_id')|string == trap.trap_id|string %}selected{% endif %}>
                   {{ trap.trap_code }} ({{ trap.trap_type }})
                 </option>
                 {% endfor %}
               {% endfor %}
             </select>
-            {% if errors and errors.get('trap_id') %}
-            <div class="invalid-feedback">{{ errors.get('trap_id') }}</div>
-            {% endif %}
           </div>
           <div class="col-sm-6">
             <label class="form-label" for="dateInput">Date &amp; Time <span class="text-danger" aria-hidden="true">*</span></label>
