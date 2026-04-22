@@ -1266,4 +1266,13 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   .group-photo {
     height: 250px;
   }
+  .profile-header-card, .panel {
+    margin-bottom: 0;
+  }
+  .panel-body > div.row.g-2 > div {
+    width: 100%;
+  }
+  .panel-body > div.row.g-2 {
+      flex-direction: column !important;
+  }
 }
