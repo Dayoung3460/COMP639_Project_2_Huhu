@@ -59,10 +59,10 @@
       {# Profile photo / avatar chip — links to profile #}
       <a href="{{ url_for('profile') }}"
          style="display:flex; align-items:center; gap:8px; text-decoration:none;
-                background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+                background: #185534; border:1px solid rgba(255,255,255,0.15);
                 border-radius:20px; padding:4px 12px 4px 4px; transition:background 0.15s;"
-         onmouseover="this.style.background='rgba(255,255,255,0.14)'"
-         onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+         onmouseover="this.style.background='#185534cc'"
+         onmouseout="this.style.background='#185534'">
         {# Avatar circle #}
         <div style="width:28px; height:28px; border-radius:50%;
                     background:var(--pf-600); flex-shrink:0; overflow:hidden;
@@ -79,10 +79,10 @@
         </div>
         {# Username + role #}
         <div style="line-height:1.2;">
-          <div style="font-size:12px; color:#fff; font-weight:500;">
+          <div style="font-size:14px; color:#fff; font-weight:500;">
             {{ nav_first_name or session.get('username') }}
           </div>
-          <div style="font-size:10px; color:var(--pf-300);">
+          <div style="font-size:11px; color:#bbf4d0;">
             {{ session.get('role') }}
           </div>
         </div>
@@ -90,7 +90,7 @@
 
       <a href="{{ url_for('logout') }}"
          style="display:flex; align-items:center; gap:5px; text-decoration:none;
-                color:var(--pf-300); font-size:13px; padding:4px 8px;
+                color:#c5ffda; font-size:13px; padding:4px 8px;
                 border-radius:6px; transition:color 0.15s;"
          onmouseover="this.style.color='#fff'"
          onmouseout="this.style.color='var(--pf-300)'">
@@ -350,8 +350,8 @@
       </div>
       <hr class="footer-divider">
       <div class="footer-bottom">
-        <div style="font-size:11px;color:var(--pf-500);">&copy; Team Huhu — COMP 639 Group Project 1</div>
-        <div style="font-size:11px;color:var(--pf-600);">Built with Flask + PostgreSQL + Bootstrap</div>
+        <div style="font-size:12px;color:#6fc291;">&copy; Team Huhu — COMP 639 Group Project 1</div>
+        <div style="font-size:12px;color:#6fc291;">Built with Flask + PostgreSQL + Bootstrap</div>
       </div>
     </div>
   </footer>
