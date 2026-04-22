@@ -14,12 +14,12 @@
   </div>
 
   {% if lines %}
-    <section class="mb-4">
+    <section class="mb-4" aria-label="Search and filter lines">
       <div class="row g-3 align-items-end">
         <div class="col-lg-8">
           <label for="lines-search-input" class="form-label mb-1">Search lines</label>
           <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
             <input
               type="search"
               id="lines-search-input"
@@ -42,13 +42,13 @@
           </select>
         </div>
         <div class="col-sm-4 col-lg-1 d-grid">
-          {{ pf_button('Clear', variant='btn-sm-outline', extra_classes='lines-filter-shell__clear-btn', attrs={'id': 'lines-clear-filters'}) }}
+          {{ pf_button('Clear', variant='btn-sm-outline', extra_classes='lines-filter-shell__clear-btn', attrs={'id': 'lines-clear-filters', 'aria-label': 'Clear all filters'}) }}
         </div>
       </div>
     </section>
 
-    <div id="lines-empty-filter-state" class="notice blue d-none lines-empty-filter-state">
-      <i class="bi bi-funnel"></i>
+    <div id="lines-empty-filter-state" class="notice blue d-none lines-empty-filter-state" role="status" aria-live="polite">
+      <i class="bi bi-funnel" aria-hidden="true"></i>
       <div>No lines match the current search or filters.</div>
     </div>
   {% endif %}
@@ -101,13 +101,14 @@
                     </div>
                   </div>
                   <div class="d-flex gap-2 align-items-center lines-list-card__actions">
-                    {{ pf_link_button(line_detail_url, 'View', variant='btn-sm-outline') }}
+                    {{ pf_link_button(line_detail_url, 'View', variant='btn-sm-outline', attrs={'aria-label': 'View ' ~ line.name}) }}
                     {% if session.get('role') == 'Admin' and not line.is_retired %}
-                      {{ pf_link_button(url_for('edit_line', line_id=line.line_id), 'Edit', variant='btn-sm-outline') }}
+                      {{ pf_link_button(url_for('edit_line', line_id=line.line_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit ' ~ line.name}) }}
                       {{ pf_button(
                         'Retire',
                         variant='btn-sm-danger',
                         attrs={
+                          'aria-label': 'Retire ' ~ line.name,
                           'data-bs-toggle': 'modal',
                           'data-bs-target': '#retire-line-modal',
                           'data-line-id': line.line_id,
@@ -124,7 +125,7 @@
         </div>
       {% else %}
         <div class="notice blue mb-0">
-          <i class="bi bi-signpost-split"></i>
+          <i class="bi bi-signpost-split" aria-hidden="true"></i>
           <div>No trap lines found.</div>
         </div>
       {% endif %}
@@ -137,20 +138,23 @@
             {{ pf_link_button(
               url_for('lines_index', filter='all'),
               'All',
-              variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline'
+              variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline',
+              attrs={'aria-current': 'page'} if current_filter == 'all' else None
             ) }}
             {{ pf_link_button(
               url_for('lines_index'),
               'Active',
-              variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline'
+              variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline',
+              attrs={'aria-current': 'page'} if current_filter == 'active' else None
             ) }}
             {{ pf_link_button(
               url_for('lines_index', filter='retired'),
               'Retired',
-              variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline'
+              variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline',
+              attrs={'aria-current': 'page'} if current_filter == 'retired' else None
             ) }}
           </div>
-          <select id="lines-status-filter" class="form-select form-select-sm d-md-none"
+          <select id="lines-status-filter" class="form-select form-select-sm d-md-none" aria-label="Filter lines by status"
                   data-url-all="{{ url_for('lines_index', filter='all') }}"
                   data-url-active="{{ url_for('lines_index') }}"
                   data-url-retired="{{ url_for('lines_index', filter='retired') }}">
@@ -169,16 +173,18 @@
       ) %}
           <div id="lines-overview-map"
                class="lines-overview-map"
+               role="img"
+               aria-label="Map showing all trap lines and traps"
                data-linz-api-key="{{ linz_api_key }}"></div>
           <script id="lines-overview-traps-data" type="application/json">{{ map_traps|tojson }}</script>
           {% if current_filter in ('all', 'retired') %}
           <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
             <span class="d-inline-flex align-items-center gap-1">
-              <span class="map-legend-line map-legend-line-retired"></span>
+              <span class="map-legend-line map-legend-line-retired" aria-hidden="true"></span>
               Retired line
             </span>
             <span class="d-inline-flex align-items-center gap-1">
-              <span class="map-legend-dot map-legend-dot-retired"></span>
+              <span class="map-legend-dot map-legend-dot-retired" aria-hidden="true"></span>
               Retired trap
             </span>
           </div>
@@ -188,15 +194,15 @@
     </div>
   </div>
 
-  <div class="modal fade pop-up-modal" id="retire-line-modal" tabindex="-1">
+  <div class="modal fade pop-up-modal" id="retire-line-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="retire-line-modal-title">
     <div class="modal-dialog lines-modal-dialog">
       <form method="POST" id="modal-line-action" autocomplete="off">
         <input type="hidden" name="line_id" id="modal-line-id" value="" />
 
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Retire line</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <h5 class="modal-title" id="retire-line-modal-title">Retire line</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close retire line dialog"></button>
           </div>
 
           <div class="modal-body">
@@ -211,13 +217,13 @@
 
             <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
               <p class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</p>
-              <input type="text" name="delete-confirm" class="w-100 form-control" required />
+              <input type="text" name="delete-confirm" class="w-100 form-control" aria-label="Type delete to confirm retirement" required />
             </div>
           </div>
 
           <div class="modal-footer">
-            {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
-            {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit') }}
+            {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel retirement'}) }}
+            {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit', attrs={'aria-label': 'Confirm retirement'}) }}
           </div>
         </div>
       </form>
