@@ -9,10 +9,10 @@
 
 {% block header_actions %}
   <a href="{{ url_for('add_catch') }}" class="btn-sm-pf">
-    <i class="bi bi-plus-lg me-1"></i>Add Catch Record
+    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add Catch Record
   </a>
   <a href="{{ url_for('add_observation') }}" class="btn-sm-outline">
-    <i class="bi bi-binoculars me-1"></i>Add Observation
+    <i class="bi bi-binoculars me-1" aria-hidden="true"></i>Add Observation
   </a>
 {% endblock %}
 
@@ -22,7 +22,7 @@
   {% if not assigned_lines %}
     <div class="alert alert-warning d-flex align-items-center gap-2 mb-4"
          style="font-size:13px; border-radius:8px;">
-      <i class="bi bi-exclamation-triangle-fill"></i>
+      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
       You are not assigned to any trap lines yet. Contact an Admin to get assigned.
     </div>
   {% endif %}
@@ -31,7 +31,7 @@
   <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon green"><i class="bi bi-geo-alt"></i></div>
+        <div class="stat-icon green"><i class="bi bi-geo-alt" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.lines_count }}</div>
           <div class="stat-label">Assigned Lines</div>
@@ -40,7 +40,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon amber"><i class="bi bi-clipboard2-check"></i></div>
+        <div class="stat-icon amber"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.total_records }}</div>
           <div class="stat-label">Records This Month</div>
@@ -49,7 +49,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon red"><i class="bi bi-bug"></i></div>
+        <div class="stat-icon red"><i class="bi bi-bug" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.catches_month }}</div>
           <div class="stat-label">Catches This Month</div>
@@ -58,7 +58,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
       <div class="stat-card">
-        <div class="stat-icon blue"><i class="bi bi-trophy"></i></div>
+        <div class="stat-icon blue"><i class="bi bi-trophy" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value">{{ stats.total_catches }}</div>
           <div class="stat-label">Total Catches</div>
@@ -74,7 +74,7 @@
       <div class="panel w-100">
         <div class="panel-header">
           <div class="panel-title">
-            <i class="bi bi-geo-alt me-2"></i>My Assigned Lines
+            <i class="bi bi-geo-alt me-2" aria-hidden="true"></i>My Assigned Lines
           </div>
           <a href="{{ url_for('lines_index', operator=session.username) }}"
              style="font-size:11px; color:var(--pf-600); text-decoration:none;">
@@ -101,14 +101,14 @@
                     {{ line.type }} · {{ line.trap_count }} active trap{{ 's' if line.trap_count != 1 }}
                   </div>
                 </div>
-                <i class="bi bi-chevron-right"
+                <i class="bi bi-chevron-right" aria-hidden="true"
                    style="color:var(--pf-400); font-size:12px;"></i>
               </a>
             {% endfor %}
           </div>
         {% else %}
           <div class="panel-body" style="text-align:center; padding:30px; color:#6b7c72;">
-            <i class="bi bi-geo-alt" style="font-size:32px; display:block;
+            <i class="bi bi-geo-alt" aria-hidden="true" style="font-size:32px; display:block;
                margin-bottom:10px; color:var(--pf-300);"></i>
             No lines assigned yet.
           </div>
@@ -123,7 +123,7 @@
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">
-            <i class="bi bi-lightning me-2"></i>Quick Actions
+            <i class="bi bi-lightning me-2" aria-hidden="true"></i>Quick Actions
           </div>
         </div>
         <div class="panel-body" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -137,7 +137,7 @@
             <div style="width:32px; height:32px; background:var(--pf-100);
                         border-radius:8px; display:flex; align-items:center;
                         justify-content:center; color:var(--pf-700); font-size:15px;">
-              <i class="bi bi-plus-circle"></i>
+              <i class="bi bi-plus-circle" aria-hidden="true"></i>
             </div>
             <div>
               <div style="font-size:12px; font-weight:600;
@@ -155,7 +155,7 @@
             <div style="width:32px; height:32px; background:var(--pf-100);
                         border-radius:8px; display:flex; align-items:center;
                         justify-content:center; color:var(--pf-700); font-size:15px;">
-              <i class="bi bi-binoculars"></i>
+              <i class="bi bi-binoculars" aria-hidden="true"></i>
             </div>
             <div>
               <div style="font-size:12px; font-weight:600;
@@ -173,7 +173,7 @@
             <div style="width:32px; height:32px; background:var(--pf-100);
                         border-radius:8px; display:flex; align-items:center;
                         justify-content:center; color:var(--pf-700); font-size:15px;">
-              <i class="bi bi-pencil-square"></i>
+              <i class="bi bi-pencil-square" aria-hidden="true"></i>
             </div>
             <div>
               <div style="font-size:12px; font-weight:600;
@@ -191,7 +191,7 @@
             <div style="width:32px; height:32px; background:var(--pf-100);
                         border-radius:8px; display:flex; align-items:center;
                         justify-content:center; color:var(--pf-700); font-size:15px;">
-              <i class="bi bi-graph-up"></i>
+              <i class="bi bi-graph-up" aria-hidden="true"></i>
             </div>
             <div>
               <div style="font-size:12px; font-weight:600;
@@ -213,7 +213,7 @@
         </div>
         {% if recent_records %}
           <div style="overflow-x:auto;">
-            <table class="pf-table">
+            <table class="pf-table" aria-label="Recent catch records">
               <thead>
                 <tr>
                   <th>Date</th>

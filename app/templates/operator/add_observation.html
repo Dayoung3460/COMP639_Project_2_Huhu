@@ -15,7 +15,7 @@
         {% endif %}
         {% if coord_errors %}
           <div class="notice amber mb-3">
-            <i class="bi bi-exclamation-triangle-fill"></i>
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
             <div>
               <strong>Coordinates outside allowed region:</strong>
               <ul class="mb-0 ps-3 mt-1">
@@ -27,7 +27,7 @@
           </div>
         {% endif %}
         <div class="mb-3">
-          <label class="form-label">Line <span class="text-danger">*</span></label>
+          <label class="form-label" for="lineSelect">Line <span class="text-danger" aria-hidden="true">*</span></label>
           <select name="line_id" id="lineSelect" class="form-select {% if errors and errors.get('line_id') %}is-invalid{% endif %}" required>
             <option value="">— select line —</option>
             {% for line in lines %}
@@ -39,7 +39,7 @@
           {% if errors and errors.get('line_id') %}<div class="text-danger small mt-1">{{ errors.get('line_id') }}</div>{% endif %}
         </div>
         <div class="mb-3">
-          <label class="form-label">Trap</label>
+          <label class="form-label" for="trapSelect">Trap</label>
           <select name="trap_id" id="trapSelect" class="form-select {% if errors and errors.get('trap_id') %}is-invalid{% endif %}">
             <option value="">— optional —</option>
             {% for line in lines %}
@@ -55,14 +55,14 @@
           {% if errors and errors.get('trap_id') %}<div class="text-danger small mt-1">{{ errors.get('trap_id') }}</div>{% endif %}
         </div>
         <div class="mb-3">
-          <label class="form-label">Date &amp; Time <span class="text-danger">*</span></label>
+          <label class="form-label" for="obs-date">Date &amp; Time <span class="text-danger" aria-hidden="true">*</span></label>
           <input type="datetime-local" id="obs-date" class="form-control {% if errors and errors.get('date') %}is-invalid{% endif %}" name="date"
                  value="{{ data.get('date', '') if data else '' }}" required>
           {% if errors and errors.get('date') %}<div class="text-danger small mt-1">{{ errors.get('date') }}</div>{% endif %}
         </div>
         <div class="mb-3">
-          <label class="form-label">Observation Type <span class="text-danger">*</span></label>
-          <select name="observation_type" class="form-select {% if errors and errors.get('observation_type') %}is-invalid{% endif %}" required>
+          <label class="form-label" for="obs-type">Observation Type <span class="text-danger" aria-hidden="true">*</span></label>
+          <select name="observation_type" id="obs-type" class="form-select {% if errors and errors.get('observation_type') %}is-invalid{% endif %}" required>
             <option value="">— select —</option>
             {% for obs_type in lookup.valid_observation_types %}
               <option value="{{ obs_type }}" {% if data and data.get('observation_type') == obs_type %}selected{% endif %}>{{ obs_type }}</option>
@@ -71,23 +71,23 @@
         </div>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label">Latitude</label>
+            <label class="form-label" for="obs-lat">Latitude</label>
             <input type="text" id="obs-lat" class="form-control"
                    name="latitude" inputmode="decimal" value="{{ data.get('latitude', '') if data else '' }}" placeholder="e.g. -43.640914">
             {% if lat_range %}<div class="form-text">Allowed Lincoln boundary: {{ lat_range[0] }} to {{ lat_range[1] }}</div>{% endif %}
           </div>
           <div class="col-md-6">
-            <label class="form-label">Longitude</label>
+            <label class="form-label" for="obs-lng">Longitude</label>
             <input type="text" id="obs-lng" class="form-control"
                    name="longitude" inputmode="decimal" value="{{ data.get('longitude', '') if data else '' }}" placeholder="e.g. 172.475682">
             {% if lon_range %}<div class="form-text">Allowed Lincoln boundary: {{ lon_range[0] }} to {{ lon_range[1] }}</div>{% endif %}
           </div>
         </div>
 
-        <p class="text-muted small mb-3"><i class="bi bi-geo-alt-fill"></i> Click on the map to set coordinates, or type them in.</p>
+        <p class="text-muted small mb-3"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> Click on the map to set coordinates, or type them in.</p>
         <div class="mb-3">
-          <label class="form-label">Notes</label>
-          <textarea class="form-control" name="notes" rows="3"
+          <label class="form-label" for="obs-notes">Notes</label>
+          <textarea class="form-control" id="obs-notes" name="notes" rows="3"
                     placeholder="Describe what you observed...">{{ data.get('notes', '') if data else '' }}</textarea>
         </div>
         <div class="d-flex gap-2">
@@ -113,12 +113,12 @@
   </div>
 </div>
 
-<div class="modal fade pop-up-modal" id="confirm-save-modal" tabindex="-1">
+<div class="modal fade pop-up-modal" id="confirm-save-modal" tabindex="-1" aria-labelledby="confirm-save-modal-title" aria-modal="true" role="dialog">
   <div class="modal-dialog" style="margin-top: 10vh;">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Save Observation</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title" id="confirm-save-modal-title">Save Observation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <p>Are you sure you want to save this observation?</p>
