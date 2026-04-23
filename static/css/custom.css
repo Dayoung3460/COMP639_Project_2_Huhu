@@ -1021,6 +1021,18 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 
 @media (max-width: 767.98px) {
+  .content-header { padding: 10px 10px; }
+  .content-body   { padding: 10px 10px; }
+
+  /* Strip Bootstrap container's own horizontal padding so content-body
+     padding alone controls the side gap — prevents double-padding.
+     !important overrides Bootstrap utility classes (px-*, px-4 etc.). */
+  .content-body > .container,
+  .content-body > .container-fluid { padding-left: 0 !important; padding-right: 0 !important; }
+
+  /* Profile header name — avoid oversized text on narrow screens */
+  .profile-name { font-size: 16px; }
+
   .lines-page-header {
     flex-direction: column;
     align-items: flex-start !important;

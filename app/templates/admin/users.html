@@ -17,10 +17,10 @@
 </nav>
 {% endblock %}
 {% block content %}
-<div class="container py-4">
+<div class="container py-2">
 
   <!-- Filter and Search Form -->
-  <section class="mb-4">
+  <section class="mb-2">
     <div class="lines-filter-shell">
       <form id="filter-form" method="GET" action="{{ url_for('admin_users') }}">
         <div class="row g-3 align-items-end">
@@ -58,8 +58,8 @@
             </div>
           </div>
           
-          <div class="col-lg-1 d-grid">
-            <button type="button" id="clear-all-btn" class="btn btn-sm-outline lines-filter-shell__clear-btn w-100" aria-label="Clear all filters">Clear</button>
+          <div class="col-md-auto d-grid">
+            <button type="button" id="clear-all-btn" class="btn btn-sm-outline lines-filter-shell__clear-btn" aria-label="Clear all filters">Clear</button>
           </div>
 
         </div>
@@ -74,7 +74,7 @@
       <thead>
         <tr>
           {% for field, label in [('name', 'Name'), ('username', 'Username'), ('role', 'Role'), ('status', 'Status'), ('date_joined', 'Date Joined'), ('last_login', 'Last Login'), ('', 'Actions')] %}
-            <th scope="col" class="{{ 'text-center' if field != 'name' else '' }} {{ 'sortable-header' if field else '' }}"
+            <th scope="col" class="{{ 'text-center' if field != 'name' else '' }} {{ 'sortable-header' if field else '' }} {{ 'd-none d-md-table-cell' if field in ['date_joined', 'last_login'] else '' }}"
                 {% if field %}data-field="{{ field }}" aria-sort="{{ 'ascending' if field == 'name' else 'none' }}"{% endif %}>
               {% if field %}
                 <button type="button" class="sortable-header__btn d-inline-flex align-items-center gap-1 user-select-none" aria-label="Sort by {{ label }}">
@@ -114,8 +114,8 @@
                 {{ u.account_status | capitalize }}
               </span>
             </td>
-            <td class="text-center">{{ u.date_joined.strftime('%d %b %Y') if u.date_joined else 'Unknown' }}</td>
-            <td class="text-center">{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
+            <td class="text-center d-none d-md-table-cell">{{ u.date_joined.strftime('%d %b %Y') if u.date_joined else 'Unknown' }}</td>
+            <td class="text-center d-none d-md-table-cell">{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
             <td class="text-center lines-table-actions">
               {% if u.role != 'Admin' %}
               <a href="{{ url_for('edit_role', user_id=u.user_id) }}"
@@ -131,7 +131,7 @@
                       aria-label="{{ 'Deactivate' if u.account_status == 'active' else 'Activate' }} {{ u.first_name }} {{ u.last_name }}">
                 {{ 'Deactivate' if u.account_status == 'active' else 'Activate' }}
               </button>
-              {% endif %}            
+              {% endif %}
             </td>
           </tr>
         {% else %}

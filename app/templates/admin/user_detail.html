@@ -21,7 +21,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3 px-4">
+<div class="container-fluid py-3">
 
     <div class="row">
         <!-- Left Column: Photo & System Info -->
@@ -35,7 +35,7 @@
                         {{ user.first_name[:1] }}{{ user.last_name[:1] }}
                     {% endif %}
                 </div>
-                <div>
+                <div style="min-width:0; word-break:break-word;">
                     <div class="profile-name">{{ user.first_name }} {{ user.last_name }}</div>
                     <div class="profile-role">@{{ user.username }} &middot; {{ user.role }}</div>
                 </div>
@@ -47,29 +47,25 @@
                     <div class="panel-title"><i class="bi bi-display me-2" aria-hidden="true"></i>System Info</div>
                 </div>
                 <div class="panel-body" style="font-size: 13px;">
-                    <div class="d-flex mb-2">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Role</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center;"><span class="badge-role-{{ user.role | lower }}">{{ user.role }}</span></div>
-                        <div style="flex: 1;"></div>
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;" class="mb-2">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Role</div>
+                        <div style="text-align:right; min-width:0;"><span class="badge-role-{{ user.role | lower }}">{{ user.role }}</span></div>
                     </div>
-                    <div class="d-flex mb-2">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Account Status</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center;">
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;" class="mb-2">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Account Status</div>
+                        <div style="text-align:right; min-width:0;">
                             <span class="{{ 'badge-active' if user.account_status == 'active' else 'badge-inactive' }}">
                                 {{ user.account_status | capitalize }}
                             </span>
                         </div>
-                        <div style="flex: 1;"></div>
                     </div>
-                    <div class="d-flex mb-2">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Date Joined</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center;">{{ user.date_joined|nz_date }}</div>
-                        <div style="flex: 1;"></div>
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;" class="mb-2">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Date Joined</div>
+                        <div style="text-align:right; min-width:0;">{{ user.date_joined|nz_date }}</div>
                     </div>
-                    <div class="d-flex mb-0">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Last Login</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center;">{{ user.last_login|nz_datetime if user.last_login else 'Never logged in' }}</div>
-                        <div style="flex: 1;"></div>
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;" class="mb-0">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Last Login</div>
+                        <div style="text-align:right; min-width:0;">{{ user.last_login|nz_datetime if user.last_login else 'Never logged in' }}</div>
                     </div>
                     
                     <hr class="form-section-divider">
@@ -105,20 +101,17 @@
                     <div class="panel-title"><i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Contact</div>
                 </div>
                 <div class="panel-body" style="font-size: 13px;">
-                    <div class="d-flex mb-2">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Email</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center; word-break: break-word;">{{ user.email }}</div>
-                        <div style="flex: 1;"></div>
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:start; gap:0 16px;" class="mb-2">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap; padding-top: 1px;">Email</div>
+                        <div style="min-width:0; overflow-wrap:anywhere; text-align:right;">{{ user.email }}</div>
                     </div>
-                    <div class="d-flex mb-2">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Phone</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center; word-break: break-word;">{{ user.phone }}</div>
-                        <div style="flex: 1;"></div>
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;" class="mb-2">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Phone</div>
+                        <div style="min-width:0; overflow-wrap:anywhere; text-align:right;">{{ user.phone }}</div>
                     </div>
-                    <div class="d-flex">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Address</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center; word-break: break-word;">{{ user.address }}</div>
-                        <div style="flex: 1;"></div>
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:start; gap:0 16px;">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap; padding-top: 1px;">Address</div>
+                        <div style="min-width:0; overflow-wrap:anywhere; text-align:right;">{{ user.address }}</div>
                     </div>
                 </div>
             </div>
@@ -129,15 +122,13 @@
                     <div class="panel-title"><i class="bi bi-heart-pulse me-2" aria-hidden="true"></i>Emergency Contact Person</div>
                 </div>
                 <div class="panel-body" style="font-size: 13px;">
-                    <div class="d-flex mb-2">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Name</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center; word-break: break-word;">{{ user.emergency_contact_name }}</div>
-                        <div style="flex: 1;"></div>
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;" class="mb-2">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Name</div>
+                        <div style="min-width:0; overflow-wrap:anywhere; text-align:right;">{{ user.emergency_contact_name }}</div>
                     </div>
-                    <div class="d-flex">
-                        <div style="flex: 1; color: #6b7c72; font-weight: 600;">Phone</div>
-                        <div style="flex: 0 0 auto; max-width: 60%; text-align: center; word-break: break-word;">{{ user.emergency_contact_phone }}</div>
-                        <div style="flex: 1;"></div>
+                    <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;">
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Phone</div>
+                        <div style="min-width:0; overflow-wrap:anywhere; text-align:right;">{{ user.emergency_contact_phone }}</div>
                     </div>
                 </div>
             </div>
@@ -186,7 +177,7 @@
                                             <tr>
                                                 <th scope="col" class="text-center">Date</th>
                                                 <th scope="col" class="text-center">Line</th>
-                                                <th scope="col" class="text-center">Trap</th>
+                                                <th scope="col" class="text-center d-none d-sm-table-cell">Trap</th>
                                                 <th scope="col" class="text-center">Species Caught</th>
                                             </tr>
                                         </thead>
@@ -195,7 +186,7 @@
                                                 <tr>
                                                     <td class="text-center">{{ catch.date|nz_date }}</td>
                                                     <td class="text-center"><span style="color: {{ line_colours[catch.line_id % (line_colours|length)] }}; font-weight: 600;">{{ catch.line_name }}</span></td>
-                                                    <td class="text-center" style="font-family: monospace; font-size: 12px;">{{ catch.trap_code }}</td>
+                                                    <td class="text-center d-none d-sm-table-cell" style="font-family: monospace; font-size: 12px;">{{ catch.trap_code }}</td>
                                                     <td class="text-center"><span class="badge-species">{{ catch.species_caught }}</span></td>
                                                 </tr>
                                             {% endfor %}

@@ -108,31 +108,31 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Click on the map above to set coordinates, or type them below</div>
           <div id="inline-coord-announce" class="visually-hidden" aria-live="polite"></div>
           <form id="new-trap-inline-form" method="POST" action="${newTrapUrl}" aria-label="Add new trap">
-            <div class="row g-2 align-items-end">
-              <div class="col-12 col-md-1">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-2">
                 <label for="inline-code" class="form-label small mb-1">Code</label>
                 <input type="text" name="code" id="inline-code" class="form-control form-control-sm" required placeholder="e.g. CL-01" aria-required="true">
               </div>
-              <div class="col-12 col-md-2 ms-md-3">
+              <div class="col-12 col-md-2">
                 <label for="inline-type" class="form-label small mb-1">Type</label>
                 <select name="trap_type" id="inline-type" class="form-select form-select-sm" required aria-required="true">
                   <option value="">Select...</option>
                   ${trapTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
                 </select>
               </div>
-              <div class="col-12 col-md-2 ms-md-5">
+              <div class="col-12 col-md-2">
                 <label for="inline-lat" class="form-label small mb-1">Latitude</label>
                 <input type="text" name="latitude" id="inline-lat" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. -43.640914" aria-required="true">
               </div>
-              <div class="col-12 col-md-2 ms-md-4">
+              <div class="col-12 col-md-2">
                 <label for="inline-lng" class="form-label small mb-1">Longitude</label>
                 <input type="text" name="longitude" id="inline-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. 172.475682" aria-required="true">
               </div>
-              <div class="col-6 col-md-1 ms-md-auto mt-3 mt-md-0">
+              <div class="col-6 col-md-auto ms-md-auto mt-3 mt-md-0">
                 <button type="button" class="btn btn-sm-outline w-100" id="cancel-add-trap" aria-label="Cancel adding trap">Cancel</button>
               </div>
-              <div class="col-6 col-md-1 mt-3 mt-md-0">
-              <button type="submit" class="btn btn-sm-pf w-100" aria-label="Save new trap">Save</button>
+              <div class="col-6 col-md-auto mt-3 mt-md-0">
+                <button type="submit" class="btn btn-sm-pf w-100" aria-label="Save new trap">Save</button>
               </div>
             </div>
           </form>
@@ -153,11 +153,10 @@ document.addEventListener('DOMContentLoaded', function () {
         newRow.classList.remove('lines-inline-form-flash');
       }, 500);
 
-      // Scroll into view, wait a split second, then push down an extra ~1cm (40px)
-      newRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      setTimeout(() => {
-        window.scrollBy({ top: 40, behavior: 'smooth' });
-      }, 250);
+      // Scroll so the top of the form sits just below the sticky navbar
+      const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
+      const scrollTarget = newRow.getBoundingClientRect().top + window.scrollY - navbarH - 8;
+      window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
 
       // Focus the first input without triggering a competing scroll
       const firstInput = newRow.querySelector('input, select, button, a[href]');
