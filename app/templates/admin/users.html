@@ -74,13 +74,13 @@
       <thead>
         <tr>
           {% for field, label in [('name', 'Name'), ('username', 'Username'), ('role', 'Role'), ('status', 'Status'), ('date_joined', 'Date Joined'), ('last_login', 'Last Login'), ('', 'Actions')] %}
-            <th class="{{ 'text-center' if field != 'name' else '' }} {{ 'sortable-header' if field else '' }}"
-                {% if field %}data-field="{{ field }}" style="cursor: pointer;" aria-sort="none"{% endif %}>
+            <th scope="col" class="{{ 'text-center' if field != 'name' else '' }} {{ 'sortable-header' if field else '' }}"
+                {% if field %}data-field="{{ field }}" aria-sort="{{ 'ascending' if field == 'name' else 'none' }}"{% endif %}>
               {% if field %}
-                <div class="d-inline-flex align-items-center gap-1 user-select-none">
+                <button type="button" class="sortable-header__btn d-inline-flex align-items-center gap-1 user-select-none" aria-label="Sort by {{ label }}">
                   {{ label }}
                   <i class="bi sort-icon {{ 'bi-arrow-down' if field == 'name' else '' }}" aria-hidden="true"></i>
-                </div>
+                </button>
               {% else %}
                 {{ label }}
               {% endif %}

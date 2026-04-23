@@ -100,10 +100,13 @@ document.addEventListener('DOMContentLoaded', function () {
       const newRow = document.createElement('div');
       newRow.id = 'new-trap-form-container';
       newRow.className = 'panel mb-3 lines-inline-form-panel lines-inline-form-flash';
+      newRow.setAttribute('role', 'region');
+      newRow.setAttribute('aria-labelledby', 'lines-inline-form-title');
       newRow.innerHTML = `
         <div class="panel-body lines-inline-form-body">
-          <div class="lines-inline-form-title">Add Trap</div>
-          <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Click on the map above to set coordinates</div>
+          <div class="lines-inline-form-title" id="lines-inline-form-title">Add Trap</div>
+          <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Click on the map above to set coordinates, or type them below</div>
+          <div id="inline-coord-announce" class="visually-hidden" aria-live="polite"></div>
           <form id="new-trap-inline-form" method="POST" action="${newTrapUrl}" aria-label="Add new trap">
             <div class="row g-2 align-items-end">
               <div class="col-12 col-md-1">
@@ -218,6 +221,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (latInput) latInput.value = lat;
     if (lngInput) lngInput.value = lng;
 
+    // Announce coordinate update to screen readers
+    const announce = document.getElementById('inline-coord-announce');
+    if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
+
     // Update the temporary map marker
     if (tempMarker) map.removeLayer(tempMarker);
     tempMarker = L.marker([lat, lng]).addTo(map)
@@ -238,6 +245,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const cardBody = formContainer.querySelector('.panel-body');
         const alertDiv = document.createElement('div');
         alertDiv.className = 'notice amber lines-inline-form-error';
+        alertDiv.setAttribute('role', 'alert');
 
         const icon = document.createElement('i');
         icon.className = 'bi bi-exclamation-triangle-fill';
