@@ -18,7 +18,7 @@
   </div>
 
   {# ── Search & Filters ── #}
-  <div class="panel">
+  <div class="panel" style="margin-bottom: 5px;">
     <div class="panel-body py-2 px-3">
       <form method="GET" action="{{ url_for('observations') }}" class="row g-2 align-items-center">
 
@@ -102,14 +102,13 @@
             <td>{{ r.latitude or '—' }}</td>
             <td>{{ r.longitude or '—' }}</td>
             <td>
-              {% set nt = r.notes or '—' %}
-              {% if nt|length > 30 %}
-                <span class="text-truncate-cell">{{ nt[:30] }}</span>
-                <a href="#" class="btn-sm-pf-soft ms-1" style="font-size:11px; padding:2px 8px;"
+              {% if r.notes %}
+                <a href="#" class="btn-sm-pf-soft" style="font-size:11px; padding:2px 8px;"
                    data-bs-toggle="modal" data-bs-target="#textDetailModal"
-                   data-full-text="{{ nt }}" title="Click to view full text"><i class="bi bi-eye me-1" aria-hidden="true"></i>View more</a>
+                   data-full-text="{{ r.notes }}" title="Click to view notes"
+                   aria-label="View notes for observation on {{ r.date | nz_datetime }}">View</a>
               {% else %}
-                {{ nt }}
+                —
               {% endif %}
             </td>
             <td>{{ r.operator_name }}</td>
