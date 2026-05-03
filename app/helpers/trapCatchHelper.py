@@ -80,7 +80,7 @@ def validate_all_catch_record_fields(data, db, operator_id, role='Operator'):
         lookup['valid_species']
     )
 
-    valid_trap_ids = fetch_all_trap_ids(db) if role == 'Admin' else fetch_operator_trap_ids(db, operator_id)
+    valid_trap_ids = fetch_all_trap_ids(db) if role in ('Super Admin', 'Group Coordinator') else fetch_operator_trap_ids(db, operator_id)
     errors = {
         'trap_id': validate_trap_id(data.get('trap_id'), valid_trap_ids),
         'date': validate_date(data.get('date', '')),

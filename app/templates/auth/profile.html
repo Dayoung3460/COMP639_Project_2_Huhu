@@ -36,9 +36,12 @@
       <div style="flex:1;">
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <div class="profile-name">{{ user.first_name }} {{ user.last_name }}</div>
-          {% if user.role == 'Admin' %}
-            <span class="badge-role-admin">Admin</span>
-          {% elif user.role == 'Operator' %}
+          {% set role = session.get('group_role') %}
+          {% if role == 'Super Admin' %}
+            <span class="badge-role-admin">Super Admin</span>
+          {% elif role == 'Group Coordinator' %}
+            <span class="badge-role-admin">Group Coordinator</span>
+          {% elif role == 'Operator' %}
             <span class="badge-role-operator">Operator</span>
           {% else %}
             <span class="badge-role-observer">Observer</span>

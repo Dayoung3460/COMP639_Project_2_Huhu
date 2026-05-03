@@ -74,8 +74,8 @@ def register():
                      phone, address,
                      emergency_contact_name, emergency_contact_phone,
                      profile_photo,
-                     role, account_status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Observer', 'active')
+                     account_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active')
             ''', (username, email, password_hash, first_name, last_name,
                   phone or None, address or None,
                   emergency_name or None, emergency_phone or None,
@@ -97,10 +97,8 @@ def login():
         password = request.form.get('password', '')
 
         with db.get_cursor() as cursor:
-            # role is an ENUM directly on users — no JOIN to a role table needed
             cursor.execute('''
-                SELECT user_id, username, password_hash,
-                       account_status, role
+                SELECT user_id, username, password_hash, account_status
                 FROM users
                 WHERE username = %s
             ''', (username,))
@@ -122,14 +120,60 @@ def login():
                 quick_login_enabled=quick_login_enabled
             )
 
+        # Fetch all group memberships for this user
+        with db.get_cursor() as cursor:
+            cursor.execute('''
+                SELECT gm.group_id, gm.role, g.name AS group_name
+                FROM group_memberships gm
+                JOIN groups g ON gm.group_id = g.group_id
+                WHERE gm.user_id = %s
+                ORDER BY g.name
+            ''', (user['user_id'],))
+            memberships = cursor.fetchall()
+
         session['user_id']  = user['user_id']
         session['username'] = user['username']
-        session['role']     = user['role']
 
-        flash(f"Welcome back, {user['username']}!", 'success')
-        return redirect_by_role()
+        if len(memberships) == 0:
+            # Registered but not in any group yet — go to home to join one
+            flash(f"Welcome, {user['username']}! Join a group to get started.", 'info')
+            return redirect(url_for('index'))
+
+        if len(memberships) == 1:
+            session['group_id']   = memberships[0]['group_id']
+            session['group_role'] = memberships[0]['role']
+            session['group_name'] = memberships[0]['group_name']
+            flash(f"Welcome back, {user['username']}!", 'success')
+            return redirect_by_role()
+
+        # Multiple groups — let the user pick
+        session['pending_memberships'] = [dict(m) for m in memberships]
+        return redirect(url_for('select_group'))
 
     return render_template('auth/login.html', quick_login_enabled=quick_login_enabled)
+
+
+@app.route('/select-group', methods=['GET', 'POST'])
+def select_group():
+    """Group selector shown when a user belongs to multiple groups."""
+    memberships = session.get('pending_memberships')
+    if not memberships:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        group_id = request.form.get('group_id', type=int)
+        match = next((m for m in memberships if m['group_id'] == group_id), None)
+        if not match:
+            flash('Invalid selection.', 'danger')
+            return render_template('auth/select_group.html', memberships=memberships)
+
+        session['group_id']   = match['group_id']
+        session['group_role'] = match['role']
+        session['group_name'] = match['group_name']
+        session.pop('pending_memberships', None)
+        return redirect_by_role()
+
+    return render_template('auth/select_group.html', memberships=memberships)
 
 
 @app.route('/logout')

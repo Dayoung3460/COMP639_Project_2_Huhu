@@ -251,23 +251,23 @@ def update_user_active(db, user_id, status):
         """, (status, user_id))
 
 def fetch_user_info(db, user_id):
-    """Fetch user info including role for permission checks."""
+    """Fetch user info for permission checks. Role comes from group_memberships."""
     with db.get_cursor() as cursor:
         cursor.execute("""
-            SELECT user_id, username, email, first_name, last_name, role, account_status
+            SELECT user_id, username, email, first_name, last_name, account_status
             FROM users
             WHERE user_id = %s
         """, (user_id,))
         return cursor.fetchone()
 
-def update_user_role(db, user_id, role):
-    """Update a user's role."""
+def update_user_role(db, user_id, group_id, role):
+    """Update a user's role within a specific group."""
     with db.get_cursor() as cursor:
         cursor.execute("""
-            UPDATE users
+            UPDATE group_memberships
             SET role = %s
-            WHERE user_id = %s
-        """, (role, user_id))
+            WHERE user_id = %s AND group_id = %s
+        """, (role, user_id, group_id))
 def validate_lookup_table_values(db, data):
     """If the value that user selected from dropdown is not in database, return error message. This is to prevent the data inconsistency of database values."""
     with db.get_cursor() as cursor:

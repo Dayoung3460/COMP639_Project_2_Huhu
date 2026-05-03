@@ -97,6 +97,7 @@ from app import auth
 from app import observer
 from app import operator
 from app import admin
+from app import coordinator
 from app import lines
 from app import reports
 from app import general
@@ -125,13 +126,15 @@ def inject_globals():
             pass
     return dict(
         site_name='Tiaki',
-        site_tagline='Predator Trapping & Monitoring',
+        site_tagline='Conservation Group Management',
         logo_url=url_for('static', filename='images/logo.png'),
         icon_url=url_for('static', filename='images/icon.png'),
         favicon_url=url_for('static', filename='images/favicon.png'),
         nav_profile_photo=profile_photo,
         nav_first_name=first_name,
         nav_full_name=f"{first_name} {last_name}".strip(),
+        nav_group_name=session.get('group_name', ''),
+        nav_group_role=session.get('group_role', ''),
     )
 
 # ── Template filters ──────────────────────────────────────────────────────────

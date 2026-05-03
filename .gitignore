@@ -222,3 +222,7 @@ run_local.py
 prompt.md
 
 todo.md
+
+# Local reference files
+*.pdf
+Jira.csv

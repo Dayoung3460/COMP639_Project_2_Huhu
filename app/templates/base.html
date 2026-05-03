@@ -83,7 +83,7 @@
             {{ nav_first_name or session.get('username') }}
           </div>
           <div style="font-size:11px; color:#bbf4d0;">
-            {{ session.get('role') }}
+            {{ session.get('group_role') }}
           </div>
         </div>
       </a>
@@ -150,7 +150,7 @@
         </div>
         <div>
           <div class="user-name">{{ nav_full_name or session.get('username') }}</div>
-          <div class="user-role">{{ session.get('role') }}</div>
+          <div class="user-role">{{ session.get('group_role') }}</div>
         </div>
       </div>
 
@@ -158,12 +158,17 @@
 
         {# Overview #}
         <div class="sidebar-section-label">Overview</div>
-        {% if session.get('role') == 'Admin' %}
+        {% if session.get('group_role') == 'Super Admin' %}
           <a href="{{ url_for('admin_dashboard') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
             <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
           </a>
-        {% elif session.get('role') == 'Operator' %}
+        {% elif session.get('group_role') == 'Group Coordinator' %}
+          <a href="{{ url_for('coordinator_dashboard') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_dashboard' }}">
+            <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
+          </a>
+        {% elif session.get('group_role') == 'Operator' %}
           <a href="{{ url_for('operator_dashboard') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'operator_dashboard' }}">
             <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
@@ -176,7 +181,7 @@
         {% endif %}
 
         {# Operator work #}
-        {% if session.get('role') == 'Operator' %}
+        {% if session.get('group_role') == 'Operator' %}
           <div class="sidebar-section-label">My Work</div>
           <a href="{{ url_for('add_catch') }}"
               class="sidebar-link {{ 'active' if request.endpoint == 'add_catch' }}">
@@ -218,16 +223,12 @@
           <i class="bi bi-graph-up" aria-hidden="true"></i> <span class="link-text">Reports &amp; Charts</span>
         </a>
 
-        {# Admin-only system links #}
-        {% if session.get('role') == 'Admin' %}
+        {# Super Admin system links #}
+        {% if session.get('group_role') == 'Super Admin' %}
           <div class="sidebar-section-label">System</div>
           <a href="{{ url_for('admin_users') }}"
              class="sidebar-link {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
             <i class="bi bi-people" aria-hidden="true"></i> <span class="link-text">User Management</span>
-          </a>
-          <a href="{{ url_for('new_line') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'new_line' }}">
-            <i class="bi bi-plus-circle-dotted" aria-hidden="true"></i> <span class="link-text">New Trap Line</span>
           </a>
           <div class="sidebar-section-label">Manage Lists</div>
           <a href="{{ url_for('manage_species') }}"
@@ -241,6 +242,15 @@
           <a href="{{ url_for('manage_bait_types') }}"
              class="sidebar-link {{ 'active' if request.endpoint == 'manage_bait_types' }}">
             <i class="bi bi-basket" aria-hidden="true"></i> <span class="link-text">Bait Types</span>
+          </a>
+        {% endif %}
+
+        {# Manage lines — Super Admin and Group Coordinator #}
+        {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+          <div class="sidebar-section-label">Manage</div>
+          <a href="{{ url_for('new_line') }}"
+             class="sidebar-link {{ 'active' if request.endpoint == 'new_line' }}">
+            <i class="bi bi-plus-circle-dotted" aria-hidden="true"></i> <span class="link-text">New Line</span>
           </a>
         {% endif %}
 

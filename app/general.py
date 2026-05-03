@@ -102,7 +102,7 @@ def catch_records():
     """Browse and filter all trap catch records."""
     records, filters, filter_data = get_catch_records()
 
-    if session.get('role') == 'Admin':
+    if session.get('group_role') in ('Super Admin', 'Group Coordinator'):
         # Get trap_id to is_retired mapping for all traps to determine if edit action should be shown
         with db.get_cursor() as cursor:
             cursor.execute("SELECT trap_id, is_retired FROM traps")
@@ -115,7 +115,7 @@ def catch_records():
         records=records, 
         selected_filters=filters, 
         filter_data=filter_data,
-        trap_map=trap_map if session.get('role') == 'Admin' else None
+        trap_map=trap_map if session.get('group_role') in ('Super Admin', 'Group Coordinator') else None
     )
 
 

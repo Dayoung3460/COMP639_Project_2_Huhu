@@ -280,8 +280,10 @@
                     </div>
                   </td>
                   <td>
-                    {% if user.role == 'Admin' %}
-                      <span class="badge-role-admin">Admin</span>
+                    {% if user.role == 'Super Admin' %}
+                      <span class="badge-role-admin">Super Admin</span>
+                    {% elif user.role == 'Group Coordinator' %}
+                      <span class="badge-role-admin">Coordinator</span>
                     {% elif user.role == 'Operator' %}
                       <span class="badge-role-operator">Operator</span>
                     {% else %}

@@ -11,7 +11,7 @@ linz_api_key = os.getenv('LINZ_API_KEY', '')
 
 
 @app.route('/operator/dashboard')
-@role_required('Operator', 'Admin')
+@role_required('Operator')
 def operator_dashboard():
     """Operator dashboard — assigned lines, stats, and recent catches."""
     user_id = session.get('user_id')
@@ -126,12 +126,12 @@ def add_catch():
 
 
 @app.route('/operator/edit-catch/<int:catch_id>', methods=['GET', 'POST'])
-@role_required('Operator', 'Admin')
+@role_required('Operator', 'Super Admin', 'Group Coordinator')
 def edit_catch(catch_id):
     """Edit an existing catch record (own records only)."""
     if request.method == 'POST':
         # Security check: ensure the recorded_by_id in form matches session user_id to prevent tampering
-        if session.get('role') == 'Operator' and str(request.form.get('recorded_by_id')) != str(session['user_id']):
+        if session.get('group_role') == 'Operator' and str(request.form.get('recorded_by_id')) != str(session['user_id']):
             flash("You can only edit your own catch records.", 'error')
             return redirect(url_for('my_records'))
 
@@ -140,32 +140,32 @@ def edit_catch(catch_id):
             cursor.execute("SELECT catch_id, recorded_by_id FROM trap_catches WHERE catch_id = %s", (catch_id,))
             record = cursor.fetchone()
 
-        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'], role=session.get('role'))
+        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'], role=session.get('group_role'))
 
         # Additional check for lookup tables, in case the data inconsistency of database values
         lookup_valid_msg = validate_lookup_table_values(db, request.form)
 
         if lookup_valid_msg:
             flash(lookup_valid_msg, 'error')
-            lines = fetch_all_lines(db) if session.get('role') == 'Admin' else fetch_operator_lines(db, session['user_id'])
+            lines = fetch_all_lines(db) if session.get('group_role') in ('Super Admin', 'Group Coordinator') else fetch_operator_lines(db, session['user_id'])
             return render_template('operator/edit_catch.html', record=record, catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
             flash('Please fix the errors below before submitting.', 'error')
-            lines = fetch_all_lines(db) if session.get('role') == 'Admin' else fetch_operator_lines(db, session['user_id'])
+            lines = fetch_all_lines(db) if session.get('group_role') in ('Super Admin', 'Group Coordinator') else fetch_operator_lines(db, session['user_id'])
             return render_template('operator/edit_catch.html', record=record, catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         # Update the catch record in the database
         update_catch_record(db, data={**request.form, 'catch_id': catch_id}, user_id=record['recorded_by_id'])
         flash('Catch record updated successfully.', 'success')
-        return redirect(url_for('my_records') if session.get('role') == 'Operator' else url_for('catch_records'))
+        return redirect(url_for('my_records') if session.get('group_role') == 'Operator' else url_for('catch_records'))
 
 
     lookup = fetch_lookup_data(db)
     lines = fetch_operator_lines(db, session['user_id'])
     record = None
 
-    if session.get('role') == 'Admin':
+    if session.get('group_role') in ('Super Admin', 'Group Coordinator'):
         lines = fetch_all_lines(db)  # Admin can see all lines, not just assigned ones
 
     # Fetch the catch record and its associated line_id for pre-filling the form
