@@ -26,9 +26,11 @@
         </p>
         <div class="d-flex gap-3 mt-4 flex-wrap">
           {% if session.get('user_id') %}
-            {% if session.get('role') == 'Admin' %}
+            {% if session.get('group_role') == 'Super Admin' %}
               <a href="{{ url_for('admin_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
-            {% elif session.get('role') == 'Operator' %}
+            {% elif session.get('group_role') == 'Group Coordinator' %}
+              <a href="{{ url_for('coordinator_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
+            {% elif session.get('group_role') == 'Operator' %}
               <a href="{{ url_for('operator_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
             {% else %}
               <a href="{{ url_for('observer_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>

@@ -36,7 +36,7 @@ def lines_index():
                     FROM operator_lines ol
                     JOIN users u ON u.user_id = ol.operator_id
                     WHERE ol.line_id = l.line_id
-                      AND u.role = 'Operator'
+                      AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.user_id = u.user_id AND gm.role = 'Operator')
                 ) AS operator_count,
                 COALESCE(
                     (
@@ -51,7 +51,7 @@ def lines_index():
                             FROM operator_lines ol
                             JOIN users u ON u.user_id = ol.operator_id
                             WHERE ol.line_id = l.line_id
-                              AND u.role = 'Operator'
+                              AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.user_id = u.user_id AND gm.role = 'Operator')
                         ) AS op
                     ),
                     ''
@@ -69,7 +69,7 @@ def lines_index():
                             FROM operator_lines ol
                             JOIN users u ON u.user_id = ol.operator_id
                             WHERE ol.line_id = l.line_id
-                              AND u.role = 'Operator'
+                              AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.user_id = u.user_id AND gm.role = 'Operator')
                         ) AS op
                     ),
                     ARRAY[]::text[]
@@ -90,7 +90,7 @@ def lines_index():
                             FROM operator_lines ol
                             JOIN users u ON u.user_id = ol.operator_id
                             WHERE ol.line_id = l.line_id
-                              AND u.role = 'Operator'
+                              AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.user_id = u.user_id AND gm.role = 'Operator')
                         ) AS op
                     ),
                     ARRAY[]::text[]
@@ -110,7 +110,7 @@ def lines_index():
                             FROM operator_lines ol
                             JOIN users u ON u.user_id = ol.operator_id
                             WHERE ol.line_id = l.line_id
-                              AND u.role = 'Operator'
+                              AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.user_id = u.user_id AND gm.role = 'Operator')
                         ) AS op
                     ),
                     ARRAY[]::int[]
@@ -299,7 +299,10 @@ def line_detail(line_id):
                 FROM operator_lines ol
                 JOIN users u ON u.user_id = ol.operator_id
                 WHERE ol.line_id = %s
-                  AND u.role = 'Operator'
+                  AND EXISTS (
+                      SELECT 1 FROM group_memberships gm
+                      WHERE gm.user_id = u.user_id AND gm.role = 'Operator'
+                  )
                 ORDER BY u.first_name ASC, u.last_name ASC
                 """,
                 (line_id,)

@@ -133,7 +133,7 @@
                 </div>
             </div>
 
-            {% if user.role == 'Operator' %}
+            {% if user.role == 'Operator' or user.role == 'Group Coordinator' %}
             <!-- Assigned Lines Card -->
             <div class="panel">
                 <div class="panel-header">
@@ -157,7 +157,7 @@
         </div>
     </div>
 
-    {% if user.role == 'Operator' %}
+    {% if user.role in ('Operator', 'Group Coordinator') %}
     <!-- Full-width Activity History Row -->
     <div class="row">
         <div class="col-12">

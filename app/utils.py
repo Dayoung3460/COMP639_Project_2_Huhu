@@ -39,8 +39,8 @@ def role_required(*roles):
         *roles: Allowed roles. If empty, any logged-in user can access.
 
     Usage:
-        @role_required('Admin')
-        @role_required('Admin', 'Operator')
+        @role_required('Super Admin')
+        @role_required('Super Admin', 'Group Coordinator')
         @role_required()  # any logged-in user
     """
     def decorator(f):
@@ -49,7 +49,7 @@ def role_required(*roles):
             if 'user_id' not in session:
                 flash('Please log in to access this page.', 'danger')
                 return redirect(url_for('login'))
-            if roles and session.get('role') not in roles:
+            if roles and session.get('group_role') not in roles:
                 flash('You do not have permission to access that page', 'danger')
                 return redirect_by_role()
             return f(*args, **kwargs)
@@ -133,9 +133,11 @@ def redirect_by_role():
     Returns:
         A Flask redirect response to the appropriate dashboard.
     """
-    role = session.get('role')
-    if role == 'Admin':
+    role = session.get('group_role')
+    if role == 'Super Admin':
         return redirect(url_for('admin_dashboard'))
+    elif role == 'Group Coordinator':
+        return redirect(url_for('coordinator_dashboard'))
     elif role == 'Operator':
         return redirect(url_for('operator_dashboard'))
     else:
@@ -147,21 +149,27 @@ def redirect_by_role():
 def check_user_status():
     """
     Runs before every request to verify the logged-in user is still active.
-    If the account has been deactivated by an Admin, the session is cleared
-    and the user is redirected to login immediately.
+    Also catches stale sessions (user_id present but group_role not yet set).
 
-    Excludes public routes and static files.
+    Excludes public routes, auth routes, and the group-selector page.
     """
-    # Route function names (not blueprint.route) — matches our flat route structure
-    excluded_routes = ['login', 'register', 'index', 'static']
+    excluded_routes = {
+        'login', 'register', 'index', 'static',
+        'select_group', 'logout', 'forgot_password', 'reset_password',
+    }
 
     if request.endpoint in excluded_routes:
         return
 
     if 'user_id' in session:
+        # Stale P1 sessions have user_id but no group_role — send them back to login
+        if 'group_role' not in session:
+            session.clear()
+            flash('Your session has expired. Please log in again.', 'info')
+            return redirect(url_for('login'))
+
         from app import db
         with db.get_cursor() as cursor:
-            # No more is_active boolean or "user" table
             cursor.execute(
                 'SELECT account_status FROM users WHERE user_id = %s',
                 (session['user_id'],)

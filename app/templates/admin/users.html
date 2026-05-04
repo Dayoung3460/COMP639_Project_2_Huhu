@@ -38,7 +38,8 @@
             <div class="position-relative">
               <select class="form-select" id="role" name="role" style="background-image: none;">
                 <option value="">All Roles</option>
-                <option value="Admin" {% if role_filter == 'Admin' %}selected{% endif %}>Admin</option>
+                <option value="Super Admin" {% if role_filter == 'Super Admin' %}selected{% endif %}>Super Admin</option>
+                <option value="Group Coordinator" {% if role_filter == 'Group Coordinator' %}selected{% endif %}>Group Coordinator</option>
                 <option value="Operator" {% if role_filter == 'Operator' %}selected{% endif %}>Operator</option>
                 <option value="Observer" {% if role_filter == 'Observer' %}selected{% endif %}>Observer</option>
               </select>
@@ -117,7 +118,7 @@
             <td class="text-center d-none d-md-table-cell">{{ u.date_joined.strftime('%d %b %Y') if u.date_joined else 'Unknown' }}</td>
             <td class="text-center d-none d-md-table-cell">{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
             <td class="text-center lines-table-actions">
-              {% if u.role != 'Admin' %}
+              {% if u.role != 'Super Admin' %}
               <a href="{{ url_for('edit_role', user_id=u.user_id) }}"
                  class="btn btn-sm-amber"
                  aria-label="Edit role for {{ u.first_name }} {{ u.last_name }}">Edit Role</a>

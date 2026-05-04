@@ -1,4 +1,4 @@
-"""admin.py — Admin dashboard, user management, lines, traps, operator assignment, lookups."""
+﻿"""admin.py — Admin dashboard, user management, lines, traps, operator assignment, lookups."""
 
 from flask import render_template, request, redirect, url_for, flash, session
 import os
@@ -16,7 +16,7 @@ from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lo
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @app.route('/admin/dashboard')
-@role_required('Admin')
+@role_required('Super Admin')
 def admin_dashboard():
     """Admin dashboard — system-wide statistics and quick actions."""
     stats = {
@@ -42,12 +42,13 @@ def admin_dashboard():
             # ── Users ─────────────────────────────────────────
             cursor.execute("""
                 SELECT
-                    COUNT(*)                                          AS total,
-                    COUNT(*) FILTER (WHERE role = 'Observer')        AS observers,
-                    COUNT(*) FILTER (WHERE role = 'Operator')        AS operators,
-                    COUNT(*) FILTER (WHERE role = 'Admin')           AS admins,
-                    COUNT(*) FILTER (WHERE account_status = 'inactive') AS inactive
-                FROM users
+                    COUNT(DISTINCT u.user_id)                                                    AS total,
+                    COUNT(*) FILTER (WHERE gm.role = 'Observer')                                 AS observers,
+                    COUNT(*) FILTER (WHERE gm.role = 'Operator')                                 AS operators,
+                    COUNT(*) FILTER (WHERE gm.role = 'Super Admin')                              AS admins,
+                    COUNT(DISTINCT u.user_id) FILTER (WHERE u.account_status = 'inactive')       AS inactive
+                FROM users u
+                LEFT JOIN group_memberships gm ON gm.user_id = u.user_id
             """)
             row = cursor.fetchone()
             stats['total_users']     = row['total']
@@ -101,10 +102,11 @@ def admin_dashboard():
  
             # ── Recent registrations (last 5) ──────────────────
             cursor.execute("""
-                SELECT username, first_name, last_name, role,
-                       account_status, date_joined
-                FROM users
-                ORDER BY date_joined DESC
+                SELECT u.username, u.first_name, u.last_name,
+                       gm.role, u.account_status, u.date_joined
+                FROM users u
+                LEFT JOIN group_memberships gm ON gm.user_id = u.user_id
+                ORDER BY u.date_joined DESC
                 LIMIT 5
             """)
             recent_users = cursor.fetchall()
@@ -136,7 +138,7 @@ def admin_dashboard():
 # ── User management ───────────────────────────────────────────────────────────
 
 @app.route('/admin/users')
-@role_required('Admin')
+@role_required('Super Admin')
 def admin_users():
     """List all registered users with role and account status."""
     search = request.args.get('search', '').strip()
@@ -144,8 +146,10 @@ def admin_users():
     status_filter = request.args.get('status', '').strip()
 
     query = '''
-        SELECT user_id, username, first_name, last_name, role, account_status, date_joined, last_login
-        FROM users
+        SELECT u.user_id, u.username, u.first_name, u.last_name,
+               gm.role, u.account_status, u.date_joined, u.last_login
+        FROM users u
+        LEFT JOIN group_memberships gm ON gm.user_id = u.user_id
         WHERE 1=1
     '''
     params = []
@@ -153,20 +157,20 @@ def admin_users():
     if search:
         # Strip '@' in case the user copy-pasted the username from the table
         clean_search = search.lstrip('@')
-        query += " AND (username ILIKE %s OR first_name ILIKE %s OR last_name ILIKE %s OR CONCAT(first_name, ' ', last_name) ILIKE %s)"
+        query += " AND (u.username ILIKE %s OR u.first_name ILIKE %s OR u.last_name ILIKE %s OR CONCAT(u.first_name, ' ', u.last_name) ILIKE %s)"
         search_term = f"%{clean_search}%"
         params.extend([search_term, search_term, search_term, search_term])
-    
+
     if role_filter:
-        query += " AND role = %s"
+        query += " AND gm.role = %s"
         params.append(role_filter)
-        
+
     if status_filter:
-        query += " AND account_status = %s"
+        query += " AND u.account_status = %s"
         params.append(status_filter)
 
     # Default sorting (subsequent sorting is handled client-side)
-    query += " ORDER BY first_name ASC, last_name ASC"
+    query += " ORDER BY u.first_name ASC, u.last_name ASC"
 
     with db.get_cursor() as cursor:
         cursor.execute(query, tuple(params))
@@ -178,16 +182,17 @@ def admin_users():
 
 
 @app.route('/admin/users/<int:user_id>')
-@role_required('Admin')
+@role_required('Super Admin')
 def admin_user_detail(user_id):
     """View detailed profile for a single user."""
     with db.get_cursor() as cursor:
         cursor.execute('''
-            SELECT user_id, username, first_name, last_name, email, phone, address,
-                   emergency_contact_name, emergency_contact_phone, profile_photo,
-                   notes, role, account_status, date_joined, last_login
-            FROM users
-            WHERE user_id = %s
+            SELECT u.user_id, u.username, u.first_name, u.last_name, u.email, u.phone, u.address,
+                   u.emergency_contact_name, u.emergency_contact_phone, u.profile_photo,
+                   u.notes, gm.role, u.account_status, u.date_joined, u.last_login
+            FROM users u
+            LEFT JOIN group_memberships gm ON gm.user_id = u.user_id
+            WHERE u.user_id = %s
         ''', (user_id,))
         user = cursor.fetchone()
 
@@ -247,7 +252,7 @@ def admin_user_detail(user_id):
 
 
 @app.route('/admin/users/<int:user_id>/toggle-active', methods=['POST'])
-@role_required('Admin')
+@role_required('Super Admin')
 def toggle_active(user_id):
     """Activate or deactivate a user account."""
     # Prevent admin from deactivating themselves
@@ -271,7 +276,7 @@ def toggle_active(user_id):
 
 
 @app.route('/admin/users/<int:user_id>/edit-role', methods=['GET', 'POST'])
-@role_required('Admin')
+@role_required('Super Admin')
 def edit_role(user_id):
     """Edit a user's role."""
     # Prevent admin from changing their own role
@@ -283,7 +288,17 @@ def edit_role(user_id):
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('admin_users'))
-    
+
+    # Attach current role from group_memberships so the template can pre-select it
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            "SELECT role FROM group_memberships WHERE user_id = %s AND group_id = %s",
+            (user_id, session.get('group_id'))
+        )
+        gm_row = cursor.fetchone()
+    user = dict(user)
+    user['role'] = gm_row['role'] if gm_row else None
+
     lookup = fetch_lookup_data(db)
     
     if request.method == 'POST':
@@ -292,14 +307,14 @@ def edit_role(user_id):
             flash('Invalid role selected.', 'danger')
             return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
         
-        update_user_role(db, user_id, new_role)
+        update_user_role(db, user_id, session.get('group_id'), new_role)
         flash(f'Role updated to "{new_role}" for {user["first_name"]} {user["last_name"]}.', 'success')
         return redirect(url_for('admin_users'))
     
     return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
 
 @app.route('/admin/users/<int:user_id>/notes', methods=['POST'])
-@role_required('Admin')
+@role_required('Super Admin')
 def update_user_notes(user_id):
     """Update the admin-only notes for a user."""
     notes = request.form.get('notes', '').strip()
@@ -321,9 +336,9 @@ def update_user_notes(user_id):
 # ── Lines ─────────────────────────────────────────────────────────────────────
 
 @app.route('/admin/lines/new', methods=['GET', 'POST'])
-@role_required('Admin')
+@role_required('Super Admin', 'Group Coordinator')
 def new_line():
-    """Create a new trap line."""
+    """Create a new trap line in the currently selected group."""
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
 
@@ -339,8 +354,11 @@ def new_line():
                 flash(f'A line named "{name}" already exists', 'danger')
                 return render_template('lines/new_line.html', name=name)
 
-            # Insert the new line
-            cursor.execute("INSERT INTO lines (name, type) VALUES (%s, 'Trap')", (name,))
+            # Insert the new line scoped to the current group
+            cursor.execute(
+                "INSERT INTO lines (name, type, group_id) VALUES (%s, 'Trap', %s)",
+                (name, session.get('group_id'))
+            )
 
         flash(f'Trap line "{name}" created successfully', 'success')
         return redirect(url_for('lines_index'))
@@ -349,7 +367,7 @@ def new_line():
 
 
 @app.route('/admin/lines/<int:line_id>/edit', methods=['GET', 'POST'])
-@role_required('Admin')
+@role_required('Super Admin', 'Group Coordinator')
 def edit_line(line_id):
     """Edit an existing trap line."""
     line = None
@@ -410,7 +428,7 @@ def edit_line(line_id):
 
 
 @app.route('/admin/lines/<int:line_id>/retire', methods=['POST'])
-@role_required('Admin')
+@role_required('Super Admin', 'Group Coordinator')
 def retire_line(line_id):
     """Retire a trap line (set is_retired = TRUE)."""
     has_active_traps = request.args.get('active_traps') == '1'
@@ -449,7 +467,7 @@ def retire_line(line_id):
 # ── Traps ─────────────────────────────────────────────────────────────────────
 
 @app.route('/admin/lines/<int:line_id>/new_trap', methods=['POST'])
-@role_required('Admin')
+@role_required('Super Admin', 'Group Coordinator')
 def new_trap(line_id):
     """Add a new trap to a line."""
     with db.get_cursor() as cursor:
@@ -517,7 +535,7 @@ def new_trap(line_id):
     return redirect(url_for('line_detail', line_id=line_id))
 
 @app.route('/admin/traps/<int:line_id>/<int:trap_id>/edit', methods=['GET', 'POST'])
-@role_required('Admin')
+@role_required('Super Admin', 'Group Coordinator')
 def edit_trap(line_id, trap_id):
     """Edit an existing trap."""
     # get trap types for dropdown
@@ -631,7 +649,7 @@ def edit_trap(line_id, trap_id):
 
 
 @app.route('/admin/traps/<int:line_id>/retire', methods=['POST'])
-@role_required('Admin')
+@role_required('Super Admin', 'Group Coordinator')
 def retire_trap(line_id):
     """Retire an individual trap (set is_retired = TRUE)."""
     trap_id = request.form.get('trap_id')
@@ -660,7 +678,7 @@ def retire_trap(line_id):
 # ── Operator assignment ───────────────────────────────────────────────────────
 
 @app.route('/admin/lines/<int:line_id>/assign', methods=['GET', 'POST'])
-@role_required('Admin')
+@role_required('Super Admin', 'Group Coordinator')
 def assign_operators(line_id):
     """Assign or reassign operators to a trap line."""
     if request.method == 'POST':
@@ -700,10 +718,11 @@ def assign_operators(line_id):
 
         cursor.execute(
             """
-            SELECT user_id, username, first_name, last_name
-            FROM users
-            WHERE role = 'Operator'
-            ORDER BY last_name ASC, first_name ASC
+            SELECT u.user_id, u.username, u.first_name, u.last_name
+            FROM users u
+            JOIN group_memberships gm ON gm.user_id = u.user_id
+            WHERE gm.role = 'Operator'
+            ORDER BY u.last_name ASC, u.first_name ASC
             """
         )
         all_operators = cursor.fetchall()
@@ -729,7 +748,7 @@ def assign_operators(line_id):
 # ── Lookup data management ────────────────────────────────────────────────────
 
 @app.route('/admin/species', methods=['GET', 'POST'])
-@role_required('Admin')
+@role_required('Super Admin')
 def manage_species():
     """View and manage the species lookup table."""
     if request.method == 'POST':
@@ -816,7 +835,7 @@ def manage_species():
 
 
 @app.route('/admin/statuses', methods=['GET', 'POST'])
-@role_required('Admin')
+@role_required('Super Admin')
 def manage_statuses():
     """View and manage the trap status lookup table."""
     if request.method == 'POST':
@@ -890,7 +909,7 @@ def manage_statuses():
 
 
 @app.route('/admin/bait-types', methods=['GET', 'POST'])
-@role_required('Admin')
+@role_required('Super Admin')
 def manage_bait_types():
     """View and manage the bait type lookup table."""
     if request.method == 'POST':
@@ -968,3 +987,4 @@ def manage_bait_types():
         bait_types = cursor.fetchall()
 
     return render_template('admin/manage_bait_types.html', bait_types=bait_types)
+

@@ -1,10 +1,26 @@
--- populate_database.sql
--- Tiaki — COMP639 Group Project 1, Team Huhu
+﻿-- populate_database.sql
+-- Conservation Groups — COMP639 Group Project 2, Team Huhu
 -- Lincoln University, Semester 1, 2026
 -- All passwords: Password1!
 -- Run in psql or TablePlus query window
 
 BEGIN;
+
+-- ══════════════════════════════════════════════════════
+-- SEED GROUP
+-- Insert the default group first — lines and memberships depend on it
+-- ══════════════════════════════════════════════════════
+
+INSERT INTO groups (name, description, is_public, color_theme) VALUES
+    ('Predator Free Lincoln University',
+     'A volunteer group running a predator-control initiative across the Lincoln University campus.',
+     TRUE,
+     '#198754'),
+    ('Christchurch City Trappers',
+     'A community predator trapping group operating across central Christchurch.',
+     TRUE,
+     '#0d6efd')
+ON CONFLICT (name) DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
 -- LOOKUP TABLES
@@ -34,126 +50,189 @@ ON CONFLICT DO NOTHING;
 -- All passwords: Password1!
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO users (username, email, password_hash, first_name, last_name, role, account_status, phone, address, emergency_contact_name, emergency_contact_phone, date_joined, last_login) VALUES
+INSERT INTO users (username, email, password_hash, first_name, last_name, account_status, phone, address, emergency_contact_name, emergency_contact_phone, date_joined, last_login) VALUES
 
 -- Admins
-('smitchell',  's.mitchell@lincoln.ac.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sarah',     'Mitchell',  'Admin',    'active',   '021 345 6789', '12 Lincoln Road, Lincoln 7608',    'John Mitchell',   '021 987 6543', '2024-01-15 09:00:00', '2026-04-17 08:30:00'),
-('jthornton',  'j.thornton@lincoln.ac.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'James',     'Thornton',  'Admin',    'active',   '021 456 7890', '45 Springs Road, Lincoln 7608',    'Mary Thornton',   '021 876 5432', '2024-01-15 09:00:00', '2026-04-16 14:22:00'),
-('eparata',    'e.parata@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Emma',      'Parata',    'Admin',    'active',   '027 567 8901', '78 Boundary Road, Lincoln 7608',   'Peter Parata',    '027 765 4321', '2024-01-20 09:00:00', '2026-04-15 11:00:00'),
-('dchen',      'd.chen@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'David',     'Chen',      'Admin',    'active',   '027 678 9012', '23 Gerald Street, Lincoln 7608',   'Susan Chen',      '027 654 3210', '2024-02-01 09:00:00', '2026-04-10 09:45:00'),
+('smitchell',  's.mitchell@lincoln.ac.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sarah',     'Mitchell',  'active',   '021 345 6789', '12 Lincoln Road, Lincoln 7608',    'John Mitchell',   '021 987 6543', '2024-01-15 09:00:00', '2026-04-17 08:30:00'),
+('jthornton',  'j.thornton@lincoln.ac.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'James',     'Thornton',  'active',   '021 456 7890', '45 Springs Road, Lincoln 7608',    'Mary Thornton',   '021 876 5432', '2024-01-15 09:00:00', '2026-04-16 14:22:00'),
+('eparata',    'e.parata@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Emma',      'Parata',    'active',   '027 567 8901', '78 Boundary Road, Lincoln 7608',   'Peter Parata',    '027 765 4321', '2024-01-20 09:00:00', '2026-04-15 11:00:00'),
+('dchen',      'd.chen@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'David',     'Chen',      'active',   '027 678 9012', '23 Gerald Street, Lincoln 7608',   'Susan Chen',      '027 654 3210', '2024-02-01 09:00:00', '2026-04-10 09:45:00'),
 
 -- Operators
-('landerson',  'liam.anderson@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Liam',      'Anderson',  'Operator', 'active',   '021 111 2233', '5 Selwyn Road, Lincoln 7608',      'Helen Anderson',  '021 543 2109', '2024-02-10 09:00:00', '2026-04-17 07:55:00'),
-('owalker',    'olivia.walker@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Olivia',    'Walker',    'Operator', 'active',   '021 222 3344', '89 Lincoln Road, Lincoln 7608',    'Michael Walker',  '021 432 1098', '2024-02-10 09:00:00', '2026-04-14 16:30:00'),
-('ncampbell',  'noah.campbell@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Noah',      'Campbell',  'Operator', 'active',   '021 333 4455', '34 Springs Road, Lincoln 7608',    'John Campbell',   '021 321 0987', '2024-03-01 09:00:00', '2026-04-12 08:10:00'),
-('sroberts',   'sophia.roberts@lincoln.ac.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sophia',    'Roberts',   'Operator', 'active',   '027 444 5566', '56 Boundary Road, Lincoln 7608',   'Mary Roberts',    '027 210 9876', '2024-03-01 09:00:00', '2026-04-11 12:45:00'),
-('eclarke',    'ethan.clarke@lincoln.ac.nz',     '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Ethan',     'Clarke',    'Operator', 'active',   '027 555 6677', '12 Gerald Street, Lincoln 7608',   'Susan Clarke',    '027 109 8765', '2024-03-15 09:00:00', '2026-04-09 09:00:00'),
-('ithompson',  'isabella.thompson@lincoln.ac.nz','$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Isabella',  'Thompson',  'Operator', 'active',   '027 666 7788', '67 Selwyn Road, Lincoln 7608',     'Peter Thompson',  '027 098 7654', '2024-04-01 09:00:00', '2026-04-08 14:20:00'),
-('wbrown',     'william.brown@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'William',   'Brown',     'Operator', 'active',   '021 777 8899', '90 Lincoln Road, Lincoln 7608',    'Helen Brown',     '021 987 6543', '2024-04-01 09:00:00', '2026-03-30 10:10:00'),
-('mdavies',    'mia.davies@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Mia',       'Davies',    'Operator', 'inactive', '021 888 9900', '23 Springs Road, Lincoln 7608',    'Michael Davies',  '021 876 5432', '2024-04-15 09:00:00', '2025-11-20 09:00:00'),
-('bscott',     'benjamin.scott@lincoln.ac.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Benjamin',  'Scott',     'Operator', 'inactive', '027 999 0011', '45 Boundary Road, Lincoln 7608',   'John Scott',      '027 765 4321', '2024-05-01 09:00:00', '2025-10-15 14:30:00'),
-('cwilson',    'charlotte.wilson@lincoln.ac.nz', '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Charlotte', 'Wilson',    'Operator', 'active',   '021 100 1122', '78 Gerald Street, Lincoln 7608',   'Mary Wilson',     '021 654 3210', '2024-05-01 09:00:00', '2026-04-16 08:00:00'),
+('landerson',  'liam.anderson@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Liam',      'Anderson',  'active',   '021 111 2233', '5 Selwyn Road, Lincoln 7608',      'Helen Anderson',  '021 543 2109', '2024-02-10 09:00:00', '2026-04-17 07:55:00'),
+('owalker',    'olivia.walker@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Olivia',    'Walker',    'active',   '021 222 3344', '89 Lincoln Road, Lincoln 7608',    'Michael Walker',  '021 432 1098', '2024-02-10 09:00:00', '2026-04-14 16:30:00'),
+('ncampbell',  'noah.campbell@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Noah',      'Campbell',  'active',   '021 333 4455', '34 Springs Road, Lincoln 7608',    'John Campbell',   '021 321 0987', '2024-03-01 09:00:00', '2026-04-12 08:10:00'),
+('sroberts',   'sophia.roberts@lincoln.ac.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sophia',    'Roberts',   'active',   '027 444 5566', '56 Boundary Road, Lincoln 7608',   'Mary Roberts',    '027 210 9876', '2024-03-01 09:00:00', '2026-04-11 12:45:00'),
+('eclarke',    'ethan.clarke@lincoln.ac.nz',     '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Ethan',     'Clarke',    'active',   '027 555 6677', '12 Gerald Street, Lincoln 7608',   'Susan Clarke',    '027 109 8765', '2024-03-15 09:00:00', '2026-04-09 09:00:00'),
+('ithompson',  'isabella.thompson@lincoln.ac.nz','$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Isabella',  'Thompson',  'active',   '027 666 7788', '67 Selwyn Road, Lincoln 7608',     'Peter Thompson',  '027 098 7654', '2024-04-01 09:00:00', '2026-04-08 14:20:00'),
+('wbrown',     'william.brown@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'William',   'Brown',     'active',   '021 777 8899', '90 Lincoln Road, Lincoln 7608',    'Helen Brown',     '021 987 6543', '2024-04-01 09:00:00', '2026-03-30 10:10:00'),
+('mdavies',    'mia.davies@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Mia',       'Davies',    'inactive', '021 888 9900', '23 Springs Road, Lincoln 7608',    'Michael Davies',  '021 876 5432', '2024-04-15 09:00:00', '2025-11-20 09:00:00'),
+('bscott',     'benjamin.scott@lincoln.ac.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Benjamin',  'Scott',     'inactive', '027 999 0011', '45 Boundary Road, Lincoln 7608',   'John Scott',      '027 765 4321', '2024-05-01 09:00:00', '2025-10-15 14:30:00'),
+('cwilson',    'charlotte.wilson@lincoln.ac.nz', '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Charlotte', 'Wilson',    'active',   '021 100 1122', '78 Gerald Street, Lincoln 7608',   'Mary Wilson',     '021 654 3210', '2024-05-01 09:00:00', '2026-04-16 08:00:00'),
 
 -- Observers
-('ataylor',    'ava.taylor@lincoln.ac.nz',        '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Ava',       'Taylor',    'Observer', 'active',   '021 201 3456', '11 Lincoln Road, Lincoln 7608',    'John Taylor',     '021 543 2109', '2024-06-01 09:00:00', '2026-04-17 06:45:00'),
-('mharris',    'mason.harris@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Mason',     'Harris',    'Observer', 'active',   '021 202 3457', '22 Springs Road, Lincoln 7608',    'Mary Harris',     '021 432 1098', '2024-06-01 09:00:00', '2026-04-13 11:30:00'),
-('hmartin',    'harper.martin@lincoln.ac.nz',     '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Harper',    'Martin',    'Observer', 'active',   '027 203 3458', '33 Boundary Road, Lincoln 7608',   'Peter Martin',    '021 321 0987', '2024-06-15 09:00:00', '2026-04-10 09:20:00'),
-('ejackson',   'elijah.jackson@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Elijah',    'Jackson',   'Observer', 'active',   '027 204 3459', '44 Gerald Street, Lincoln 7608',   'Susan Jackson',   '027 210 9876', '2024-07-01 09:00:00', '2026-04-07 15:00:00'),
-('awhite',     'amelia.white@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Amelia',    'White',     'Observer', 'inactive', '021 205 3460', '55 Selwyn Road, Lincoln 7608',     'Helen White',     '027 109 8765', '2024-07-01 09:00:00', '2025-09-10 10:00:00'),
-('jyoung',     'james.young@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'James',     'Young',     'Observer', 'active',   '021 206 3461', '66 Lincoln Road, Lincoln 7608',    'Michael Young',   '021 098 7654', '2024-07-15 09:00:00', '2026-04-05 08:50:00'),
-('ehall',      'evelyn.hall@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Evelyn',    'Hall',      'Observer', 'active',   '027 207 3462', '77 Springs Road, Lincoln 7608',    'John Hall',       '021 987 6543', '2024-08-01 09:00:00', '2026-04-02 12:00:00'),
-('lking',      'logan.king@lincoln.ac.nz',        '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Logan',     'King',      'Observer', 'active',   '027 208 3463', '88 Boundary Road, Lincoln 7608',   'Mary King',       '021 876 5432', '2024-08-01 09:00:00', '2026-03-28 09:30:00'),
-('awright',    'abigail.wright@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Abigail',   'Wright',    'Observer', 'inactive', '021 209 3464', '99 Gerald Street, Lincoln 7608',   'Peter Wright',    '027 765 4321', '2024-08-15 09:00:00', '2025-12-01 08:00:00'),
-('llopez',     'lucas.lopez@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Lucas',     'Lopez',     'Observer', 'active',   '021 210 3465', '10 Selwyn Road, Lincoln 7608',     'Susan Lopez',     '027 654 3210', '2024-09-01 09:00:00', '2026-04-16 07:30:00'),
-('ehill',      'emily.hill@lincoln.ac.nz',        '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Emily',     'Hill',      'Observer', 'active',   '027 211 3466', '21 Lincoln Road, Lincoln 7608',    'Helen Hill',      '021 543 2109', '2024-09-01 09:00:00', '2026-04-14 13:15:00'),
-('ogreen',     'oliver.green@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Oliver',    'Green',     'Observer', 'active',   '027 212 3467', '32 Springs Road, Lincoln 7608',    'Michael Green',   '021 432 1098', '2024-09-15 09:00:00', '2026-04-11 10:45:00'),
-('cadams',     'chloe.adams@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Chloe',     'Adams',     'Observer', 'active',   '021 213 3468', '43 Boundary Road, Lincoln 7608',   'John Adams',      '021 321 0987', '2024-10-01 09:00:00', '2026-04-08 16:00:00'),
-('ebaker',     'elias.baker@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Elias',     'Baker',     'Observer', 'inactive', '021 214 3469', '54 Gerald Street, Lincoln 7608',   'Mary Baker',      '027 210 9876', '2024-10-01 09:00:00', '2025-08-20 11:00:00'),
-('pnelson',    'penelope.nelson@lincoln.ac.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Penelope',  'Nelson',    'Observer', 'active',   '027 215 3470', '65 Selwyn Road, Lincoln 7608',     'Peter Nelson',    '027 109 8765', '2024-10-15 09:00:00', '2026-04-05 09:10:00'),
-('mcarter',    'mateo.carter@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Mateo',     'Carter',    'Observer', 'active',   '027 216 3471', '76 Lincoln Road, Lincoln 7608',    'Helen Carter',    '021 098 7654', '2024-11-01 09:00:00', '2026-04-03 08:20:00'),
-('lmitchell',  'layla.mitchell@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Layla',     'Mitchell',  'Observer', 'active',   '021 217 3472', '87 Springs Road, Lincoln 7608',    'Michael Mitchell','021 987 6543', '2024-11-01 09:00:00', '2026-04-01 14:30:00'),
-('hperez',     'henry.perez@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Henry',     'Perez',     'Observer', 'active',   '021 218 3473', '98 Boundary Road, Lincoln 7608',   'John Perez',      '021 876 5432', '2024-11-15 09:00:00', '2026-03-29 10:00:00'),
-('sroberts2',  'scarlett.roberts@lincoln.ac.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Scarlett',  'Roberts',   'Observer', 'inactive', '027 219 3474', '109 Gerald Street, Lincoln 7608',  'Mary Roberts',    '027 765 4321', '2024-12-01 09:00:00', '2025-07-15 09:00:00'),
-('jturner',    'jackson.turner@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Jackson',   'Turner',    'Observer', 'active',   '027 220 3475', '120 Selwyn Road, Lincoln 7608',    'Peter Turner',    '027 654 3210', '2024-12-01 09:00:00', '2026-04-16 11:00:00')
+('ataylor',    'ava.taylor@lincoln.ac.nz',        '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Ava',       'Taylor',    'active',   '021 201 3456', '11 Lincoln Road, Lincoln 7608',    'John Taylor',     '021 543 2109', '2024-06-01 09:00:00', '2026-04-17 06:45:00'),
+('mharris',    'mason.harris@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Mason',     'Harris',    'active',   '021 202 3457', '22 Springs Road, Lincoln 7608',    'Mary Harris',     '021 432 1098', '2024-06-01 09:00:00', '2026-04-13 11:30:00'),
+('hmartin',    'harper.martin@lincoln.ac.nz',     '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Harper',    'Martin',    'active',   '027 203 3458', '33 Boundary Road, Lincoln 7608',   'Peter Martin',    '021 321 0987', '2024-06-15 09:00:00', '2026-04-10 09:20:00'),
+('ejackson',   'elijah.jackson@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Elijah',    'Jackson',   'active',   '027 204 3459', '44 Gerald Street, Lincoln 7608',   'Susan Jackson',   '027 210 9876', '2024-07-01 09:00:00', '2026-04-07 15:00:00'),
+('awhite',     'amelia.white@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Amelia',    'White',     'inactive', '021 205 3460', '55 Selwyn Road, Lincoln 7608',     'Helen White',     '027 109 8765', '2024-07-01 09:00:00', '2025-09-10 10:00:00'),
+('jyoung',     'james.young@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'James',     'Young',     'active',   '021 206 3461', '66 Lincoln Road, Lincoln 7608',    'Michael Young',   '021 098 7654', '2024-07-15 09:00:00', '2026-04-05 08:50:00'),
+('ehall',      'evelyn.hall@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Evelyn',    'Hall',      'active',   '027 207 3462', '77 Springs Road, Lincoln 7608',    'John Hall',       '021 987 6543', '2024-08-01 09:00:00', '2026-04-02 12:00:00'),
+('lking',      'logan.king@lincoln.ac.nz',        '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Logan',     'King',      'active',   '027 208 3463', '88 Boundary Road, Lincoln 7608',   'Mary King',       '021 876 5432', '2024-08-01 09:00:00', '2026-03-28 09:30:00'),
+('awright',    'abigail.wright@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Abigail',   'Wright',    'inactive', '021 209 3464', '99 Gerald Street, Lincoln 7608',   'Peter Wright',    '027 765 4321', '2024-08-15 09:00:00', '2025-12-01 08:00:00'),
+('llopez',     'lucas.lopez@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Lucas',     'Lopez',     'active',   '021 210 3465', '10 Selwyn Road, Lincoln 7608',     'Susan Lopez',     '027 654 3210', '2024-09-01 09:00:00', '2026-04-16 07:30:00'),
+('ehill',      'emily.hill@lincoln.ac.nz',        '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Emily',     'Hill',      'active',   '027 211 3466', '21 Lincoln Road, Lincoln 7608',    'Helen Hill',      '021 543 2109', '2024-09-01 09:00:00', '2026-04-14 13:15:00'),
+('ogreen',     'oliver.green@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Oliver',    'Green',     'active',   '027 212 3467', '32 Springs Road, Lincoln 7608',    'Michael Green',   '021 432 1098', '2024-09-15 09:00:00', '2026-04-11 10:45:00'),
+('cadams',     'chloe.adams@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Chloe',     'Adams',     'active',   '021 213 3468', '43 Boundary Road, Lincoln 7608',   'John Adams',      '021 321 0987', '2024-10-01 09:00:00', '2026-04-08 16:00:00'),
+('ebaker',     'elias.baker@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Elias',     'Baker',     'inactive', '021 214 3469', '54 Gerald Street, Lincoln 7608',   'Mary Baker',      '027 210 9876', '2024-10-01 09:00:00', '2025-08-20 11:00:00'),
+('pnelson',    'penelope.nelson@lincoln.ac.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Penelope',  'Nelson',    'active',   '027 215 3470', '65 Selwyn Road, Lincoln 7608',     'Peter Nelson',    '027 109 8765', '2024-10-15 09:00:00', '2026-04-05 09:10:00'),
+('mcarter',    'mateo.carter@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Mateo',     'Carter',    'active',   '027 216 3471', '76 Lincoln Road, Lincoln 7608',    'Helen Carter',    '021 098 7654', '2024-11-01 09:00:00', '2026-04-03 08:20:00'),
+('lmitchell',  'layla.mitchell@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Layla',     'Mitchell',  'active',   '021 217 3472', '87 Springs Road, Lincoln 7608',    'Michael Mitchell','021 987 6543', '2024-11-01 09:00:00', '2026-04-01 14:30:00'),
+('hperez',     'henry.perez@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Henry',     'Perez',     'active',   '021 218 3473', '98 Boundary Road, Lincoln 7608',   'John Perez',      '021 876 5432', '2024-11-15 09:00:00', '2026-03-29 10:00:00'),
+('sroberts2',  'scarlett.roberts@lincoln.ac.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Scarlett',  'Roberts',   'inactive', '027 219 3474', '109 Gerald Street, Lincoln 7608',  'Mary Roberts',    '027 765 4321', '2024-12-01 09:00:00', '2025-07-15 09:00:00'),
+('jturner',    'jackson.turner@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Jackson',   'Turner',    'active',   '027 220 3475', '120 Selwyn Road, Lincoln 7608',    'Peter Turner',    '027 654 3210', '2024-12-01 09:00:00', '2026-04-16 11:00:00')
 
 ON CONFLICT (username) DO NOTHING;
+
+-- ══════════════════════════════════════════════════════
+-- GROUP MEMBERSHIPS
+-- Maps every seeded user into the default group with their P1 role
+-- Super Admin = former Admin, Group Coordinator = new role (assign manually after setup)
+-- ══════════════════════════════════════════════════════
+
+INSERT INTO group_memberships (user_id, group_id, role)
+SELECT u.user_id,
+       (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+       m.role::role_type
+FROM (VALUES
+    ('smitchell',  'Super Admin'),
+    ('jthornton',  'Super Admin'),
+    ('eparata',    'Super Admin'),
+    ('dchen',      'Group Coordinator'),
+    ('landerson',  'Operator'),
+    ('owalker',    'Operator'),
+    ('ncampbell',  'Operator'),
+    ('sroberts',   'Operator'),
+    ('eclarke',    'Operator'),
+    ('ithompson',  'Operator'),
+    ('wbrown',     'Operator'),
+    ('mdavies',    'Operator'),
+    ('bscott',     'Operator'),
+    ('cwilson',    'Operator'),
+    ('ataylor',    'Observer'),
+    ('mharris',    'Observer'),
+    ('hmartin',    'Observer'),
+    ('ejackson',   'Observer'),
+    ('awhite',     'Observer'),
+    ('jyoung',     'Observer'),
+    ('ehall',      'Observer'),
+    ('lking',      'Observer'),
+    ('awright',    'Observer'),
+    ('llopez',     'Observer'),
+    ('ehill',      'Observer'),
+    ('ogreen',     'Observer'),
+    ('cadams',     'Observer'),
+    ('ebaker',     'Observer'),
+    ('pnelson',    'Observer'),
+    ('mcarter',    'Observer'),
+    ('lmitchell',  'Observer'),
+    ('hperez',     'Observer'),
+    ('sroberts2',  'Observer'),
+    ('jturner',    'Observer')
+) AS m(username, role)
+JOIN users u ON u.username = m.username
+ON CONFLICT (user_id, group_id) DO NOTHING;
+
+-- Multi-group test users: each quick-login account belongs to both groups
+INSERT INTO group_memberships (user_id, group_id, role)
+SELECT u.user_id,
+       (SELECT group_id FROM groups WHERE name = 'Christchurch City Trappers'),
+       m.role::role_type
+FROM (VALUES
+    ('smitchell', 'Super Admin'),
+    ('dchen',     'Group Coordinator'),
+    ('landerson', 'Operator'),
+    ('ataylor',   'Observer')
+) AS m(username, role)
+JOIN users u ON u.username = m.username
+ON CONFLICT (user_id, group_id) DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
 -- LINES
 -- All within Lincoln University campus bounds
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO lines (name, type, is_retired, retired_at, retired_by) VALUES
+INSERT INTO lines (name, type, group_id, is_retired, retired_at, retired_by) VALUES
 
 -- Active lines — North campus
-('North Paddock Line',          'Grassland', false, NULL, NULL),
-('North Shelter Belt',          'Forest',    false, NULL, NULL),
-('North Boundary Track',        'Grassland', false, NULL, NULL),
-('North Gate Perimeter',        'Urban',     false, NULL, NULL),
-('North Creek Corridor',        'Wetland',   false, NULL, NULL),
+('North Paddock Line',          'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('North Shelter Belt',          'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('North Boundary Track',        'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('North Gate Perimeter',        'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('North Creek Corridor',        'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Active lines — Central campus
-('Main Campus Circuit',         'Urban',     false, NULL, NULL),
-('Library Quadrant Track',      'Urban',     false, NULL, NULL),
-('Administration Perimeter',    'Urban',     false, NULL, NULL),
-('Engineering Block Track',     'Urban',     false, NULL, NULL),
-('Biology Building Line',       'Urban',     false, NULL, NULL),
-('Student Village Perimeter',   'Urban',     false, NULL, NULL),
-('Conference Centre Loop',      'Grassland', false, NULL, NULL),
-('Central Reserve Track',       'Grassland', false, NULL, NULL),
+('Main Campus Circuit',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Library Quadrant Track',      'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Administration Perimeter',    'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Engineering Block Track',     'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Biology Building Line',       'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Student Village Perimeter',   'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Conference Centre Loop',      'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Central Reserve Track',       'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Active lines — South campus
-('South Boundary Line',         'Grassland', false, NULL, NULL),
-('South Shelter Belt',          'Forest',    false, NULL, NULL),
-('South Gate Track',            'Urban',     false, NULL, NULL),
-('South Paddock East',          'Grassland', false, NULL, NULL),
-('South Paddock West',          'Grassland', false, NULL, NULL),
+('South Boundary Line',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('South Shelter Belt',          'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('South Gate Track',            'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('South Paddock East',          'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('South Paddock West',          'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Active lines — East campus
-('East Riparian Track',         'Wetland',   false, NULL, NULL),
-('East Boundary Line',          'Grassland', false, NULL, NULL),
-('East Farm Road',              'Grassland', false, NULL, NULL),
-('East Research Block',         'Grassland', false, NULL, NULL),
+('East Riparian Track',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('East Boundary Line',          'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('East Farm Road',              'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('East Research Block',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Active lines — West campus
-('West Shelter Belt',           'Forest',    false, NULL, NULL),
-('West Boundary Track',         'Grassland', false, NULL, NULL),
-('West Farm Road',              'Grassland', false, NULL, NULL),
+('West Shelter Belt',           'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('West Boundary Track',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('West Farm Road',              'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Active lines — Lake & wetland
-('Lake Edge Track',             'Wetland',   false, NULL, NULL),
-('Lake Loop North',             'Wetland',   false, NULL, NULL),
-('Lake Loop South',             'Wetland',   false, NULL, NULL),
-('Wetland Reserve Line',        'Wetland',   false, NULL, NULL),
+('Lake Edge Track',             'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Lake Loop North',             'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Lake Loop South',             'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Wetland Reserve Line',        'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Active lines — Arboretum
-('Arboretum North Track',       'Forest',    false, NULL, NULL),
-('Arboretum South Track',       'Forest',    false, NULL, NULL),
-('Arboretum East Perimeter',    'Forest',    false, NULL, NULL),
+('Arboretum North Track',       'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Arboretum South Track',       'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Arboretum East Perimeter',    'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Active lines — Farm & research
-('Research Farm North',         'Grassland', false, NULL, NULL),
-('Research Farm South',         'Grassland', false, NULL, NULL),
-('Equine Centre Track',         'Grassland', false, NULL, NULL),
-('Viticulture Block Line',      'Grassland', false, NULL, NULL),
-('Horticulture Plots Track',    'Grassland', false, NULL, NULL),
-('Orchard Track East',          'Forest',    false, NULL, NULL),
-('Orchard Track West',          'Forest',    false, NULL, NULL),
+('Research Farm North',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Research Farm South',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Equine Centre Track',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Viticulture Block Line',      'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Horticulture Plots Track',    'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Orchard Track East',          'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Orchard Track West',          'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Active lines — Misc
-('Sports Field Perimeter',      'Grassland', false, NULL, NULL),
-('Heritage Walk',               'Mixed',     false, NULL, NULL),
+('Sports Field Perimeter',      'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Heritage Walk',               'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
 
 -- Retired lines
-('Old Farm Track',              'Grassland', true, '2025-06-15 10:00:00', (SELECT user_id FROM users WHERE username = 'smitchell')),
-('Temporary Fence Line',        'Grassland', true, '2025-03-20 09:00:00', (SELECT user_id FROM users WHERE username = 'jthornton')),
-('Building Site Track',         'Urban',     true, '2025-08-01 11:00:00', (SELECT user_id FROM users WHERE username = 'eparata')),
-('South Creek Corridor',        'Wetland',   true, '2025-09-10 09:00:00', (SELECT user_id FROM users WHERE username = 'dchen')),
-('Carpark Extension Line',      'Urban',     true, '2024-11-05 10:00:00', (SELECT user_id FROM users WHERE username = 'smitchell')),
-('Demolished Block Track',      'Urban',     true, '2024-12-15 09:00:00', (SELECT user_id FROM users WHERE username = 'jthornton')),
-('Old Orchard Line',            'Forest',    true, '2025-01-20 10:00:00', (SELECT user_id FROM users WHERE username = 'eparata')),
-('Flood Zone Track',            'Wetland',   true, '2025-04-30 14:00:00', (SELECT user_id FROM users WHERE username = 'dchen')),
-('Seed Bank Perimeter',         'Grassland', true, '2025-11-22 09:00:00', (SELECT user_id FROM users WHERE username = 'smitchell'))
+('Old Farm Track',              'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-06-15 10:00:00', (SELECT user_id FROM users WHERE username = 'smitchell')),
+('Temporary Fence Line',        'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-03-20 09:00:00', (SELECT user_id FROM users WHERE username = 'jthornton')),
+('Building Site Track',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-08-01 11:00:00', (SELECT user_id FROM users WHERE username = 'eparata')),
+('South Creek Corridor',        'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-09-10 09:00:00', (SELECT user_id FROM users WHERE username = 'dchen')),
+('Carpark Extension Line',      'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2024-11-05 10:00:00', (SELECT user_id FROM users WHERE username = 'smitchell')),
+('Demolished Block Track',      'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2024-12-15 09:00:00', (SELECT user_id FROM users WHERE username = 'jthornton')),
+('Old Orchard Line',            'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-01-20 10:00:00', (SELECT user_id FROM users WHERE username = 'eparata')),
+('Flood Zone Track',            'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-04-30 14:00:00', (SELECT user_id FROM users WHERE username = 'dchen')),
+('Seed Bank Perimeter',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-11-22 09:00:00', (SELECT user_id FROM users WHERE username = 'smitchell'))
 
 ON CONFLICT (name) DO NOTHING;
 
@@ -536,3 +615,5 @@ SELECT setval('trap_catches_catch_id_seq',           (SELECT MAX(catch_id)      
 SELECT setval('incidental_observations_observation_id_seq', (SELECT MAX(observation_id) FROM incidental_observations));
 
 COMMIT;
+
+

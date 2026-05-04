@@ -116,8 +116,10 @@
 {%- endmacro %}
 
 {% macro pf_user_role_badge(role, attrs=None) -%}
-  {% if role == 'Admin' %}
-    <span class="badge-role-admin"{{ _attrs(attrs) }}>Admin</span>
+  {% if role == 'Super Admin' %}
+    <span class="badge-role-admin"{{ _attrs(attrs) }}>Super Admin</span>
+  {% elif role == 'Group Coordinator' %}
+    <span class="badge-role-admin"{{ _attrs(attrs) }}>Coordinator</span>
   {% elif role == 'Operator' %}
     <span class="badge-role-operator"{{ _attrs(attrs) }}>Operator</span>
   {% else %}
