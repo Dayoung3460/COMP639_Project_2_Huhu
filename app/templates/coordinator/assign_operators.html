@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel_simple %}
+{% block title %}Assign Operators — {{ line.name }}{% endblock %}
+
+{% block header_actions %}
+  {{ pf_link_button(url_for('coordinator_lines_assign'), 'All Lines', variant='btn-sm-outline', icon='bi-arrow-left') }}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <span class="fw-semibold" style="font-size:16px;">{{ line.name }}</span>
+    <span class="badge {{ 'bg-success' if line.type == 'Trap' else 'bg-info text-dark' }}"
+          style="font-size:11px;">{{ line.type }}</span>
+    {{ pf_link_button(url_for('coordinator_lines_assign'), 'Choose another line', variant='btn-sm-outline', icon='bi-arrow-left') }}
+  </div>
+
+  {# ── Shared search bar ──────────────────────────────────────── #}
+  <div class="mb-4" style="max-width:320px;">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+      <input type="search" id="op-search" class="form-control"
+             placeholder="Search operators…" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    {# ── Left: Available operators ───────────────────────────── #}
+    <div class="col-md-6">
+      {% call pf_panel_simple('Available Operators (' ~ unassigned_operators | length ~ ')') %}
+        {% if unassigned_operators %}
+          <ul class="list-group list-group-flush" id="available-list">
+            {% for op in unassigned_operators %}
+              <li class="list-group-item px-0 d-flex justify-content-between align-items-center js-avail-row"
+                  data-name="{{ (op.first_name ~ ' ' ~ op.last_name ~ ' ' ~ op.username) | lower }}">
+                <div>
+                  <span class="fw-medium">{{ op.first_name }} {{ op.last_name }}</span>
+                  <small class="text-muted ms-1">@{{ op.username }}</small>
+                </div>
+                {{ pf_button('Add', variant='btn-sm-pf',
+                             attrs={
+                               'aria-label': 'Add ' ~ op.first_name ~ ' ' ~ op.last_name,
+                               'data-bs-toggle': 'modal',
+                               'data-bs-target': '#add-operator-modal',
+                               'data-op-id': op.user_id,
+                               'data-op-name': op.first_name ~ ' ' ~ op.last_name
+                             }) }}
+              </li>
+            {% endfor %}
+          </ul>
+          <div id="available-empty" class="text-muted small mt-2 d-none">
+            No operators match your search.
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">All group operators are already assigned to this line.</p>
+        {% endif %}
+      {% endcall %}
+    </div>
+
+    {# ── Right: Assigned operators ────────────────────────────── #}
+    <div class="col-md-6">
+      {% call pf_panel_simple('Assigned Operators (' ~ assigned_operators | length ~ ')') %}
+        {% if assigned_operators %}
+          <ul class="list-group list-group-flush">
+            {% for op in assigned_operators %}
+              <li class="list-group-item px-0 d-flex justify-content-between align-items-center js-assigned-row"
+                  data-name="{{ (op.first_name ~ ' ' ~ op.last_name ~ ' ' ~ op.username) | lower }}">
+                <div>
+                  <span class="fw-medium">{{ op.first_name }} {{ op.last_name }}</span>
+                  <small class="text-muted ms-1">@{{ op.username }}</small>
+                </div>
+                {{ pf_button('Remove', variant='btn-sm-danger',
+                             attrs={
+                               'aria-label': 'Remove ' ~ op.first_name ~ ' ' ~ op.last_name,
+                               'data-bs-toggle': 'modal',
+                               'data-bs-target': '#remove-operator-modal',
+                               'data-op-id': op.user_id,
+                               'data-op-name': op.first_name ~ ' ' ~ op.last_name
+                             }) }}
+              </li>
+            {% endfor %}
+          </ul>
+          <div id="assigned-empty" class="text-muted small mt-2 d-none">
+            No operators match your search.
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">No operators assigned yet.</p>
+        {% endif %}
+      {% endcall %}
+    </div>
+
+  </div>
+</div>
+
+{# ── Add operator modal ──────────────────────────────────────────────────── #}
+<div class="modal fade pop-up-modal" id="add-operator-modal" tabindex="-1" role="dialog"
+     aria-modal="true" aria-labelledby="add-operator-modal-title">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" action="{{ url_for('coordinator_operator_add', line_id=line_id) }}" autocomplete="off">
+      <input type="hidden" name="operator_id" id="add-modal-op-id" value="">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="add-operator-modal-title">Add operator</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Add <strong id="add-modal-op-name"></strong> to <strong>{{ line.name }}</strong>?</p>
+        </div>
+        <div class="modal-footer">
+          {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel'}) }}
+          {{ pf_button('Yes, add', variant='btn-sm-pf', type='submit', attrs={'aria-label': 'Confirm add'}) }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Remove operator modal ───────────────────────────────────────────────── #}
+<div class="modal fade pop-up-modal" id="remove-operator-modal" tabindex="-1" role="dialog"
+     aria-modal="true" aria-labelledby="remove-operator-modal-title">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" action="{{ url_for('coordinator_operator_remove', line_id=line_id) }}" autocomplete="off">
+      <input type="hidden" name="operator_id" id="remove-modal-op-id" value="">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="remove-operator-modal-title">Remove operator</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Remove <strong id="remove-modal-op-name"></strong> from <strong>{{ line.name }}</strong>?</p>
+        </div>
+        <div class="modal-footer">
+          {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel'}) }}
+          {{ pf_button('Yes, remove', variant='btn-sm-danger', type='submit', attrs={'aria-label': 'Confirm remove'}) }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  (function () {
+    // Search filter
+    const input = document.getElementById('op-search');
+    if (input) {
+      input.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+
+        let availVisible = 0;
+        document.querySelectorAll('.js-avail-row').forEach(function (row) {
+          const match = !q || row.dataset.name.includes(q);
+          row.classList.toggle('d-none', !match);
+          if (match) availVisible++;
+        });
+        const availEmpty = document.getElementById('available-empty');
+        if (availEmpty) availEmpty.classList.toggle('d-none', availVisible > 0);
+
+        let assignedVisible = 0;
+        document.querySelectorAll('.js-assigned-row').forEach(function (row) {
+          const match = !q || row.dataset.name.includes(q);
+          row.classList.toggle('d-none', !match);
+          if (match) assignedVisible++;
+        });
+        const assignedEmpty = document.getElementById('assigned-empty');
+        if (assignedEmpty) assignedEmpty.classList.toggle('d-none', assignedVisible > 0);
+      });
+    }
+
+    // Populate add modal
+    document.getElementById('add-operator-modal').addEventListener('show.bs.modal', function (e) {
+      const btn = e.relatedTarget;
+      document.getElementById('add-modal-op-id').value   = btn.dataset.opId;
+      document.getElementById('add-modal-op-name').textContent = btn.dataset.opName;
+    });
+
+    // Populate remove modal
+    document.getElementById('remove-operator-modal').addEventListener('show.bs.modal', function (e) {
+      const btn = e.relatedTarget;
+      document.getElementById('remove-modal-op-id').value   = btn.dataset.opId;
+      document.getElementById('remove-modal-op-name').textContent = btn.dataset.opName;
+    });
+
+    // Safari BFCache fix — modals can get stuck open with backdrop after back-navigation
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) {
+        ['add-operator-modal', 'remove-operator-modal'].forEach(function (id) {
+          const modal = document.getElementById(id);
+          if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+          }
+        });
+        document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        window.location.reload();
+      }
+    });
+  })();
+</script>
+{% endblock %}
