@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button, pf_panel_simple %}
+{% block title %}Group Members{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width:36px;height:36px;font-size:18px;">
+    <i class="bi bi-people"></i>
+  </div>
+  Group Members
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Members</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2">
+
+  <section class="mb-2">
+    <div class="lines-filter-shell">
+      <div class="row g-3 align-items-end">
+
+        <div class="col-lg-6">
+          <label for="search" class="form-label mb-1">Search Members</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+            <input type="text" class="form-control" id="search" placeholder="Name or username" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+          <label for="role-filter" class="form-label mb-1">Role</label>
+          <div class="position-relative">
+            <select class="form-select" id="role-filter" style="background-image:none;">
+              <option value="">All Roles</option>
+              <option value="Observer">Observer</option>
+              <option value="Operator">Operator</option>
+              <option value="Group Coordinator">Group Coordinator</option>
+            </select>
+            <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y"
+               style="right:12px;color:var(--pf-700);pointer-events:none;font-size:12px;" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <div class="col-md-auto d-grid">
+          <button type="button" id="clear-btn" class="btn btn-sm-outline lines-filter-shell__clear-btn"
+                  aria-label="Clear filters">Clear</button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="panel">
+    <div class="panel-body p-0">
+      <div class="pf-table-responsive">
+        <table class="pf-table" aria-label="Group members list">
+          <thead>
+            <tr>
+              {% for field, label in [('name','Name'),('username','Username'),('role','Role'),('date_joined','Date Joined'),('','Actions')] %}
+                <th scope="col"
+                    class="{{ 'text-center' if field != 'name' else '' }} {{ 'sortable-header' if field else '' }}"
+                    {% if field %}data-field="{{ field }}" aria-sort="{{ 'ascending' if field == 'name' else 'none' }}"{% endif %}>
+                  {% if field %}
+                    <button type="button"
+                            class="sortable-header__btn d-inline-flex align-items-center gap-1 user-select-none"
+                            aria-label="Sort by {{ label }}">
+                      {{ label }}
+                      <i class="bi sort-icon {{ 'bi-arrow-down' if field == 'name' else '' }}" aria-hidden="true"></i>
+                    </button>
+                  {% else %}
+                    {{ label }}
+                  {% endif %}
+                </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in members %}
+              <tr class="member-row"
+                  data-search="{{ m.first_name }} {{ m.last_name }} @{{ m.username }}"
+                  data-role="{{ m.role }}"
+                  data-sort-name="{{ m.first_name|lower }} {{ m.last_name|lower }}"
+                  data-sort-username="{{ m.username|lower }}"
+                  data-sort-date_joined="{{ m.date_joined.isoformat() if m.date_joined else '0000-00-00' }}">
+                <td><strong>{{ m.first_name }} {{ m.last_name }}</strong></td>
+                <td class="text-center">@{{ m.username }}</td>
+                <td class="text-center">
+                  <span class="badge-role-{{ m.role|lower|replace(' ', '-') }}">{{ m.role }}</span>
+                </td>
+                <td class="text-center d-none d-md-table-cell">
+                  {{ m.date_joined.strftime('%d %b %Y') if m.date_joined else 'Unknown' }}
+                </td>
+                <td class="text-center lines-table-actions">
+                  {% if m.user_id != session.get('user_id') and m.role not in ('Group Coordinator', 'Super Admin') %}
+                    {{ pf_button('Change Role', variant='btn-sm-amber',
+                                 attrs={
+                                   'data-bs-toggle': 'modal',
+                                   'data-bs-target': '#change-role-modal',
+                                   'data-user-id': m.user_id,
+                                   'data-user-name': m.first_name ~ ' ' ~ m.last_name,
+                                   'data-current-role': m.role,
+                                   'aria-label': 'Change role for ' ~ m.first_name ~ ' ' ~ m.last_name
+                                 }) }}
+                    {{ pf_button('Remove', variant='btn-sm-danger',
+                                 attrs={
+                                   'data-bs-toggle': 'modal',
+                                   'data-bs-target': '#remove-member-modal',
+                                   'data-user-id': m.user_id,
+                                   'data-user-name': m.first_name ~ ' ' ~ m.last_name,
+                                   'aria-label': 'Remove ' ~ m.first_name ~ ' ' ~ m.last_name
+                                 }) }}
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">No members in this group yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Change Role modal ───────────────────────────────────────────────────── #}
+<div class="modal fade pop-up-modal" id="change-role-modal" tabindex="-1" role="dialog"
+     aria-modal="true" aria-labelledby="change-role-title">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="change-role-form" autocomplete="off">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="change-role-title">Change Role</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Change role for <strong id="change-role-name"></strong>:</p>
+          <div class="position-relative">
+            <select class="form-select" name="role" id="change-role-select" style="background-image:none;">
+              <option value="Observer">Observer</option>
+              <option value="Operator">Operator</option>
+            </select>
+            <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y"
+               style="right:12px;color:var(--pf-700);pointer-events:none;font-size:12px;" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="modal-footer">
+          {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+          {{ pf_button('Save', variant='btn-sm-pf', type='submit') }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Remove member modal ─────────────────────────────────────────────────── #}
+<div class="modal fade pop-up-modal" id="remove-member-modal" tabindex="-1" role="dialog"
+     aria-modal="true" aria-labelledby="remove-member-title">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="remove-member-form" autocomplete="off">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="remove-member-title">Remove Member</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Remove <strong id="remove-member-name"></strong> from the group?</p>
+          <p class="text-muted lines-modal-note">Their account will not be deleted — only their access to this group will be removed.</p>
+        </div>
+        <div class="modal-footer">
+          {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+          {{ pf_button('Yes, remove', variant='btn-sm-danger', type='submit') }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const searchInput  = document.getElementById('search');
+    const roleFilter   = document.getElementById('role-filter');
+    const clearBtn     = document.getElementById('clear-btn');
+    const rows         = document.querySelectorAll('.member-row');
+    const tbody        = document.querySelector('table tbody');
+
+    // Empty-state row
+    const noResults = document.createElement('tr');
+    noResults.id = 'no-results-row';
+    noResults.style.display = 'none';
+    noResults.innerHTML = '<td colspan="5" class="text-center text-muted py-4">No members match the current search or filter.</td>';
+    if (tbody) tbody.appendChild(noResults);
+
+    function filterRows() {
+      const q    = searchInput.value.toLowerCase().trim();
+      const role = roleFilter.value;
+      let visible = 0;
+      rows.forEach(function (row) {
+        const matchSearch = !q    || row.dataset.search.toLowerCase().includes(q);
+        const matchRole   = !role || row.dataset.role === role;
+        const show = matchSearch && matchRole;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      noResults.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
+    }
+
+    searchInput.addEventListener('input', filterRows);
+    roleFilter.addEventListener('change', filterRows);
+    clearBtn.addEventListener('click', function () {
+      searchInput.value = '';
+      roleFilter.value  = '';
+      filterRows();
+      searchInput.focus();
+    });
+
+    // Change role modal
+    document.getElementById('change-role-modal').addEventListener('show.bs.modal', function (e) {
+      const btn = e.relatedTarget;
+      document.getElementById('change-role-name').textContent = btn.dataset.userName;
+      document.getElementById('change-role-select').value     = btn.dataset.currentRole;
+      document.getElementById('change-role-form').action =
+        '/coordinator/members/' + btn.dataset.userId + '/change-role';
+    });
+
+    // Remove member modal
+    document.getElementById('remove-member-modal').addEventListener('show.bs.modal', function (e) {
+      const btn = e.relatedTarget;
+      document.getElementById('remove-member-name').textContent = btn.dataset.userName;
+      document.getElementById('remove-member-form').action =
+        '/coordinator/members/' + btn.dataset.userId + '/remove';
+    });
+
+    // Safari BFCache fix
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) {
+        ['change-role-modal', 'remove-member-modal'].forEach(function (id) {
+          const m = document.getElementById(id);
+          if (m) { m.style.display = 'none'; m.classList.remove('show'); }
+        });
+        document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        window.location.reload();
+      }
+    });
+
+    // Client-side sorting
+    let sortField = 'name', sortDir = 'asc';
+    document.querySelectorAll('.sortable-header').forEach(function (header) {
+      header.addEventListener('click', function () {
+        const field = header.dataset.field;
+        if (sortField === field) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+        else { sortField = field; sortDir = 'asc'; }
+
+        document.querySelectorAll('.sortable-header').forEach(function (h) {
+          const icon = h.querySelector('.sort-icon');
+          if (icon) icon.className = 'bi sort-icon';
+          h.setAttribute('aria-sort', 'none');
+        });
+        const activeIcon = header.querySelector('.sort-icon');
+        if (activeIcon) activeIcon.classList.add(sortDir === 'asc' ? 'bi-arrow-down' : 'bi-arrow-up');
+        header.setAttribute('aria-sort', sortDir === 'asc' ? 'ascending' : 'descending');
+
+        const sorted = Array.from(document.querySelectorAll('.member-row'));
+        sorted.sort(function (a, b) {
+          const valA = (field === 'role'
+            ? a.dataset.role
+            : a.getAttribute('data-sort-' + field) || '').toLowerCase();
+          const valB = (field === 'role'
+            ? b.dataset.role
+            : b.getAttribute('data-sort-' + field) || '').toLowerCase();
+          if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+          if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+          return 0;
+        });
+        sorted.forEach(function (r) { tbody.appendChild(r); });
+        tbody.appendChild(noResults);
+      });
+    });
+  });
+</script>
+{% endblock %}
