@@ -253,6 +253,10 @@
             <i class="bi bi-plus-circle-dotted" aria-hidden="true"></i> <span class="link-text">New Line</span>
           </a>
           {% if session.get('group_role') == 'Group Coordinator' %}
+            <a href="{{ url_for('coordinator_members') }}"
+               class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_members', 'coordinator_member_change_role', 'coordinator_member_remove') }}">
+              <i class="bi bi-people" aria-hidden="true"></i> <span class="link-text">Members</span>
+            </a>
             <a href="{{ url_for('coordinator_lines_assign') }}"
                class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_lines_assign', 'coordinator_assign_operators') }}">
               <i class="bi bi-person-lines-fill" aria-hidden="true"></i> <span class="link-text">Assign Operators</span>
