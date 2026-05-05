@@ -32,7 +32,11 @@
               'aria-label': 'Add new trap to ' ~ line.name
             }
           ) }}
-          {{ pf_link_button(url_for('assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
+          {% if session.get('group_role') == 'Group Coordinator' %}
+              {{ pf_link_button(url_for('coordinator_assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
+            {% else %}
+              {{ pf_link_button(url_for('assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
+            {% endif %}
         {% endif %}
       </div>
     </div>

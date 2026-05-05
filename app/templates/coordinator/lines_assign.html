@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_link_button %}
+{% block title %}Assign Operators{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <h4 class="fw-semibold mb-4">Assign Operators</h4>
+
+  {% if lines %}
+
+    {# ── Toolbar: search + sort dropdowns ──────────────────────── #}
+    <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
+
+      <div class="input-group" style="max-width:260px;">
+        <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+        <input type="search" id="line-search" class="form-control"
+               placeholder="Search lines…" autocomplete="off">
+      </div>
+
+      <span class="text-muted fw-semibold ms-2">Sort by</span>
+
+      <select id="sort-select" class="form-select" style="width:auto;">
+        <option value="name-asc">Name A → Z</option>
+        <option value="name-desc">Name Z → A</option>
+        <option value="assigned-desc">Most assigned</option>
+        <option value="assigned-asc">Fewest assigned</option>
+      </select>
+
+      <select id="type-select" class="form-select" style="width:auto;">
+        <option value="">All Types</option>
+        <option value="Trap">Trap</option>
+        <option value="Bait Station">Bait Station</option>
+      </select>
+
+    </div>
+
+    {# ── Line list ────────────────────────────────────────────── #}
+    <div id="lines-assign-list" style="max-height:75vh; overflow-y:auto; padding-right:4px;">
+      {% for line in lines %}
+        {% set available = line.total_operators - line.operator_count %}
+        <div class="js-line-row d-flex align-items-center gap-3 rounded border px-4 py-3 mb-2"
+             style="background:var(--bs-light, #f8f9fa); min-height:64px;"
+             data-name="{{ line.name | lower }}"
+             data-type="{{ line.type }}"
+             data-assigned="{{ line.operator_count }}">
+
+          <span class="fw-semibold flex-grow-1" style="min-width:140px; font-size:15px;">{{ line.name }}</span>
+
+          <span class="badge {{ 'bg-success' if line.type == 'Trap' else 'bg-info text-dark' }}"
+                style="font-size:11px; min-width:80px; text-align:center;">{{ line.type }}</span>
+
+          <span class="border rounded px-3 py-1 text-muted small" style="min-width:110px; text-align:center;">
+            Assigned: {{ line.operator_count }}
+          </span>
+
+          <span class="border rounded px-3 py-1 text-muted small" style="min-width:110px; text-align:center;">
+            Available: {{ available if available > 0 else 0 }}
+          </span>
+
+          {{ pf_link_button(
+              url_for('coordinator_assign_operators', line_id=line.line_id),
+              'Manage',
+              variant='btn-sm-pf',
+              icon='bi-person-lines-fill'
+          ) }}
+
+        </div>
+      {% endfor %}
+    </div>
+
+    <div id="lines-assign-empty" class="notice blue d-none">
+      <i class="bi bi-funnel" aria-hidden="true"></i>
+      <div>No lines match your search or filter.</div>
+    </div>
+
+  {% else %}
+    <div class="notice blue">
+      <i class="bi bi-signpost-split" aria-hidden="true"></i>
+      <div>No active lines in your group yet.
+        <a href="{{ url_for('new_line') }}">Create one</a>.
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  (function () {
+    const search   = document.getElementById('line-search');
+    const sortSel  = document.getElementById('sort-select');
+    const typeSel  = document.getElementById('type-select');
+    const list     = document.getElementById('lines-assign-list');
+    const empty    = document.getElementById('lines-assign-empty');
+    if (!list) return;
+
+    function applyFilters() {
+      const q    = search ? search.value.toLowerCase().trim() : '';
+      const type = typeSel ? typeSel.value : '';
+      const sort = sortSel ? sortSel.value : 'name-asc';
+
+      let rows = Array.from(list.querySelectorAll('.js-line-row'));
+
+      // filter
+      rows.forEach(function (row) {
+        const nameMatch = !q    || row.dataset.name.includes(q);
+        const typeMatch = !type || row.dataset.type === type;
+        row.classList.toggle('d-none', !(nameMatch && typeMatch));
+      });
+
+      // sort visible rows
+      const visible = rows.filter(function (r) { return !r.classList.contains('d-none'); });
+      visible.sort(function (a, b) {
+        if (sort === 'name-asc')      return a.dataset.name.localeCompare(b.dataset.name);
+        if (sort === 'name-desc')     return b.dataset.name.localeCompare(a.dataset.name);
+        if (sort === 'assigned-desc') return parseInt(b.dataset.assigned) - parseInt(a.dataset.assigned);
+        if (sort === 'assigned-asc')  return parseInt(a.dataset.assigned) - parseInt(b.dataset.assigned);
+        return 0;
+      });
+      visible.forEach(function (row) { list.appendChild(row); });
+
+      if (empty) empty.classList.toggle('d-none', visible.length > 0);
+    }
+
+    if (search)  search.addEventListener('input',  applyFilters);
+    if (sortSel) sortSel.addEventListener('change', applyFilters);
+    if (typeSel) typeSel.addEventListener('change', applyFilters);
+  })();
+</script>
+{% endblock %}
