@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const lineCards = Array.from(document.querySelectorAll('.js-line-card'));
   const searchInput = document.getElementById('lines-search-input');
+  const typeFilter = document.getElementById('lines-type-filter');
   const operatorFilter = document.getElementById('lines-operator-filter');
   const clearFiltersButton = document.getElementById('lines-clear-filters');
   const filterSummary = document.getElementById('lines-filter-summary');
@@ -117,20 +118,23 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!lineCards.length) return;
 
     const query = normalizeText(searchInput ? searchInput.value : '');
+    const selectedType = typeFilter ? typeFilter.value : '';
     const selectedOperator = operatorFilter ? operatorFilter.value : '';
     const visibleLineIds = new Set();
     let visibleCount = 0;
 
     lineCards.forEach(function (card) {
       const lineName = normalizeText(card.dataset.lineName);
+      const lineType = card.dataset.lineType || '';
       const operatorLabels = (card.dataset.operatorLabels || '')
         .split('||')
         .map(function (label) { return label.trim(); })
         .filter(Boolean);
 
       const matchesQuery = !query || lineName.includes(query);
+      const matchesType = !selectedType || lineType === selectedType;
       const matchesOperator = !selectedOperator || operatorLabels.includes(selectedOperator);
-      const isVisible = matchesQuery && matchesOperator;
+      const isVisible = matchesQuery && matchesType && matchesOperator;
 
       card.classList.toggle('d-none', !isVisible);
 
@@ -166,6 +170,10 @@ document.addEventListener('DOMContentLoaded', function () {
     searchInput.addEventListener('input', applyFilters);
   }
 
+  if (typeFilter) {
+    typeFilter.addEventListener('change', applyFilters);
+  }
+
   if (operatorFilter) {
     operatorFilter.addEventListener('change', applyFilters);
   }
@@ -173,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (clearFiltersButton) {
     clearFiltersButton.addEventListener('click', function () {
       if (searchInput) searchInput.value = '';
+      if (typeFilter) typeFilter.value = '';
       if (operatorFilter) operatorFilter.value = '';
 
       applyFilters();
@@ -269,4 +278,27 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   applyFilters();
+
+  if (operatorFilter && operatorFilter.value) {
+    operatorFilter.classList.add('pf-flash-highlight');
+    operatorFilter.addEventListener('animationend', function () {
+      operatorFilter.classList.remove('pf-flash-highlight');
+    }, { once: true });
+  }
+});
+
+// Safari BFCache: modal can get stuck open with backdrop when navigating back
+window.addEventListener('pageshow', function (event) {
+  if (event.persisted) {
+    const modal = document.getElementById('retire-line-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('show');
+    }
+    document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+    window.location.reload();
+  }
 });

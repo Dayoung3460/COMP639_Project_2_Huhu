@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel, pf_trap_status_badge %}
-{% block title %}Trap Lines{% endblock %}
+{% block title %}Lines{% endblock %}
 {% block content %}
 <div class="container py-4">
   {% set current_filter = line_filter | default('active') %}
   <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
-    <h2 class="mb-0">Trap Lines</h2>
+    <h2 class="mb-0">Lines</h2>
     <div class="d-flex gap-2 align-items-center lines-page-header__actions">
       {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
         {{ pf_link_button(url_for('new_line'), 'New Line', variant='btn-sm-pf', icon='bi-plus-lg') }}
@@ -16,7 +16,7 @@
   {% if lines %}
     <section class="mb-4" aria-label="Search and filter lines">
       <div class="row g-3 align-items-end">
-        <div class="col-lg-8">
+        <div class="col-lg-5">
           <label for="lines-search-input" class="form-label mb-1">Search lines</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
@@ -27,6 +27,17 @@
               placeholder="Search by line name">
           </div>
         </div>
+        {% if available_types %}
+        <div class="col-sm-4 col-lg-2">
+          <label for="lines-type-filter" class="form-label mb-1">Line type</label>
+          <select id="lines-type-filter" class="form-select">
+            <option value="">All types</option>
+            {% for t in available_types %}
+              <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
         <div class="col-sm-8 col-lg-3">
           <label for="lines-operator-filter" class="form-label mb-1">
             Assigned operator
@@ -41,7 +52,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-sm-4 col-lg-1 d-grid">
+        <div class="col-sm-4 col-lg-2 d-grid">
           {{ pf_button('Clear', variant='btn-sm-outline', extra_classes='lines-filter-shell__clear-btn', attrs={'id': 'lines-clear-filters', 'aria-label': 'Clear all filters'}) }}
         </div>
       </div>
@@ -77,12 +88,21 @@
                     <div class="d-flex align-items-center gap-2 mb-1 lines-list-card__name-row">
                       <h5 class="mb-0 lines-list-card__title">{{ line.name }}</h5>
                       {{ pf_trap_status_badge(line.is_retired) }}
+                      {% if line.type == 'Bait Station' %}
+                        <span class="badge-line-bait">Bait Station</span>
+                      {% else %}
+                        <span class="badge-line-trap">Trap</span>
+                      {% endif %}
                     </div>
                     {% if line.is_retired and line.retired_at %}
                       <small class="text-muted d-block border-bottom pb-1 mb-1">Retired {{ line.retired_at.strftime('%d %b %Y %H:%M') }}{% if line.retired_by_username %} by @{{ line.retired_by_username }}{% endif %}</small>
                     {% endif %}
                     <small class="text-muted">
-                      {{ line.trap_count | default(0) }} active traps -
+                      {% if line.type == 'Bait Station' %}
+                        {{ line.station_count | default(0) }} active stations -
+                      {% else %}
+                        {{ line.trap_count | default(0) }} active traps -
+                      {% endif %}
                       {{ line.operator_count | default(0) }} operators
                     </small>
                     {% if line.assigned_operators %}
@@ -100,21 +120,27 @@
                   </div>
                   <div class="d-flex gap-2 align-items-center lines-list-card__actions">
                     {{ pf_link_button(line_detail_url, 'View', variant='btn-sm-outline', attrs={'aria-label': 'View ' ~ line.name}) }}
-                    {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') and not line.is_retired %}
-                      {{ pf_link_button(url_for('edit_line', line_id=line.line_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit ' ~ line.name}) }}
-                      {{ pf_button(
-                        'Retire',
-                        variant='btn-sm-danger',
-                        attrs={
-                          'aria-label': 'Retire ' ~ line.name,
-                          'data-bs-toggle': 'modal',
-                          'data-bs-target': '#retire-line-modal',
-                          'data-line-id': line.line_id,
-                          'data-line-name': line.name,
-                          'data-line-action': url_for('retire_line', line_id=line.line_id, active_traps=1 if line.line_id in active_trap_line_ids else None),
-                          'data-has-active-traps': 'true' if line.line_id in active_trap_line_ids else 'false'
-                        }
-                      ) }}
+                    {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+                      {% if not line.is_retired %}
+                        {{ pf_link_button(url_for('edit_line', line_id=line.line_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit ' ~ line.name}) }}
+                        {{ pf_button(
+                          'Retire',
+                          variant='btn-sm-danger',
+                          attrs={
+                            'aria-label': 'Retire ' ~ line.name,
+                            'data-bs-toggle': 'modal',
+                            'data-bs-target': '#retire-line-modal',
+                            'data-line-id': line.line_id,
+                            'data-line-name': line.name,
+                            'data-line-action': url_for('retire_line', line_id=line.line_id, active_traps=1 if line.line_id in active_trap_line_ids else None),
+                            'data-has-active-traps': 'true' if line.line_id in active_trap_line_ids else 'false'
+                          }
+                        ) }}
+                      {% else %}
+                        <form method="POST" action="{{ url_for('unretire_line', line_id=line.line_id) }}" class="d-inline">
+                          {{ pf_button('Unretire', variant='btn-sm-outline', type='submit', attrs={'aria-label': 'Unretire ' ~ line.name}) }}
+                        </form>
+                      {% endif %}
                     {% endif %}
                   </div>
               {% endcall %}
@@ -124,7 +150,7 @@
       {% else %}
         <div class="notice blue mb-0">
           <i class="bi bi-signpost-split" aria-hidden="true"></i>
-          <div>No trap lines found.</div>
+          <div>No lines found.</div>
         </div>
       {% endif %}
     </div>
@@ -239,47 +265,4 @@
   <script src="{{ url_for('static', filename='js/lines-map-utils.js') }}"></script>
   <script src="{{ url_for('static', filename='js/lines-index.js') }}"></script>
 
-  <script>
-    // If the operator filter was set via URL, trigger the change event and flash the dropdown
-    document.addEventListener('DOMContentLoaded', function() {
-      const operatorFilter = document.getElementById('lines-operator-filter');
-      if (operatorFilter && operatorFilter.value) {
-        // Trigger the change event to update the list/map
-        operatorFilter.dispatchEvent(new Event('change'));
-
-        // Add a flash effect to highlight the filter
-        operatorFilter.classList.add('pf-flash-highlight');
-        operatorFilter.addEventListener('animationend', () => {
-          operatorFilter.classList.remove('pf-flash-highlight');
-        }, { once: true });
-      }
-    });
-  </script>
-
-  <script>
-    // fix for Safari's "Back-Forward Cache (BFCache)" which can cause modals to get stuck open with backdrop overlay
-    window.addEventListener('pageshow', function(event) {
-      if (event.persisted) {
-        // Step 1 — instantly hide modal before reload
-        const modal = document.getElementById('retire-line-modal')
-        if (modal) {
-          // Force hide by manipulating CSS directly
-          // This is faster than Bootstrap's hide() method
-          modal.style.display = 'none'
-          modal.classList.remove('show')
-        }
-        // Remove backdrop
-        document.querySelectorAll('.modal-backdrop').forEach(function(b) {
-          b.remove()
-        })
-        // Clean up body
-        document.body.classList.remove('modal-open')
-        document.body.style.removeProperty('overflow')
-        document.body.style.removeProperty('padding-right')
-
-        // Step 2 — then reload
-        window.location.reload()
-      }
-    })
-  </script>
 {% endblock %}
