@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button, pf_link_button %}
+{% block title %}Apply for Conservation{% endblock %}
+
+{% block page_title %}Apply for Conservation{% endblock %}
+
+{% block header_actions %}
+  <a href="{{ url_for('observer_dashboard') }}" class="btn-sm-outline">
+    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to Dashboard
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="container-md py-4" style="max-width: 640px;">
+  <form method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label for="proposed_name" class="form-label">Proposed Group Name</label>
+      <input type="text" class="form-control" id="proposed_name" name="proposed_name" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="description" class="form-label">Description</label>
+      <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label for="location" class="form-label">Region / Location</label>
+      <input type="text" class="form-control" id="location" name="location" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="justification" class="form-label">Justification</label>
+      <textarea class="form-control" id="justification" name="justification" rows="4" required></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label for="group_image_input" class="form-label">Tile Image</label>
+
+      <div class="border" style="border-radius: 0.375rem; background-color: #fafdfc; position: relative; overflow: hidden;">
+        <div style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;">
+          <image id="group_image_preview" src="#" alt="Image Preview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+        </div>
+
+        <div class="d-flex align-items-center justify-content-center" style="position: relative; z-index: 0;">
+          <span style="position: absolute; color: #8a9e93;">Click to upload your tile image</span>
+
+          <input
+            type="file"
+            class="form-control opacity-0"
+            name="group_image_input"
+            id="group_image_input"
+            accept=".png,.jpg,.jpeg,.gif"
+            style="height: 100px;"
+          >
+        </div>
+      </div>
+
+      <div class="form-hint text-center mt-2">Only PNG, JPG, JPEG, or GIF files allowed</div>
+    </div>
+
+    {{ pf_button('Submit Application', type='submit') }}
+    {{ pf_link_button(url_for('observer_dashboard'), 'Cancel', variant='btn-sm-outline') }}
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const groupImageInput   = document.getElementById('group_image_input');
+  const groupImagePreview = document.getElementById('group_image_preview');
+
+  groupImageInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      groupImagePreview.style.display = 'block';
+      groupImagePreview.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
+{% endblock %}

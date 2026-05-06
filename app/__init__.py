@@ -101,6 +101,7 @@ from app import coordinator
 from app import lines
 from app import reports
 from app import general
+from app import conservation
 
 # ── Template globals ──────────────────────────────────────────────────────────
 
