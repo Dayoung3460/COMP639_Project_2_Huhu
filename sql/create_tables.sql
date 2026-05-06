@@ -2,7 +2,7 @@
 -- create_tables.sql — Conservation Groups Platform
 -- COMP639 Group Project 2 — Semester 1, 2026
 --
--- Run this first, then run populate_database.sql
+-- Run this first, then run populate_tables.sql
 -- =============================================================
 
 -- ── Drop tables (children before parents) ─────────────────────

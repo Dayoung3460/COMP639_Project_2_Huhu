@@ -1,4 +1,4 @@
-﻿-- populate_database.sql
+﻿-- populate_tables.sql
 -- Conservation Groups — COMP639 Group Project 2, Team Huhu
 -- Lincoln University, Semester 1, 2026
 -- All passwords: Password1!
@@ -232,7 +232,15 @@ INSERT INTO lines (name, type, group_id, is_retired, retired_at, retired_by) VAL
 ('Demolished Block Track',      'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2024-12-15 09:00:00', (SELECT user_id FROM users WHERE username = 'jthornton')),
 ('Old Orchard Line',            'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-01-20 10:00:00', (SELECT user_id FROM users WHERE username = 'eparata')),
 ('Flood Zone Track',            'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-04-30 14:00:00', (SELECT user_id FROM users WHERE username = 'dchen')),
-('Seed Bank Perimeter',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-11-22 09:00:00', (SELECT user_id FROM users WHERE username = 'smitchell'))
+('Seed Bank Perimeter',         'Trap', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-11-22 09:00:00', (SELECT user_id FROM users WHERE username = 'smitchell')),
+
+-- Active bait station lines
+('North Campus Bait Line',      'Bait Station', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('Central Campus Bait Line',    'Bait Station', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+('South Campus Bait Line',      'Bait Station', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), false, NULL, NULL),
+
+-- Retired bait station line
+('Old Lake Bait Line',          'Bait Station', (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'), true, '2025-07-01 09:00:00', (SELECT user_id FROM users WHERE username = 'smitchell'))
 
 ON CONFLICT (name) DO NOTHING;
 
@@ -290,7 +298,12 @@ INSERT INTO operator_lines (operator_id, line_id) VALUES
 
 -- landerson also covers sports & heritage
 ((SELECT user_id FROM users WHERE username = 'landerson'), (SELECT line_id FROM lines WHERE name = 'Sports Field Perimeter')),
-((SELECT user_id FROM users WHERE username = 'landerson'), (SELECT line_id FROM lines WHERE name = 'Heritage Walk'))
+((SELECT user_id FROM users WHERE username = 'landerson'), (SELECT line_id FROM lines WHERE name = 'Heritage Walk')),
+
+-- bait station line assignments
+((SELECT user_id FROM users WHERE username = 'landerson'), (SELECT line_id FROM lines WHERE name = 'North Campus Bait Line')),
+((SELECT user_id FROM users WHERE username = 'owalker'),   (SELECT line_id FROM lines WHERE name = 'Central Campus Bait Line')),
+((SELECT user_id FROM users WHERE username = 'ncampbell'), (SELECT line_id FROM lines WHERE name = 'South Campus Bait Line'))
 
 ON CONFLICT DO NOTHING;
 
@@ -410,6 +423,47 @@ INSERT INTO traps (code, trap_type, line_id, latitude, longitude, is_retired, re
 ('TFL-01', 'DOC 150', (SELECT line_id FROM lines WHERE name = 'Temporary Fence Line'), -43.644012, 172.458045, true, '2025-03-20 09:00:00', (SELECT user_id FROM users WHERE username = 'jthornton')),
 ('TFL-02', 'A24',     (SELECT line_id FROM lines WHERE name = 'Temporary Fence Line'), -43.644350, 172.458520, true, '2025-03-20 09:00:00', (SELECT user_id FROM users WHERE username = 'jthornton')),
 ('TFL-03', 'Victor',  (SELECT line_id FROM lines WHERE name = 'Temporary Fence Line'), -43.644700, 172.459000, true, '2025-03-20 09:00:00', (SELECT user_id FROM users WHERE username = 'jthornton'))
+ON CONFLICT (code) DO NOTHING;
+
+-- ══════════════════════════════════════════════════════
+-- BAIT STATIONS
+-- Linked to Bait Station type lines
+-- ══════════════════════════════════════════════════════
+
+-- North Campus Bait Line
+INSERT INTO bait_stations (code, station_type, line_id, latitude, longitude, is_retired) VALUES
+('NCBL-01', 'Philproof',      (SELECT line_id FROM lines WHERE name = 'North Campus Bait Line'), -43.638100, 172.462500, false),
+('NCBL-02', 'Protecta LP',    (SELECT line_id FROM lines WHERE name = 'North Campus Bait Line'), -43.638450, 172.463000, false),
+('NCBL-03', 'Nara',           (SELECT line_id FROM lines WHERE name = 'North Campus Bait Line'), -43.638800, 172.463500, false),
+('NCBL-04', 'Philproof',      (SELECT line_id FROM lines WHERE name = 'North Campus Bait Line'), -43.639150, 172.464000, false),
+('NCBL-05', 'Protecta LP',    (SELECT line_id FROM lines WHERE name = 'North Campus Bait Line'), -43.639500, 172.464500, false)
+ON CONFLICT (code) DO NOTHING;
+
+-- Central Campus Bait Line
+INSERT INTO bait_stations (code, station_type, line_id, latitude, longitude, is_retired) VALUES
+('CCBL-01', 'Philproof',      (SELECT line_id FROM lines WHERE name = 'Central Campus Bait Line'), -43.641500, 172.469000, false),
+('CCBL-02', 'Nara',           (SELECT line_id FROM lines WHERE name = 'Central Campus Bait Line'), -43.641900, 172.469500, false),
+('CCBL-03', 'Protecta LP',    (SELECT line_id FROM lines WHERE name = 'Central Campus Bait Line'), -43.642300, 172.470000, false),
+('CCBL-04', 'Philproof',      (SELECT line_id FROM lines WHERE name = 'Central Campus Bait Line'), -43.642700, 172.470500, false)
+ON CONFLICT (code) DO NOTHING;
+
+-- South Campus Bait Line
+INSERT INTO bait_stations (code, station_type, line_id, latitude, longitude, is_retired) VALUES
+('SCBL-01', 'Protecta LP',    (SELECT line_id FROM lines WHERE name = 'South Campus Bait Line'), -43.652500, 172.467500, false),
+('SCBL-02', 'Nara',           (SELECT line_id FROM lines WHERE name = 'South Campus Bait Line'), -43.652900, 172.468000, false),
+('SCBL-03', 'Philproof',      (SELECT line_id FROM lines WHERE name = 'South Campus Bait Line'), -43.653300, 172.468500, false),
+('SCBL-04', 'Protecta LP',    (SELECT line_id FROM lines WHERE name = 'South Campus Bait Line'), -43.653700, 172.469000, false)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO bait_stations (code, station_type, other_type, line_id, latitude, longitude, is_retired) VALUES
+('SCBL-05', 'Other', 'Homemade tunnel station', (SELECT line_id FROM lines WHERE name = 'South Campus Bait Line'), -43.654100, 172.469500, false)
+ON CONFLICT (code) DO NOTHING;
+
+-- Retired bait station line stations
+INSERT INTO bait_stations (code, station_type, line_id, latitude, longitude, is_retired, retired_at, retired_by) VALUES
+('OLBL-01', 'Philproof', (SELECT line_id FROM lines WHERE name = 'Old Lake Bait Line'), -43.650500, 172.465000, true, '2025-07-01 09:00:00', (SELECT user_id FROM users WHERE username = 'smitchell')),
+('OLBL-02', 'Nara',      (SELECT line_id FROM lines WHERE name = 'Old Lake Bait Line'), -43.650900, 172.465500, true, '2025-07-01 09:00:00', (SELECT user_id FROM users WHERE username = 'smitchell')),
+('OLBL-03', 'Philproof', (SELECT line_id FROM lines WHERE name = 'Old Lake Bait Line'), -43.651300, 172.466000, true, '2025-07-01 09:00:00', (SELECT user_id FROM users WHERE username = 'smitchell'))
 ON CONFLICT (code) DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
@@ -569,6 +623,64 @@ INSERT INTO trap_catches (trap_id, date, recorded_by_id, species_caught, sex, ma
 ON CONFLICT DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
+-- BAIT STATION RECORDS
+-- ══════════════════════════════════════════════════════
+
+INSERT INTO bait_station_records (station_id, date, recorded_by_id, target_species, active_ingredient, formulation, concentration, bait_remaining, bait_removed, bait_added, notes) VALUES
+
+-- North Campus Bait Line — NCBL-01
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-01'), '2024-02-10 09:00:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Rat', 'Brodifacoum', 'Block',   0.005,  200.000, NULL,    200.000, 'Initial fill'),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-01'), '2024-05-15 08:30:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Rat', 'Brodifacoum', 'Block',   0.005,   80.000, 120.000, 120.000, 'High uptake — rats active'),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-01'), '2024-08-20 09:00:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Rat', 'Brodifacoum', 'Block',   0.005,  160.000,  40.000,  80.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-01'), '2025-01-12 08:45:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Rat', 'Brodifacoum', 'Block',   0.005,  120.000,  80.000, 160.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-01'), '2025-06-18 09:00:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Rat', 'Brodifacoum', 'Block',   0.005,   60.000, 100.000, 140.000, 'Station checked after flood'),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-01'), '2026-01-20 08:30:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Rat', 'Brodifacoum', 'Block',   0.005,  140.000,  60.000,  60.000, NULL),
+
+-- North Campus Bait Line — NCBL-02
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-02'), '2024-02-10 09:15:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08,  500.000, NULL,    500.000, 'Initial fill'),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-02'), '2024-05-15 08:45:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08,  320.000, 180.000, 250.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-02'), '2024-09-10 09:00:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08,  410.000,  90.000, 200.000, 'Possum activity high this quarter'),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-02'), '2025-03-05 08:30:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08,  350.000, 150.000, 200.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-02'), '2025-09-22 09:00:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08,  480.000,  70.000, 200.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'NCBL-02'), '2026-03-15 08:30:00', (SELECT user_id FROM users WHERE username = 'landerson'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08,  300.000, 200.000, 200.000, NULL),
+
+-- Central Campus Bait Line — CCBL-01
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-01'), '2024-03-01 09:00:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Rat', 'Diphacinone', 'Block',  0.005, 200.000, NULL,    200.000, 'Initial fill'),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-01'), '2024-06-10 08:30:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Rat', 'Diphacinone', 'Block',  0.005, 100.000, 100.000, 150.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-01'), '2024-10-05 09:00:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Rat', 'Diphacinone', 'Block',  0.005, 180.000,  70.000, 130.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-01'), '2025-02-20 08:45:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Rat', 'Diphacinone', 'Block',  0.005,  90.000, 120.000, 160.000, 'Station near student cafe — high rat pressure'),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-01'), '2025-07-14 09:00:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Rat', 'Diphacinone', 'Block',  0.005, 170.000,  80.000, 120.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-01'), '2026-01-28 08:30:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Rat', 'Diphacinone', 'Block',  0.005, 130.000,  60.000, 100.000, NULL),
+
+-- Central Campus Bait Line — CCBL-03
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-03'), '2024-03-01 09:30:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Stoat', 'Brodifacoum', 'Paste', 0.005, 150.000, NULL,    150.000, 'Initial fill'),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-03'), '2024-07-18 08:30:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Stoat', 'Brodifacoum', 'Paste', 0.005,  80.000,  70.000, 100.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-03'), '2025-01-22 09:00:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Stoat', 'Brodifacoum', 'Paste', 0.005, 110.000,  70.000, 120.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-03'), '2025-08-10 08:30:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Stoat', 'Brodifacoum', 'Paste', 0.005, 140.000,  80.000, 110.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'CCBL-03'), '2026-02-18 09:00:00', (SELECT user_id FROM users WHERE username = 'owalker'), 'Stoat', 'Brodifacoum', 'Paste', 0.005, 100.000,  50.000, 100.000, NULL),
+
+-- South Campus Bait Line — SCBL-01
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-01'), '2024-04-01 09:00:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Rat', 'Brodifacoum', 'Block',  0.005, 200.000, NULL,    200.000, 'Initial fill'),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-01'), '2024-07-08 08:30:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Rat', 'Brodifacoum', 'Block',  0.005,  50.000, 150.000, 200.000, 'Very high uptake this check'),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-01'), '2024-11-12 09:00:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Rat', 'Brodifacoum', 'Block',  0.005, 170.000,  80.000, 100.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-01'), '2025-04-15 08:30:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Rat', 'Brodifacoum', 'Block',  0.005, 120.000,  80.000, 160.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-01'), '2025-10-20 09:00:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Rat', 'Brodifacoum', 'Block',  0.005, 200.000,  80.000, 160.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-01'), '2026-03-18 08:30:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Rat', 'Brodifacoum', 'Block',  0.005, 160.000,  60.000, 100.000, NULL),
+
+-- South Campus Bait Line — SCBL-03
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-03'), '2024-04-01 09:15:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08, 500.000, NULL,    500.000, 'Initial fill'),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-03'), '2024-08-14 08:30:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08, 350.000, 150.000, 200.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-03'), '2025-02-10 09:00:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08, 400.000, 150.000, 200.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-03'), '2025-08-25 08:30:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08, 380.000, 120.000, 150.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'SCBL-03'), '2026-02-22 09:00:00', (SELECT user_id FROM users WHERE username = 'ncampbell'), 'Possum', 'Cholecalciferol', 'Pellets', 0.08, 460.000,  90.000, 170.000, NULL),
+
+-- Retired line records (before retirement date)
+((SELECT station_id FROM bait_stations WHERE code = 'OLBL-01'), '2024-06-01 09:00:00', (SELECT user_id FROM users WHERE username = 'ithompson'), 'Rat', 'Brodifacoum', 'Block', 0.005, 200.000, NULL,    200.000, 'Initial fill'),
+((SELECT station_id FROM bait_stations WHERE code = 'OLBL-01'), '2024-10-10 08:30:00', (SELECT user_id FROM users WHERE username = 'ithompson'), 'Rat', 'Brodifacoum', 'Block', 0.005, 130.000,  70.000, 100.000, NULL),
+((SELECT station_id FROM bait_stations WHERE code = 'OLBL-01'), '2025-03-15 09:00:00', (SELECT user_id FROM users WHERE username = 'ithompson'), 'Rat', 'Brodifacoum', 'Block', 0.005, 100.000,  80.000, 120.000, 'Flooding noted at station'),
+((SELECT station_id FROM bait_stations WHERE code = 'OLBL-01'), '2025-06-28 08:30:00', (SELECT user_id FROM users WHERE username = 'ithompson'), 'Rat', 'Brodifacoum', 'Block', 0.005,  60.000,  80.000, NULL,    'Station removed — line retired');
+
+-- ══════════════════════════════════════════════════════
 -- INCIDENTAL OBSERVATIONS
 -- ══════════════════════════════════════════════════════
 
@@ -634,16 +746,113 @@ VALUES
 ON CONFLICT (user_id, group_id) DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
+-- GROUP APPLICATIONS
+-- Users applying to form a new group — test data for Super Admin review
+-- Log in as smitchell / Password1! to approve/reject
+-- ══════════════════════════════════════════════════════
+
+INSERT INTO group_applications (user_id, proposed_name, reason, status, applied_at) VALUES
+(
+    (SELECT user_id FROM users WHERE username = 'landerson'),
+    'Canterbury Plains Trappers',
+    'I have been coordinating an informal trapping network across the Canterbury Plains for the past two years with 12 volunteers. We would like to formalise this as a registered group to improve data recording and access shared resources.',
+    'pending',
+    NOW() - INTERVAL '7 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'cwilson'),
+    'Lincoln Township Community Trappers',
+    'A small group of Lincoln township residents have been running backyard traps along the Selwyn River corridor. Formalising would help us coordinate effort and report results.',
+    'pending',
+    NOW() - INTERVAL '3 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'ncampbell'),
+    'Prebbleton Predator Free',
+    'Keen to start a group in Prebbleton. Several neighbours are already trapping independently — this would help us coordinate.',
+    'approved',
+    NOW() - INTERVAL '30 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'sroberts'),
+    'Southbridge Stoat Stoppers',
+    'Rural community group proposal for the Southbridge area.',
+    'rejected',
+    NOW() - INTERVAL '60 days'
+);
+
+-- ══════════════════════════════════════════════════════
+-- USER NOTIFICATIONS
+-- Test notifications for various users
+-- ══════════════════════════════════════════════════════
+
+INSERT INTO user_notifications (user_id, message, category, is_active, created_at) VALUES
+(
+    (SELECT user_id FROM users WHERE username = 'trequest1'),
+    'Your request to join Predator Free Lincoln University is pending review by the coordinator.',
+    'info',
+    true,
+    NOW() - INTERVAL '2 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'trequest2'),
+    'Your request to join Predator Free Lincoln University is pending review by the coordinator.',
+    'info',
+    true,
+    NOW() - INTERVAL '1 day'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'dchen'),
+    'You have 2 pending join requests to review for Predator Free Lincoln University.',
+    'info',
+    true,
+    NOW() - INTERVAL '1 day'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    'Group application from Liam Anderson is awaiting your review.',
+    'info',
+    true,
+    NOW() - INTERVAL '7 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    'Group application from Charlotte Wilson is awaiting your review.',
+    'info',
+    true,
+    NOW() - INTERVAL '3 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'ncampbell'),
+    'Your application to form Prebbleton Predator Free has been approved. You can now set up your group.',
+    'success',
+    true,
+    NOW() - INTERVAL '25 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'sroberts'),
+    'Your application to form Southbridge Stoat Stoppers was not approved at this time.',
+    'warning',
+    true,
+    NOW() - INTERVAL '55 days'
+);
+
+-- ══════════════════════════════════════════════════════
 -- RESET SEQUENCES
 -- ══════════════════════════════════════════════════════
 
-SELECT setval('users_user_id_seq',                  (SELECT MAX(user_id)         FROM users));
-SELECT setval('lines_line_id_seq',                  (SELECT MAX(line_id)         FROM lines));
-SELECT setval('traps_trap_id_seq',                  (SELECT MAX(trap_id)         FROM traps));
-SELECT setval('trap_catches_catch_id_seq',           (SELECT MAX(catch_id)        FROM trap_catches));
+SELECT setval('users_user_id_seq',                   (SELECT MAX(user_id)         FROM users));
+SELECT setval('groups_group_id_seq',                 (SELECT MAX(group_id)        FROM groups));
+SELECT setval('group_memberships_membership_id_seq', (SELECT MAX(membership_id)   FROM group_memberships));
+SELECT setval('lines_line_id_seq',                   (SELECT MAX(line_id)         FROM lines));
+SELECT setval('traps_trap_id_seq',                   (SELECT MAX(trap_id)         FROM traps));
+SELECT setval('bait_stations_station_id_seq',        (SELECT MAX(station_id)      FROM bait_stations));
+SELECT setval('trap_catches_catch_id_seq',            (SELECT MAX(catch_id)        FROM trap_catches));
+SELECT setval('bait_station_records_record_id_seq',  (SELECT MAX(record_id)       FROM bait_station_records));
 SELECT setval('incidental_observations_observation_id_seq', (SELECT MAX(observation_id) FROM incidental_observations));
-SELECT setval('group_join_requests_request_id_seq', (SELECT MAX(request_id)      FROM group_join_requests));
-SELECT setval('user_notifications_notification_id_seq', (SELECT MAX(notification_id) FROM user_notifications));
+SELECT setval('group_join_requests_request_id_seq',  (SELECT MAX(request_id)      FROM group_join_requests));
+SELECT setval('group_applications_application_id_seq',(SELECT MAX(application_id) FROM group_applications));
+SELECT setval('user_notifications_notification_id_seq',(SELECT MAX(notification_id) FROM user_notifications));
 
 COMMIT;
 
