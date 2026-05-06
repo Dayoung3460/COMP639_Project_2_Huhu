@@ -9,6 +9,9 @@ from app.utils import (
     LINCOLN_NZ_LAT_RANGE,
     LINCOLN_NZ_LON_RANGE,
     LINE_COLOURS,
+    BAIT_STATION_TYPES,
+    ACTIVE_INGREDIENTS,
+    FORMULATIONS,
 )
 from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data, fetch_user_info, update_user_role
 
@@ -338,32 +341,34 @@ def update_user_notes(user_id):
 @app.route('/admin/lines/new', methods=['GET', 'POST'])
 @role_required('Super Admin', 'Group Coordinator')
 def new_line():
-    """Create a new trap line in the currently selected group."""
+    """Create a new line (Trap or Bait Station) in the currently selected group."""
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
+        line_type = request.form.get('type', '').strip()
 
-        # Validate name
         if not name:
             flash('Please provide a name', 'danger')
-            return render_template('lines/new_line.html', name=name)
+            return render_template('lines/new_line.html', name=name, line_type=line_type)
+
+        if line_type not in ('Trap', 'Bait Station'):
+            flash('Please select a line type', 'danger')
+            return render_template('lines/new_line.html', name=name, line_type=line_type)
 
         with db.get_cursor() as cursor:
-            # Check for existing line with the same name
             cursor.execute('SELECT line_id FROM lines WHERE name = %s', (name,))
             if cursor.fetchone():
                 flash(f'A line named "{name}" already exists', 'danger')
-                return render_template('lines/new_line.html', name=name)
+                return render_template('lines/new_line.html', name=name, line_type=line_type)
 
-            # Insert the new line scoped to the current group
             cursor.execute(
-                "INSERT INTO lines (name, type, group_id) VALUES (%s, 'Trap', %s)",
-                (name, session.get('group_id'))
+                'INSERT INTO lines (name, type, group_id) VALUES (%s, %s, %s)',
+                (name, line_type, session.get('group_id'))
             )
 
-        flash(f'Trap line "{name}" created successfully', 'success')
+        flash(f'{line_type} line "{name}" created successfully', 'success')
         return redirect(url_for('lines_index'))
-        
-    return render_template('lines/new_line.html')
+
+    return render_template('lines/new_line.html', name='', line_type='Trap')
 
 
 @app.route('/admin/lines/<int:line_id>/edit', methods=['GET', 'POST'])
@@ -460,7 +465,32 @@ def retire_line(line_id):
                 (retired_by, line_id)
             )
 
-    flash('Trap line retired.', 'success')
+    flash('Line retired.', 'success')
+    return redirect(url_for('lines_index'))
+
+
+@app.route('/admin/lines/<int:line_id>/unretire', methods=['POST'])
+@role_required('Super Admin', 'Group Coordinator')
+def unretire_line(line_id):
+    """Unretire a line (set is_retired = FALSE)."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT line_id, group_id FROM lines WHERE line_id = %s',
+            (line_id,)
+        )
+        line = cursor.fetchone()
+
+    if not line or line['group_id'] != session.get('group_id'):
+        flash('Line not found in your group.', 'danger')
+        return redirect(url_for('lines_index'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE lines SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE line_id = %s',
+            (line_id,)
+        )
+
+    flash('Line unretired.', 'success')
     return redirect(url_for('lines_index'))
 
 
@@ -672,6 +702,205 @@ def retire_trap(line_id):
         )
 
     flash('Trap retired.', 'success')
+    return redirect(url_for('line_detail', line_id=line_id))
+
+
+# ── Bait stations ─────────────────────────────────────────────────────────────
+
+@app.route('/admin/lines/<int:line_id>/new-bait-station', methods=['GET', 'POST'])
+@role_required('Super Admin', 'Group Coordinator')
+def new_bait_station(line_id):
+    """Add a new bait station to a Bait Station line."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT line_id, name, type, is_retired, group_id FROM lines WHERE line_id = %s',
+            (line_id,)
+        )
+        line = cursor.fetchone()
+
+    if not line or line['group_id'] != session.get('group_id'):
+        flash('Line not found in your group.', 'danger')
+        return redirect(url_for('lines_index'))
+    if line['type'] != 'Bait Station':
+        flash('That line is not a Bait Station line.', 'danger')
+        return redirect(url_for('line_detail', line_id=line_id))
+    if line['is_retired']:
+        flash('Cannot add stations to a retired line.', 'danger')
+        return redirect(url_for('line_detail', line_id=line_id))
+
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        station_type = request.form.get('station_type', '').strip()
+        other_type = request.form.get('other_type', '').strip() or None
+        latitude = request.form.get('latitude', '').strip()
+        longitude = request.form.get('longitude', '').strip()
+
+        errors = []
+        if not code:
+            errors.append('Code is required.')
+        if station_type not in BAIT_STATION_TYPES:
+            errors.append('Please select a valid station type.')
+        if station_type == 'Other' and not other_type:
+            errors.append('Please specify the type when "Other" is selected.')
+
+        coord_error = validate_lincoln_nz_coordinates(latitude, longitude)
+        if coord_error:
+            errors.append(coord_error)
+
+        if not errors:
+            with db.get_cursor() as cursor:
+                cursor.execute('SELECT station_id FROM bait_stations WHERE code = %s AND line_id = %s', (code, line_id))
+                if cursor.fetchone():
+                    errors.append(f'Station code "{code}" already exists on this line. Please choose a different code.')
+
+        if errors:
+            return redirect(url_for(
+                'line_detail', line_id=line_id,
+                add_station=1,
+                error=errors[0],
+                code=code,
+                station_type=station_type,
+                other_type=other_type or '',
+                latitude=latitude,
+                longitude=longitude,
+            ))
+
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO bait_stations (code, station_type, other_type, line_id, latitude, longitude) VALUES (%s, %s, %s, %s, %s, %s)',
+                (code, station_type, other_type, line_id, latitude, longitude)
+            )
+
+        flash(f'Bait station "{code}" added.', 'success')
+        return redirect(url_for('line_detail', line_id=line_id))
+
+    return render_template('lines/new_bait_station.html', line=line,
+                           bait_station_types=BAIT_STATION_TYPES, data={})
+
+
+@app.route('/admin/lines/<int:line_id>/bait-stations/<int:station_id>/edit', methods=['GET', 'POST'])
+@role_required('Super Admin', 'Group Coordinator')
+def edit_bait_station(line_id, station_id):
+    """Edit an existing bait station."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT l.line_id, l.group_id FROM lines l WHERE l.line_id = %s',
+            (line_id,)
+        )
+        line = cursor.fetchone()
+
+    if not line or line['group_id'] != session.get('group_id'):
+        flash('Line not found in your group.', 'danger')
+        return redirect(url_for('lines_index'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT * FROM bait_stations WHERE station_id = %s AND line_id = %s',
+            (station_id, line_id)
+        )
+        station = cursor.fetchone()
+
+    if not station:
+        flash('Bait station not found.', 'danger')
+        return redirect(url_for('line_detail', line_id=line_id))
+
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        station_type = request.form.get('station_type', '').strip()
+        other_type = request.form.get('other_type', '').strip() or None
+        latitude = request.form.get('latitude', '').strip()
+        longitude = request.form.get('longitude', '').strip()
+
+        errors = []
+        if not code:
+            errors.append('Code is required.')
+        if station_type not in BAIT_STATION_TYPES:
+            errors.append('Please select a valid station type.')
+        if station_type == 'Other' and not other_type:
+            errors.append('Please specify the type when "Other" is selected.')
+
+        coord_error = validate_lincoln_nz_coordinates(latitude, longitude)
+        if coord_error:
+            errors.append(coord_error)
+
+        if not errors:
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'SELECT station_id FROM bait_stations WHERE code = %s AND line_id = %s AND station_id != %s',
+                    (code, line_id, station_id)
+                )
+                if cursor.fetchone():
+                    errors.append(f'Station code "{code}" already exists on this line. Please choose a different code.')
+
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return render_template('lines/edit_bait_station.html', line_id=line_id,
+                                   station=station, bait_station_types=BAIT_STATION_TYPES,
+                                   data=request.form)
+
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                'UPDATE bait_stations SET code = %s, station_type = %s, other_type = %s, latitude = %s, longitude = %s WHERE station_id = %s',
+                (code, station_type, other_type, latitude, longitude, station_id)
+            )
+
+        flash('Bait station updated.', 'success')
+        return redirect(url_for('line_detail', line_id=line_id))
+
+    return render_template('lines/edit_bait_station.html', line_id=line_id,
+                           station=station, bait_station_types=BAIT_STATION_TYPES,
+                           data=station)
+
+
+@app.route('/admin/lines/<int:line_id>/bait-stations/deactivate', methods=['POST'])
+@role_required('Super Admin', 'Group Coordinator')
+def deactivate_bait_station(line_id):
+    """Deactivate a bait station (soft-delete)."""
+    station_id = request.form.get('station_id', type=int)
+    delete_confirm = request.form.get('delete-confirm')
+
+    if delete_confirm != 'delete':
+        flash('You must type "delete" to confirm deactivation.', 'danger')
+        return redirect(url_for('line_detail', line_id=line_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT bs.station_id FROM bait_stations bs JOIN lines l ON l.line_id = bs.line_id WHERE bs.station_id = %s AND l.group_id = %s',
+            (station_id, session.get('group_id'))
+        )
+        if not cursor.fetchone():
+            flash('Station not found.', 'danger')
+            return redirect(url_for('line_detail', line_id=line_id))
+
+        cursor.execute(
+            'UPDATE bait_stations SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s WHERE station_id = %s',
+            (session['user_id'], station_id)
+        )
+
+    flash('Bait station deactivated.', 'success')
+    return redirect(url_for('line_detail', line_id=line_id))
+
+
+@app.route('/admin/lines/<int:line_id>/bait-stations/<int:station_id>/activate', methods=['POST'])
+@role_required('Super Admin', 'Group Coordinator')
+def activate_bait_station(line_id, station_id):
+    """Reactivate a deactivated bait station."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT bs.station_id FROM bait_stations bs JOIN lines l ON l.line_id = bs.line_id WHERE bs.station_id = %s AND l.group_id = %s',
+            (station_id, session.get('group_id'))
+        )
+        if not cursor.fetchone():
+            flash('Station not found.', 'danger')
+            return redirect(url_for('line_detail', line_id=line_id))
+
+        cursor.execute(
+            'UPDATE bait_stations SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE station_id = %s',
+            (station_id,)
+        )
+
+    flash('Bait station activated.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
 
 

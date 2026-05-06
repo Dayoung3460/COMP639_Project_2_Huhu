@@ -201,9 +201,94 @@ def observations():
     """Browse and filter all incidental observations."""
     records, filters, filter_data = get_observations()
     return render_template(
-        'observer/observations.html', 
-        records=records, 
-        selected_filters=filters, 
+        'observer/observations.html',
+        records=records,
+        selected_filters=filters,
         filter_data=filter_data
     )
+
+
+@app.route('/bait-records')
+@role_required()
+def bait_records():
+    """Browse bait station records for the active group."""
+    group_id = session['group_id']
+    user_id = session['user_id']
+    role = session.get('group_role')
+
+    filters = {
+        'line_id': request.args.get('line_id'),
+        'station_id': request.args.get('station_id'),
+        'date_from': request.args.get('date_from'),
+        'date_to': request.args.get('date_to'),
+    }
+
+    where_clauses = ['l.group_id = %s']
+    params = [group_id]
+
+    if filters['line_id']:
+        where_clauses.append('l.line_id = %s')
+        params.append(filters['line_id'])
+    if filters['station_id']:
+        where_clauses.append('bsr.station_id = %s')
+        params.append(filters['station_id'])
+    if filters['date_from']:
+        where_clauses.append('bsr.date >= %s')
+        params.append(filters['date_from'])
+    if filters['date_to']:
+        where_clauses.append('bsr.date <= %s')
+        params.append(filters['date_to'])
+
+    where_sql = ' AND '.join(where_clauses)
+
+    with db.get_cursor() as cursor:
+        cursor.execute(f"""
+            SELECT bsr.*,
+                   bs.code AS station_code, bs.station_type,
+                   l.line_id, l.name AS line_name,
+                   ru.username AS recorded_by_username,
+                   eu.username AS edited_by_username
+            FROM bait_station_records bsr
+            JOIN bait_stations bs ON bs.station_id = bsr.station_id
+            JOIN lines l ON l.line_id = bs.line_id
+            LEFT JOIN users ru ON ru.user_id = bsr.recorded_by_id
+            LEFT JOIN users eu ON eu.user_id = bsr.edited_by_id
+            WHERE {where_sql}
+            ORDER BY bsr.date DESC
+        """, params)
+        records = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT l.line_id, l.name
+            FROM lines l
+            WHERE l.group_id = %s AND l.type = 'Bait Station' AND l.is_retired = FALSE
+            ORDER BY l.name
+        """, (group_id,))
+        lines = cursor.fetchall()
+
+        station_filter_line = filters['line_id'] or None
+        if station_filter_line:
+            cursor.execute("""
+                SELECT bs.station_id, bs.code
+                FROM bait_stations bs
+                WHERE bs.line_id = %s
+                ORDER BY bs.code
+            """, (station_filter_line,))
+        else:
+            cursor.execute("""
+                SELECT bs.station_id, bs.code
+                FROM bait_stations bs
+                JOIN lines l ON l.line_id = bs.line_id
+                WHERE l.group_id = %s
+                ORDER BY bs.code
+            """, (group_id,))
+        stations = cursor.fetchall()
+
+    return render_template('observer/bait_records.html',
+                           records=records,
+                           selected_filters=filters,
+                           lines=lines,
+                           stations=stations,
+                           user_id=user_id,
+                           role=role)
 

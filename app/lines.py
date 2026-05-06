@@ -1,4 +1,4 @@
-from flask import render_template, request, url_for, flash, redirect
+from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
 from app.utils import role_required, LINE_COLOURS
 from app.helpers.dbHelper import fetch_enum_values
@@ -31,6 +31,12 @@ def lines_index():
                     WHERE t.line_id = l.line_id
                       AND t.is_retired = FALSE
                 ) AS trap_count,
+                (
+                    SELECT COUNT(*)
+                    FROM bait_stations bs
+                    WHERE bs.line_id = l.line_id
+                      AND bs.is_retired = FALSE
+                ) AS station_count,
                 (
                     SELECT COUNT(*)
                     FROM operator_lines ol
@@ -117,7 +123,8 @@ def lines_index():
                 ) AS assigned_operator_ids
             FROM lines l
             LEFT JOIN users u_ret ON u_ret.user_id = l.retired_by
-            WHERE (
+            WHERE l.group_id = %s
+              AND (
                 CASE %s
                     WHEN 'all' THEN TRUE
                     WHEN 'retired' THEN l.is_retired = TRUE
@@ -126,7 +133,7 @@ def lines_index():
             )
             ORDER BY l.is_retired ASC, l.name ASC
             """,
-            (line_filter,)
+            (session.get('group_id'), line_filter,)
         )
         lines = cursor.fetchall()
 
@@ -135,10 +142,10 @@ def lines_index():
             SELECT l.line_id, COUNT(t.is_retired) as has_active_trap
             FROM lines AS l
             LEFT JOIN traps as t ON t.line_id = l.line_id
-            WHERE t.is_retired = FALSE
+            WHERE l.group_id = %s AND t.is_retired = FALSE
             GROUP BY l.line_id
-            ;
-            """
+            """,
+            (session.get('group_id'),)
         )
         line_has_active_traps = cursor.fetchall()
         active_trap_line_ids = set(
@@ -160,13 +167,14 @@ def lines_index():
                 t.is_retired AS trap_is_retired
             FROM lines l
             LEFT JOIN traps t ON t.line_id = l.line_id
-            WHERE (
+            WHERE l.group_id = %s
+              AND (
                 CASE %s
                     WHEN 'all' THEN TRUE
                     WHEN 'retired' THEN l.is_retired = TRUE
                     ELSE l.is_retired = FALSE
                 END
-            )
+              )
               AND t.trap_id IS NOT NULL
               AND t.latitude IS NOT NULL
               AND t.longitude IS NOT NULL
@@ -179,7 +187,7 @@ def lines_index():
               )
             ORDER BY l.name ASC, t.code ASC
             """,
-            (line_filter, line_filter)
+            (session.get('group_id'), line_filter, line_filter)
         )
         trap_rows = cursor.fetchall()
 
@@ -246,7 +254,8 @@ def lines_index():
 @app.route('/lines/<int:line_id>')
 @role_required()
 def line_detail(line_id):
-    """Display a single trap line and all its traps."""
+    """Display a single line and all its traps or bait stations."""
+    from app.utils import BAIT_STATION_TYPES
     line_filter = request.args.get('filter', 'active')
     if line_filter not in ('all', 'active', 'retired'):
         line_filter = 'active'
@@ -254,7 +263,7 @@ def line_detail(line_id):
     with db.get_cursor() as cursor:
         cursor.execute(
             """
-            SELECT l.line_id, l.name, l.type, l.is_retired,
+            SELECT l.line_id, l.name, l.type, l.is_retired, l.group_id,
                    l.retired_at,
                    u_ret.username AS retired_by_username
             FROM lines l
@@ -265,33 +274,96 @@ def line_detail(line_id):
         )
         line = cursor.fetchone()
 
-        if line:
-            cursor.execute(
-                """
-                SELECT
-                    t.trap_id,
-                    t.code,
-                    t.trap_type,
-                    t.latitude,
-                    t.longitude,
-                    t.is_retired,
-                    t.retired_at,
-                    u_ret.username AS retired_by_username
-                FROM traps t
-                LEFT JOIN users u_ret ON u_ret.user_id = t.retired_by
-                WHERE t.line_id = %s
-                  AND (
-                    CASE %s
-                        WHEN 'all' THEN TRUE
-                        WHEN 'retired' THEN t.is_retired = TRUE
-                        ELSE t.is_retired = FALSE
-                    END
-                  )
-                ORDER BY t.code ASC
-                """,
-                (line_id, line_filter)
-            )
-            traps = cursor.fetchall()
+    if line and line['group_id'] != session.get('group_id'):
+        flash('Line not found in your group.', 'danger')
+        return redirect(url_for('lines_index'))
+
+    traps = []
+    bait_stations = []
+    operators = []
+    trap_markers = []
+    station_markers = []
+
+    if line:
+        with db.get_cursor() as cursor:
+            if line['type'] == 'Bait Station':
+                cursor.execute(
+                    """
+                    SELECT
+                        bs.station_id,
+                        bs.code,
+                        bs.station_type,
+                        bs.other_type,
+                        bs.latitude,
+                        bs.longitude,
+                        bs.is_retired,
+                        bs.retired_at,
+                        u_ret.username AS retired_by_username
+                    FROM bait_stations bs
+                    LEFT JOIN users u_ret ON u_ret.user_id = bs.retired_by
+                    WHERE bs.line_id = %s
+                      AND (
+                        CASE %s
+                            WHEN 'all' THEN TRUE
+                            WHEN 'retired' THEN bs.is_retired = TRUE
+                            ELSE bs.is_retired = FALSE
+                        END
+                      )
+                    ORDER BY bs.code ASC
+                    """,
+                    (line_id, line_filter)
+                )
+                bait_stations = cursor.fetchall()
+                for bs in bait_stations:
+                    if bs.get('latitude') is None or bs.get('longitude') is None:
+                        continue
+                    station_markers.append({
+                        'station_id': bs['station_id'],
+                        'code': bs['code'],
+                        'station_type': bs['station_type'],
+                        'other_type': bs['other_type'],
+                        'latitude': float(bs['latitude']),
+                        'longitude': float(bs['longitude']),
+                        'is_retired': bs['is_retired']
+                    })
+            else:
+                cursor.execute(
+                    """
+                    SELECT
+                        t.trap_id,
+                        t.code,
+                        t.trap_type,
+                        t.latitude,
+                        t.longitude,
+                        t.is_retired,
+                        t.retired_at,
+                        u_ret.username AS retired_by_username
+                    FROM traps t
+                    LEFT JOIN users u_ret ON u_ret.user_id = t.retired_by
+                    WHERE t.line_id = %s
+                      AND (
+                        CASE %s
+                            WHEN 'all' THEN TRUE
+                            WHEN 'retired' THEN t.is_retired = TRUE
+                            ELSE t.is_retired = FALSE
+                        END
+                      )
+                    ORDER BY t.code ASC
+                    """,
+                    (line_id, line_filter)
+                )
+                traps = cursor.fetchall()
+                for trap in traps:
+                    if trap.get('latitude') is None or trap.get('longitude') is None:
+                        continue
+                    trap_markers.append({
+                        'trap_id': trap['trap_id'],
+                        'code': trap['code'],
+                        'trap_type': trap['trap_type'],
+                        'latitude': float(trap['latitude']),
+                        'longitude': float(trap['longitude']),
+                        'is_retired': trap['is_retired']
+                    })
 
             cursor.execute(
                 """
@@ -308,32 +380,20 @@ def line_detail(line_id):
                 (line_id,)
             )
             operators = cursor.fetchall()
-        else:
-            traps = []
-            operators = []
-    
+
     trap_types = fetch_enum_values(db, 'trap_type_enum')
-    trap_markers = []
-    for trap in traps:
-        if trap.get('latitude') is None or trap.get('longitude') is None:
-            continue
-        trap_markers.append({
-            'trap_id': trap['trap_id'],
-            'code': trap['code'],
-            'trap_type': trap['trap_type'],
-            'latitude': float(trap['latitude']),
-            'longitude': float(trap['longitude']),
-            'is_retired': trap['is_retired']
-        })
 
     return render_template(
         'lines/detail.html',
         line=line,
         traps=traps,
+        bait_stations=bait_stations,
         operators=operators,
         line_filter=line_filter,
         trap_markers=trap_markers,
+        station_markers=station_markers,
         linz_api_key=linz_api_key,
         trap_types=trap_types,
+        bait_station_types=BAIT_STATION_TYPES,
         line_colours=LINE_COLOURS
     )

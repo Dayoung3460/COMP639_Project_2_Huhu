@@ -2,16 +2,30 @@
 {% block title %}New Line{% endblock %}
 {% block content %}
 <div class="container py-4" style="max-width:560px;">
-  <h2 class="mb-4">New Trap Line</h2>
-  
-  <form method="POST" action="{{ url_for('new_line') }}" aria-label="Create new trap line">
+  <h2 class="mb-4">New Line</h2>
+
+  <form method="POST" action="{{ url_for('new_line') }}" aria-label="Create new line">
     <div class="mb-3">
       <label for="name" class="form-label">Line Name <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">(required)</span></label>
       <input type="text" class="form-control" id="name" name="name" value="{{ name | default('') }}" required pattern=".*\S+.*" autofocus aria-required="true">
     </div>
 
+    <div class="mb-4">
+      <label class="form-label">Line Type <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">(required)</span></label>
+      <div class="d-flex gap-4">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="type" id="type-trap" value="Trap" {{ 'checked' if line_type == 'Trap' else '' }} required>
+          <label class="form-check-label" for="type-trap">Trap Line</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="type" id="type-bait" value="Bait Station" {{ 'checked' if line_type == 'Bait Station' else '' }}>
+          <label class="form-check-label" for="type-bait">Bait Station Line</label>
+        </div>
+      </div>
+    </div>
+
     <div class="d-flex flex-column flex-sm-row gap-2">
-      <button type="submit" class="btn btn-pf" aria-label="Create new trap line">Create</button>
+      <button type="submit" class="btn btn-pf" aria-label="Create new line">Create</button>
       <a href="{{ url_for('lines_index') }}" class="btn btn-pf-outline" aria-label="Cancel and go back to lines">Cancel</a>
     </div>
   </form>
@@ -20,22 +34,5 @@
 
 {% block scripts %}
   {{ super() }}
-  <script>
-    const nameInput = document.getElementById('name');
-    if (nameInput) {
-      const updateValidity = function(e) {
-        e.target.setCustomValidity(''); // Clear first to let the browser check the pattern
-        if (e.target.validity.patternMismatch) {
-          e.target.setCustomValidity('Name cannot be empty or just spaces');
-        }
-      };
-
-      // Apply the custom message immediately and force the browser to display it
-      nameInput.addEventListener('input', function(e) {
-        updateValidity(e);
-        e.target.reportValidity();
-      });
-      nameInput.addEventListener('invalid', updateValidity);
-    }
-  </script>
+  <script src="{{ url_for('static', filename='js/new-line.js') }}"></script>
 {% endblock %}
