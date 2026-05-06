@@ -3,9 +3,17 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 import os
-from app.utils import role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE, LINCOLN_NZ_CENTER
+from app.utils import (
+    role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE,
+    LINCOLN_NZ_CENTER, ACTIVE_INGREDIENTS, FORMULATIONS,
+)
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
-from app.helpers.dbHelper import fetch_all_lines, fetch_operator_lines, insert_catch_record, fetch_lookup_data, insert_observation, validate_lookup_table_values, update_catch_record
+from app.helpers.dbHelper import (
+    fetch_all_lines, fetch_operator_lines, insert_catch_record, fetch_lookup_data,
+    insert_observation, validate_lookup_table_values, update_catch_record,
+    fetch_operator_bait_lines, fetch_operator_bait_station_ids,
+    insert_bait_station_record, update_bait_station_record,
+)
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
 
@@ -263,3 +271,145 @@ def add_observation():
         
         return render_template('operator/add_observation.html', lines=lines, data={'line_id': selected_line_id}, lookup=lookup, linz_api_key=linz_api_key,
                                lat_range=LINCOLN_NZ_LAT_RANGE, lon_range=LINCOLN_NZ_LON_RANGE, map_center=LINCOLN_NZ_CENTER)
+
+
+def _validate_bait_record(data):
+    """Validate bait station record fields. Returns list of error strings."""
+    errors = []
+    if not data.get('station_id'):
+        errors.append('Bait station is required.')
+    if not data.get('date'):
+        errors.append('Date is required.')
+    if not data.get('active_ingredient'):
+        errors.append('Active ingredient is required.')
+    if not data.get('formulation'):
+        errors.append('Formulation is required.')
+    for field, label in [('concentration', 'Concentration'), ('bait_remaining', 'Bait remaining')]:
+        val = data.get(field, '')
+        if not val and val != 0:
+            errors.append(f'{label} is required.')
+        else:
+            try:
+                if float(val) < 0:
+                    errors.append(f'{label} must be 0 or greater.')
+            except (TypeError, ValueError):
+                errors.append(f'{label} must be a number.')
+    for field, label in [('bait_removed', 'Bait removed'), ('bait_added', 'Bait added')]:
+        val = data.get(field, '')
+        if val:
+            try:
+                if float(val) < 0:
+                    errors.append(f'{label} must be 0 or greater.')
+            except (TypeError, ValueError):
+                errors.append(f'{label} must be a number.')
+    return errors
+
+
+@app.route('/operator/add-bait-record', methods=['GET', 'POST'])
+@role_required('Operator')
+def add_bait_record():
+    """Record a bait station check."""
+    user_id = session['user_id']
+    group_id = session['group_id']
+    bait_lines = fetch_operator_bait_lines(db, user_id, group_id)
+    valid_station_ids = fetch_operator_bait_station_ids(db, user_id, group_id)
+
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT name FROM species ORDER BY name')
+        species_list = [r['name'] for r in cursor.fetchall()]
+
+    if request.method == 'POST':
+        errors = _validate_bait_record(request.form)
+
+        station_id = request.form.get('station_id', type=int)
+        if station_id not in valid_station_ids:
+            errors.append('You are not assigned to that bait station.')
+
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return render_template('operator/add_bait_record.html',
+                                   bait_lines=bait_lines, data=request.form,
+                                   species_list=species_list,
+                                   active_ingredients=ACTIVE_INGREDIENTS,
+                                   formulations=FORMULATIONS)
+
+        insert_bait_station_record(db, request.form, user_id)
+        flash('Bait station record added.', 'success')
+        return redirect(url_for('operator_dashboard'))
+
+    selected_station_id = request.args.get('station_id', '')
+    return render_template('operator/add_bait_record.html',
+                           bait_lines=bait_lines,
+                           data={'station_id': selected_station_id},
+                           species_list=species_list,
+                           active_ingredients=ACTIVE_INGREDIENTS,
+                           formulations=FORMULATIONS)
+
+
+@app.route('/operator/edit-bait-record/<int:record_id>', methods=['GET', 'POST'])
+@role_required('Operator', 'Group Coordinator', 'Super Admin')
+def edit_bait_record(record_id):
+    """Edit a bait station check record."""
+    user_id = session['user_id']
+    group_id = session['group_id']
+    role = session.get('group_role')
+
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            SELECT bsr.*, bs.code AS station_code, bs.line_id,
+                   l.name AS line_name, l.group_id
+            FROM bait_station_records bsr
+            JOIN bait_stations bs ON bs.station_id = bsr.station_id
+            JOIN lines l ON l.line_id = bs.line_id
+            WHERE bsr.record_id = %s
+        """, (record_id,))
+        record = cursor.fetchone()
+
+    if not record or record['group_id'] != group_id:
+        flash('Record not found.', 'danger')
+        return redirect(url_for('bait_records'))
+
+    if role == 'Operator' and record['recorded_by_id'] != user_id:
+        flash('You can only edit your own records.', 'danger')
+        return redirect(url_for('bait_records'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT name FROM species ORDER BY name')
+        species_list = [r['name'] for r in cursor.fetchall()]
+
+    if request.method == 'POST':
+        errors = _validate_bait_record(request.form)
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return render_template('operator/edit_bait_record.html',
+                                   record=record, data=request.form,
+                                   species_list=species_list,
+                                   active_ingredients=ACTIVE_INGREDIENTS,
+                                   formulations=FORMULATIONS)
+
+        update_bait_station_record(db, {**request.form, 'record_id': record_id}, user_id)
+        flash('Record updated.', 'success')
+        redirect_to = url_for('bait_records')
+        if role == 'Operator':
+            redirect_to = url_for('bait_records')
+        return redirect(redirect_to)
+
+    return render_template('operator/edit_bait_record.html',
+                           record=record,
+                           data={
+                               'station_id': str(record['station_id']),
+                               'date': record['date'],
+                               'target_species': record['target_species'] or '',
+                               'active_ingredient': record['active_ingredient'],
+                               'formulation': record['formulation'],
+                               'concentration': record['concentration'],
+                               'bait_remaining': record['bait_remaining'],
+                               'bait_removed': record['bait_removed'] or '',
+                               'bait_added': record['bait_added'] or '',
+                               'notes': record['notes'] or '',
+                           },
+                           species_list=species_list,
+                           active_ingredients=ACTIVE_INGREDIENTS,
+                           formulations=FORMULATIONS)

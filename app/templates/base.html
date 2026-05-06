@@ -215,7 +215,7 @@
           </a>
           <a href="{{ url_for('lines_index', operator=session.username) }}" class="sidebar-link">
             <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
-            <span class="link-text">My Trap Lines</span>
+            <span class="link-text">My Lines</span>
           </a>
         {% endif %}
 
@@ -223,7 +223,7 @@
         <div class="sidebar-section-label">Data</div>
         <a href="{{ url_for('lines_index') }}"
            class="sidebar-link {% if request.endpoint == 'lines_index' %}active{% endif %}">
-          <i class="bi bi-geo-alt" aria-hidden="true"></i> <span class="link-text">Trap Lines</span>
+          <i class="bi bi-geo-alt" aria-hidden="true"></i> <span class="link-text">Lines</span>
         </a>
         <a href="{{ url_for('catch_records') }}"
            class="sidebar-link {{ 'active' if request.endpoint == 'catch_records' }}">
