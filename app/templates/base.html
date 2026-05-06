@@ -261,6 +261,10 @@
                class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_lines_assign', 'coordinator_assign_operators') }}">
               <i class="bi bi-person-lines-fill" aria-hidden="true"></i> <span class="link-text">Assign Operators</span>
             </a>
+            <a href="{{ url_for('coordinator_requests') }}"
+               class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_requests' }}">
+              <i class="bi bi-person-check" aria-hidden="true"></i> <span class="link-text">Join Requests</span>
+            </a>
           {% endif %}
         {% endif %}
 

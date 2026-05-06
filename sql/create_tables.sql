@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS trap_catches            CASCADE;
 DROP TABLE IF EXISTS operator_lines          CASCADE;
 DROP TABLE IF EXISTS traps                   CASCADE;
 DROP TABLE IF EXISTS lines                   CASCADE;
+DROP TABLE IF EXISTS user_notifications      CASCADE;
 DROP TABLE IF EXISTS group_join_requests     CASCADE;
 DROP TABLE IF EXISTS group_applications      CASCADE;
 DROP TABLE IF EXISTS group_memberships       CASCADE;
@@ -167,12 +168,26 @@ CREATE TABLE group_join_requests (
     user_id      INTEGER             NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     group_id     INTEGER             NOT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
     status       request_status_enum NOT NULL DEFAULT 'pending',
+    message      TEXT                DEFAULT NULL,
     requested_at TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, group_id)
 );
 
 -- ==============================================================
--- 7. Group applications — users applying to form a new group
+-- 7. User notifications — flashed once on next login/group select
+-- ==============================================================
+
+CREATE TABLE user_notifications (
+    notification_id SERIAL PRIMARY KEY,
+    user_id         INTEGER     NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    message         TEXT        NOT NULL,
+    category        VARCHAR(20) NOT NULL DEFAULT 'info',
+    is_active       BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==============================================================
+-- 8. Group applications — users applying to form a new group
 -- ==============================================================
 
 CREATE TABLE group_applications (

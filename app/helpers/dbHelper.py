@@ -222,34 +222,6 @@ def update_user_active(db, user_id, status):
             WHERE user_id = %s
         """, (status, user_id))
 
-def insert_observation(db, data, user_id):
-    """Insert an incidental observation into the database."""
-    with db.get_cursor() as cursor:
-        cursor.execute("""
-            INSERT INTO incidental_observations (
-                date, operator_id, observation_type, notes, latitude, longitude, line_id, trap_id
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            data['date'],
-            user_id,
-            data['observation_type'],
-            data.get('notes') or None,
-            data.get('latitude') or None,
-            data.get('longitude') or None,
-            data['line_id'],  # Required field
-            data.get('trap_id') or None
-        ))
-
-def update_user_active(db, user_id, status):
-    """Update a user's account status."""
-    with db.get_cursor() as cursor:
-        cursor.execute("""
-            UPDATE users
-            SET account_status = %s
-            WHERE user_id = %s
-        """, (status, user_id))
-
 def fetch_user_info(db, user_id):
     """Fetch user info for permission checks. Role comes from group_memberships."""
     with db.get_cursor() as cursor:
@@ -268,6 +240,15 @@ def update_user_role(db, user_id, group_id, role):
             SET role = %s
             WHERE user_id = %s AND group_id = %s
         """, (role, user_id, group_id))
+
+def insert_user_role(db, user_id, group_id, role):
+    """Insert a new role for a user within a specific group."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO group_memberships (user_id, group_id, role)
+            VALUES (%s, %s, %s)
+        """, (user_id, group_id, role))
+
 def validate_lookup_table_values(db, data):
     """If the value that user selected from dropdown is not in database, return error message. This is to prevent the data inconsistency of database values."""
     with db.get_cursor() as cursor:
@@ -290,3 +271,11 @@ def validate_lookup_table_values(db, data):
                 return f"The status '{data.get('status')}' not found in database. Please select a valid status."
         
     return False # No lookup errors found
+
+def insert_notification(db, user_id, message, category='info'):
+    """Insert a notification that will be flashed to the user on next login."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO user_notifications (user_id, message, category)
+            VALUES (%s, %s, %s)
+        """, (user_id, message, category))

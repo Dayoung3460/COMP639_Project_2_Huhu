@@ -7,6 +7,27 @@ import os
 import uuid
 
 
+def _flash_pending_notifications(user_id):
+    """Flash every active notification for the user then mark them inactive."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT notification_id, message, category FROM user_notifications '
+            'WHERE user_id = %s AND is_active = TRUE ORDER BY created_at',
+            (user_id,)
+        )
+        notifications = cursor.fetchall()
+    if notifications:
+        ids = [n['notification_id'] for n in notifications]
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                'UPDATE user_notifications SET is_active = FALSE '
+                'WHERE notification_id = ANY(%s)',
+                (ids,)
+            )
+        for n in notifications:
+            flash(n['message'], n['category'])
+
+
 def _is_quick_login_enabled():
     """Return True when test quick-login UI should be shown."""
     return os.environ.get('ENABLE_QUICK_LOGIN', 'false').strip().lower() in {
@@ -136,6 +157,7 @@ def login():
 
         if len(memberships) == 0:
             # Registered but not in any group yet — go to home to join one
+            _flash_pending_notifications(user['user_id'])
             flash(f"Welcome, {user['username']}! Join a group to get started.", 'info')
             return redirect(url_for('index'))
 
@@ -144,6 +166,7 @@ def login():
             session['group_role'] = memberships[0]['role']
             session['group_name'] = memberships[0]['group_name']
             flash(f"Welcome back, {user['username']}!", 'success')
+            _flash_pending_notifications(user['user_id'])
             return redirect_by_role()
 
         # Multiple groups — let the user pick
@@ -171,6 +194,7 @@ def select_group():
         session['group_role'] = match['role']
         session['group_name'] = match['group_name']
         session.pop('pending_memberships', None)
+        _flash_pending_notifications(session['user_id'])
         return redirect_by_role()
 
     return render_template('auth/select_group.html', memberships=memberships)
