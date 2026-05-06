@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
-from app.utils import role_required, allowed_file, UPLOAD_FOLDER
+from app.utils import role_required, allowed_file, CONSERVATION_BG_FOLDER
 import os
 import uuid
 
@@ -39,34 +39,38 @@ def apply_for_conservation():
         
         # ── Handle profile photo upload ────────────────────────
         profile_photo = None
-        file = request.files.get('profile_photo')
+        file = request.files.get('group_image_input')
         if file and file.filename:
             if allowed_file(file.filename):
                 ext = file.filename.rsplit('.', 1)[1].lower()
                 filename = f"conservation_bg_{uuid.uuid4().hex[:10]}.{ext}"
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
+                os.makedirs(CONSERVATION_BG_FOLDER, exist_ok=True)
+                file.save(os.path.join(CONSERVATION_BG_FOLDER, filename))
                 profile_photo = filename
             else:
                 flash('Profile photo must be a PNG, JPG, JPEG, or GIF.', 'danger')
                 return redirect(url_for('apply_for_conservation'))
 
         with db.get_cursor() as cursor:
-            # cursor.execute(
-            #     """
-            #     INSERT INTO group_applications (user_id, proposed_name, description, location, justification)
-            #     VALUES (%s, %s, %s, %s, %s)
-            #     """,
-            #     (user_id, proposed_name, description, location, justification)
-            # )
-            cursor.execute(
+            if profile_photo:
+                insert_query = """
+                INSERT INTO group_applications (user_id, proposed_name, description, location, justification, tile_image)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """
-                INSERT INTO group_applications (user_id, proposed_name)
-                VALUES (%s, %s)
-                """,
-                (user_id, proposed_name)
+                tuple_values = (user_id, proposed_name, description, location, justification, profile_photo)
+            else:
+                insert_query = """
+                INSERT INTO group_applications (user_id, proposed_name, description, location, justification)
+                VALUES (%s, %s, %s, %s, %s)
+                """
+                tuple_values = (user_id, proposed_name, description, location, justification)
+
+            cursor.execute(
+                insert_query,
+                tuple_values
             )
+            flash('Your conservation application has been submitted successfully!', 'success')
             
-            return redirect(url_for('observer_dashboard'))
+            return redirect(url_for('apply_for_conservation'))
 
     return render_template('conservation/apply_conservation.html')
