@@ -214,7 +214,10 @@
         </div>
         <div class="modal-body">
           <p>Reject the request from <strong id="reject-user-name"></strong>?</p>
-          <p class="text-muted lines-modal-note">They will be notified that their request was not approved.</p>
+          <label for="reject-reason" class="form-label">Reason <span class="text-muted">(optional)</span></label>
+          <textarea id="reject-reason" name="reason" class="form-control" rows="3"
+                    placeholder="e.g. We are not accepting new members at this time."></textarea>
+          <p class="text-muted lines-modal-note mt-2">They will be notified that their request was not approved.</p>
         </div>
         <div class="modal-footer">
           {{ pf_button('Cancel',     variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
@@ -301,6 +304,7 @@
       document.getElementById('reject-user-name').textContent = btn.dataset.userName;
       document.getElementById('reject-form').action =
         '/coordinator/requests/' + btn.dataset.requestId + '/decide';
+      document.getElementById('reject-reason').value = '';
     });
 
     window.addEventListener('pageshow', function (e) {

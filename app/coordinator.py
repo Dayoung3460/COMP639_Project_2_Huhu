@@ -335,9 +335,11 @@ def coordinator_decide_request(request_id):
                     session['user_id'], request_id, applicant_id)
         flash('Request approved — user added as Observer.', 'success')
     else:
-        insert_notification(db, applicant_id,
-                            f'Your request to join {group_name} was not approved.',
-                            'warning')
+        reason = request.form.get('reason', '').strip()
+        message = f'Your request to join {group_name} was not approved.'
+        if reason:
+            message += f' Reason: {reason}'
+        insert_notification(db, applicant_id, message, 'warning')
         logger.info('Coordinator %s rejected join request %d (user %d)',
                     session['user_id'], request_id, applicant_id)
         flash('Request rejected.', 'info')
