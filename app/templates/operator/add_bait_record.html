@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_link_button %}
+{% block title %}Add Bait Station Record{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:640px;">
+  {{ pf_link_button(url_for('bait_records'), 'Back to Records', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
+  <h2 class="mb-4">Add Bait Station Record</h2>
+
+  <form method="POST" action="{{ url_for('add_bait_record') }}" aria-label="Add bait station record">
+    <div class="mb-3">
+      <label for="line_id" class="form-label">Line <span class="text-danger" aria-hidden="true">*</span></label>
+      <select class="form-select" id="line_id" name="line_id" required>
+        <option value="">Select line…</option>
+        {% for line in bait_lines %}
+          <option value="{{ line.line_id }}" {{ 'selected' if data.get('line_id')|string == line.line_id|string }}>{{ line.line_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="station_id" class="form-label">Station <span class="text-danger" aria-hidden="true">*</span></label>
+      <select class="form-select" id="station_id" name="station_id" required>
+        <option value="">Select station…</option>
+        {% for line in bait_lines %}
+          {% if line.stations %}
+            <optgroup label="{{ line.line_name }}">
+              {% for st in line.stations %}
+                <option value="{{ st.station_id }}"
+                        data-line="{{ line.line_id }}"
+                        {{ 'selected' if data.get('station_id')|string == st.station_id|string }}>
+                  {{ st.code }} ({{ st.station_type }})
+                </option>
+              {% endfor %}
+            </optgroup>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="date" class="form-label">Date <span class="text-danger" aria-hidden="true">*</span></label>
+      <input type="datetime-local" class="form-control" id="date" name="date"
+             value="{{ data.get('date', '') }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="target_species" class="form-label">Target Species</label>
+      <select class="form-select" id="target_species" name="target_species">
+        <option value="">None / not recorded</option>
+        {% for sp in species_list %}
+          <option value="{{ sp }}" {{ 'selected' if data.get('target_species') == sp }}>{{ sp }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6">
+        <label for="active_ingredient" class="form-label">Active Ingredient <span class="text-danger" aria-hidden="true">*</span></label>
+        <select class="form-select" id="active_ingredient" name="active_ingredient" required>
+          <option value="">Select…</option>
+          {% for ai in active_ingredients %}
+            <option value="{{ ai }}" {{ 'selected' if data.get('active_ingredient') == ai }}>{{ ai }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-6">
+        <label for="formulation" class="form-label">Formulation <span class="text-danger" aria-hidden="true">*</span></label>
+        <select class="form-select" id="formulation" name="formulation" required>
+          <option value="">Select…</option>
+          {% for f in formulations %}
+            <option value="{{ f }}" {{ 'selected' if data.get('formulation') == f }}>{{ f }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-sm-4">
+        <label for="concentration" class="form-label">Concentration (%) <span class="text-danger" aria-hidden="true">*</span></label>
+        <input type="number" class="form-control" id="concentration" name="concentration"
+               value="{{ data.get('concentration', '') }}" min="0" max="100" step="0.01" required>
+      </div>
+      <div class="col-sm-4">
+        <label for="bait_remaining" class="form-label">Bait Remaining (kg) <span class="text-danger" aria-hidden="true">*</span></label>
+        <input type="number" class="form-control" id="bait_remaining" name="bait_remaining"
+               value="{{ data.get('bait_remaining', '') }}" min="0" step="0.001" required>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-sm-4">
+        <label for="bait_removed" class="form-label">Bait Removed (kg)</label>
+        <input type="number" class="form-control" id="bait_removed" name="bait_removed"
+               value="{{ data.get('bait_removed', '') }}" min="0" step="0.001">
+      </div>
+      <div class="col-sm-4">
+        <label for="bait_added" class="form-label">Bait Added (kg)</label>
+        <input type="number" class="form-control" id="bait_added" name="bait_added"
+               value="{{ data.get('bait_added', '') }}" min="0" step="0.001">
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label for="notes" class="form-label">Notes</label>
+      <textarea class="form-control" id="notes" name="notes" rows="3">{{ data.get('notes', '') }}</textarea>
+    </div>
+
+    <div class="d-flex flex-column flex-sm-row gap-2">
+      <button type="submit" class="btn btn-pf">Save Record</button>
+      {{ pf_link_button(url_for('bait_records'), 'Cancel', variant='btn-pf-outline') }}
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/bait-record-form.js') }}"></script>
+{% endblock %}

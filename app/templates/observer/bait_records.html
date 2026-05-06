@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel, pf_trap_status_badge %}
+{% block title %}Bait Station Records{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Bait Station Records</h2>
+    {% if role == 'Operator' %}
+      {{ pf_link_button(url_for('add_bait_record'), 'Add Record', variant='btn-sm-pf', icon='bi-plus-lg') }}
+    {% endif %}
+  </div>
+
+  <div class="panel mb-3">
+    <div class="panel-body py-2 px-3">
+      <form method="GET" action="{{ url_for('bait_records') }}" class="row g-2 align-items-center flex-wrap">
+        <div class="col-auto">
+          <select name="line_id" class="form-select form-select-sm" aria-label="Filter by line" onchange="this.form.submit()">
+            <option value="">All Lines</option>
+            {% for line in lines %}
+              <option value="{{ line.line_id }}" {{ 'selected' if selected_filters.line_id|string == line.line_id|string }}>{{ line.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <select name="station_id" class="form-select form-select-sm" aria-label="Filter by station" onchange="this.form.submit()">
+            <option value="">All Stations</option>
+            {% for st in stations %}
+              <option value="{{ st.station_id }}" {{ 'selected' if selected_filters.station_id|string == st.station_id|string }}>{{ st.code }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto d-flex align-items-center gap-1">
+          <label class="form-label mb-0 small" for="date_from">From</label>
+          <input type="date" id="date_from" name="date_from" class="form-control form-control-sm" value="{{ selected_filters.date_from or '' }}">
+        </div>
+        <div class="col-auto d-flex align-items-center gap-1">
+          <label class="form-label mb-0 small" for="date_to">To</label>
+          <input type="date" id="date_to" name="date_to" class="form-control form-control-sm" value="{{ selected_filters.date_to or '' }}">
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-sm-pf">Filter</button>
+        </div>
+        {% if selected_filters.line_id or selected_filters.station_id or selected_filters.date_from or selected_filters.date_to %}
+          <div class="col-auto">
+            {{ pf_link_button(url_for('bait_records'), 'Clear', variant='btn-sm-outline') }}
+          </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {% call pf_panel(title='Records', meta='') %}
+    <div class="pf-table-responsive">
+    <table class="pf-table" aria-label="Bait station records">
+      <thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Station</th>
+          <th scope="col" class="d-none d-md-table-cell">Line</th>
+          <th scope="col" class="d-none d-lg-table-cell">Ingredient</th>
+          <th scope="col" class="d-none d-lg-table-cell">Formulation</th>
+          <th scope="col" class="d-none d-md-table-cell">Conc. (%)</th>
+          <th scope="col">Remaining (kg)</th>
+          <th scope="col" class="d-none d-lg-table-cell">Recorded By</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in records %}
+          <tr>
+            <td>{{ rec.date.strftime('%d %b %Y %H:%M') if rec.date else '-' }}</td>
+            <td><strong>{{ rec.station_code }}</strong></td>
+            <td class="d-none d-md-table-cell">{{ rec.line_name }}</td>
+            <td class="d-none d-lg-table-cell">{{ rec.active_ingredient }}</td>
+            <td class="d-none d-lg-table-cell">{{ rec.formulation }}</td>
+            <td class="d-none d-md-table-cell">{{ rec.concentration }}</td>
+            <td>{{ rec.bait_remaining }}</td>
+            <td class="d-none d-lg-table-cell">
+              {{ '@' ~ rec.recorded_by_username if rec.recorded_by_username else '-' }}
+              {% if rec.edited_at %}
+                <small class="text-muted d-block">Edited {{ rec.edited_at.strftime('%d %b %Y') }}{% if rec.edited_by_username %} by @{{ rec.edited_by_username }}{% endif %}</small>
+              {% endif %}
+            </td>
+            <td>
+              {% if role in ('Group Coordinator', 'Super Admin') or (role == 'Operator' and rec.recorded_by_id == user_id) %}
+                {{ pf_link_button(url_for('edit_bait_record', record_id=rec.record_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit record ' ~ rec.record_id}) }}
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-3">No bait station records found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endcall %}
+</div>
+{% endblock %}
