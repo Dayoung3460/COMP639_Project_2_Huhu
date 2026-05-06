@@ -15,21 +15,33 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Handle trap retirement modal
+  // Handle trap retirement modal (trap lines only)
   const retireTrapModal = document.getElementById('retire-trap-modal')
-  retireTrapModal.addEventListener('show.bs.modal', function(event) {
-    const button = event.relatedTarget
-    const trapId = button.getAttribute('data-trap-id')
-    const trapCode = button.getAttribute('data-trap-code')
+  if (retireTrapModal) {
+    retireTrapModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget
+      document.getElementById('modal-trap-id').value = button.getAttribute('data-trap-id')
+      document.getElementById('modal-trap-code').textContent = button.getAttribute('data-trap-code')
+    })
+  }
 
-    document.getElementById('modal-trap-id').value = trapId
-    document.getElementById('modal-trap-code').textContent = trapCode
-  })
+  // Handle bait station deactivation modal (bait station lines only)
+  const retireStationModal = document.getElementById('retire-station-modal')
+  if (retireStationModal) {
+    retireStationModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget
+      document.getElementById('modal-station-id').value = button.getAttribute('data-station-id')
+      document.getElementById('modal-station-code').textContent = button.getAttribute('data-station-code')
+    })
+  }
 
   const mapElement = document.getElementById('line-map');
   if (!mapElement || typeof L === 'undefined') return;
 
-  const markersElement = document.getElementById('trap-markers-data');
+  const lineType = mapElement.dataset.lineType || 'Trap';
+  const isBaitStation = lineType === 'Bait Station';
+
+  const markersElement = document.getElementById(isBaitStation ? 'station-markers-data' : 'trap-markers-data');
   const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
   const linzApiKey = mapElement.dataset.linzApiKey;
   const lineIsRetired = mapElement.dataset.lineIsRetired === 'true';
@@ -41,21 +53,26 @@ document.addEventListener('DOMContentLoaded', function () {
   if (markers.length > 0) {
     const latlngs = [];
 
-    markers.forEach(function (trap) {
-      const latLng = [trap.latitude, trap.longitude];
-      const isRetired = Boolean(trap.is_retired);
+    markers.forEach(function (item) {
+      const latLng = [item.latitude, item.longitude];
+      const isRetired = Boolean(item.is_retired);
 
       const marker = L.circleMarker(latLng, getTrapMarkerStyle(isRetired, lineColor)).addTo(map);
 
       const statusBadge = statusBadgeHtml(isRetired);
+      let typeLabel = '';
+      if (isBaitStation) {
+        typeLabel = item.station_type === 'Other' ? (item.other_type || 'Other') : (item.station_type || '');
+      } else {
+        typeLabel = item.trap_type || '';
+      }
 
-      marker.bindPopup(`<strong>${trap.code}</strong><br>${trap.trap_type}<br>${statusBadge}`);
+      marker.bindPopup(`<strong>${item.code}</strong><br>${typeLabel}<br>${statusBadge}`);
       latlngs.push(latLng);
     });
 
     if (latlngs.length >= 2) {
       const orderedLatLngs = orderPointsByNearestNeighbor(latlngs);
-
       L.polyline(orderedLatLngs, getLinePolylineStyle(lineIsRetired, lineColor)).addTo(map);
     }
 
@@ -70,6 +87,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // ── Inline Add Trap Functionality ──────────────────────────────────────────
   let isAddingTrap = false;
   let tempMarker = null;
+  let isAddingStation = false;
+  let tempStationMarker = null;
 
   const addTrapBtn = document.getElementById('inline-add-trap-btn');
   const trapsListContainer = document.getElementById('traps-list-container');
@@ -207,32 +226,234 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // ── Inline Add Station Functionality ───────────────────────────────────────
+  const addStationBtn = document.getElementById('inline-add-station-btn');
+  const stationsListContainer = document.getElementById('stations-list-container');
+
+  if (addStationBtn && stationsListContainer) {
+    addStationBtn.addEventListener('click', function () {
+      if (isAddingStation) return;
+      isAddingStation = true;
+
+      const newStationUrl = addStationBtn.dataset.newStationUrl || '#';
+      let stationTypes = [];
+      if (addStationBtn.dataset.baitStationTypes) {
+        try { stationTypes = JSON.parse(addStationBtn.dataset.baitStationTypes); } catch (e) {}
+      }
+
+      const newRow = document.createElement('div');
+      newRow.id = 'new-station-form-container';
+      newRow.className = 'panel mb-3 lines-inline-form-panel lines-inline-form-flash';
+      newRow.setAttribute('role', 'region');
+      newRow.setAttribute('aria-labelledby', 'lines-inline-station-form-title');
+      newRow.innerHTML = `
+        <div class="panel-body lines-inline-form-body">
+          <div class="lines-inline-form-title" id="lines-inline-station-form-title">Add Station</div>
+          <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Click on the map above to set coordinates, or type them below</div>
+          <div id="inline-station-coord-announce" class="visually-hidden" aria-live="polite"></div>
+          <form id="new-station-inline-form" method="POST" action="${newStationUrl}" aria-label="Add new bait station">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-2">
+                <label for="inline-station-code" class="form-label small mb-1">Code</label>
+                <input type="text" name="code" id="inline-station-code" class="form-control form-control-sm" required placeholder="e.g. BS-01" aria-required="true">
+              </div>
+              <div class="col-12 col-md-2">
+                <label for="inline-station-type" class="form-label small mb-1">Type</label>
+                <select name="station_type" id="inline-station-type" class="form-select form-select-sm" required aria-required="true">
+                  <option value="">Select...</option>
+                  ${stationTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
+                </select>
+              </div>
+              <div class="col-12 col-md-2 d-none" id="inline-station-other-group">
+                <label for="inline-station-other-type" class="form-label small mb-1">Specify Type</label>
+                <input type="text" name="other_type" id="inline-station-other-type" class="form-control form-control-sm" placeholder="e.g. Custom Type">
+              </div>
+              <div class="col-12 col-md-2">
+                <label for="inline-station-lat" class="form-label small mb-1">Latitude</label>
+                <input type="text" name="latitude" id="inline-station-lat" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. -43.640914" aria-required="true">
+              </div>
+              <div class="col-12 col-md-2">
+                <label for="inline-station-lng" class="form-label small mb-1">Longitude</label>
+                <input type="text" name="longitude" id="inline-station-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required placeholder="e.g. 172.475682" aria-required="true">
+              </div>
+              <div class="col-6 col-md-auto ms-md-auto mt-3 mt-md-0">
+                <button type="button" class="btn btn-sm-outline w-100" id="cancel-add-station" aria-label="Cancel adding station">Cancel</button>
+              </div>
+              <div class="col-6 col-md-auto mt-3 mt-md-0">
+                <button type="submit" class="btn btn-sm-pf w-100" aria-label="Save new station">Save</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      `;
+
+      stationsListContainer.prepend(newRow);
+
+      // Toggle "Other type" field visibility
+      const typeSelect = document.getElementById('inline-station-type');
+      const otherGroup = document.getElementById('inline-station-other-group');
+      const otherInput = document.getElementById('inline-station-other-type');
+      function toggleOtherType() {
+        const isOther = typeSelect.value === 'Other';
+        otherGroup.classList.toggle('d-none', !isOther);
+        if (otherInput) otherInput.required = isOther;
+      }
+      typeSelect.addEventListener('change', toggleOtherType);
+
+      if (coordinateInputUtils) {
+        coordinateInputUtils.attachCoordinateInputGuards([
+          document.getElementById('inline-station-lat'),
+          document.getElementById('inline-station-lng')
+        ]);
+      }
+
+      setTimeout(() => {
+        newRow.classList.remove('lines-inline-form-flash');
+      }, 500);
+
+      const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
+      const scrollTarget = newRow.getBoundingClientRect().top + window.scrollY - navbarH - 8;
+      window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+
+      const firstInput = newRow.querySelector('input, select, button, a[href]');
+      if (firstInput) firstInput.focus({ preventScroll: true });
+
+      const focusTrapHandler = function (e) {
+        const focusable = Array.from(newRow.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+          } else {
+            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        }
+
+        if (e.key === 'Escape') { cancelAddStation(); }
+      };
+      document.addEventListener('keydown', focusTrapHandler);
+
+      function cancelAddStation() {
+        document.removeEventListener('keydown', focusTrapHandler);
+        newRow.remove();
+        isAddingStation = false;
+        if (tempStationMarker) {
+          map.removeLayer(tempStationMarker);
+          tempStationMarker = null;
+        }
+        addStationBtn.focus();
+      }
+
+      document.getElementById('cancel-add-station').addEventListener('click', cancelAddStation);
+    });
+  }
+
   // ── Map Click Handler for Coordinates ──────────────────────────────────────
   map.on('click', function (e) {
-    if (!isAddingTrap) return; // Only capture clicks if the form is open
+    if (!isAddingTrap && !isAddingStation) return;
 
     const lat = e.latlng.lat.toFixed(6);
     const lng = e.latlng.lng.toFixed(6);
 
-    // Populate the form fields
-    const latInput = document.getElementById('inline-lat');
-    const lngInput = document.getElementById('inline-lng');
-    if (latInput) latInput.value = lat;
-    if (lngInput) lngInput.value = lng;
+    if (isAddingTrap) {
+      const latInput = document.getElementById('inline-lat');
+      const lngInput = document.getElementById('inline-lng');
+      if (latInput) latInput.value = lat;
+      if (lngInput) lngInput.value = lng;
 
-    // Announce coordinate update to screen readers
-    const announce = document.getElementById('inline-coord-announce');
-    if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
+      const announce = document.getElementById('inline-coord-announce');
+      if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
 
-    // Update the temporary map marker
-    if (tempMarker) map.removeLayer(tempMarker);
-    tempMarker = L.marker([lat, lng]).addTo(map)
-      .bindPopup(`<strong>New Trap Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
-      .openPopup();
+      if (tempMarker) map.removeLayer(tempMarker);
+      tempMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<strong>New Trap Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
+        .openPopup();
+    } else {
+      const latInput = document.getElementById('inline-station-lat');
+      const lngInput = document.getElementById('inline-station-lng');
+      if (latInput) latInput.value = lat;
+      if (lngInput) lngInput.value = lng;
+
+      const announce = document.getElementById('inline-station-coord-announce');
+      if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
+
+      if (tempStationMarker) map.removeLayer(tempStationMarker);
+      tempStationMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<strong>New Station Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
+        .openPopup();
+    }
   });
 
-  // ── Auto-open Add Trap form if redirected back with errors ─────────────────
+  // ── Auto-open Add Station form if redirected back with errors ──────────────
   const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('add_station') === '1' && addStationBtn) {
+    addStationBtn.click();
+
+    const errorMsg = urlParams.get('error');
+    if (errorMsg) {
+      const formContainer = document.getElementById('new-station-form-container');
+      if (formContainer) {
+        const cardBody = formContainer.querySelector('.panel-body');
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'notice amber lines-inline-form-error';
+        alertDiv.setAttribute('role', 'alert');
+
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-exclamation-triangle-fill';
+        const message = document.createElement('span');
+        message.textContent = errorMsg;
+        alertDiv.appendChild(icon);
+        alertDiv.appendChild(message);
+
+        cardBody.insertBefore(alertDiv, cardBody.querySelector('form'));
+
+        setTimeout(() => {
+          window.scrollBy({ top: alertDiv.offsetHeight, behavior: 'smooth' });
+        }, 300);
+      }
+    }
+
+    const codeInput = document.getElementById('inline-station-code');
+    const typeSelect = document.getElementById('inline-station-type');
+    const otherInput = document.getElementById('inline-station-other-type');
+    const otherGroup = document.getElementById('inline-station-other-group');
+    const latInput = document.getElementById('inline-station-lat');
+    const lngInput = document.getElementById('inline-station-lng');
+
+    if (codeInput && urlParams.get('code')) codeInput.value = urlParams.get('code');
+    if (typeSelect && urlParams.get('station_type')) {
+      typeSelect.value = urlParams.get('station_type');
+      if (typeSelect.value === 'Other' && otherGroup) {
+        otherGroup.classList.remove('d-none');
+        if (otherInput) otherInput.required = true;
+      }
+    }
+    if (otherInput && urlParams.get('other_type')) otherInput.value = urlParams.get('other_type');
+    if (latInput && urlParams.get('latitude')) latInput.value = urlParams.get('latitude');
+    if (lngInput && urlParams.get('longitude')) lngInput.value = urlParams.get('longitude');
+
+    if (coordinateInputUtils) {
+      if (latInput) latInput.value = coordinateInputUtils.sanitizeCoordinateValue(latInput.value);
+      if (lngInput) lngInput.value = coordinateInputUtils.sanitizeCoordinateValue(lngInput.value);
+    }
+
+    if (latInput && latInput.value && lngInput && lngInput.value) {
+      const lat = parseFloat(latInput.value);
+      const lng = parseFloat(lngInput.value);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        tempStationMarker = L.marker([lat, lng]).addTo(map)
+          .bindPopup(`<strong>New Station Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
+          .openPopup();
+      }
+    }
+  }
+
+  // ── Auto-open Add Trap form if redirected back with errors ─────────────────
   if (urlParams.get('add_trap') === '1' && addTrapBtn) {
     addTrapBtn.click();
 
@@ -288,5 +509,23 @@ document.addEventListener('DOMContentLoaded', function () {
           .openPopup();
       }
     }
+  }
+});
+
+// Safari BFCache: modals can get stuck open with backdrop when navigating back
+window.addEventListener('pageshow', function (event) {
+  if (event.persisted) {
+    ['retire-trap-modal', 'retire-station-modal'].forEach(function (id) {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+      }
+    });
+    document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+    window.location.reload();
   }
 });

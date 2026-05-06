@@ -21,22 +21,36 @@
       </div>
       <div class="d-flex gap-2 align-items-center lines-page-header__actions">
         {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') and not line.is_retired %}
-          {{ pf_button(
-            'Add Trap',
-            variant='btn-sm-pf',
-            icon='bi-plus-lg',
-            attrs={
-              'id': 'inline-add-trap-btn',
-              'data-trap-types': trap_types | tojson | forceescape,
-              'data-new-trap-url': url_for('new_trap', line_id=line.line_id),
-              'aria-label': 'Add new trap to ' ~ line.name
-            }
-          ) }}
+          {% if line.type == 'Bait Station' %}
+            {{ pf_button(
+              'Add Station',
+              variant='btn-sm-pf',
+              icon='bi-plus-lg',
+              attrs={
+                'id': 'inline-add-station-btn',
+                'data-bait-station-types': bait_station_types | tojson | forceescape,
+                'data-new-station-url': url_for('new_bait_station', line_id=line.line_id),
+                'aria-label': 'Add new bait station to ' ~ line.name
+              }
+            ) }}
+          {% else %}
+            {{ pf_button(
+              'Add Trap',
+              variant='btn-sm-pf',
+              icon='bi-plus-lg',
+              attrs={
+                'id': 'inline-add-trap-btn',
+                'data-trap-types': trap_types | tojson | forceescape,
+                'data-new-trap-url': url_for('new_trap', line_id=line.line_id),
+                'aria-label': 'Add new trap to ' ~ line.name
+              }
+            ) }}
+          {% endif %}
           {% if session.get('group_role') == 'Group Coordinator' %}
-              {{ pf_link_button(url_for('coordinator_assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
-            {% else %}
-              {{ pf_link_button(url_for('assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
-            {% endif %}
+            {{ pf_link_button(url_for('coordinator_assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
+          {% else %}
+            {{ pf_link_button(url_for('assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
+          {% endif %}
         {% endif %}
       </div>
     </div>
@@ -73,107 +87,201 @@
         </select>
       </div>
     {% endset %}
-    {% call pf_panel(title='Trap Map', meta='', actions_html=map_filter_actions, panel_class='mb-4') %}
+    {% call pf_panel(title=('Bait Station Map' if line.type == 'Bait Station' else 'Trap Map'), meta='', actions_html=map_filter_actions, panel_class='mb-4') %}
         <div id="line-map"
              class="line-map-canvas"
              data-line-id="{{ line.line_id }}"
              data-linz-api-key="{{ linz_api_key }}"
-             data-line-is-retired="{{ 'true' if line.is_retired else 'false' }}"></div>
-        <script id="trap-markers-data" type="application/json">{{ trap_markers|tojson }}</script>
+             data-line-is-retired="{{ 'true' if line.is_retired else 'false' }}"
+             data-line-type="{{ line.type }}"></div>
+        {% if line.type == 'Bait Station' %}
+          <script id="station-markers-data" type="application/json">{{ station_markers|tojson }}</script>
+        {% else %}
+          <script id="trap-markers-data" type="application/json">{{ trap_markers|tojson }}</script>
+        {% endif %}
         <p class="text-muted small mb-0 mt-2">
           Basemap tiles by LINZ Basemaps.
         </p>
     {% endcall %}
 
-    <div id="traps-list-container">
-      {% call pf_panel(title='Traps On This Line', meta='', panel_class='mb-4') %}
-        <div class="pf-table-responsive">
-        <table class="pf-table" aria-label="Traps on this line">
-          <thead>
-            <tr>
-              <th scope="col">Code</th>
-              <th scope="col">Type</th>
-              <th scope="col" class="d-none d-md-table-cell">Latitude</th>
-              <th scope="col" class="d-none d-md-table-cell">Longitude</th>
-              <th scope="col">Status</th>
-              <th scope="col" class="d-none d-md-table-cell">Retired Date</th>
-              <th scope="col" class="d-none d-md-table-cell">Retired By</th>
-              {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
-                <th scope="col">Actions</th>
-              {% endif %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for trap in traps %}
+    {% if line.type == 'Bait Station' %}
+      <div id="stations-list-container">
+        {% call pf_panel(title='Bait Stations On This Line', meta='', panel_class='mb-4') %}
+          <div class="pf-table-responsive">
+          <table class="pf-table" aria-label="Bait stations on this line">
+            <thead>
               <tr>
-                <td><strong>{{ trap.code }}</strong></td>
-                <td>{{ trap.trap_type }}</td>
-                <td class="d-none d-md-table-cell">{{ trap.latitude }}</td>
-                <td class="d-none d-md-table-cell">{{ trap.longitude }}</td>
-                <td>{{ pf_trap_status_badge(trap.is_retired) }}</td>
-                <td class="d-none d-md-table-cell">{{ trap.retired_at.strftime('%d %b %Y %H:%M') if trap.retired_at else '-' }}</td>
-                <td class="d-none d-md-table-cell">{{ '@' ~ trap.retired_by_username if trap.retired_by_username else '-' }}</td>
-                {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+                <th scope="col">Code</th>
+                <th scope="col">Type</th>
+                <th scope="col" class="d-none d-md-table-cell">Latitude</th>
+                <th scope="col" class="d-none d-md-table-cell">Longitude</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="d-none d-md-table-cell">Retired Date</th>
+                <th scope="col" class="d-none d-md-table-cell">Retired By</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for bs in bait_stations %}
+                <tr>
+                  <td><strong>{{ bs.code }}</strong></td>
+                  <td>{{ bs.other_type if bs.station_type == 'Other' else bs.station_type }}</td>
+                  <td class="d-none d-md-table-cell">{{ bs.latitude }}</td>
+                  <td class="d-none d-md-table-cell">{{ bs.longitude }}</td>
+                  <td>{{ pf_trap_status_badge(bs.is_retired) }}</td>
+                  <td class="d-none d-md-table-cell">{{ bs.retired_at.strftime('%d %b %Y %H:%M') if bs.retired_at else '-' }}</td>
+                  <td class="d-none d-md-table-cell">{{ '@' ~ bs.retired_by_username if bs.retired_by_username else '-' }}</td>
                   <td class="lines-table-actions">
-                    {% if not trap.is_retired %}
-                      {{ pf_link_button(url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit trap ' ~ trap.code}) }}
-                      {{ pf_button(
-                        'Retire',
-                        variant='btn-sm-danger',
-                        attrs={
-                          'aria-label': 'Retire trap ' ~ trap.code,
-                          'data-bs-toggle': 'modal',
-                          'data-bs-target': '#retire-trap-modal',
-                          'data-trap-id': trap.trap_id,
-                          'data-trap-code': trap.code,
-                        }
-                      ) }}
+                    {% if session.get('group_role') == 'Operator' and not bs.is_retired %}
+                      {{ pf_link_button(url_for('add_bait_record', station_id=bs.station_id), 'Add Record', variant='btn-sm-pf', icon='bi-plus-lg', attrs={'aria-label': 'Add bait record for ' ~ bs.code}) }}
+                    {% elif session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+                      {% if not bs.is_retired %}
+                        {{ pf_link_button(url_for('edit_bait_station', line_id=line.line_id, station_id=bs.station_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit station ' ~ bs.code}) }}
+                        {{ pf_button(
+                          'Deactivate',
+                          variant='btn-sm-danger',
+                          attrs={
+                            'aria-label': 'Deactivate station ' ~ bs.code,
+                            'data-bs-toggle': 'modal',
+                            'data-bs-target': '#retire-station-modal',
+                            'data-station-id': bs.station_id,
+                            'data-station-code': bs.code,
+                          }
+                        ) }}
+                      {% else %}
+                        <form method="POST" action="{{ url_for('activate_bait_station', line_id=line.line_id, station_id=bs.station_id) }}" class="d-inline">
+                          {{ pf_button('Activate', variant='btn-sm-outline', type='submit', attrs={'aria-label': 'Activate station ' ~ bs.code}) }}
+                        </form>
+                      {% endif %}
                     {% endif %}
                   </td>
-                {% endif %}
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="{{ 8 if session.get('group_role') in ('Super Admin', 'Group Coordinator') else 7 }}" class="text-center text-muted py-3">
-                  No traps on this line yet.
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        </div>
-      {% endcall %}
-    </div>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="8" class="text-center text-muted py-3">
+                    No bait stations on this line yet.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          </div>
+        {% endcall %}
+      </div>
 
-    <div class="modal fade pop-up-modal" id="retire-trap-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="retire-trap-modal-title">
-      <div class="modal-dialog lines-modal-dialog">
-        <form method="POST" action="{{ url_for('retire_trap', line_id=line.line_id) }}" autocomplete="off">
-          <input type="hidden" name="trap_id" id="modal-trap-id" value="" />
-
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="retire-trap-modal-title">Retire trap</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <div class="modal-body">
-              <p>Are you sure you want to retire trap <strong id="modal-trap-code"></strong>?</p>
-              <p class="text-muted lines-modal-note">This trap will be marked as Retired.</p>
-
-              <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
-                <label for="retire-trap-confirm" class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</label>
-                <input type="text" id="retire-trap-confirm" name="delete-confirm" class="w-100 form-control" required />
+      <div class="modal fade pop-up-modal" id="retire-station-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="retire-station-modal-title">
+        <div class="modal-dialog lines-modal-dialog">
+          <form method="POST" action="{{ url_for('deactivate_bait_station', line_id=line.line_id) }}" autocomplete="off">
+            <input type="hidden" name="station_id" id="modal-station-id" value="" />
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="retire-station-modal-title">Deactivate bait station</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Are you sure you want to deactivate station <strong id="modal-station-code"></strong>?</p>
+                <p class="text-muted lines-modal-note">Existing records will remain visible but cannot be edited.</p>
+                <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+                  <label for="retire-station-confirm" class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</label>
+                  <input type="text" id="retire-station-confirm" name="delete-confirm" class="w-100 form-control" required />
+                </div>
+              </div>
+              <div class="modal-footer">
+                {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel deactivation'}) }}
+                {{ pf_button('Yes, deactivate', variant='btn-sm-danger', type='submit', attrs={'aria-label': 'Confirm deactivation'}) }}
               </div>
             </div>
-
-            <div class="modal-footer">
-              {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel retirement'}) }}
-              {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit', attrs={'aria-label': 'Confirm retirement'}) }}
-            </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+
+    {% else %}
+      <div id="traps-list-container">
+        {% call pf_panel(title='Traps On This Line', meta='', panel_class='mb-4') %}
+          <div class="pf-table-responsive">
+          <table class="pf-table" aria-label="Traps on this line">
+            <thead>
+              <tr>
+                <th scope="col">Code</th>
+                <th scope="col">Type</th>
+                <th scope="col" class="d-none d-md-table-cell">Latitude</th>
+                <th scope="col" class="d-none d-md-table-cell">Longitude</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="d-none d-md-table-cell">Retired Date</th>
+                <th scope="col" class="d-none d-md-table-cell">Retired By</th>
+                {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+                  <th scope="col">Actions</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for trap in traps %}
+                <tr>
+                  <td><strong>{{ trap.code }}</strong></td>
+                  <td>{{ trap.trap_type }}</td>
+                  <td class="d-none d-md-table-cell">{{ trap.latitude }}</td>
+                  <td class="d-none d-md-table-cell">{{ trap.longitude }}</td>
+                  <td>{{ pf_trap_status_badge(trap.is_retired) }}</td>
+                  <td class="d-none d-md-table-cell">{{ trap.retired_at.strftime('%d %b %Y %H:%M') if trap.retired_at else '-' }}</td>
+                  <td class="d-none d-md-table-cell">{{ '@' ~ trap.retired_by_username if trap.retired_by_username else '-' }}</td>
+                  {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+                    <td class="lines-table-actions">
+                      {% if not trap.is_retired %}
+                        {{ pf_link_button(url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit trap ' ~ trap.code}) }}
+                        {{ pf_button(
+                          'Retire',
+                          variant='btn-sm-danger',
+                          attrs={
+                            'aria-label': 'Retire trap ' ~ trap.code,
+                            'data-bs-toggle': 'modal',
+                            'data-bs-target': '#retire-trap-modal',
+                            'data-trap-id': trap.trap_id,
+                            'data-trap-code': trap.code,
+                          }
+                        ) }}
+                      {% endif %}
+                    </td>
+                  {% endif %}
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="{{ 8 if session.get('group_role') in ('Super Admin', 'Group Coordinator') else 7 }}" class="text-center text-muted py-3">
+                    No traps on this line yet.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          </div>
+        {% endcall %}
+      </div>
+
+      <div class="modal fade pop-up-modal" id="retire-trap-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="retire-trap-modal-title">
+        <div class="modal-dialog lines-modal-dialog">
+          <form method="POST" action="{{ url_for('retire_trap', line_id=line.line_id) }}" autocomplete="off">
+            <input type="hidden" name="trap_id" id="modal-trap-id" value="" />
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="retire-trap-modal-title">Retire trap</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Are you sure you want to retire trap <strong id="modal-trap-code"></strong>?</p>
+                <p class="text-muted lines-modal-note">This trap will be marked as Retired.</p>
+                <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+                  <label for="retire-trap-confirm" class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</label>
+                  <input type="text" id="retire-trap-confirm" name="delete-confirm" class="w-100 form-control" required />
+                </div>
+              </div>
+              <div class="modal-footer">
+                {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel retirement'}) }}
+                {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit', attrs={'aria-label': 'Confirm retirement'}) }}
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    {% endif %}
 
     {% call pf_panel_simple('Assigned Operators', panel_class='mb-0') %}
       {% if operators %}
@@ -219,30 +327,4 @@
     <script src="{{ url_for('static', filename='js/lines-detail.js') }}"></script>
   {% endif %}
 
-  <script>
-    // fix for Safari's "Back-Forward Cache (BFCache)" which can cause modals to get stuck open with backdrop overlay
-    window.addEventListener('pageshow', function(event) {
-      if (event.persisted) {
-        // Step 1 — instantly hide modal before reload
-        const modal = document.getElementById('retire-trap-modal')
-        if (modal) {
-          // Force hide by manipulating CSS directly
-          // This is faster than Bootstrap's hide() method
-          modal.style.display = 'none'
-          modal.classList.remove('show')
-        }
-        // Remove backdrop
-        document.querySelectorAll('.modal-backdrop').forEach(function(b) {
-          b.remove()
-        })
-        // Clean up body
-        document.body.classList.remove('modal-open')
-        document.body.style.removeProperty('overflow')
-        document.body.style.removeProperty('padding-right')
-
-        // Step 2 — then reload
-        window.location.reload()
-      }
-    })
-  </script>
 {% endblock %}
