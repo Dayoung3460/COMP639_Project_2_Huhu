@@ -50,33 +50,33 @@ ON CONFLICT (name) DO NOTHING;
 -- All passwords: Password1!
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO users (username, email, password_hash, first_name, last_name, account_status, phone, address, emergency_contact_name, emergency_contact_phone, date_joined, last_login) VALUES
+INSERT INTO users (username, email, password_hash, first_name, last_name, is_super_admin, account_status, phone, address, emergency_contact_name, emergency_contact_phone, date_joined, last_login) VALUES
 
--- Super Admins
-('smitchell', 's.mitchell@lincoln.ac.nz', '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sarah', 'Mitchell', 'active',   '021 345 6789', '12 Lincoln Road, Lincoln 7608',        'John Mitchell', '021 987 6543', '2024-01-15 09:00:00', '2026-04-17 08:30:00'),
-('jparata',   'j.parata@lincoln.ac.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'James', 'Parata',   'active',   '021 456 7890', '45 Springs Road, Lincoln 7608',        'Mary Parata',   '021 876 5432', '2024-01-15 09:00:00', '2026-04-16 14:22:00'),
+-- Super Admins (site-wide)
+('smitchell', 's.mitchell@lincoln.ac.nz', '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sarah', 'Mitchell', TRUE,  'active',   '021 345 6789', '12 Lincoln Road, Lincoln 7608',        'John Mitchell', '021 987 6543', '2024-01-15 09:00:00', '2026-04-17 08:30:00'),
+('jparata',   'j.parata@lincoln.ac.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'James', 'Parata',   TRUE,  'active',   '021 456 7890', '45 Springs Road, Lincoln 7608',        'Mary Parata',   '021 876 5432', '2024-01-15 09:00:00', '2026-04-16 14:22:00'),
 
 -- Group Coordinators
-('bkim',      'b.kim@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Bo',    'Kim',      'active',   '027 567 8901', '78 Boundary Road, Lincoln 7608',       'Sue Kim',       '027 765 4321', '2024-02-01 09:00:00', '2026-04-15 11:00:00'),
-('cwhite',    'c.white@chch.example.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Cara',  'White',    'active',   '027 678 9012', '23 Riccarton Road, Christchurch 8011', 'Dan White',     '027 654 3210', '2024-02-01 09:00:00', '2026-04-10 09:45:00'),
-('dlee',      'd.lee@bp.example.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Dana',  'Lee',      'active',   '021 789 0123', '5 Akaroa Road, Banks Peninsula',       'Eli Lee',       '021 543 2109', '2024-02-10 09:00:00', '2026-04-14 10:00:00'),
+('bkim',      'b.kim@lincoln.ac.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Bo',    'Kim',      FALSE, 'active',   '027 567 8901', '78 Boundary Road, Lincoln 7608',       'Sue Kim',       '027 765 4321', '2024-02-01 09:00:00', '2026-04-15 11:00:00'),
+('cwhite',    'c.white@chch.example.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Cara',  'White',    FALSE, 'active',   '027 678 9012', '23 Riccarton Road, Christchurch 8011', 'Dan White',     '027 654 3210', '2024-02-01 09:00:00', '2026-04-10 09:45:00'),
+('dlee',      'd.lee@bp.example.nz',       '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Dana',  'Lee',      FALSE, 'active',   '021 789 0123', '5 Akaroa Road, Banks Peninsula',       'Eli Lee',       '021 543 2109', '2024-02-10 09:00:00', '2026-04-14 10:00:00'),
 
 -- Operators — Predator Free Lincoln University
-('enyberg',   'e.nyberg@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Erik',  'Nyberg',   'active',   '021 111 2233', '5 Selwyn Road, Lincoln 7608',          'Finn Nyberg',   '021 543 2109', '2024-03-01 09:00:00', '2026-04-17 07:55:00'),
-('fgrant',    'f.grant@lincoln.ac.nz',     '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Fiona', 'Grant',    'active',   '021 222 3344', '89 Lincoln Road, Lincoln 7608',        'Greg Grant',    '021 432 1098', '2024-03-01 09:00:00', '2026-04-14 16:30:00'),
-('gwatson',   'g.watson@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Glen',  'Watson',   'active',   '021 333 4455', '34 Springs Road, Lincoln 7608',        'Helen Watson',  '021 321 0987', '2024-03-15 09:00:00', '2026-04-12 08:10:00'),
+('enyberg',   'e.nyberg@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Erik',  'Nyberg',   FALSE, 'active',   '021 111 2233', '5 Selwyn Road, Lincoln 7608',          'Finn Nyberg',   '021 543 2109', '2024-03-01 09:00:00', '2026-04-17 07:55:00'),
+('fgrant',    'f.grant@lincoln.ac.nz',     '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Fiona', 'Grant',    FALSE, 'active',   '021 222 3344', '89 Lincoln Road, Lincoln 7608',        'Greg Grant',    '021 432 1098', '2024-03-01 09:00:00', '2026-04-14 16:30:00'),
+('gwatson',   'g.watson@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Glen',  'Watson',   FALSE, 'active',   '021 333 4455', '34 Springs Road, Lincoln 7608',        'Helen Watson',  '021 321 0987', '2024-03-15 09:00:00', '2026-04-12 08:10:00'),
 
 -- Operator — Christchurch City Trappers
-('hpatel',    'h.patel@chch.example.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Hira',  'Patel',    'active',   '027 444 5566', '56 Ilam Road, Christchurch 8041',      'Ian Patel',     '027 210 9876', '2024-03-15 09:00:00', '2026-04-11 12:45:00'),
+('hpatel',    'h.patel@chch.example.nz',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Hira',  'Patel',    FALSE, 'active',   '027 444 5566', '56 Ilam Road, Christchurch 8041',      'Ian Patel',     '027 210 9876', '2024-03-15 09:00:00', '2026-04-11 12:45:00'),
 
 -- Observers — Predator Free Lincoln University
-('iford',     'i.ford@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Isla',  'Ford',     'active',   '021 555 6677', '12 Gerald Street, Lincoln 7608',       'Jack Ford',     '027 109 8765', '2024-04-01 09:00:00', '2026-04-09 09:00:00'),
-('jmoss',     'j.moss@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Jake',  'Moss',     'active',   '027 666 7788', '67 Selwyn Road, Lincoln 7608',         'Kate Moss',     '027 098 7654', '2024-04-01 09:00:00', '2026-04-08 14:20:00'),
-('ktaylor',   'k.taylor@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Kai',   'Taylor',   'inactive', '021 777 8899', '90 Lincoln Road, Lincoln 7608',        'Lena Taylor',   '021 987 6543', '2024-05-01 09:00:00', '2025-11-20 09:00:00'),
+('iford',     'i.ford@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Isla',  'Ford',     FALSE, 'active',   '021 555 6677', '12 Gerald Street, Lincoln 7608',       'Jack Ford',     '027 109 8765', '2024-04-01 09:00:00', '2026-04-09 09:00:00'),
+('jmoss',     'j.moss@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Jake',  'Moss',     FALSE, 'active',   '027 666 7788', '67 Selwyn Road, Lincoln 7608',         'Kate Moss',     '027 098 7654', '2024-04-01 09:00:00', '2026-04-08 14:20:00'),
+('ktaylor',   'k.taylor@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Kai',   'Taylor',   FALSE, 'inactive', '021 777 8899', '90 Lincoln Road, Lincoln 7608',        'Lena Taylor',   '021 987 6543', '2024-05-01 09:00:00', '2025-11-20 09:00:00'),
 
 -- No-membership users for join request testing
-('trequest1', 'tom.request@example.com',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Tom',   'Request',  'active',   NULL, NULL, NULL, NULL, NOW() - INTERVAL '3 days', NULL),
-('trequest2', 'sara.request@example.com',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sara',  'Request',  'active',   NULL, NULL, NULL, NULL, NOW() - INTERVAL '1 day',  NULL)
+('trequest1', 'tom.request@example.com',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Tom',   'Request',  FALSE, 'active',   NULL, NULL, NULL, NULL, NOW() - INTERVAL '3 days', NULL),
+('trequest2', 'sara.request@example.com',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sara',  'Request',  FALSE, 'active',   NULL, NULL, NULL, NULL, NOW() - INTERVAL '1 day',  NULL)
 
 ON CONFLICT (username) DO NOTHING;
 
@@ -84,43 +84,50 @@ ON CONFLICT (username) DO NOTHING;
 -- GROUP MEMBERSHIPS
 -- ══════════════════════════════════════════════════════
 
+-- Predator Free Lincoln University
 INSERT INTO group_memberships (user_id, group_id, role)
 SELECT u.user_id,
        (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
-       m.role::role_type
+       m.role::group_role_type
 FROM (VALUES
-    ('smitchell', 'Super Admin'),
-    ('jparata',   'Super Admin'),
-    ('bkim',      'Group Coordinator'),
-    ('enyberg',   'Operator'),
-    ('fgrant',    'Operator'),
-    ('gwatson',   'Operator'),
-    ('iford',     'Observer'),
-    ('jmoss',     'Observer'),
-    ('ktaylor',   'Observer')
+    ('bkim',    'Group Coordinator'),
+    ('enyberg', 'Operator'),
+    ('fgrant',  'Operator'),
+    ('gwatson', 'Operator'),
+    ('hpatel',  'Observer'),   -- Operator in CCT, Observer here
+    ('iford',   'Observer'),
+    ('jmoss',   'Observer'),
+    ('ktaylor', 'Observer')
 ) AS m(username, role)
 JOIN users u ON u.username = m.username
 ON CONFLICT (user_id, group_id) DO NOTHING;
 
+-- Christchurch City Trappers
 INSERT INTO group_memberships (user_id, group_id, role)
 SELECT u.user_id,
        (SELECT group_id FROM groups WHERE name = 'Christchurch City Trappers'),
-       m.role::role_type
+       m.role::group_role_type
 FROM (VALUES
-    ('smitchell', 'Super Admin'),
-    ('cwhite',    'Group Coordinator'),
-    ('hpatel',    'Operator')
+    ('jparata', 'Group Coordinator'), -- Super Admin who also holds a group role
+    ('cwhite',  'Group Coordinator'),
+    ('hpatel',  'Operator'),
+    ('iford',   'Operator'),          -- Observer in PFLU, Operator here
+    ('jmoss',   'Observer')
 ) AS m(username, role)
 JOIN users u ON u.username = m.username
 ON CONFLICT (user_id, group_id) DO NOTHING;
 
+-- Banks Peninsula Restoration
 INSERT INTO group_memberships (user_id, group_id, role)
 SELECT u.user_id,
        (SELECT group_id FROM groups WHERE name = 'Banks Peninsula Restoration'),
-       m.role::role_type
+       m.role::group_role_type
 FROM (VALUES
-    ('smitchell', 'Super Admin'),
-    ('dlee',      'Group Coordinator')
+    ('dlee',    'Group Coordinator'),
+    ('enyberg', 'Group Coordinator'), -- Operator in PFLU, Coordinator here
+    ('bkim',    'Operator'),          -- Coordinator in PFLU, Operator here
+    ('fgrant',  'Observer'),          -- Operator in PFLU, Observer here
+    ('gwatson', 'Observer')           -- Operator in PFLU, Observer here
 ) AS m(username, role)
 JOIN users u ON u.username = m.username
 ON CONFLICT (user_id, group_id) DO NOTHING;
