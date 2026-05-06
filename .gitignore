@@ -214,6 +214,8 @@ __marimo__/
 .clinerules/
 CLAUDE.md
 .claude/
+GEMINI.md
+.gemini/
 
 run_local.py
 

@@ -1,4 +1,4 @@
-﻿-- populate_database.sql
+-- populate_database.sql
 -- Conservation Groups — COMP639 Group Project 2, Team Huhu
 -- Lincoln University, Semester 1, 2026
 -- All passwords: Password1!
@@ -634,6 +634,50 @@ VALUES
 ON CONFLICT (user_id, group_id) DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
+-- GROUP APPLICATIONS
+-- ══════════════════════════════════════════════════════
+
+INSERT INTO group_applications (user_id, proposed_name, reason, status, applied_at, decided_by, decided_at)
+VALUES
+(
+    (SELECT user_id FROM users WHERE username = 'ataylor'),
+    'Ava''s Avian Sanctuary',
+    'I have been monitoring bird populations in the Selwyn district for three years and believe a dedicated group would allow us to coordinate our efforts more effectively and share data with DOC.',
+    'approved',
+    NOW() - INTERVAL '14 days',
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    NOW() - INTERVAL '10 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'mharris'),
+    'Christchurch Wetlands Watch',
+    'Our neighbourhood group has been informally tracking predator activity around the Christchurch wetlands reserve. We would like to formalise this and use the platform to record our data.',
+    'rejected',
+    NOW() - INTERVAL '20 days',
+    (SELECT user_id FROM users WHERE username = 'jthornton'),
+    NOW() - INTERVAL '16 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'hmartin'),
+    'Harper''s Hill Conservation Crew',
+    'I am a landowner with 50 hectares of native bush. I have been doing predator control alone for two years and want to get more volunteers involved through a formal group.',
+    'pending',
+    NOW() - INTERVAL '3 days',
+    NULL,
+    NULL
+),
+(
+    (SELECT user_id FROM users WHERE username = 'ejackson'),
+    'East Canterbury Bird Recovery',
+    'A group of local farmers and conservation volunteers keen to establish a coordinated trapping network across the east Canterbury plains to support kiwi translocation efforts planned for 2027.',
+    'pending',
+    NOW() - INTERVAL '1 day',
+    NULL,
+    NULL
+)
+ON CONFLICT DO NOTHING;
+
+-- ══════════════════════════════════════════════════════
 -- RESET SEQUENCES
 -- ══════════════════════════════════════════════════════
 
@@ -642,7 +686,8 @@ SELECT setval('lines_line_id_seq',                  (SELECT MAX(line_id)        
 SELECT setval('traps_trap_id_seq',                  (SELECT MAX(trap_id)         FROM traps));
 SELECT setval('trap_catches_catch_id_seq',           (SELECT MAX(catch_id)        FROM trap_catches));
 SELECT setval('incidental_observations_observation_id_seq', (SELECT MAX(observation_id) FROM incidental_observations));
-SELECT setval('group_join_requests_request_id_seq', (SELECT MAX(request_id)      FROM group_join_requests));
+SELECT setval('group_join_requests_request_id_seq',  (SELECT MAX(request_id)      FROM group_join_requests));
+SELECT setval('group_applications_application_id_seq', (SELECT MAX(application_id)  FROM group_applications));
 SELECT setval('user_notifications_notification_id_seq', (SELECT MAX(notification_id) FROM user_notifications));
 
 COMMIT;

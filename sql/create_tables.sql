@@ -196,7 +196,9 @@ CREATE TABLE group_applications (
     proposed_name  VARCHAR(255)        NOT NULL,
     reason         TEXT,
     status         request_status_enum NOT NULL DEFAULT 'pending',
-    applied_at     TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP
+    applied_at     TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    decided_by     INTEGER             DEFAULT NULL REFERENCES users(user_id),
+    decided_at     TIMESTAMP           DEFAULT NULL
 );
 
 -- ==============================================================
@@ -291,14 +293,16 @@ CREATE TABLE bait_station_records (
     station_id        INTEGER       NOT NULL REFERENCES bait_stations(station_id),
     date              TIMESTAMP     NOT NULL,
     recorded_by_id    INTEGER       REFERENCES users(user_id),
-    target_species    VARCHAR(100)  NOT NULL,
+    target_species    VARCHAR(100)  DEFAULT NULL,
     active_ingredient VARCHAR(100)  NOT NULL,
     formulation       VARCHAR(100)  NOT NULL,
     concentration     NUMERIC(5, 2) NOT NULL,
     bait_remaining    NUMERIC(8, 3) NOT NULL,
     bait_removed      NUMERIC(8, 3) DEFAULT NULL,
     bait_added        NUMERIC(8, 3) DEFAULT NULL,
-    notes             TEXT          DEFAULT NULL
+    notes             TEXT          DEFAULT NULL,
+    edited_by_id      INTEGER       DEFAULT NULL REFERENCES users(user_id),
+    edited_at         TIMESTAMP     DEFAULT NULL
 );
 
 -- ==============================================================
