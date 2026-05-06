@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button %}
+{% block title %}Join Requests{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <h4 class="fw-semibold mb-0">Join Requests</h4>
+    <span class="badge bg-success" style="font-size:12px;">{{ session.get('group_name') }}</span>
+  </div>
+
+  {% if join_requests %}
+
+    {# ── Toolbar ────────────────────────────────────────────────── #}
+    <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
+
+      <div class="input-group" style="max-width:260px;">
+        <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+        <input type="search" id="req-search" class="form-control"
+               placeholder="Search name or username…" autocomplete="off">
+      </div>
+
+      <span class="text-muted fw-semibold ms-2">Sort by</span>
+
+      <select id="sort-select" class="form-select" style="width:auto;">
+        <option value="date-asc">Oldest first</option>
+        <option value="date-desc">Newest first</option>
+        <option value="name-asc">Name A → Z</option>
+        <option value="name-desc">Name Z → A</option>
+      </select>
+
+    </div>
+
+    {# ── Request rows ────────────────────────────────────────────── #}
+    <div id="requests-list" style="max-height:75vh; overflow-y:auto; padding-right:4px;">
+      {% for r in join_requests %}
+        <div class="js-req-row d-flex align-items-center gap-3 rounded border px-4 py-3 mb-2"
+             style="background:var(--bs-light, #f8f9fa); min-height:64px;"
+             data-search="{{ r.first_name|lower }} {{ r.last_name|lower }} {{ r.username|lower }}"
+             data-sort-name="{{ r.last_name|lower }} {{ r.first_name|lower }}"
+             data-sort-date="{{ r.requested_at.isoformat() }}">
+
+          <div class="flex-grow-1" style="min-width:160px;">
+            <div class="fw-semibold" style="font-size:15px;">{{ r.first_name }} {{ r.last_name }}</div>
+            <div class="text-muted small">{{ r.email }}{% if r.phone %} · {{ r.phone }}{% endif %}</div>
+            {% if r.message %}
+              <div class="text-muted small mt-1" style="max-width:360px;">
+                {% if r.message|length > 80 %}
+                  {{ r.message[:80] }}&hellip;
+                  <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline js-read-more"
+                          style="font-size:12px;"
+                          data-bs-toggle="modal" data-bs-target="#message-modal"
+                          data-user-name="{{ r.first_name }} {{ r.last_name }}"
+                          data-message="{{ r.message | e }}">
+                    Read more
+                  </button>
+                {% else %}
+                  {{ r.message }}
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+
+          <span class="border rounded px-3 py-1 text-muted small" style="min-width:110px; text-align:center;">
+            @{{ r.username }}
+          </span>
+
+          <span class="border rounded px-3 py-1 text-muted small d-none d-md-inline-block"
+                style="min-width:110px; text-align:center;">
+            {{ r.requested_at.strftime('%d %b %Y') }}
+          </span>
+
+          {{ pf_button('Approve', variant='btn-sm-pf',
+              attrs={
+                'data-bs-toggle': 'modal',
+                'data-bs-target': '#approve-modal',
+                'data-request-id': r.request_id,
+                'data-user-name': r.first_name ~ ' ' ~ r.last_name
+              }) }}
+
+          {{ pf_button('Reject', variant='btn-sm-danger',
+              attrs={
+                'data-bs-toggle': 'modal',
+                'data-bs-target': '#reject-modal',
+                'data-request-id': r.request_id,
+                'data-user-name': r.first_name ~ ' ' ~ r.last_name
+              }) }}
+
+        </div>
+      {% endfor %}
+    </div>
+
+    <div id="requests-empty" class="notice blue d-none">
+      <i class="bi bi-funnel" aria-hidden="true"></i>
+      <div>No requests match your search.</div>
+    </div>
+
+  {% else %}
+    <div class="notice blue">
+      <i class="bi bi-person-check" aria-hidden="true"></i>
+      <div>No pending join requests for this group.</div>
+    </div>
+  {% endif %}
+
+  {# ── History ─────────────────────────────────────────────────── #}
+  {% if history %}
+    <div class="mt-4">
+      <button type="button" id="toggle-history" class="btn btn-sm-outline d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history" aria-hidden="true"></i> See history
+      </button>
+
+      <div id="history-list" class="mt-3" style="display:none;">
+        {% for r in history %}
+          <div class="d-flex align-items-center gap-3 rounded border px-4 py-3 mb-2"
+               style="background:#f1f3f5; opacity:0.75; min-height:64px;">
+
+            <div class="flex-grow-1" style="min-width:160px;">
+              <div class="fw-semibold text-muted" style="font-size:15px;">{{ r.first_name }} {{ r.last_name }}</div>
+              <div class="text-muted small">{{ r.email }}{% if r.phone %} · {{ r.phone }}{% endif %}</div>
+              {% if r.message %}
+                <div class="text-muted small mt-1" style="max-width:360px;">
+                  {% if r.message|length > 80 %}
+                    {{ r.message[:80] }}&hellip;
+                    <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline js-read-more"
+                            style="font-size:12px;"
+                            data-bs-toggle="modal" data-bs-target="#message-modal"
+                            data-user-name="{{ r.first_name }} {{ r.last_name }}"
+                            data-message="{{ r.message | e }}">
+                      Read more
+                    </button>
+                  {% else %}
+                    {{ r.message }}
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+
+            <span class="border rounded px-3 py-1 text-muted small" style="min-width:110px; text-align:center;">
+              @{{ r.username }}
+            </span>
+
+            <span class="border rounded px-3 py-1 text-muted small d-none d-md-inline-block"
+                  style="min-width:110px; text-align:center;">
+              {{ r.requested_at.strftime('%d %b %Y') }}
+            </span>
+
+            <span class="fw-semibold small" style="min-width:80px; text-align:center;
+              color: {{ '#198754' if r.status == 'approved' else '#dc3545' }};">
+              {{ r.status | capitalize }}
+            </span>
+
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+
+{# ── Full message modal ───────────────────────────────────────────────────── #}
+<div class="modal fade pop-up-modal" id="message-modal" tabindex="-1"
+     aria-modal="true" aria-labelledby="message-modal-title">
+  <div class="modal-dialog lines-modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="message-modal-title">Message from <span id="message-modal-name"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="message-modal-body" class="text-muted" style="white-space:pre-wrap;"></p>
+      </div>
+      <div class="modal-footer">
+        {{ pf_button('Close', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Approve modal ────────────────────────────────────────────────────────── #}
+<div class="modal fade pop-up-modal" id="approve-modal" tabindex="-1"
+     aria-modal="true" aria-labelledby="approve-modal-title">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="approve-form" autocomplete="off">
+      <input type="hidden" name="decision" value="approve">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="approve-modal-title">Approve Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Approve <strong id="approve-user-name"></strong> to join this group?</p>
+          <p class="text-muted lines-modal-note">They will be added as an <strong>Observer</strong>. You can change their role from the Members page.</p>
+        </div>
+        <div class="modal-footer">
+          {{ pf_button('Cancel',  variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+          {{ pf_button('Approve', variant='btn-sm-pf', type='submit') }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Reject modal ─────────────────────────────────────────────────────────── #}
+<div class="modal fade pop-up-modal" id="reject-modal" tabindex="-1"
+     aria-modal="true" aria-labelledby="reject-modal-title">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="reject-form" autocomplete="off">
+      <input type="hidden" name="decision" value="reject">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reject-modal-title">Reject Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Reject the request from <strong id="reject-user-name"></strong>?</p>
+          <label for="reject-reason" class="form-label">Reason <span class="text-muted">(optional)</span></label>
+          <textarea id="reject-reason" name="reason" class="form-control" rows="3"
+                    placeholder="e.g. We are not accepting new members at this time."></textarea>
+          <p class="text-muted lines-modal-note mt-2">They will be notified that their request was not approved.</p>
+        </div>
+        <div class="modal-footer">
+          {{ pf_button('Cancel',     variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+          {{ pf_button('Yes, reject', variant='btn-sm-danger', type='submit') }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  // History toggle
+  document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.getElementById('toggle-history');
+    var div = document.getElementById('history-list');
+    if (!btn || !div) return;
+    btn.addEventListener('click', function () {
+      var open = div.style.display !== 'none';
+      div.style.display = open ? 'none' : 'block';
+      btn.innerHTML = open
+        ? '<i class="bi bi-clock-history" aria-hidden="true"></i> See history'
+        : '<i class="bi bi-clock-history" aria-hidden="true"></i> Hide history';
+    });
+  });
+
+  // Filter + sort for pending requests
+  (function () {
+    const search  = document.getElementById('req-search');
+    const sortSel = document.getElementById('sort-select');
+    const list    = document.getElementById('requests-list');
+    const empty   = document.getElementById('requests-empty');
+
+    if (!list) return;
+
+    function applyFilters() {
+      const q    = search  ? search.value.toLowerCase().trim() : '';
+      const sort = sortSel ? sortSel.value : 'date-asc';
+
+      let rows = Array.from(list.querySelectorAll('.js-req-row'));
+
+      rows.forEach(function (row) {
+        const match = !q || row.dataset.search.includes(q);
+        row.classList.toggle('d-none', !match);
+      });
+
+      const visible = rows.filter(function (r) { return !r.classList.contains('d-none'); });
+      visible.sort(function (a, b) {
+        if (sort === 'name-asc')   return a.dataset.sortName.localeCompare(b.dataset.sortName);
+        if (sort === 'name-desc')  return b.dataset.sortName.localeCompare(a.dataset.sortName);
+        if (sort === 'date-asc')   return a.dataset.sortDate.localeCompare(b.dataset.sortDate);
+        if (sort === 'date-desc')  return b.dataset.sortDate.localeCompare(a.dataset.sortDate);
+        return 0;
+      });
+      visible.forEach(function (row) { list.appendChild(row); });
+
+      if (empty) empty.classList.toggle('d-none', visible.length > 0);
+    }
+
+    if (search)  search.addEventListener('input',  applyFilters);
+    if (sortSel) sortSel.addEventListener('change', applyFilters);
+
+    // Message modal
+    document.getElementById('message-modal').addEventListener('show.bs.modal', function (e) {
+      var btn = e.relatedTarget;
+      document.getElementById('message-modal-name').textContent = btn.dataset.userName;
+      document.getElementById('message-modal-body').textContent = btn.dataset.message;
+    });
+
+    // Approve modal
+    document.getElementById('approve-modal').addEventListener('show.bs.modal', function (e) {
+      var btn = e.relatedTarget;
+      document.getElementById('approve-user-name').textContent = btn.dataset.userName;
+      document.getElementById('approve-form').action =
+        '/coordinator/requests/' + btn.dataset.requestId + '/decide';
+    });
+
+    // Reject modal
+    document.getElementById('reject-modal').addEventListener('show.bs.modal', function (e) {
+      var btn = e.relatedTarget;
+      document.getElementById('reject-user-name').textContent = btn.dataset.userName;
+      document.getElementById('reject-form').action =
+        '/coordinator/requests/' + btn.dataset.requestId + '/decide';
+      document.getElementById('reject-reason').value = '';
+    });
+
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) window.location.reload();
+    });
+  })();
+</script>
+{% endblock %}

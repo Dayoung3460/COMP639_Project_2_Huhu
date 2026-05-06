@@ -605,6 +605,35 @@ INSERT INTO incidental_observations (date, operator_id, observation_type, notes,
 ON CONFLICT DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
+-- TEST JOIN REQUESTS
+-- Two users with no group membership — pending requests to join PFLÜ
+-- Log in as dchen / Password1! (Group Coordinator) to approve/reject
+-- ══════════════════════════════════════════════════════
+
+INSERT INTO users (username, email, password_hash, first_name, last_name, account_status, date_joined) VALUES
+('trequest1', 'tom.request@example.com',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Tom',   'Request', 'active', NOW()),
+('trequest2', 'sara.request@example.com', '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sara',  'Request', 'active', NOW())
+ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO group_join_requests (user_id, group_id, status, message, requested_at)
+VALUES
+(
+    (SELECT user_id FROM users WHERE username = 'trequest1'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'pending',
+    'Hi, I am a local volunteer and have been trapping in the area for two years. I would love to contribute to the group effort and help with data recording on the north campus lines.',
+    NOW() - INTERVAL '2 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'trequest2'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'pending',
+    'Keen to join!',
+    NOW() - INTERVAL '1 day'
+)
+ON CONFLICT (user_id, group_id) DO NOTHING;
+
+-- ══════════════════════════════════════════════════════
 -- RESET SEQUENCES
 -- ══════════════════════════════════════════════════════
 
@@ -613,6 +642,8 @@ SELECT setval('lines_line_id_seq',                  (SELECT MAX(line_id)        
 SELECT setval('traps_trap_id_seq',                  (SELECT MAX(trap_id)         FROM traps));
 SELECT setval('trap_catches_catch_id_seq',           (SELECT MAX(catch_id)        FROM trap_catches));
 SELECT setval('incidental_observations_observation_id_seq', (SELECT MAX(observation_id) FROM incidental_observations));
+SELECT setval('group_join_requests_request_id_seq', (SELECT MAX(request_id)      FROM group_join_requests));
+SELECT setval('user_notifications_notification_id_seq', (SELECT MAX(notification_id) FROM user_notifications));
 
 COMMIT;
 

@@ -4,7 +4,7 @@ import logging
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 from app.utils import role_required
-from app.helpers.dbHelper import update_user_role
+from app.helpers.dbHelper import insert_notification, insert_user_role, update_user_role
 
 logger = logging.getLogger(__name__)
 
@@ -270,3 +270,85 @@ def coordinator_member_remove(user_id):
                 session['user_id'], user_id, group_id)
     flash('Member removed from group.', 'success')
     return redirect(url_for('coordinator_members'))
+
+#   ── Join request list ────────────────────────────────────────────────────────
+@app.route('/coordinator/requests')
+@role_required('Group Coordinator')
+def coordinator_requests():
+    group_id = session['group_id']
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            '''SELECT gjr.*, u.username, u.first_name, u.last_name, u.email, u.phone
+               FROM group_join_requests gjr
+               JOIN users u ON gjr.user_id = u.user_id
+               WHERE gjr.group_id = %s AND gjr.status = 'pending'
+               ORDER BY gjr.requested_at''',
+            (group_id,)
+        )
+        join_requests = cursor.fetchall()
+
+        cursor.execute(
+            '''SELECT gjr.*, u.username, u.first_name, u.last_name, u.email, u.phone
+               FROM group_join_requests gjr
+               JOIN users u ON gjr.user_id = u.user_id
+               WHERE gjr.group_id = %s AND gjr.status IN ('approved', 'rejected')
+               ORDER BY gjr.requested_at DESC''',
+            (group_id,)
+        )
+        history = cursor.fetchall()
+
+    return render_template('coordinator/requests.html',
+                           join_requests=join_requests, history=history)
+
+
+#   ── Approve or reject a single join request ───────────────────────────────────
+@app.route('/coordinator/requests/<int:request_id>/decide', methods=['POST'])
+@role_required('Group Coordinator')
+def coordinator_decide_request(request_id):
+    decision = request.form.get('decision')
+    if decision not in ('approve', 'reject'):
+        flash('Invalid decision.', 'danger')
+        return redirect(url_for('coordinator_requests'))
+
+    group_id   = session['group_id']
+    group_name = session['group_name']
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT user_id FROM group_join_requests WHERE request_id = %s AND group_id = %s AND status = %s',
+            (request_id, group_id, 'pending')
+        )
+        join_request = cursor.fetchone()
+
+    if not join_request:
+        flash('Request not found.', 'danger')
+        return redirect(url_for('coordinator_requests'))
+
+    applicant_id = join_request['user_id']
+
+    if decision == 'approve':
+        insert_user_role(db, applicant_id, group_id, 'Observer')
+        insert_notification(db, applicant_id,
+                            f'Your request to join {group_name} has been approved. You have been added as an Observer.',
+                            'success')
+        logger.info('Coordinator %s approved join request %d (user %d)',
+                    session['user_id'], request_id, applicant_id)
+        flash('Request approved — user added as Observer.', 'success')
+    else:
+        reason = request.form.get('reason', '').strip()
+        message = f'Your request to join {group_name} was not approved.'
+        if reason:
+            message += f' Reason: {reason}'
+        insert_notification(db, applicant_id, message, 'warning')
+        logger.info('Coordinator %s rejected join request %d (user %d)',
+                    session['user_id'], request_id, applicant_id)
+        flash('Request rejected.', 'info')
+
+    new_status = 'approved' if decision == 'approve' else 'rejected'
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            "UPDATE group_join_requests SET status = %s WHERE request_id = %s",
+            (new_status, request_id)
+        )
+
+    return redirect(url_for('coordinator_requests'))
