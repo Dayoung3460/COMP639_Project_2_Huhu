@@ -110,6 +110,7 @@ def inject_globals():
     profile_photo = None
     first_name    = None
     last_name     = None
+    nav_is_public = None
     if session.get('user_id'):
         try:
             with db.get_cursor() as cursor:
@@ -122,6 +123,14 @@ def inject_globals():
                     profile_photo = row['profile_photo']
                     first_name    = row['first_name']
                     last_name     = row['last_name']
+                if session.get('group_id'):
+                    cursor.execute(
+                        'SELECT is_public FROM groups WHERE group_id = %s',
+                        (session['group_id'],)
+                    )
+                    g = cursor.fetchone()
+                    if g:
+                        nav_is_public = g['is_public']
         except Exception:
             pass
     return dict(
@@ -135,6 +144,7 @@ def inject_globals():
         nav_full_name=f"{first_name} {last_name}".strip(),
         nav_group_name=session.get('group_name', ''),
         nav_group_role=session.get('group_role', ''),
+        nav_is_public=nav_is_public,
     )
 
 # ── Template filters ──────────────────────────────────────────────────────────
