@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button %}
+{% block title %}Group Settings{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width:36px;height:36px;font-size:18px;">
+    <i class="bi bi-gear"></i>
+  </div>
+  Group Settings
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Settings</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:600px;">
+
+  <form method="POST" action="{{ url_for('coordinator_settings') }}">
+
+    <div class="panel">
+      <div class="panel-body p-4">
+
+        <h5 class="fw-semibold mb-1">Group Visibility</h5>
+        <p class="text-muted small mb-4">
+          Controls how new members can join your group.
+        </p>
+
+        {# ── Big toggle ───────────────────────────────────────── #}
+        <div class="d-flex align-items-center justify-content-between gap-4
+                    rounded border px-4 py-4 mb-3"
+             style="background:var(--bs-light,#f8f9fa);">
+
+          <div>
+            <div class="fw-semibold" style="font-size:16px;" id="toggle-label">
+              {% if is_public %}Public{% else %}Private{% endif %}
+            </div>
+            <div class="text-muted small mt-1" id="toggle-desc">
+              {% if is_public %}
+                Anyone can join without approval.
+              {% else %}
+                New members must request access and be approved by you.
+              {% endif %}
+            </div>
+          </div>
+
+          {# Hidden input carries the value; JS updates it on toggle #}
+          <input type="hidden" name="is_public" id="is_public_input"
+                 value="{{ '1' if is_public else '0' }}">
+
+          <div class="form-check form-switch mb-0" style="transform:scale(1.8); transform-origin:right center;">
+            <input class="form-check-input" type="checkbox" role="switch"
+                   id="visibility-toggle"
+                   {% if is_public %}checked{% endif %}
+                   style="cursor:pointer;">
+          </div>
+
+        </div>
+
+        <div class="p-3 rounded small mb-4"
+             style="background:#fff3cd; border:1px solid #ffc107; color:#664d03;">
+          <i class="bi bi-info-circle me-1"></i>
+          Switching to <strong>Public</strong> does not remove existing members.
+          Switching to <strong>Private</strong> preserves any pending join requests.
+        </div>
+
+        <div class="d-flex justify-content-end">
+          {{ pf_button('Save Changes', variant='btn-sm-pf', type='submit') }}
+        </div>
+
+      </div>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var toggle = document.getElementById('visibility-toggle');
+    var input  = document.getElementById('is_public_input');
+    var label  = document.getElementById('toggle-label');
+    var desc   = document.getElementById('toggle-desc');
+
+    toggle.addEventListener('change', function () {
+      var pub = toggle.checked;
+      input.value = pub ? '1' : '0';
+      label.textContent = pub ? 'Public' : 'Private';
+      desc.textContent  = pub
+        ? 'Anyone can join without approval.'
+        : 'New members must request access and be approved by you.';
+    });
+  });
+</script>
+{% endblock %}

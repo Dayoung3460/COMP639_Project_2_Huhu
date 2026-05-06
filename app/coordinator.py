@@ -271,6 +271,32 @@ def coordinator_member_remove(user_id):
     flash('Member removed from group.', 'success')
     return redirect(url_for('coordinator_members'))
 
+#   ── Group settings ───────────────────────────────────────────────────────────
+
+@app.route('/coordinator/settings', methods=['GET', 'POST'])
+@role_required('Group Coordinator')
+def coordinator_settings():
+    group_id = session['group_id']
+
+    if request.method == 'POST':
+        is_public = request.form.get('is_public') == '1'
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                'UPDATE groups SET is_public = %s WHERE group_id = %s',
+                (is_public, group_id)
+            )
+        label = 'Public' if is_public else 'Private'
+        logger.info('Coordinator %s set group %d to %s', session['user_id'], group_id, label)
+        flash(f'Group visibility set to {label}.', 'success')
+        return redirect(url_for('coordinator_settings'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT is_public FROM groups WHERE group_id = %s', (group_id,))
+        group = cursor.fetchone()
+
+    return render_template('coordinator/settings.html', is_public=group['is_public'])
+
+
 #   ── Join request list ────────────────────────────────────────────────────────
 @app.route('/coordinator/requests')
 @role_required('Group Coordinator')
