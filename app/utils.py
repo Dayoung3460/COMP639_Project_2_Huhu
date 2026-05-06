@@ -27,6 +27,23 @@ LINE_COLOURS = [
     '#ff924c', '#9b5de5', '#2ec4b6', '#e71d36', '#3a86ff', '#8338ec'
 ]
 
+BAIT_STATION_TYPES = [
+    'Bait Safe', 'Chimney', 'EnviroMate100', 'Flowerpot', 'Hockey stick',
+    'KK', 'Kilmore', 'Mini Philproof', 'PelGar Rat Station', 'Philproof',
+    'Pied Piper', 'Protecta Ambush', 'Protecta EVO Edge', 'Protecta Sidekick',
+    'Rodent Cafe', 'Sentry', 'Sentry Plus', 'Striker', 'Trakka', 'Tunnel',
+    'Wasptek', 'ZIP tunnel', 'Other',
+]
+
+ACTIVE_INGREDIENTS = [
+    'Brodifacoum', 'Bromadiolone', 'Cholecalciferol', 'Cyanide',
+    'Diphacinone', 'Flocoumafen', 'Pindone', 'Zinc phosphide',
+]
+
+FORMULATIONS = [
+    'Block', 'Cereal', 'Gel', 'Liquid', 'Paste', 'Pellet', 'Wax block',
+]
+
 
 # ── Decorators ────────────────────────────────────────────────────────────────
 

@@ -272,6 +272,103 @@ def validate_lookup_table_values(db, data):
         
     return False # No lookup errors found
 
+def fetch_operator_bait_station_ids(db, operator_id, group_id):
+    """Fetch active bait station IDs on lines assigned to this operator within the group."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            SELECT bs.station_id
+            FROM operator_lines ol
+            JOIN lines l ON ol.line_id = l.line_id
+            JOIN bait_stations bs ON bs.line_id = l.line_id
+            WHERE ol.operator_id = %s
+              AND l.group_id = %s
+              AND l.is_retired = FALSE
+              AND l.type = 'Bait Station'
+              AND bs.is_retired = FALSE
+        """, (operator_id, group_id))
+        return {row['station_id'] for row in cursor.fetchall()}
+
+
+def fetch_operator_bait_lines(db, user_id, group_id):
+    """Fetch Bait Station lines with their stations for an operator."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            SELECT l.line_id, l.name AS line_name,
+                   json_agg(json_build_object(
+                       'station_id', bs.station_id,
+                       'code', bs.code,
+                       'station_type', bs.station_type
+                   ) ORDER BY bs.code) AS stations
+            FROM operator_lines ol
+            JOIN lines l ON ol.line_id = l.line_id
+            JOIN bait_stations bs ON bs.line_id = l.line_id
+            WHERE ol.operator_id = %s
+              AND l.group_id = %s
+              AND l.is_retired = FALSE
+              AND l.type = 'Bait Station'
+              AND bs.is_retired = FALSE
+            GROUP BY l.line_id, l.name
+            ORDER BY l.name
+        """, (user_id, group_id))
+        return cursor.fetchall()
+
+
+def insert_bait_station_record(db, data, user_id):
+    """Insert a validated bait station check record."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO bait_station_records (
+                station_id, date, recorded_by_id, target_species,
+                active_ingredient, formulation, concentration,
+                bait_remaining, bait_removed, bait_added, notes
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['station_id'],
+            data['date'],
+            user_id,
+            data.get('target_species') or None,
+            data['active_ingredient'],
+            data['formulation'],
+            data['concentration'],
+            data['bait_remaining'],
+            data.get('bait_removed') or None,
+            data.get('bait_added') or None,
+            data.get('notes') or None,
+        ))
+
+
+def update_bait_station_record(db, data, editor_id):
+    """Update an existing bait station record, logging the editor."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            UPDATE bait_station_records
+            SET date = %s,
+                target_species = %s,
+                active_ingredient = %s,
+                formulation = %s,
+                concentration = %s,
+                bait_remaining = %s,
+                bait_removed = %s,
+                bait_added = %s,
+                notes = %s,
+                edited_by_id = %s,
+                edited_at = CURRENT_TIMESTAMP
+            WHERE record_id = %s
+        """, (
+            data['date'],
+            data.get('target_species') or None,
+            data['active_ingredient'],
+            data['formulation'],
+            data['concentration'],
+            data['bait_remaining'],
+            data.get('bait_removed') or None,
+            data.get('bait_added') or None,
+            data.get('notes') or None,
+            editor_id,
+            data['record_id'],
+        ))
+
+
 def insert_notification(db, user_id, message, category='info'):
     """Insert a notification that will be flashed to the user on next login."""
     with db.get_cursor() as cursor:
