@@ -13,7 +13,7 @@ import os
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads')
-CONSERVATION_BG_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads', 'conservation-group-bg')
+CONSERVATION_GROUP_BG_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads', 'conservation-group-bg')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 LINCOLN_NZ_LAT_RANGE = (-43.6600, -43.6350)
 LINCOLN_NZ_LON_RANGE = (172.4550, 172.4900)
