@@ -93,6 +93,7 @@ def set_cache_headers(response):
 # ── Route modules ─────────────────────────────────────────────────────────────
 
 from app import home
+from app import groups
 from app import auth
 from app import observer
 from app import operator

@@ -1,466 +1,126 @@
-{# templates/home.html
-   Public home page — extends base.html (public layout, no sidebar).
-   Route: GET /  →  index()
-   Shown only to logged-out users — logged-in users are redirected to their dashboard.
-#}
-{% extends 'base.html' %}
-{% block title %}Home{% endblock %}
+{% extends "base_marketing.html" %}
+
+{% block title %}Tiaki — Predator-free Aotearoa, one trap line at a time{% endblock %}
 
 {% block content %}
 
-{# ═══════════════════════════════════════════════
-   HERO
-   ═══════════════════════════════════════════════ #}
-<section class="hero" id="about">
-  <div class="container position-relative">
-    <div class="row align-items-center">
+<section class="hero" aria-labelledby="hero-heading">
+  <div class="container-wide hero-inner">
+    <div class="hero-content">
+      <h1 id="hero-heading">
+        Predator-free Aotearoa, <em>one trap line at a time.</em>
+      </h1>
+      <p>Tiaki connects volunteer conservation groups across Aotearoa New Zealand. Track traps, monitor bait stations, and see your group's impact — all in one place.</p>
 
-      {# Left — headline + stats #}
-      <div class="col-lg-7">
-        <div class="hero-badge">🌿 Conservation Technology</div>
-        <h1>Protecting Native Wildlife<br>Across Campus</h1>
-        <p>
-          A digital platform for Predator Free Lincoln University to monitor
-          trap activity, record captures, and generate reports — replacing
-          paper forms with accurate, shareable data.
-        </p>
-        <div class="d-flex gap-3 mt-4 flex-wrap">
-          {% if session.get('user_id') %}
-            {% if session.get('group_role') == 'Super Admin' %}
-              <a href="{{ url_for('admin_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
-            {% elif session.get('group_role') == 'Group Coordinator' %}
-              <a href="{{ url_for('coordinator_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
-            {% elif session.get('group_role') == 'Operator' %}
-              <a href="{{ url_for('operator_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
-            {% else %}
-              <a href="{{ url_for('observer_dashboard') }}" class="btn-pf" style="padding:10px 24px; font-size:14px;">Go to Dashboard</a>
-            {% endif %}
-          {% else %}
-            <a href="{{ url_for('register') }}"
-               class="btn-pf"
-               style="padding:10px 24px; font-size:14px;">
-              Get Started
-            </a>
-            <a href="{{ url_for('login') }}"
-               class="btn-pf-outline"
-               style="padding:10px 24px; font-size:14px;">
-              Log In
-            </a>
-          {% endif %}
-          <a href="#how-it-works"
-             class="btn-pf-outline"
-             style="padding:10px 24px; font-size:14px;">
-            Learn More
-          </a>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <div class="num">{{ stats.trap_lines }}</div>
-            <div class="lbl">Trap Lines</div>
-          </div>
-          <div class="hero-stat">
-            <div class="num">{{ stats.active_traps }}</div>
-            <div class="lbl">Active Traps</div>
-          </div>
-          <div class="hero-stat">
-            <div class="num">{{ stats.total_catches }}</div>
-            <div class="lbl">Total Catches</div>
-          </div>
-          <div class="hero-stat">
-            <div class="num">trap.nz</div>
-            <div class="lbl">Compatible</div>
-          </div>
-        </div>
+      <div class="hero-actions">
+        {% if session.user_id %}
+          <a href="{{ url_for('select_group') }}" class="btn btn-primary">Open My Tiaki</a>
+          <a href="#groups" class="btn btn-secondary">Find a group</a>
+        {% else %}
+          <a href="#groups" class="btn btn-primary">Find a group near you</a>
+          <a href="{{ url_for('register') }}" class="btn btn-secondary">Start your account</a>
+        {% endif %}
       </div>
 
-      {# Right — recent catch activity card #}
-      <div class="col-lg-5 d-none d-lg-flex justify-content-end">
-        <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
-                    border-radius:16px; padding:24px; width:100%; max-width: 400px;">
-          <div style="font-size:11px; color:var(--pf-300); text-transform:uppercase;
-                      letter-spacing:1px; margin-bottom:14px;">
-            Recent Catch Activity
-          </div>
+      <dl class="hero-stats" aria-label="Platform statistics">
+        <div>
+          <dt class="visually-hidden">Active groups</dt>
+          <dd>
+            <span class="hero-stat-num">{{ stats.total_groups }}</span>
+            <span class="hero-stat-label" aria-hidden="true">Active groups</span>
+          </dd>
+        </div>
+        <div>
+          <dt class="visually-hidden">Trap and bait lines</dt>
+          <dd>
+            <span class="hero-stat-num">{{ stats.total_lines }}</span>
+            <span class="hero-stat-label" aria-hidden="true">Trap &amp; bait lines</span>
+          </dd>
+        </div>
+        <div>
+          <dt class="visually-hidden">Catches recorded</dt>
+          <dd>
+            <span class="hero-stat-num">{{ stats.total_catches }}</span>
+            <span class="hero-stat-label" aria-hidden="true">Catches recorded</span>
+          </dd>
+        </div>
+      </dl>
+    </div>
 
-          {% if recent_activity %}
-            {% for record in recent_activity %}
-              <div style="background:rgba(255,255,255,0.08); border-radius:8px;
-                          padding:10px 12px; margin-bottom:8px;
-                          display:flex; align-items:center; gap:10px;">
-                <div style="width:8px; height:8px; border-radius:50%; flex-shrink:0;
-                            background:{{ '#e84a3a' if record.species_caught != 'None' else 'var(--pf-400)' }};"></div>
-                <div style="flex:1;">
-                  <div style="font-size:12px; color:#fff;">
-                    {% if record.species_caught != 'None' %}
-                      {{ record.species_caught }} — {{ record.line_name }} {{ record.trap_code }}
-                    {% else %}
-                      No catch — {{ record.line_name }} {{ record.trap_code }}
-                    {% endif %}
-                  </div>
-                  <div style="font-size:10px; color:var(--pf-400);">
-                    {{ record.status }}{% if record.rebaited == 'Yes' %} • Rebaited{% endif %}
-                    • {{ record.date.strftime('%d %b %H:%M') if record.date else '' }}
-                  </div>
+    {# Decorative card stack — non-functional, hidden from assistive tech #}
+    <div class="hero-visual" aria-hidden="true">
+      {% set hero_cards = featured_groups[:3] if featured_groups else [] %}
+      {% if hero_cards|length >= 1 %}
+        <div class="hero-card hero-card-1">
+          <div class="hero-card-thumb"></div>
+          <h3>{{ hero_cards[0].name }}</h3>
+          <div class="meta">{{ hero_cards[0].member_count }} members</div>
+        </div>
+      {% endif %}
+      {% if hero_cards|length >= 2 %}
+        <div class="hero-card hero-card-3">
+          <div class="hero-card-thumb"></div>
+          <h3>{{ hero_cards[1].name }}</h3>
+          <div class="meta">{{ hero_cards[1].member_count }} members</div>
+        </div>
+      {% endif %}
+      {% if hero_cards|length >= 3 %}
+        <div class="hero-card hero-card-2">
+          <div class="hero-card-thumb"></div>
+          <h3>{{ hero_cards[2].name }}</h3>
+          <div class="meta">{{ hero_cards[2].member_count }} members</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="section" id="groups" aria-labelledby="groups-heading">
+  <div class="container-wide">
+    <div class="section-header">
+      <div>
+        <div class="section-eyebrow">Browse</div>
+        <h2 id="groups-heading">Conservation groups</h2>
+      </div>
+    </div>
+
+    {% if public_groups %}
+      <ul class="group-grid" role="list">
+        {% for g in public_groups %}
+          <li>
+            <a class="group-card"
+               href="{{ url_for('group_landing', group_id=g.group_id) }}"
+               style="--group-accent: {{ g.color_theme or '#c65d3c' }};"
+               aria-label="View {{ g.name }} — {% if g.is_public %}public{% else %}private{% endif %} group with {{ g.member_count }} member{% if g.member_count != 1 %}s{% endif %}">
+              <div class="group-card-image" aria-hidden="true">
+                <span class="group-card-badge {% if g.is_public %}public{% else %}private{% endif %}">
+                  <span class="dot" aria-hidden="true"></span>{% if g.is_public %}Public{% else %}Private{% endif %}
+                </span>
+              </div>
+              <div class="group-card-body">
+                <h3>{{ g.name }}</h3>
+                <div class="group-meta">
+                  {% if g.created_at %}Founded {{ g.created_at.strftime('%Y') }}{% endif %}
+                </div>
+                <p>{{ g.description or 'A volunteer-led conservation group.' }}</p>
+                <div class="group-card-footer">
+                  <span><strong>{{ g.member_count }}</strong> {% if g.member_count == 1 %}member{% else %}members{% endif %}</span>
+                  <span><strong>{{ g.line_count }}</strong> {% if g.line_count == 1 %}line{% else %}lines{% endif %}</span>
                 </div>
               </div>
-            {% endfor %}
-          {% else %}
-            <div style="font-size:12px; color:var(--pf-400); text-align:center; padding:16px 0;">
-              No recent activity yet.
-            </div>
-          {% endif %}
-
-          <div style="border-top:1px solid rgba(255,255,255,0.1); margin-top:14px;
-                      padding-top:12px; display:flex; justify-content:space-between;">
-            <div style="font-size:11px; color:var(--pf-300);">Latest records</div>
-            <div style="font-size:11px; color:#fff; font-weight:600;">
-              {{ stats.total_catches }} total catches
-            </div>
-          </div>
-        </div>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state" role="status">
+        <h3>No groups yet</h3>
+        <p>Tiaki is still finding its first conservation groups. If you're starting one in your community, we'd love to hear from you.</p>
+        {% if not session.user_id %}
+          <a href="{{ url_for('register') }}" class="btn btn-primary">Create an account</a>
+        {% endif %}
       </div>
-
-    </div>
-  </div>
-</section>
-
-{# ═══════════════════════════════════════════════
-   FEATURES
-   ═══════════════════════════════════════════════ #}
-<section class="section" style="background:#fff;">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="section-label">What It Does</div>
-      <div class="section-title">Everything PF-LU Needs in One Place</div>
-      <p class="section-sub mx-auto">
-        From field recording to admin reporting — all roles, all features, one system.
-      </p>
-    </div>
-    <div class="row g-3">
-      <div class="col-md-4 col-sm-6">
-        <div class="feature-card">
-          <div class="feature-icon"><i class="bi bi-geo-alt" aria-hidden="true"></i></div>
-          <h5>Trap Network Management</h5>
-          <p>Admins create and manage trap lines and individual traps with GPS coordinates, aligned to the trap.nz format.</p>
-        </div>
-      </div>
-      <div class="col-md-4 col-sm-6">
-        <div class="feature-card">
-          <div class="feature-icon"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></div>
-          <h5>Field Data Entry</h5>
-          <p>Operators log trap check results including species caught, trap status, bait type, and condition directly from the field.</p>
-        </div>
-      </div>
-      <div class="col-md-4 col-sm-6">
-        <div class="feature-card">
-          <div class="feature-icon"><i class="bi bi-graph-up" aria-hidden="true"></i></div>
-          <h5>Reporting &amp; Analytics</h5>
-          <p>Visual charts and filterable tables give everyone a clear view of predator activity trends across all trap lines.</p>
-        </div>
-      </div>
-      <div class="col-md-4 col-sm-6">
-        <div class="feature-card">
-          <div class="feature-icon"><i class="bi bi-download" aria-hidden="true"></i></div>
-          <h5>CSV Export</h5>
-          <p>Download all catch record data as a CSV file — formatted to be compatible with trap.nz's import requirements.</p>
-        </div>
-      </div>
-      <div class="col-md-4 col-sm-6">
-        <div class="feature-card">
-          <div class="feature-icon"><i class="bi bi-people" aria-hidden="true"></i></div>
-          <h5>Role-Based Access</h5>
-          <p>Three roles — Observer, Operator, and Admin — each with the right level of access for their responsibilities.</p>
-        </div>
-      </div>
-      <div class="col-md-4 col-sm-6">
-        <div class="feature-card">
-          <div class="feature-icon"><i class="bi bi-phone" aria-hidden="true"></i></div>
-          <h5>Mobile Friendly</h5>
-          <p>Fully responsive design so field operators can log data directly from their phones while checking traps on campus.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-{# ═══════════════════════════════════════════════
-   HOW IT WORKS
-   ═══════════════════════════════════════════════ #}
-<section class="section" id="how-it-works" style="background:var(--pf-50);">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="section-label">How It Works</div>
-      <div class="section-title">Simple for Everyone in the Field</div>
-    </div>
-    <div class="row align-items-start">
-      <div class="col-md-3">
-        <div class="step-card">
-          <div class="step-num">1</div>
-          <h5>Register &amp; Log In</h5>
-          <p>Create an account as an Observer. An Admin upgrades your role to Operator if you're doing fieldwork.</p>
-        </div>
-      </div>
-      <div class="col-md-1 d-none d-md-flex">
-        <div class="step-connector"><i class="bi bi-chevron-right" aria-hidden="true"></i></div>
-      </div>
-      <div class="col-md-3">
-        <div class="step-card">
-          <div class="step-num">2</div>
-          <h5>Check Your Assigned Line</h5>
-          <p>Operators are assigned to specific trap lines by the Admin. Head out, check each trap along your route.</p>
-        </div>
-      </div>
-      <div class="col-md-1 d-none d-md-flex">
-        <div class="step-connector"><i class="bi bi-chevron-right" aria-hidden="true"></i></div>
-      </div>
-      <div class="col-md-3">
-        <div class="step-card">
-          <div class="step-num">3</div>
-          <h5>Log the Results</h5>
-          <p>Record what you found — species caught, trap status, bait used, condition. Data goes straight to the database.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-{# ═══════════════════════════════════════════════
-   ROLES
-   ═══════════════════════════════════════════════ #}
-<section class="section" style="background:#fff;">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="section-label">Access Levels</div>
-      <div class="section-title">Three Roles, One System</div>
-    </div>
-    <div class="row g-3">
-
-      {# Observer #}
-      <div class="col-md-4">
-        <div class="role-card">
-          <div class="role-card-header">
-            <span class="role-badge"
-                  style="background:var(--pf-100); color:var(--pf-800);">
-              👁 Observer
-            </span>
-          </div>
-          <div class="role-card-body">
-            <p style="font-size:14px; color:#4f5b54; margin-bottom:12px;">
-              Volunteer, trainee, or visitor
-            </p>
-            <ul class="list-unstyled">
-              <li>✅ View trap lines and traps</li>
-              <li>✅ Browse catch records</li>
-              <li>✅ Download CSV data</li>
-              <li>✅ View charts and reports</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {# Operator — highlighted #}
-      <div class="col-md-4">
-        <div class="role-card"
-             style="border-color:var(--pf-400); border-width:2px;">
-          <div class="role-card-header" style="background:var(--pf-50);">
-            <span class="role-badge"
-                  style="background:var(--blue-light); color:var(--blue);">
-              🔧 Operator
-            </span>
-            <span style="font-size:11px; background:var(--pf-100);
-                         color:var(--pf-700); padding:2px 8px;
-                         border-radius:10px; font-weight:600;">
-              Field Worker
-            </span>
-          </div>
-          <div class="role-card-body">
-            <p style="font-size:14px; color:#4f5b54; margin-bottom:12px;">
-              Field worker, ranger, or employee
-            </p>
-            <ul class="list-unstyled">
-              <li>✅ Everything Observers can do</li>
-              <li>✅ Add new catch records</li>
-              <li>✅ Edit own catch records</li>
-              <li>✅ Record incidental observations</li>
-              <li>✅ View assigned lines</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {# Admin #}
-      <div class="col-md-4">
-        <div class="role-card">
-          <div class="role-card-header">
-            <span class="role-badge"
-                  style="background:#f3e8ff; color:#5b21b6;">
-              ⚙️ Admin
-            </span>
-          </div>
-          <div class="role-card-body">
-            <p style="font-size:14px; color:#4f5b54; margin-bottom:12px;">
-              System administrator
-            </p>
-            <ul class="list-unstyled">
-              <li>✅ Everything Operators can do</li>
-              <li>✅ Create &amp; manage trap lines/traps</li>
-              <li>✅ Assign Operators to lines</li>
-              <li>✅ Manage all users &amp; roles</li>
-              <li>✅ Manage lookup data</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-{# ═══════════════════════════════════════════════
-   MEET THE TEAM
-   ═══════════════════════════════════════════════ #}
-<section class="section" id="team" style="background:#f4faf6;">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="section-label">The people behind it</div>
-      <img src="{{ url_for('static', filename='images/huhu.png') }}"
-          alt="Team Huhu" style="display: block; margin: 16px auto 4px; width: 80px;">
-      <div class="section-title">Meet Team Huhu</div>
-      <p class="section-sub mx-auto">
-        COMP639 Studio Project &nbsp;·&nbsp; Semester 1, 2026 &nbsp;·&nbsp; Lincoln University
-      </p>
-    </div>
-    {# Group photo #}
-    <div class="mb-4">
-      <img src="{{ url_for('static', filename='images/team/group.jpg') }}"
-          alt="Team Huhu" class="group-photo">
-    </div>
-
-    {# Row 1 — 3 cards #}
-    <div class="row g-4 mb-4">
-      <div class="col-md-4">
-        <div class="team-card">
-          <div class="team-photo">
-            <img src="{{ url_for('static', filename='images/team/ben.jpg') }}"
-                 alt="Ben Fitzgerald"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="team-initials" style="background:#236b43; display:none;">BF</div>
-          </div>
-          <div class="team-body">
-            <div class="team-name">Ben Fitzgerald</div>
-            <div class="team-country">New Zealand</div>
-            <p class="team-bio">
-              Master of Applied Computing student by day, amateur gym-goer and DIY repair enthusiast by night. Will attempt to fix absolutely any broken item before giving up and buying a new one. Keeps the team's logic sound and the local Cookie Time stash dangerously low. Hoping to eventually write code that runs as reliably as his 2011 Toyota Corolla.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="team-card">
-          <div class="team-photo">
-            <img src="{{ url_for('static', filename='images/team/mingcheng.jpg') }}"
-                 alt="Ming-Cheng Hsiao"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="team-initials" style="background:#1a5c38; display:none;">MH</div>
-          </div>
-          <div class="team-body">
-            <div class="team-name">Ming-Cheng Hsiao</div>
-            <div class="team-country">Taiwan</div>
-            <p class="team-bio">
-              I became a frontend developer about eight years ago, mostly building websites. One of my favorite moments is seeing a project come together and watching the final result take shape. After each project, I like to reflect on what worked and what could be done better next time. Outside of coding, I’m still exploring myself—trying to understand what I truly believe in and shaping the habits that define who I am.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="team-card">
-          <div class="team-photo">
-            <img src="{{ url_for('static', filename='images/team/dayoung.jpg') }}"
-                 alt="Da-young Kim"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="team-initials" style="background:#1a6fa8; display:none;">DK</div>
-          </div>
-          <div class="team-body">
-            <div class="team-name">Da-young Kim</div>
-            <div class="team-country">South Korea</div>
-            <p class="team-bio">
-              Da-young likes building software with AI to solve real-world problems, whether that means making life easier for people or helping catch predators. She enjoys working independently, but also genuinely likes being part of a team, partly because she believes everyone has something worth learning from. She’s naturally curious about people’s stories, hidden insights, and the ways different experiences shape how they think. In the long term, she dreams of becoming a solopreneur and seeing as much of the world as her energy levels allow.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {# Row 2 — 2 cards centred #}
-    <div class="row g-4 justify-content-center">
-      <div class="col-md-4">
-        <div class="team-card">
-          <div class="team-photo">
-            <img src="{{ url_for('static', filename='images/team/jeremiah.jpg') }}"
-                 alt="Jeremiah Ruanes"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="team-initials" style="background:#3d9b67; display:none;">JR</div>
-          </div>
-          <div class="team-body">
-            <div class="team-name">Jeremiah Ruanes</div>
-            <div class="team-country">Philippines</div>
-            <p class="team-bio">
-              Believes in <em>meraki</em> — doing things with heart, even when debugging says otherwise. Writing code since 2010, primarily in web development, combining strong UI instincts with critical thinking to build practical, user-focused solutions, while also exploring automations and AI agents. Big Pearl Jam fan, occasional singer, and guitarist (first thing he bought in NZ, still no regrets). Outnumbered at home by three boys who somehow have more energy than his code ever will.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="team-card">
-          <div class="team-photo">
-            <img src="{{ url_for('static', filename='images/team/Sun.jpg') }}"
-                 alt="Ziyuan Sun"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="team-initials" style="background:#e8920a; display:none;">ZS</div>
-          </div>
-          <div class="team-body">
-            <div class="team-name">Ziyuan Sun</div>
-            <div class="team-country">China</div>
-            <p class="team-bio">Just an artsy, slightly weird nerd trying to learn as much about coding and design as possible before AI replaces me—and to see as much of the world as I can before settling into reality.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-{# ═══════════════════════════════════════════════
-   CONTACT
-   ═══════════════════════════════════════════════ #}
-<section class="section" id="contact" style="background:var(--pf-50);">
-  <div class="container">
-    <div class="contact-card">
-      <h3>Get in Touch</h3>
-      <p>Questions about the system or the Predator Free Lincoln University initiative?</p>
-      <a href="mailto:pflu@lincoln.ac.nz"
-         class="btn-pf"
-         style="padding:10px 28px; font-size:14px;">
-        Contact Us
-      </a>
-      <div class="contact-info">
-        <div class="contact-item">
-          <div class="icon"><i class="bi bi-envelope" aria-hidden="true"></i></div>
-          <div class="label">Email</div>
-          <div class="value">pflu@lincoln.ac.nz</div>
-        </div>
-        <div class="contact-item">
-          <div class="icon"><i class="bi bi-geo-alt" aria-hidden="true"></i></div>
-          <div class="label">Location</div>
-          <div class="value">Lincoln University Campus</div>
-        </div>
-        <div class="contact-item">
-          <div class="icon"><i class="bi bi-globe" aria-hidden="true"></i></div>
-          <div class="label">Data Standard</div>
-          <div class="value">trap.nz Compatible</div>
-        </div>
-      </div>
-    </div>
+    {% endif %}
   </div>
 </section>
 
