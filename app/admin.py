@@ -267,10 +267,36 @@ def toggle_active(user_id):
             flash('User not found.', 'danger')
             return redirect(url_for('admin_users'))
         
-        # Toggle between 'active' and 'inactive'
+            # Toggle between 'active' and 'inactive'
         new_status = 'inactive' if user['account_status'] == 'active' else 'active'
+
+        # Guard: prevent deactivating an account that is the sole active coordinator of any group
+        if new_status == 'inactive':
+            cursor.execute("""
+                SELECT gm.group_id, g.name AS group_name
+                FROM group_memberships gm
+                JOIN groups g ON gm.group_id = g.group_id
+                WHERE gm.user_id = %s AND gm.role = 'Group Coordinator'
+                  AND (
+                      SELECT COUNT(*) FROM group_memberships gm2
+                      JOIN users u2 ON gm2.user_id = u2.user_id
+                      WHERE gm2.group_id = gm.group_id
+                        AND gm2.role = 'Group Coordinator'
+                        AND u2.account_status = 'active'
+                  ) = 1
+            """, (user_id,))
+            blocking_groups = cursor.fetchall()
+            if blocking_groups:
+                names = ', '.join(r['group_name'] for r in blocking_groups)
+                flash(
+                    f'Cannot deactivate this user — they are the only active coordinator of: {names}. '
+                    'Assign another coordinator first.',
+                    'danger'
+                )
+                return redirect(url_for('admin_users'))
+
         update_user_active(db, user_id, new_status)
-    
+
     flash(f'User account {"activated" if new_status == "active" else "deactivated"}.', 'success')
     return redirect(url_for('admin_users'))
 
@@ -906,6 +932,191 @@ def manage_statuses():
         statuses_list = cursor.fetchall()
         
     return render_template('admin/manage_statuses.html', statuses_list=statuses_list)
+
+
+# ── Group management ─────────────────────────────────────────────────────────
+
+@app.route('/admin/groups')
+@role_required('Super Admin')
+def admin_groups():
+    """List all groups with summary info."""
+    search = request.args.get('search', '').strip()
+    status_filter = request.args.get('status', '').strip()
+
+    query = '''
+        SELECT g.group_id, g.name, g.description, g.is_public, g.is_active, g.created_at,
+               COUNT(DISTINCT gm.user_id) AS member_count,
+               STRING_AGG(DISTINCT u.first_name || ' ' || u.last_name, ', '
+                   ORDER BY u.first_name || ' ' || u.last_name)
+                   FILTER (WHERE gm.role = 'Group Coordinator') AS coordinators
+        FROM groups g
+        LEFT JOIN group_memberships gm ON gm.group_id = g.group_id
+        LEFT JOIN users u ON gm.user_id = u.user_id
+        WHERE 1=1
+    '''
+    params = []
+
+    if search:
+        query += ' AND g.name ILIKE %s'
+        params.append(f'%{search}%')
+
+    if status_filter == 'active':
+        query += ' AND g.is_active = TRUE'
+    elif status_filter == 'inactive':
+        query += ' AND g.is_active = FALSE'
+
+    query += ' GROUP BY g.group_id ORDER BY g.name ASC'
+
+    with db.get_cursor() as cursor:
+        cursor.execute(query, tuple(params))
+        groups = cursor.fetchall()
+
+    return render_template('admin/groups.html', groups=groups,
+                           search=search, status_filter=status_filter)
+
+
+@app.route('/admin/groups/<int:group_id>')
+@role_required('Super Admin')
+def admin_group_detail(group_id):
+    """View and manage a single group."""
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT g.group_id, g.name, g.description, g.is_public, g.is_active, g.created_at,
+                   COUNT(DISTINCT gm.user_id) AS member_count
+            FROM groups g
+            LEFT JOIN group_memberships gm ON gm.group_id = g.group_id
+            WHERE g.group_id = %s
+            GROUP BY g.group_id
+        ''', (group_id,))
+        group = cursor.fetchone()
+
+    if not group:
+        flash('Group not found.', 'danger')
+        return redirect(url_for('admin_groups'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT u.user_id, u.username, u.first_name, u.last_name, u.account_status
+            FROM group_memberships gm
+            JOIN users u ON gm.user_id = u.user_id
+            WHERE gm.group_id = %s AND gm.role = 'Group Coordinator'
+            ORDER BY u.first_name, u.last_name
+        ''', (group_id,))
+        coordinators = cursor.fetchall()
+        coordinator_ids = {c['user_id'] for c in coordinators}
+
+        cursor.execute('''
+            SELECT u.user_id, u.username, u.first_name, u.last_name, gm.role
+            FROM group_memberships gm
+            JOIN users u ON gm.user_id = u.user_id
+            WHERE gm.group_id = %s
+              AND gm.role NOT IN ('Group Coordinator')
+              AND u.is_super_admin = FALSE
+            ORDER BY u.first_name, u.last_name
+        ''', (group_id,))
+        promotable_members = cursor.fetchall()
+
+    return render_template('admin/group_detail.html',
+                           group=group,
+                           coordinators=coordinators,
+                           coordinator_ids=coordinator_ids,
+                           promotable_members=promotable_members)
+
+
+@app.route('/admin/groups/<int:group_id>/edit', methods=['POST'])
+@role_required('Super Admin')
+def admin_group_edit(group_id):
+    """Edit a group's name and description."""
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+
+    if not name:
+        flash('Group name is required.', 'danger')
+        return redirect(url_for('admin_group_detail', group_id=group_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT group_id FROM groups WHERE name = %s AND group_id != %s',
+                       (name, group_id))
+        if cursor.fetchone():
+            flash(f'A group named "{name}" already exists.', 'danger')
+            return redirect(url_for('admin_group_detail', group_id=group_id))
+
+        cursor.execute('UPDATE groups SET name = %s, description = %s WHERE group_id = %s',
+                       (name, description or None, group_id))
+
+    flash('Group updated successfully.', 'success')
+    return redirect(url_for('admin_group_detail', group_id=group_id))
+
+
+@app.route('/admin/groups/<int:group_id>/toggle-active', methods=['POST'])
+@role_required('Super Admin')
+def admin_group_toggle_active(group_id):
+    """Deactivate or reactivate a group."""
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT name, is_active FROM groups WHERE group_id = %s', (group_id,))
+        group = cursor.fetchone()
+        if not group:
+            flash('Group not found.', 'danger')
+            return redirect(url_for('admin_groups'))
+
+        new_status = not group['is_active']
+        cursor.execute('UPDATE groups SET is_active = %s WHERE group_id = %s',
+                       (new_status, group_id))
+
+    if new_status:
+        flash(f'"{group["name"]}" has been reactivated.', 'success')
+    else:
+        flash(f'"{group["name"]}" has been deactivated. Members will lose write access.', 'warning')
+
+    return redirect(url_for('admin_groups'))
+
+
+@app.route('/admin/groups/<int:group_id>/coordinators/add', methods=['POST'])
+@role_required('Super Admin')
+def admin_group_add_coordinator(group_id):
+    """Promote an existing member to Group Coordinator."""
+    user_id = request.form.get('user_id', type=int)
+    if not user_id:
+        flash('Invalid user.', 'danger')
+        return redirect(url_for('admin_group_detail', group_id=group_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT role FROM group_memberships WHERE user_id = %s AND group_id = %s',
+                       (user_id, group_id))
+        membership = cursor.fetchone()
+        if not membership:
+            flash('User is not a member of this group.', 'danger')
+            return redirect(url_for('admin_group_detail', group_id=group_id))
+
+        cursor.execute(
+            "UPDATE group_memberships SET role = 'Group Coordinator' WHERE user_id = %s AND group_id = %s",
+            (user_id, group_id)
+        )
+
+    flash('Member promoted to Group Coordinator.', 'success')
+    return redirect(url_for('admin_group_detail', group_id=group_id))
+
+
+@app.route('/admin/groups/<int:group_id>/coordinators/remove/<int:user_id>', methods=['POST'])
+@role_required('Super Admin')
+def admin_group_remove_coordinator(group_id, user_id):
+    """Demote a Group Coordinator back to Observer (must keep at least one)."""
+    with db.get_cursor() as cursor:
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt FROM group_memberships
+            WHERE group_id = %s AND role = 'Group Coordinator'
+        """, (group_id,))
+        if cursor.fetchone()['cnt'] <= 1:
+            flash('Cannot remove the only coordinator. Add another coordinator first.', 'danger')
+            return redirect(url_for('admin_group_detail', group_id=group_id))
+
+        cursor.execute(
+            "UPDATE group_memberships SET role = 'Observer' WHERE user_id = %s AND group_id = %s",
+            (user_id, group_id)
+        )
+
+    flash('Coordinator demoted to Observer.', 'success')
+    return redirect(url_for('admin_group_detail', group_id=group_id))
 
 
 @app.route('/admin/bait-types', methods=['GET', 'POST'])

@@ -119,7 +119,7 @@ def login():
 
         with db.get_cursor() as cursor:
             cursor.execute('''
-                SELECT user_id, username, password_hash, account_status
+                SELECT user_id, username, password_hash, account_status, is_super_admin
                 FROM users
                 WHERE username = %s
             ''', (username,))
@@ -141,13 +141,13 @@ def login():
                 quick_login_enabled=quick_login_enabled
             )
 
-        # Fetch all group memberships for this user
+        # Fetch all group memberships for this user (active groups only)
         with db.get_cursor() as cursor:
             cursor.execute('''
                 SELECT gm.group_id, gm.role, g.name AS group_name
                 FROM group_memberships gm
                 JOIN groups g ON gm.group_id = g.group_id
-                WHERE gm.user_id = %s
+                WHERE gm.user_id = %s AND g.is_active = TRUE
                 ORDER BY g.name
             ''', (user['user_id'],))
             memberships = cursor.fetchall()
@@ -156,7 +156,13 @@ def login():
         session['username'] = user['username']
 
         if len(memberships) == 0:
-            # Registered but not in any group yet — go to home to join one
+            if user['is_super_admin']:
+                # Super Admin with no group memberships — go straight to admin dashboard
+                session['group_role'] = 'Super Admin'
+                _flash_pending_notifications(user['user_id'])
+                flash(f"Welcome back, {user['username']}!", 'success')
+                return redirect(url_for('admin_dashboard'))
+            # Regular user not in any group yet — go to home to join one
             _flash_pending_notifications(user['user_id'])
             flash(f"Welcome, {user['username']}! Join a group to get started.", 'info')
             return redirect(url_for('index'))
