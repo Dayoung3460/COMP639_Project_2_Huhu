@@ -194,12 +194,15 @@ CREATE TABLE user_notifications (
 -- ==============================================================
 
 CREATE TABLE group_applications (
-    application_id SERIAL PRIMARY KEY,
-    user_id        INTEGER             NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    proposed_name  VARCHAR(255)        NOT NULL,
-    reason         TEXT,
-    status         request_status_enum NOT NULL DEFAULT 'pending',
-    applied_at     TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP
+    application_id  SERIAL PRIMARY KEY,
+    user_id         INTEGER             NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    proposed_name   VARCHAR(255)        NOT NULL,
+    description     TEXT                NOT NULL,
+    location        VARCHAR(255)        NOT NULL,
+    justification   TEXT                NOT NULL,
+    tile_image      VARCHAR(500),
+    status          request_status_enum NOT NULL DEFAULT 'pending',
+    applied_at      TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==============================================================
