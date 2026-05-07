@@ -944,7 +944,8 @@ def admin_groups():
     status_filter = request.args.get('status', '').strip()
 
     query = '''
-        SELECT g.group_id, g.name, g.description, g.is_public, g.is_active, g.created_at,
+        SELECT g.group_id, g.name, g.is_public, g.is_active, g.created_at,
+               g.tile_image, g.color_theme,
                COUNT(DISTINCT gm.user_id) AS member_count,
                STRING_AGG(DISTINCT u.first_name || ' ' || u.last_name, ', '
                    ORDER BY u.first_name || ' ' || u.last_name)

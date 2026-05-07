@@ -20,43 +20,38 @@
 {% block content %}
 <div class="container py-2">
 
-  <!-- Filter and Search Form -->
+  <!-- Filter bar -->
   <section class="mb-2">
     <div class="lines-filter-shell">
-      <form id="filter-form" method="GET" action="{{ url_for('admin_groups') }}">
-        <div class="row g-3 align-items-end">
+      <div class="row g-3 align-items-end">
 
-          <div class="col-lg-6">
-            <label for="search" class="form-label mb-1">Search Groups</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
-              <input type="text" class="form-control" id="search" name="search"
-                     value="{{ search }}" placeholder="Group name">
-            </div>
+        <div class="col-lg-6">
+          <label for="search" class="form-label mb-1">Search Groups</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+            <input type="text" class="form-control" id="search" placeholder="Group name" autocomplete="off">
           </div>
-
-          <div class="col-sm-6 col-lg-3">
-            <label for="status" class="form-label mb-1">Status</label>
-            <div class="position-relative">
-              <select class="form-select" id="status" name="status" style="background-image: none;">
-                <option value="">All Statuses</option>
-                <option value="active"   {% if status_filter == 'active'   %}selected{% endif %}>Active</option>
-                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
-              </select>
-              <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y"
-                 style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;" aria-hidden="true"></i>
-            </div>
-          </div>
-
-          <div class="col-md-auto d-grid">
-            <button type="submit" class="btn btn-sm-pf">Search</button>
-          </div>
-          <div class="col-md-auto d-grid">
-            <a href="{{ url_for('admin_groups') }}" class="btn btn-sm-outline lines-filter-shell__clear-btn">Clear</a>
-          </div>
-
         </div>
-      </form>
+
+        <div class="col-sm-6 col-lg-3">
+          <label for="status-filter" class="form-label mb-1">Status</label>
+          <div class="position-relative">
+            <select class="form-select" id="status-filter" style="background-image: none;">
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y"
+               style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <div class="col-md-auto d-grid">
+          <button type="button" id="clear-btn" class="btn-sm-outline"
+                  aria-label="Clear all filters">Clear</button>
+        </div>
+
+      </div>
     </div>
   </section>
 
@@ -75,7 +70,7 @@
                             class="sortable-header__btn d-inline-flex align-items-center gap-1 user-select-none"
                             aria-label="Sort by {{ label }}">
                       {{ label }}
-                      <i class="bi sort-icon {{ 'bi-arrow-down' if field == 'name' else '' }}" aria-hidden="true"></i>
+                      <i class="bi bi-arrow-down sort-icon{{ '' if field == 'name' else ' opacity-25' }}" aria-hidden="true"></i>
                     </button>
                   {% else %}
                     {{ label }}
@@ -87,22 +82,32 @@
           <tbody>
             {% for g in groups %}
               <tr class="group-row"
+                  data-search="{{ g.name|lower }}"
+                  data-status="{{ 'active' if g.is_active else 'inactive' }}"
+                  data-visibility="{{ 'public' if g.is_public else 'private' }}"
                   data-sort-name="{{ g.name|lower }}"
                   data-sort-members="{{ g.member_count }}"
-                  data-sort-created_at="{{ g.created_at.isoformat() if g.created_at else '0000-00-00' }}"
-                  data-status="{{ 'active' if g.is_active else 'inactive' }}"
-                  data-visibility="{{ 'public' if g.is_public else 'private' }}">
+                  data-sort-coordinators="{{ (g.coordinators or '')|lower }}"
+                  data-sort-created_at="{{ g.created_at.isoformat() if g.created_at else '0000-00-00' }}">
                 <td>
-                  <strong>
-                    <a href="{{ url_for('admin_group_detail', group_id=g.group_id) }}" class="text-decoration-none">
-                      {{ g.name }}
-                    </a>
-                  </strong>
-                  {% if g.description %}
-                    <div class="text-muted" style="font-size: 12px; margin-top: 2px;">
-                      {{ g.description | truncate(60) }}
-                    </div>
-                  {% endif %}
+                  <div class="d-flex align-items-center gap-2">
+                    <!-- Tile image or coloured avatar -->
+                    {% if g.tile_image %}
+                      <img src="{{ url_for('static', filename='images/uploads/' ~ g.tile_image) }}"
+                           alt="{{ g.name }}"
+                           style="width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;">
+                    {% else %}
+                      <div class="group-color-avatar" data-color="{{ g.color_theme }}"
+                           style="width:28px;height:28px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;">
+                        {{ g.name[0].upper() }}
+                      </div>
+                    {% endif %}
+                    <strong>
+                      <a href="{{ url_for('admin_group_detail', group_id=g.group_id) }}" class="text-decoration-none">
+                        {{ g.name }}
+                      </a>
+                    </strong>
+                  </div>
                 </td>
                 <td class="text-center">{{ g.member_count }}</td>
                 <td class="text-center" style="font-size: 13px; max-width: 180px;">
@@ -130,9 +135,6 @@
                   {{ g.created_at.strftime('%d %b %Y') if g.created_at else 'Unknown' }}
                 </td>
                 <td class="text-center lines-table-actions">
-                  <a href="{{ url_for('admin_group_detail', group_id=g.group_id) }}"
-                     class="btn btn-sm-amber"
-                     aria-label="Manage {{ g.name }}">Manage</a>
                   <button type="button"
                           class="btn {{ 'btn-sm-danger' if g.is_active else 'btn-sm-pf' }}"
                           data-bs-toggle="modal" data-bs-target="#toggle-group-modal"
@@ -181,21 +183,61 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    // Apply group colour theme to avatars (keeps Jinja out of style attributes)
+    document.querySelectorAll('.group-color-avatar[data-color]').forEach(function (el) {
+      el.style.background = el.dataset.color;
+    });
 
-    // Toggle modal wiring
+    const searchInput  = document.getElementById('search');
+    const statusFilter = document.getElementById('status-filter');
+    const clearBtn     = document.getElementById('clear-btn');
+    const rows         = document.querySelectorAll('.group-row');
+    const tbody        = document.querySelector('table tbody');
+
+    // Empty-state row
+    const noResults = document.createElement('tr');
+    noResults.id = 'no-results-row';
+    noResults.style.display = 'none';
+    noResults.innerHTML = '<td colspan="7" class="text-center text-muted py-4">No groups match the current search or filter.</td>';
+    if (tbody) tbody.appendChild(noResults);
+
+    function filterRows() {
+      const q      = searchInput.value.toLowerCase().trim();
+      const status = statusFilter.value;
+      let visible  = 0;
+      rows.forEach(function (row) {
+        const matchSearch = !q      || row.dataset.search.includes(q);
+        const matchStatus = !status || row.dataset.status === status;
+        const show = matchSearch && matchStatus;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      noResults.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
+    }
+
+    searchInput.addEventListener('input', filterRows);
+    statusFilter.addEventListener('change', filterRows);
+    clearBtn.addEventListener('click', function () {
+      searchInput.value  = '';
+      statusFilter.value = '';
+      filterRows();
+      searchInput.focus();
+    });
+
+    // Toggle modal
     document.getElementById('toggle-group-modal').addEventListener('show.bs.modal', function (event) {
-      const btn      = event.relatedTarget;
-      const groupId  = btn.dataset.groupId;
-      const name     = btn.dataset.groupName;
-      const action   = btn.dataset.action;
-      const isDeact  = action === 'deactivate';
+      const btn     = event.relatedTarget;
+      const groupId = btn.dataset.groupId;
+      const name    = btn.dataset.groupName;
+      const action  = btn.dataset.action;
+      const isDeact = action === 'deactivate';
 
       document.getElementById('toggle-group-title').textContent  = isDeact ? 'Deactivate Group' : 'Activate Group';
       document.getElementById('toggle-group-action').textContent = action;
       document.getElementById('toggle-group-name').textContent   = name;
       document.getElementById('toggle-group-warning').textContent = isDeact
-        ? 'The group will be hidden from public view and members will lose write access. All data is retained.'
-        : 'The group will be made visible and members will regain their access.';
+        ? 'The group will be hidden and members will lose write access. All data is retained.'
+        : 'The group will be made visible again and members will regain their access.';
 
       const submitBtn = document.getElementById('toggle-group-btn');
       submitBtn.textContent = isDeact ? 'Yes, deactivate' : 'Yes, activate';
@@ -207,42 +249,56 @@
     // Client-side sorting
     let sortField = 'name', sortDir = 'asc';
     const headers = document.querySelectorAll('.sortable-header');
-    const tbody   = document.querySelector('table tbody');
+
+    function updateSortIcons() {
+      headers.forEach(function (h) {
+        const icon  = h.querySelector('.sort-icon');
+        const field = h.dataset.field;
+        if (icon) {
+          const active = field === sortField;
+          icon.className = 'bi bi-arrow-down sort-icon' + (active ? '' : ' opacity-25');
+          if (active && sortDir === 'desc') icon.classList.replace('bi-arrow-down', 'bi-arrow-up');
+        }
+        h.setAttribute('aria-sort', field === sortField
+          ? (sortDir === 'asc' ? 'ascending' : 'descending')
+          : 'none');
+      });
+    }
 
     headers.forEach(function (header) {
       header.addEventListener('click', function () {
         const field = header.dataset.field;
         if (sortField === field) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
         else { sortField = field; sortDir = 'asc'; }
-
-        headers.forEach(function (h) {
-          const icon = h.querySelector('.sort-icon');
-          if (icon) icon.className = 'bi sort-icon';
-          h.setAttribute('aria-sort', 'none');
-        });
-        const activeIcon = header.querySelector('.sort-icon');
-        if (activeIcon) activeIcon.classList.add(sortDir === 'asc' ? 'bi-arrow-down' : 'bi-arrow-up');
-        header.setAttribute('aria-sort', sortDir === 'asc' ? 'ascending' : 'descending');
-
-        const rows = Array.from(tbody.querySelectorAll('.group-row'));
-        rows.sort(function (a, b) {
-          let valA = '', valB = '';
-          if (field === 'status') {
-            valA = a.dataset.status; valB = b.dataset.status;
-          } else if (field === 'visibility') {
-            valA = a.dataset.visibility; valB = b.dataset.visibility;
-          } else {
-            valA = a.getAttribute('data-sort-' + field) || '';
-            valB = b.getAttribute('data-sort-' + field) || '';
-          }
-          if (valA < valB) return sortDir === 'asc' ? -1 : 1;
-          if (valA > valB) return sortDir === 'asc' ? 1  : -1;
-          return 0;
-        });
-        rows.forEach(function (r) { tbody.appendChild(r); });
+        updateSortIcons();
+        sortRows();
       });
     });
 
+    function sortRows() {
+      const allRows = Array.from(tbody.querySelectorAll('.group-row'));
+      allRows.sort(function (a, b) {
+        let valA = '', valB = '';
+        if (sortField === 'status')     { valA = a.dataset.status;     valB = b.dataset.status; }
+        else if (sortField === 'visibility') { valA = a.dataset.visibility; valB = b.dataset.visibility; }
+        else {
+          valA = a.getAttribute('data-sort-' + sortField) || '';
+          valB = b.getAttribute('data-sort-' + sortField) || '';
+        }
+        // Numeric sort for members
+        if (sortField === 'members') {
+          return sortDir === 'asc' ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
+        }
+        if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDir === 'asc' ? 1  : -1;
+        return 0;
+      });
+      allRows.forEach(function (r) { tbody.appendChild(r); });
+      tbody.appendChild(noResults);
+    }
+
+    // Initialise: show arrows at full opacity for the default sort column
+    updateSortIcons();
   });
 </script>
 {% endblock %}

@@ -779,6 +779,15 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border-color: #565e64;
 }
 
+/* btn-sm-outline used as a clear/reset button inside filter shells:
+   white background, height to match form-control (44px). */
+.lines-filter-shell .btn-sm-outline {
+  min-height: 44px;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+}
+
 .lines-filter-summary {
   font-size: 12px;
   color: #6b7c72;
