@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a3a2e">
+  <title>{% block title %}Tiaki — Conservation, together{% endblock %}</title>
+
+  {# Favicon — reuse the existing one from the in-app surface #}
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+
+  {# Google Fonts — Fraunces (display) + IBM Plex Sans (body) + IBM Plex Mono (meta) #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  {# Tiaki marketing-surface CSS #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/template-default.css') }}">
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+
+  {# Skip-to-content link — keyboard users can jump past the header #}
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  {# Flash messages — role="alert" for danger/error so screen readers announce; status for the rest #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-stack" aria-live="polite">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}"
+               role="{% if category in ['danger', 'error'] %}alert{% else %}status{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <header class="site-header" role="banner">
+    <div class="container-wide site-header-inner">
+      <a class="brand" href="{{ url_for('index') }}" aria-label="Tiaki home">
+        Tiaki <span class="brand-tagline" aria-hidden="true">— conservation, together</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="{{ url_for('index') }}#groups">Groups</a>
+        <a href="#about">About</a>
+        {% if session.user_id %}
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('logout') }}">Sign out</a>
+          <a class="btn btn-primary btn-sm" href="{{ url_for('select_group') }}">My Tiaki</a>
+        {% else %}
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('login') }}">Sign in</a>
+          <a class="btn btn-primary btn-sm" href="{{ url_for('register') }}">Join Tiaki</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" role="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      Tiaki · A platform for predator-free Aotearoa
+      <span aria-hidden="true" style="margin: 0 8px; opacity: 0.4;">·</span>
+      <a href="#about">About</a>
+      <a href="#privacy">Privacy</a>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
