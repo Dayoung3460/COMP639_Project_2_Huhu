@@ -56,13 +56,13 @@
           <form id="img-upload-form" method="POST"
                 action="{{ url_for('admin_group_update_image', group_id=group.group_id) }}"
                 enctype="multipart/form-data">
-            <input type="file" id="img-input" name="tile_image"
+            <input type="file" id="img-input" name="image"
                    accept=".png,.jpg,.jpeg,.gif" class="d-none">
             <button type="button" class="group-img-btn"
                     onclick="document.getElementById('img-input').click()"
                     title="Click to change image" aria-label="Change group image">
-              {% if group.tile_image %}
-                <img src="{{ url_for('static', filename='images/uploads/' ~ group.tile_image) }}"
+              {% if group.image %}
+                <img src="{{ url_for('static', filename='images/uploads/' ~ group.image) }}"
                      alt="{{ group.name }}"
                      style="width:100%;height:100%;object-fit:cover;display:block;">
               {% else %}
@@ -77,17 +77,10 @@
               </div>
             </button>
           </form>
-          {% if group.tile_image %}
-            <form method="POST"
-                  action="{{ url_for('admin_group_remove_image', group_id=group.group_id) }}">
-              <button type="submit" class="group-img-remove">Remove</button>
-            </form>
-          {% else %}
-            <button type="button" class="group-img-remove"
-                    onclick="document.getElementById('img-input').click()">
-              Add Image
-            </button>
-          {% endif %}
+          <button type="button" class="group-img-remove"
+                  onclick="document.getElementById('img-input').click()">
+            Change Image
+          </button>
         </div>
         <div style="min-width:0;word-break:break-word;">
           <div class="profile-name">{{ group.name }}</div>

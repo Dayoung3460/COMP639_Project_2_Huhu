@@ -33,16 +33,16 @@ ON CONFLICT DO NOTHING;
 -- GROUPS
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO groups (name, description, is_public, color_theme) VALUES
+INSERT INTO groups (name, description, is_public, image, color_theme) VALUES
     ('Predator Free Lincoln University',
      'Volunteer predator-control initiative across Lincoln University campus.',
-     TRUE,  '#198754'),
+     TRUE,  'group_lincoln.png', '#198754'),
     ('Christchurch City Trappers',
      'Community predator trapping group operating across central Christchurch.',
-     TRUE,  '#0d6efd'),
+     TRUE,  'group_chch.png',    '#0d6efd'),
     ('Banks Peninsula Restoration',
      'Private restoration group operating on private land on Banks Peninsula.',
-     FALSE, '#dc3545')
+     FALSE, 'group_banks.png',   '#dc3545')
 ON CONFLICT (name) DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
@@ -395,10 +395,11 @@ ON CONFLICT (user_id, group_id) DO NOTHING;
 -- Log in as smitchell / Password1! (Super Admin) to approve or reject
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO group_applications (user_id, proposed_name, reason, status, applied_at) VALUES
+INSERT INTO group_applications (user_id, proposed_name, image, reason, status, applied_at) VALUES
 (
     (SELECT user_id FROM users WHERE username = 'enyberg'),
     'Selwyn District Trappers',
+    'group_selwyn.png',
     'I coordinate an informal trapping network across the Selwyn District with about 15 volunteers. Formalising would let us centralise our data and coordinate effort more effectively.',
     'pending',
     NOW() - INTERVAL '5 days'
@@ -406,6 +407,7 @@ INSERT INTO group_applications (user_id, proposed_name, reason, status, applied_
 (
     (SELECT user_id FROM users WHERE username = 'hpatel'),
     'Riccarton Bush Restoration',
+    'group_riccarton.png',
     'A small community group focused on the Riccarton Bush reserve. We run monthly trap checks and would benefit from proper data recording tools.',
     'pending',
     NOW() - INTERVAL '2 days'

@@ -61,7 +61,7 @@ def index():
                     g.name,
                     g.description,
                     g.is_public,
-                    g.tile_image,
+                    g.image,
                     g.color_theme,
                     g.created_at,
                     (SELECT COUNT(*) FROM group_memberships

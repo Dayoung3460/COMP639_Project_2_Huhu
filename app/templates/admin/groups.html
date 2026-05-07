@@ -47,8 +47,14 @@
         </div>
 
         <div class="col-md-auto d-grid">
-          <button type="button" id="clear-btn" class="btn-sm-outline"
+          <button type="button" id="clear-btn" class="btn-pf-outline"
                   aria-label="Clear all filters">Clear</button>
+        </div>
+
+        <div class="col-md-auto d-grid ms-md-auto">
+          <a href="{{ url_for('admin_group_create') }}" class="btn-pf-full">
+            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Create New Group
+          </a>
         </div>
 
       </div>
@@ -92,8 +98,8 @@
                 <td>
                   <div class="d-flex align-items-center gap-2">
                     <!-- Tile image or coloured avatar -->
-                    {% if g.tile_image %}
-                      <img src="{{ url_for('static', filename='images/uploads/' ~ g.tile_image) }}"
+                    {% if g.image %}
+                      <img src="{{ url_for('static', filename='images/uploads/' ~ g.image) }}"
                            alt="{{ g.name }}"
                            style="width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;">
                     {% else %}
