@@ -1006,9 +1006,7 @@ def admin_group_create():
             errors.append('Description is required.')
         if not coordinator_ids:
             errors.append('At least one Group Coordinator must be selected.')
-        if not file or not file.filename:
-            errors.append('A group image is required.')
-        elif not allowed_file(file.filename):
+        if file and file.filename and not allowed_file(file.filename):
             errors.append('Image must be PNG, JPG, JPEG, or GIF.')
 
         if errors:
@@ -1022,11 +1020,13 @@ def admin_group_create():
                 flash(f'A group named "{name}" already exists.', 'danger')
                 return render_template('admin/create_group.html', all_users=all_users)
 
-        # Save image before INSERT (image is NOT NULL)
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"group_{uuid.uuid4().hex}.{ext}"
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
+        # Optional image upload
+        filename = None
+        if file and file.filename:
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"group_{uuid.uuid4().hex}.{ext}"
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            file.save(os.path.join(UPLOAD_FOLDER, filename))
 
         with db.get_cursor() as cursor:
             cursor.execute('''
@@ -1260,7 +1260,16 @@ def admin_group_remove_image(group_id):
         flash('Group not found.', 'danger')
         return redirect(url_for('admin_groups'))
 
-    flash('Groups must always have an image. Upload a new image to replace the current one.', 'warning')
+    if group['image']:
+        old_path = os.path.join(UPLOAD_FOLDER, group['image'])
+        if os.path.exists(old_path):
+            os.remove(old_path)
+        with db.get_cursor() as cursor:
+            cursor.execute('UPDATE groups SET image = NULL WHERE group_id = %s', (group_id,))
+        flash('Group image removed.', 'success')
+    else:
+        flash('No image to remove.', 'info')
+
     return redirect(url_for('admin_group_detail', group_id=group_id))
 
 
