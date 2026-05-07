@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% block title %}{{ group.name }} — Group Management{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-collection" aria-hidden="true"></i>
+  </div>
+  Group Management
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_groups') }}">Manage Groups</a></li>
+    <li class="breadcrumb-item active">{{ group.name }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<style>
+  .group-img-btn {
+    width: 56px; height: 56px; border-radius: 12px; overflow: hidden;
+    border: 3px solid rgba(255,255,255,0.25); padding: 0; cursor: pointer;
+    position: relative; display: block; background: none; flex-shrink: 0;
+  }
+  .group-img-btn__overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px; opacity: 0; transition: opacity 0.15s;
+    border-radius: 9px;
+  }
+  .group-img-btn:hover .group-img-btn__overlay { opacity: 1; }
+  .group-img-remove {
+    font-size: 11px; color: rgba(255,255,255,0.55); background: none;
+    border: none; cursor: pointer; padding: 0; text-decoration: underline;
+    display: block; text-align: center;
+  }
+  .group-img-remove:hover { color: #fff; }
+</style>
+<div class="container-fluid py-3">
+
+  <div class="row">
+
+    <!-- Left column: info + edit form -->
+    <div class="col-md-6 mb-4">
+
+      <!-- Group header card -->
+      <div class="profile-header-card mb-4">
+
+        <!-- Clickable image / avatar -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;">
+          <form id="img-upload-form" method="POST"
+                action="{{ url_for('admin_group_update_image', group_id=group.group_id) }}"
+                enctype="multipart/form-data">
+            <input type="file" id="img-input" name="tile_image"
+                   accept=".png,.jpg,.jpeg,.gif" class="d-none">
+            <button type="button" class="group-img-btn"
+                    onclick="document.getElementById('img-input').click()"
+                    title="Click to change image" aria-label="Change group image">
+              {% if group.tile_image %}
+                <img src="{{ url_for('static', filename='images/uploads/' ~ group.tile_image) }}"
+                     alt="{{ group.name }}"
+                     style="width:100%;height:100%;object-fit:cover;display:block;">
+              {% else %}
+                <div class="group-header-avatar" data-color="{{ group.color_theme }}"
+                     style="width:100%;height:100%;display:flex;align-items:center;
+                            justify-content:center;font-size:24px;font-weight:700;color:#fff;">
+                  {{ group.name[0].upper() }}
+                </div>
+              {% endif %}
+              <div class="group-img-btn__overlay">
+                <i class="bi bi-camera-fill" aria-hidden="true"></i>
+              </div>
+            </button>
+          </form>
+          {% if group.tile_image %}
+            <form method="POST"
+                  action="{{ url_for('admin_group_remove_image', group_id=group.group_id) }}">
+              <button type="submit" class="group-img-remove">Remove</button>
+            </form>
+          {% else %}
+            <button type="button" class="group-img-remove"
+                    onclick="document.getElementById('img-input').click()">
+              Add Image
+            </button>
+          {% endif %}
+        </div>
+        <div style="min-width:0;word-break:break-word;">
+          <div class="profile-name">{{ group.name }}</div>
+          <div class="profile-role">
+            {% if group.is_active %}
+              <span class="badge-active">Active</span>
+            {% else %}
+              <span class="badge-inactive">Inactive</span>
+            {% endif %}
+            &middot;
+            {% if group.is_public %}
+              <span style="font-size:12px;">Public</span>
+            {% else %}
+              <span style="font-size:12px;">Private</span>
+            {% endif %}
+            &middot; {{ group.member_count }} member{{ 's' if group.member_count != 1 else '' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- System info -->
+      <div class="panel mb-4">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-display me-2" aria-hidden="true"></i>Group Info</div>
+        </div>
+        <div class="panel-body" style="font-size:13px;">
+          <div style="display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 16px;" class="mb-2">
+            <div style="color:#6b7c72;font-weight:600;white-space:nowrap;">Status</div>
+            <div style="text-align:right;">
+              {% if group.is_active %}
+                <span class="badge-active">Active</span>
+              {% else %}
+                <span class="badge-inactive">Inactive</span>
+              {% endif %}
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 16px;" class="mb-2">
+            <div style="color:#6b7c72;font-weight:600;white-space:nowrap;">Visibility</div>
+            <div style="text-align:right;">
+              {% if group.is_public %}
+                <span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">Public</span>
+              {% else %}
+                <span style="background:#fff3cd;color:#664d03;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">Private</span>
+              {% endif %}
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 16px;" class="mb-2">
+            <div style="color:#6b7c72;font-weight:600;white-space:nowrap;">Members</div>
+            <div style="text-align:right;">{{ group.member_count }}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 16px;" class="mb-0">
+            <div style="color:#6b7c72;font-weight:600;white-space:nowrap;">Created</div>
+            <div style="text-align:right;">{{ group.created_at.strftime('%d %b %Y') if group.created_at else 'Unknown' }}</div>
+          </div>
+
+          <hr class="form-section-divider">
+
+          <!-- Deactivate / Activate -->
+          {% if group.is_active %}
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600;font-size:13px;">Deactivate Group</div>
+                <div class="text-muted" style="font-size:12px;">Hides the group and removes member write access. Data is retained.</div>
+              </div>
+              <button type="button" class="btn btn-sm-danger"
+                      data-bs-toggle="modal" data-bs-target="#toggle-group-modal"
+                      data-group-id="{{ group.group_id }}"
+                      data-group-name="{{ group.name }}"
+                      data-action="deactivate">
+                Deactivate
+              </button>
+            </div>
+          {% else %}
+            <div class="p-3 rounded mb-3" style="background:#fff3cd;border:1px solid #ffc107;color:#664d03;font-size:13px;">
+              <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+              This group is <strong>inactive</strong>. Members cannot perform write operations.
+            </div>
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-sm-pf"
+                      data-bs-toggle="modal" data-bs-target="#toggle-group-modal"
+                      data-group-id="{{ group.group_id }}"
+                      data-group-name="{{ group.name }}"
+                      data-action="activate">
+                Reactivate Group
+              </button>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right column: edit form + coordinators -->
+    <div class="col-md-6 mb-4">
+
+      <!-- Edit group info -->
+      <div class="panel mb-4">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Edit Group Info</div>
+        </div>
+        <div class="panel-body">
+          <form method="POST" action="{{ url_for('admin_group_edit', group_id=group.group_id) }}" autocomplete="off">
+            <div class="mb-3">
+              <label for="group-name" class="form-label">Group Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="group-name" name="name"
+                     value="{{ group.name }}" required maxlength="255">
+            </div>
+            <div class="mb-3">
+              <label for="group-desc" class="form-label">Description <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="group-desc" name="description" rows="3"
+                        maxlength="1000" required>{{ group.description or '' }}</textarea>
+            </div>
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-sm-pf">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Coordinators -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-person-gear me-2" aria-hidden="true"></i>Group Coordinators</div>
+        </div>
+        <div class="panel-body">
+
+          {% if coordinators %}
+            <div class="pf-table-responsive mb-3" style="border:1px solid #e4ede8;border-radius:8px;">
+              <table class="pf-table mb-0" aria-label="Group coordinators">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col" class="text-center">Username</th>
+                    <th scope="col" class="text-center">Account</th>
+                    <th scope="col" class="text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for c in coordinators %}
+                    <tr>
+                      <td>
+                        <a href="{{ url_for('admin_user_detail', user_id=c.user_id) }}"
+                           class="text-decoration-none fw-semibold">
+                          {{ c.first_name }} {{ c.last_name }}
+                        </a>
+                      </td>
+                      <td class="text-center">@{{ c.username }}</td>
+                      <td class="text-center">
+                        <span class="{{ 'badge-active' if c.account_status == 'active' else 'badge-inactive' }}">
+                          {{ c.account_status | capitalize }}
+                        </span>
+                      </td>
+                      <td class="text-center">
+                        {% if coordinators | length > 1 %}
+                          <button type="button" class="btn-sm-danger"
+                                  data-bs-toggle="modal" data-bs-target="#remove-coordinator-modal"
+                                  data-user-id="{{ c.user_id }}"
+                                  data-user-name="{{ c.first_name }} {{ c.last_name }}"
+                                  aria-label="Remove {{ c.first_name }} {{ c.last_name }} as coordinator">
+                            Remove
+                          </button>
+                        {% else %}
+                          <button type="button" class="btn-sm-danger" disabled
+                                  style="opacity:0.35;cursor:not-allowed;"
+                                  title="At least one coordinator is required">
+                            Remove
+                          </button>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-3" style="font-size:13px;">No coordinators assigned.</p>
+          {% endif %}
+
+          <!-- Add coordinator from existing members -->
+          {% if promotable_members %}
+            <form method="POST" action="{{ url_for('admin_group_add_coordinator', group_id=group.group_id) }}"
+                  class="d-flex gap-2 align-items-end" autocomplete="off">
+              <div class="flex-grow-1">
+                <label for="add-coordinator-select" class="form-label mb-1" style="font-size:13px;">
+                  Promote a member to Coordinator
+                </label>
+                <div class="position-relative">
+                  <select class="form-select form-select-sm" id="add-coordinator-select"
+                          name="user_id" style="background-image:none;" required>
+                    <option value="">Select member&hellip;</option>
+                    {% for m in promotable_members %}
+                      <option value="{{ m.user_id }}">
+                        {{ m.first_name }} {{ m.last_name }} (@{{ m.username }}) — {{ m.role }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y"
+                     style="right:10px;color:var(--pf-700);pointer-events:none;font-size:11px;" aria-hidden="true"></i>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-sm-pf" style="white-space:nowrap;">Add</button>
+            </form>
+          {% else %}
+            <p class="text-muted mb-0" style="font-size:12px;">
+              No other members available to promote. Add members to the group first.
+            </p>
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Toggle active/inactive modal -->
+<div class="modal fade pop-up-modal" id="toggle-group-modal" tabindex="-1" role="dialog"
+     aria-labelledby="toggle-group-title" aria-modal="true">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="toggle-group-form" autocomplete="off">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="toggle-group-title">Confirm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to <strong id="toggle-group-action-text"></strong> this group?</p>
+          <p class="text-muted mb-0" style="font-size:13px;" id="toggle-group-warning"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm-outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn" id="toggle-group-btn">Confirm</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Remove coordinator modal -->
+<div class="modal fade pop-up-modal" id="remove-coordinator-modal" tabindex="-1" role="dialog"
+     aria-labelledby="remove-coordinator-title" aria-modal="true">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="remove-coordinator-form" autocomplete="off">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="remove-coordinator-title">Remove Coordinator</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Remove <strong id="remove-coordinator-name"></strong> as a coordinator?</p>
+          <p class="text-muted mb-0" style="font-size:13px;">
+            They will be demoted to Observer but remain a group member.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm-outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm-danger">Yes, remove</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+
+    // Apply group colour to avatar
+    document.querySelectorAll('.group-header-avatar[data-color]').forEach(function (el) {
+      el.style.background = el.dataset.color;
+    });
+
+    // Auto-submit image form when a file is picked
+    var imgInput = document.getElementById('img-input');
+    if (imgInput) {
+      imgInput.addEventListener('change', function () {
+        if (this.files && this.files.length > 0) {
+          document.getElementById('img-upload-form').submit();
+        }
+      });
+    }
+
+    // Toggle active modal
+    var toggleModal = document.getElementById('toggle-group-modal');
+    if (toggleModal) {
+      toggleModal.addEventListener('show.bs.modal', function (event) {
+        var btn     = event.relatedTarget;
+        var groupId = btn.dataset.groupId;
+        var action  = btn.dataset.action;
+        var isDeact = action === 'deactivate';
+
+        document.getElementById('toggle-group-title').textContent        = isDeact ? 'Deactivate Group' : 'Reactivate Group';
+        document.getElementById('toggle-group-action-text').textContent  = action;
+        document.getElementById('toggle-group-warning').textContent      = isDeact
+          ? 'The group will be hidden and members will lose write access. All data is retained.'
+          : 'The group will be made visible again and members will regain access.';
+
+        var btn2 = document.getElementById('toggle-group-btn');
+        btn2.textContent = isDeact ? 'Yes, deactivate' : 'Yes, reactivate';
+        btn2.className   = isDeact ? 'btn btn-sm-danger' : 'btn btn-sm-pf';
+
+        document.getElementById('toggle-group-form').action =
+          '/admin/groups/' + groupId + '/toggle-active';
+      });
+    }
+
+    // Remove coordinator modal
+    var removeModal = document.getElementById('remove-coordinator-modal');
+    if (removeModal) {
+      removeModal.addEventListener('show.bs.modal', function (event) {
+        var btn    = event.relatedTarget;
+        var userId = btn.dataset.userId;
+        var name   = btn.dataset.userName;
+
+        document.getElementById('remove-coordinator-name').textContent = name;
+        document.getElementById('remove-coordinator-form').action =
+          '/admin/groups/{{ group.group_id }}/coordinators/remove/' + userId;
+      });
+    }
+
+  });
+</script>
+{% endblock %}

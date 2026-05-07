@@ -185,3 +185,25 @@ def check_user_status():
                 session.clear()
                 flash('Your account has been deactivated. Please contact an administrator.', 'danger')
                 return redirect(url_for('login'))
+
+        # If the user has an active group session, verify that group is still active.
+        # If the group has been deactivated, strip the group context and redirect them out.
+        group_id = session.get('group_id')
+        if group_id and request.endpoint not in ('select_group', 'logout'):
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'SELECT is_active FROM groups WHERE group_id = %s',
+                    (group_id,)
+                )
+                grp = cursor.fetchone()
+            if grp and not grp['is_active']:
+                group_name = session.get('group_name', 'your group')
+                session.pop('group_id', None)
+                session.pop('group_role', None)
+                session.pop('group_name', None)
+                flash(
+                    f'"{group_name}" has been deactivated by an administrator. '
+                    'Please select another group or contact support.',
+                    'warning'
+                )
+                return redirect(url_for('select_group'))

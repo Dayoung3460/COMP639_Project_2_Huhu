@@ -143,6 +143,7 @@ CREATE TABLE groups (
     name        VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
     is_public   BOOLEAN      NOT NULL DEFAULT TRUE,
+    is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
     tile_image  VARCHAR(255) DEFAULT NULL,
     color_theme VARCHAR(7)   NOT NULL DEFAULT '#198754',
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
