@@ -21,6 +21,26 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  .group-img-btn {
+    width: 56px; height: 56px; border-radius: 12px; overflow: hidden;
+    border: 3px solid rgba(255,255,255,0.25); padding: 0; cursor: pointer;
+    position: relative; display: block; background: none; flex-shrink: 0;
+  }
+  .group-img-btn__overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px; opacity: 0; transition: opacity 0.15s;
+    border-radius: 9px;
+  }
+  .group-img-btn:hover .group-img-btn__overlay { opacity: 1; }
+  .group-img-remove {
+    font-size: 11px; color: rgba(255,255,255,0.55); background: none;
+    border: none; cursor: pointer; padding: 0; text-decoration: underline;
+    display: block; text-align: center;
+  }
+  .group-img-remove:hover { color: #fff; }
+</style>
 <div class="container-fluid py-3">
 
   <div class="row">
@@ -30,10 +50,44 @@
 
       <!-- Group header card -->
       <div class="profile-header-card mb-4">
-        <div style="width:56px;height:56px;border-radius:12px;background:var(--pf-600);
-                    border:3px solid rgba(255,255,255,0.25);display:flex;align-items:center;
-                    justify-content:center;font-size:26px;color:#fff;flex-shrink:0;">
-          <i class="bi bi-collection" aria-hidden="true"></i>
+
+        <!-- Clickable image / avatar -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;">
+          <form id="img-upload-form" method="POST"
+                action="{{ url_for('admin_group_update_image', group_id=group.group_id) }}"
+                enctype="multipart/form-data">
+            <input type="file" id="img-input" name="tile_image"
+                   accept=".png,.jpg,.jpeg,.gif" class="d-none">
+            <button type="button" class="group-img-btn"
+                    onclick="document.getElementById('img-input').click()"
+                    title="Click to change image" aria-label="Change group image">
+              {% if group.tile_image %}
+                <img src="{{ url_for('static', filename='images/uploads/' ~ group.tile_image) }}"
+                     alt="{{ group.name }}"
+                     style="width:100%;height:100%;object-fit:cover;display:block;">
+              {% else %}
+                <div class="group-header-avatar" data-color="{{ group.color_theme }}"
+                     style="width:100%;height:100%;display:flex;align-items:center;
+                            justify-content:center;font-size:24px;font-weight:700;color:#fff;">
+                  {{ group.name[0].upper() }}
+                </div>
+              {% endif %}
+              <div class="group-img-btn__overlay">
+                <i class="bi bi-camera-fill" aria-hidden="true"></i>
+              </div>
+            </button>
+          </form>
+          {% if group.tile_image %}
+            <form method="POST"
+                  action="{{ url_for('admin_group_remove_image', group_id=group.group_id) }}">
+              <button type="submit" class="group-img-remove">Remove</button>
+            </form>
+          {% else %}
+            <button type="button" class="group-img-remove"
+                    onclick="document.getElementById('img-input').click()">
+              Add Image
+            </button>
+          {% endif %}
         </div>
         <div style="min-width:0;word-break:break-word;">
           <div class="profile-name">{{ group.name }}</div>
@@ -142,9 +196,9 @@
                      value="{{ group.name }}" required maxlength="255">
             </div>
             <div class="mb-3">
-              <label for="group-desc" class="form-label">Description</label>
+              <label for="group-desc" class="form-label">Description <span class="text-danger">*</span></label>
               <textarea class="form-control" id="group-desc" name="description" rows="3"
-                        maxlength="1000">{{ group.description or '' }}</textarea>
+                        maxlength="1000" required>{{ group.description or '' }}</textarea>
             </div>
             <div class="d-flex justify-content-end">
               <button type="submit" class="btn btn-sm-pf">Save Changes</button>
@@ -188,7 +242,7 @@
                       </td>
                       <td class="text-center">
                         {% if coordinators | length > 1 %}
-                          <button type="button" class="btn btn-sm-danger"
+                          <button type="button" class="btn-sm-danger"
                                   data-bs-toggle="modal" data-bs-target="#remove-coordinator-modal"
                                   data-user-id="{{ c.user_id }}"
                                   data-user-name="{{ c.first_name }} {{ c.last_name }}"
@@ -196,9 +250,11 @@
                             Remove
                           </button>
                         {% else %}
-                          <span class="text-muted" style="font-size:12px;" title="At least one coordinator is required">
-                            Last coordinator
-                          </span>
+                          <button type="button" class="btn-sm-danger" disabled
+                                  style="opacity:0.35;cursor:not-allowed;"
+                                  title="At least one coordinator is required">
+                            Remove
+                          </button>
                         {% endif %}
                       </td>
                     </tr>
@@ -298,6 +354,21 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+
+    // Apply group colour to avatar
+    document.querySelectorAll('.group-header-avatar[data-color]').forEach(function (el) {
+      el.style.background = el.dataset.color;
+    });
+
+    // Auto-submit image form when a file is picked
+    var imgInput = document.getElementById('img-input');
+    if (imgInput) {
+      imgInput.addEventListener('change', function () {
+        if (this.files && this.files.length > 0) {
+          document.getElementById('img-upload-form').submit();
+        }
+      });
+    }
 
     // Toggle active modal
     var toggleModal = document.getElementById('toggle-group-modal');
