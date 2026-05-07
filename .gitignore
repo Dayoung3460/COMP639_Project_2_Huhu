@@ -226,3 +226,12 @@ todo.md
 # Local reference files
 *.pdf
 Jira.csv
+
+# User-uploaded files in dev — keep only seed images
+static/images/uploads/*
+!static/images/uploads/avatar_*
+!static/images/uploads/group_lincoln.png
+!static/images/uploads/group_chch.png
+!static/images/uploads/group_banks.png
+!static/images/uploads/group_selwyn.png
+!static/images/uploads/group_riccarton.png
