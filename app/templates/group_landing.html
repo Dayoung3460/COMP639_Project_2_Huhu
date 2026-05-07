@@ -1,0 +1,184 @@
+{% extends "base_marketing.html" %}
+
+{% block title %}{{ group.name }} · Tiaki{% endblock %}
+
+{% block content %}
+
+{# ── Hero band — uses the group's color_theme as accent ─────────── #}
+<section class="group-hero"
+         style="--group-hero-tint: {{ group.color_theme or '#1a3a2e' }};">
+  <div class="container-wide group-hero-inner">
+
+    <a class="group-back-link" href="{{ url_for('index') }}#groups">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      All groups
+    </a>
+
+    <div class="group-hero-content">
+      <span class="group-badge {% if group.is_public %}public{% else %}private{% endif %}">
+        <span class="dot" aria-hidden="true"></span>
+        {% if group.is_public %}Public group{% else %}Private group{% endif %}
+      </span>
+
+      <h1>{{ group.name }}</h1>
+
+      {% if group.is_public %}
+        <p class="group-hero-lead">
+          {{ group.description or 'A volunteer-led conservation group.' }}
+        </p>
+      {% endif %}
+
+      <div class="group-meta-row">
+        {% if group.created_at %}
+          <span class="group-meta-item">
+            <span class="meta-label">Founded</span>
+            <span class="meta-value">{{ group.created_at.strftime('%B %Y') }}</span>
+          </span>
+        {% endif %}
+        {% if group.is_public and coordinators %}
+          <span class="group-meta-item">
+            <span class="meta-label">{% if coordinators|length == 1 %}Coordinator{% else %}Coordinators{% endif %}</span>
+            <span class="meta-value">
+              {% for c in coordinators %}
+                {{ c.first_name }} {{ c.last_name }}{% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </span>
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{% if group.is_public %}
+
+  {# ── Public group — full landing ───────────────────────────── #}
+
+  <section class="section" aria-labelledby="stats-heading">
+    <div class="container-wide">
+      <h2 id="stats-heading" class="visually-hidden">Group activity</h2>
+      <dl class="group-stats" aria-label="Group activity">
+        <div class="group-stat">
+          <dt>Members</dt>
+          <dd>{{ stats.members }}</dd>
+        </div>
+        <div class="group-stat">
+          <dt>Active lines</dt>
+          <dd>{{ stats.lines }}</dd>
+        </div>
+        <div class="group-stat">
+          <dt>Catches recorded</dt>
+          <dd>{{ stats.catches }}</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section section-tight" aria-labelledby="about-heading">
+    <div class="container-wide group-twocol">
+      <div>
+        <div class="section-eyebrow">About this group</div>
+        <h2 id="about-heading">What we do</h2>
+        <p class="group-about-body">
+          {{ group.description or 'This group is part of the Tiaki conservation community, working to protect native species through volunteer-led predator control.' }}
+        </p>
+
+        <div class="member-activities">
+          <div class="section-eyebrow" style="margin-top: 32px;">As a member you can</div>
+          <ul class="activity-list">
+            <li>
+              <strong>Run trap and bait station lines.</strong>
+              Walk a line, record what you catch, log the bait you re-set.
+            </li>
+            <li>
+              <strong>Track group impact.</strong>
+              See your group's catch totals, by species, over time.
+            </li>
+            <li>
+              <strong>Add observations.</strong>
+              Spot a kererū, find predator tracks, mark anything notable on the map.
+            </li>
+            <li>
+              <strong>Stay coordinated.</strong>
+              Coordinators assign lines, share updates, and keep the group in sync.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <aside class="group-cta-card" aria-labelledby="cta-heading">
+        <h3 id="cta-heading">Want to help?</h3>
+        <p>
+          {% if session.user_id %}
+            Sign in is sorted — you can join {{ group.name }} now and start contributing.
+          {% else %}
+            Tiaki accounts are free. Create one to join {{ group.name }} and any other group on the platform.
+          {% endif %}
+        </p>
+        {% if session.user_id %}
+          {# TODO: replace with actual /groups/<id>/join POST when join flow exists #}
+          <a href="{{ url_for('select_group') }}" class="btn btn-primary btn-block">Join {{ group.name }}</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-primary btn-block">Sign in to join</a>
+          <a href="{{ url_for('register') }}" class="btn btn-secondary btn-block">Create an account</a>
+        {% endif %}
+        <p class="group-cta-note">
+          Joining is free. You can leave any time.
+        </p>
+      </aside>
+    </div>
+  </section>
+
+{% else %}
+
+  {# ── Private group — minimal gated view ───────────────────── #}
+
+  <section class="section" aria-labelledby="private-heading">
+    <div class="container-wide">
+      <div class="private-card" role="region" aria-labelledby="private-heading">
+        <div class="private-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <h2 id="private-heading">This group keeps its work private</h2>
+        <p>
+          {{ group.name }} is a private conservation group. Activity, lines, members and records aren't visible without an invitation.
+        </p>
+
+        {% if session.user_id %}
+          {% if has_pending_request %}
+            <div class="private-status">
+              Your request to join is pending. A group coordinator will review it and let you know.
+            </div>
+          {% else %}
+            {# TODO: wire to actual /groups/<id>/request POST when request flow exists #}
+            <a href="{{ url_for('select_group') }}" class="btn btn-primary">Request to join</a>
+          {% endif %}
+        {% else %}
+          <p class="private-note">
+            If you're already a member, sign in to access this group's dashboard.
+          </p>
+          <div class="private-actions">
+            <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in</a>
+            <a href="{{ url_for('register') }}" class="btn btn-secondary">Create an account</a>
+          </div>
+        {% endif %}
+
+        <div class="private-back">
+          <a href="{{ url_for('index') }}#groups">← Back to all groups</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+{% endif %}
+
+{% endblock %}
