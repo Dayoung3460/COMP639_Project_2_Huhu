@@ -187,3 +187,60 @@ All team members utilised Generative AI tools (including ChatGPT, Claude, and Ge
 - CSS component design and `custom.css` structure
 
 While GenAI served as a valuable development accelerator for everyone, the team mostly independently managed core application architecture, database schema design, UI/UX decisions, and final code reviews to ensure the project met all requirements.
+
+---
+
+## Role-Based Access — Developer Guide
+
+All protected routes use the `@role_required` decorator from `app/utils.py`.
+
+### How it works
+
+- Unauthenticated request (no session) → redirect to `/login`
+- Authenticated but wrong role → HTTP 403 (renders `templates/errors/403.html`)
+- Authenticated with an allowed role → route handler runs
+
+The user's active group and role are stored in the session after login (or group selection):
+
+| Session key | Example value |
+|---|---|
+| `session['user_id']` | `42` |
+| `session['group_id']` | `3` |
+| `session['group_role']` | `'Group Coordinator'` |
+| `session['group_name']` | `'Zealandia Restoration'` |
+
+### Decorator usage
+
+```python
+from app.utils import role_required
+
+# Super Admin only
+@app.route('/admin/dashboard')
+@role_required('Super Admin')
+def admin_dashboard():
+    ...
+
+# Coordinator or Super Admin
+@app.route('/coordinator/dashboard')
+@role_required('Group Coordinator', 'Super Admin')
+def coordinator_dashboard():
+    ...
+
+# Any logged-in user (no role restriction)
+@app.route('/profile')
+@role_required()
+def profile():
+    ...
+```
+
+Valid role strings: `'Super Admin'`, `'Group Coordinator'`, `'Operator'`, `'Observer'`
+
+### Helper function
+
+```python
+from app.utils import get_current_group_role
+
+role = get_current_group_role()  # returns e.g. 'Operator', or None if not in a group
+```
+
+Use this inside route handlers or templates (via the context processor) when you need to branch on the current role without rechecking the session key directly.

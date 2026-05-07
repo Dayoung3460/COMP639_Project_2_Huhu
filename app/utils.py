@@ -5,7 +5,7 @@ file upload helper, role-based redirect, and before_request status check.
 """
 
 from functools import wraps
-from flask import session, flash, redirect, url_for, request
+from flask import session, flash, redirect, url_for, request, abort
 import re
 import os
 
@@ -50,8 +50,7 @@ def role_required(*roles):
                 flash('Please log in to access this page.', 'danger')
                 return redirect(url_for('login'))
             if roles and session.get('group_role') not in roles:
-                flash('You do not have permission to access that page', 'danger')
-                return redirect_by_role()
+                abort(403)
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -121,6 +120,13 @@ def validate_lincoln_nz_coordinates(latitude, longitude):
         return LINCOLN_NZ_COORDINATES_ERROR
 
     return ''
+
+
+# ── Role helpers ─────────────────────────────────────────────────────────────
+
+def get_current_group_role():
+    """Returns the active group role from the session, or None if not set."""
+    return session.get('group_role')
 
 
 # ── Role-based redirect ───────────────────────────────────────────────────────
