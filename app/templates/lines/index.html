@@ -8,7 +8,7 @@
     <h2 class="mb-0">Trap Lines</h2>
     <div class="d-flex gap-2 align-items-center lines-page-header__actions">
       {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
-        {{ pf_link_button(url_for('new_line'), 'New Line', variant='btn-sm-pf', icon='bi-plus-lg') }}
+        {{ pf_link_button(url_for('new_line'), 'New Line', variant='btn-pf-full px-5', icon='bi-plus-lg') }}
       {% endif %}
     </div>
   </div>

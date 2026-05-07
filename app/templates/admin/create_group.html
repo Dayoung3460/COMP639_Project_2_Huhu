@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% block title %}Create New Group{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-collection" aria-hidden="true"></i>
+  </div>
+  Create New Group
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_groups') }}">Manage Groups</a></li>
+    <li class="breadcrumb-item active">Create New Group</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container pt-1 pb-4" style="max-width: 720px;">
+
+  <form id="create-group-form" method="POST" action="{{ url_for('admin_group_create') }}"
+        enctype="multipart/form-data" autocomplete="off" novalidate>
+
+    <!-- Basic details -->
+    <div class="panel mb-4">
+      <div class="panel-header">
+        <div class="panel-title"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Group Details</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="mb-3">
+          <label for="group-name" class="form-label">
+            Group Name <span class="text-danger" aria-hidden="true">*</span>
+          </label>
+          <input type="text" class="form-control" id="group-name" name="name"
+                 maxlength="255" required
+                 value="{{ request.form.get('name', '') }}">
+          <div id="name-error" class="mt-1" style="display:none; font-size:12px; color:#dc3545;">
+            Group name is required.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="group-desc" class="form-label">
+            Description <span class="text-danger" aria-hidden="true">*</span>
+          </label>
+          <textarea class="form-control" id="group-desc" name="description"
+                    rows="4" maxlength="1000" required>{{ request.form.get('description', '') }}</textarea>
+          <div id="desc-error" class="mt-1" style="display:none; font-size:12px; color:#dc3545;">
+            Description is required.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Visibility</label>
+          <div class="d-flex gap-4">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="is_public" id="vis-public"
+                     value="1" {% if request.form.get('is_public', '1') == '1' %}checked{% endif %}>
+              <label class="form-check-label" for="vis-public">
+                <i class="bi bi-globe me-1" aria-hidden="true"></i>Public
+                <div class="text-muted" style="font-size: 12px;">Anyone can view the group landing page.</div>
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="is_public" id="vis-private"
+                     value="0" {% if request.form.get('is_public') == '0' %}checked{% endif %}>
+              <label class="form-check-label" for="vis-private">
+                <i class="bi bi-lock me-1" aria-hidden="true"></i>Private
+                <div class="text-muted" style="font-size: 12px;">Only members can see group content.</div>
+              </label>
+            </div>
+          </div>
+          <div id="visibility-error" class="mt-1" style="display:none; font-size:12px; color:#dc3545;">
+            Please select a visibility option.
+          </div>
+        </div>
+
+        <div class="mb-0">
+          <label for="group-image" class="form-label">
+            Group Image
+            <span class="text-muted fw-normal" style="font-size:12px;">(optional — PNG, JPG, JPEG, GIF)</span>
+          </label>
+          <input class="form-control" type="file" id="group-image" name="image"
+                 accept=".png,.jpg,.jpeg,.gif">
+          <div id="image-error" class="mt-1" style="display:none; font-size:12px; color:#dc3545;"></div>
+          <div id="image-preview-wrap" style="display:none; margin-top:10px;">
+            <img id="image-preview" src="" alt="Group image preview"
+                 style="height:100px; width:100px; object-fit:cover; border-radius:10px;
+                        border:2px solid #d8e4dc; display:block;">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Coordinator selection -->
+    <div class="panel mb-4">
+      <div class="panel-header">
+        <div class="panel-title">
+          <i class="bi bi-person-gear me-2" aria-hidden="true"></i>Group Coordinators
+          <span class="text-danger" aria-hidden="true">*</span>
+        </div>
+      </div>
+      <div class="panel-body">
+
+        <p class="text-muted mb-3" style="font-size: 13px;">
+          Select one or more users to appoint as Group Coordinators. They will be notified when the group is created.
+        </p>
+
+        {% if all_users %}
+          <div class="mb-2">
+            <input type="text" id="coordinator-search" class="form-control form-control-sm"
+                   placeholder="Search by name or username…" autocomplete="off"
+                   aria-label="Search users for coordinator appointment">
+          </div>
+          <div id="coordinator-list"
+               style="max-height: 260px; overflow-y: auto; border: 1px solid #d8e4dc; border-radius: 8px; padding: 4px 0;">
+            {% for u in all_users %}
+              <div class="coordinator-item d-flex align-items-center gap-2 px-3 py-2"
+                   data-user-id="{{ u.user_id }}"
+                   data-search="{{ (u.first_name ~ ' ' ~ u.last_name ~ ' ' ~ u.username)|lower }}"
+                   style="cursor:pointer; border-radius:6px; margin:0; user-select:none;">
+                <input type="checkbox" name="coordinator_ids" value="{{ u.user_id }}"
+                       class="coordinator-cb"
+                       style="display:none;"
+                       {% if u.user_id|string in request.form.getlist('coordinator_ids') %}checked{% endif %}>
+                <span style="font-size:13px; pointer-events:none;">
+                  <strong>{{ u.first_name }} {{ u.last_name }}</strong>
+                  <span class="coordinator-username" style="margin-left:4px;">@{{ u.username }}</span>
+                </span>
+              </div>
+            {% endfor %}
+            <div id="coordinator-no-results" class="text-muted text-center py-3"
+                 style="display:none; font-size:13px;">
+              No users match your search.
+            </div>
+          </div>
+          <div id="coordinator-count" class="mt-2" style="font-size:12px; color:#6b7c72;">
+            0 selected
+          </div>
+          <div id="coordinator-error" class="mt-1" style="display:none; font-size:12px; color:#dc3545;">
+            Please select at least one coordinator.
+          </div>
+        {% else %}
+          <p class="text-muted" style="font-size:13px;">No active users available to appoint as coordinators.</p>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-2 justify-content-end">
+      <a href="{{ url_for('admin_groups') }}" class="btn-pf-outline">Cancel</a>
+      <button type="submit" class="btn-pf">Create Group</button>
+    </div>
+
+  </form>
+
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Image preview ──────────────────────────────────────────────────────────
+    const imageInput   = document.getElementById('group-image');
+    const previewWrap  = document.getElementById('image-preview-wrap');
+    const previewImg   = document.getElementById('image-preview');
+
+    if (imageInput) {
+      imageInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            previewImg.src = e.target.result;
+            previewWrap.style.display = '';
+          };
+          reader.readAsDataURL(file);
+        } else {
+          previewWrap.style.display = 'none';
+          previewImg.src = '';
+        }
+      });
+    }
+
+    // ── Coordinator selection ──────────────────────────────────────────────────
+    const items       = document.querySelectorAll('.coordinator-item');
+    const countEl     = document.getElementById('coordinator-count');
+    const errorEl     = document.getElementById('coordinator-error');
+    const searchInput = document.getElementById('coordinator-search');
+    const noResults   = document.getElementById('coordinator-no-results');
+
+    function updateCount() {
+      const n = document.querySelectorAll('.coordinator-cb:checked').length;
+      if (countEl) countEl.textContent = n === 1 ? '1 selected' : n + ' selected';
+    }
+
+    function applyItemState(item) {
+      const cb = item.querySelector('.coordinator-cb');
+      const usernameEl = item.querySelector('.coordinator-username');
+      if (cb.checked) {
+        item.style.background = '#1a5c35';
+        item.style.color = '#fff';
+        if (usernameEl) usernameEl.style.color = 'rgba(255,255,255,0.65)';
+      } else {
+        item.style.background = '';
+        item.style.color = '';
+        if (usernameEl) usernameEl.style.color = '';
+      }
+    }
+
+    items.forEach(function (item) {
+      applyItemState(item);  // restore state on POST-back
+
+      item.addEventListener('click', function () {
+        const cb = this.querySelector('.coordinator-cb');
+        cb.checked = !cb.checked;
+        applyItemState(this);
+        updateCount();
+        if (errorEl) errorEl.style.display = 'none';
+      });
+    });
+
+    updateCount();
+
+    // ── Search filter ──────────────────────────────────────────────────────────
+    function applySearch() {
+      const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      let visible = 0;
+      items.forEach(function (item) {
+        const match = !q || item.dataset.search.includes(q);
+        item.classList.toggle('d-none', !match);
+        if (match) visible++;
+      });
+      if (noResults) noResults.style.display = (visible === 0) ? '' : 'none';
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', applySearch);
+    }
+
+    // ── Form validation ────────────────────────────────────────────────────────
+    const nameInput       = document.getElementById('group-name');
+    const descInput       = document.getElementById('group-desc');
+    const nameError       = document.getElementById('name-error');
+    const descError       = document.getElementById('desc-error');
+    const visibilityError = document.getElementById('visibility-error');
+    const imageError      = document.getElementById('image-error');
+    const ALLOWED_TYPES   = ['image/png', 'image/jpeg', 'image/gif'];
+
+    function setFieldError(input, errorEl, msg) {
+      const show = !!msg;
+      if (errorEl) { errorEl.textContent = msg || ''; errorEl.style.display = show ? '' : 'none'; }
+      if (input)   input.classList.toggle('is-invalid', show);
+    }
+
+    function clearError(input, errorEl) { setFieldError(input, errorEl, ''); }
+
+    nameInput.addEventListener('input', function () {
+      clearError(this, nameError);
+    });
+    descInput.addEventListener('input', function () {
+      clearError(this, descError);
+    });
+    imageInput.addEventListener('change', function () {
+      clearError(this, imageError);
+    });
+    document.querySelectorAll('input[name="is_public"]').forEach(function (r) {
+      r.addEventListener('change', function () {
+        if (visibilityError) visibilityError.style.display = 'none';
+      });
+    });
+
+    document.getElementById('create-group-form').addEventListener('submit', function (e) {
+      let valid = true;
+
+      if (!nameInput.value.trim()) {
+        setFieldError(nameInput, nameError, 'Group name is required.');
+        valid = false;
+      }
+      if (!descInput.value.trim()) {
+        setFieldError(descInput, descError, 'Description is required.');
+        valid = false;
+      }
+
+      const visSelected = document.querySelector('input[name="is_public"]:checked');
+      if (!visSelected) {
+        if (visibilityError) visibilityError.style.display = '';
+        valid = false;
+      }
+
+      const file = imageInput.files[0];
+      if (file && !ALLOWED_TYPES.includes(file.type)) {
+        setFieldError(imageInput, imageError, 'Image must be PNG, JPG, JPEG, or GIF.');
+        valid = false;
+      }
+
+      const anyCoordinator = document.querySelectorAll('.coordinator-cb:checked').length > 0;
+      if (!anyCoordinator) {
+        if (errorEl) errorEl.style.display = '';
+        valid = false;
+      }
+
+      if (!valid) {
+        e.preventDefault();
+        const firstInvalid = document.querySelector('.is-invalid') ||
+                             document.querySelector('[id$="-error"]:not([style*="display: none"]):not([style*="display:none"])');
+        if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+  });
+</script>
+{% endblock %}

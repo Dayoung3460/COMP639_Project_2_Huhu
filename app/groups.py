@@ -30,7 +30,7 @@ def group_landing(group_id):
         cursor.execute('''
             SELECT
                 g.group_id, g.name, g.description, g.is_public,
-                g.tile_image, g.color_theme, g.created_at
+                g.image, g.color_theme, g.created_at
             FROM groups g
             WHERE g.group_id = %s
         ''', (group_id,))

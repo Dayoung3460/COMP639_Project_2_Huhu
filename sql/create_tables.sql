@@ -144,7 +144,7 @@ CREATE TABLE groups (
     description TEXT,
     is_public   BOOLEAN      NOT NULL DEFAULT TRUE,
     is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
-    tile_image  VARCHAR(255) DEFAULT NULL,
+    image       VARCHAR(255) DEFAULT NULL,
     color_theme VARCHAR(7)   NOT NULL DEFAULT '#198754',
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -194,15 +194,15 @@ CREATE TABLE user_notifications (
 -- ==============================================================
 
 CREATE TABLE group_applications (
-    application_id  SERIAL PRIMARY KEY,
-    user_id         INTEGER             NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    proposed_name   VARCHAR(255)        NOT NULL,
-    description     TEXT                NOT NULL,
-    location        VARCHAR(255)        NOT NULL,
-    justification   TEXT                NOT NULL,
-    tile_image      VARCHAR(500),
-    status          request_status_enum NOT NULL DEFAULT 'pending',
-    applied_at      TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP
+    application_id SERIAL PRIMARY KEY,
+    user_id        INTEGER             NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    proposed_name  VARCHAR(255)        NOT NULL,
+    description    TEXT                NOT NULL,
+    location       VARCHAR(255)        NOT NULL,
+    justification  TEXT                NOT NULL,
+    image          VARCHAR(500)        DEFAULT NULL,
+    status         request_status_enum NOT NULL DEFAULT 'pending',
+    applied_at     TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==============================================================

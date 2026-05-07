@@ -70,7 +70,7 @@ def apply_for_conservation():
         with db.get_cursor() as cursor:
             if profile_photo:
                 insert_query = """
-                INSERT INTO group_applications (user_id, proposed_name, description, location, justification, tile_image)
+                INSERT INTO group_applications (user_id, proposed_name, description, location, justification, image)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """
                 tuple_values = (user_id, proposed_name, description, location, justification, profile_photo)
