@@ -395,10 +395,12 @@ ON CONFLICT (user_id, group_id) DO NOTHING;
 -- Log in as smitchell / Password1! (Super Admin) to approve or reject
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO group_applications (user_id, proposed_name, reason, status, applied_at) VALUES
+INSERT INTO group_applications (user_id, proposed_name, description, location, justification, status, applied_at) VALUES
 (
     (SELECT user_id FROM users WHERE username = 'enyberg'),
     'Selwyn District Trappers',
+    'An informal trapping network across the Selwyn District with about 15 volunteers, focused on coordinating predator control efforts.',
+    'Selwyn District',
     'I coordinate an informal trapping network across the Selwyn District with about 15 volunteers. Formalising would let us centralise our data and coordinate effort more effectively.',
     'pending',
     NOW() - INTERVAL '5 days'
@@ -406,6 +408,8 @@ INSERT INTO group_applications (user_id, proposed_name, reason, status, applied_
 (
     (SELECT user_id FROM users WHERE username = 'hpatel'),
     'Riccarton Bush Restoration',
+    'A small community group focused on predator control in the Riccarton Bush reserve, running monthly trap checks.',
+    'Riccarton, Christchurch',
     'A small community group focused on the Riccarton Bush reserve. We run monthly trap checks and would benefit from proper data recording tools.',
     'pending',
     NOW() - INTERVAL '2 days'
