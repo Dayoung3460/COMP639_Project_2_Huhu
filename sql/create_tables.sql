@@ -2,7 +2,7 @@
 -- create_tables.sql — Conservation Groups Platform
 -- COMP639 Group Project 2 — Semester 1, 2026
 --
--- Run this first, then run populate_database.sql
+-- Run this first, then run populate_tables.sql
 -- =============================================================
 
 -- ── Drop tables (children before parents) ─────────────────────
@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS trap_statuses           CASCADE;
 DROP TABLE IF EXISTS bait_types              CASCADE;
 
 -- ── Drop ENUMs ────────────────────────────────────────────────
-DROP TYPE IF EXISTS role_type             CASCADE;
+DROP TYPE IF EXISTS group_role_type       CASCADE;
 DROP TYPE IF EXISTS account_status_type   CASCADE;
 DROP TYPE IF EXISTS line_type_enum        CASCADE;
 DROP TYPE IF EXISTS trap_type_enum        CASCADE;
@@ -40,11 +40,10 @@ DROP TYPE IF EXISTS request_status_enum   CASCADE;
 -- 1. ENUMs
 -- ==============================================================
 
-CREATE TYPE role_type AS ENUM (
+CREATE TYPE group_role_type AS ENUM (
     'Observer',
     'Operator',
-    'Group Coordinator',
-    'Super Admin'
+    'Group Coordinator'
 );
 
 CREATE TYPE account_status_type AS ENUM ('active', 'inactive');
@@ -65,7 +64,9 @@ CREATE TYPE trap_type_enum AS ENUM (
 );
 
 CREATE TYPE sex_type AS ENUM ('Male', 'Female');
+
 CREATE TYPE maturity_type AS ENUM ('Juvenile', 'Adult');
+
 CREATE TYPE rebaited_type AS ENUM ('Yes', 'No');
 
 CREATE TYPE trap_condition_type AS ENUM (
@@ -106,7 +107,7 @@ CREATE TABLE bait_types (
 );
 
 -- ==============================================================
--- 3. Users — no role column; role lives in group_memberships
+-- 3. Users — site-wide role via is_super_admin; group role lives in group_memberships
 -- ==============================================================
 
 CREATE TABLE users (
@@ -126,6 +127,7 @@ CREATE TABLE users (
     profile_photo VARCHAR(255) DEFAULT NULL,
     notes         TEXT         DEFAULT NULL,
 
+    is_super_admin BOOLEAN             NOT NULL DEFAULT FALSE,
     account_status account_status_type NOT NULL DEFAULT 'active',
 
     date_joined TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -141,6 +143,7 @@ CREATE TABLE groups (
     name        VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
     is_public   BOOLEAN      NOT NULL DEFAULT TRUE,
+    is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
     tile_image  VARCHAR(255) DEFAULT NULL,
     color_theme VARCHAR(7)   NOT NULL DEFAULT '#198754',
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -154,7 +157,7 @@ CREATE TABLE group_memberships (
     membership_id SERIAL PRIMARY KEY,
     user_id       INTEGER   NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     group_id      INTEGER   NOT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
-    role          role_type NOT NULL,
+    role          group_role_type NOT NULL,
     joined_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, group_id)
 );

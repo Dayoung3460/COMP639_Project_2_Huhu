@@ -1,161 +1,164 @@
 {# templates/auth/login.html
    Route: GET/POST /login  →  login()
-   Extends base_auth.html — no navbar or footer.
+   Extends base_auth_marketing.html — split-screen, no Bootstrap.
+   Preserves IDs needed by static/js/auth-login.js and dev-quick-login.js:
+     #loginForm, #usernameInput, #passwordInput, #togglePassword
+   The togglePassword icons are inline SVGs (no Bootstrap Icons), so
+   auth-login.js's bi-eye/bi-eye-slash class swap will silently no-op.
+   The aria-pressed attribute drives the icon swap via CSS instead.
 #}
-{% extends 'base_auth.html' %}
-{% block title %}Log In{% endblock %}
+{% extends 'base_auth_marketing.html' %}
+
+{% block title %}Sign in · Tiaki{% endblock %}
 
 {% block content %}
-<div class="auth-page">
-  <div style="width:100%; max-width:420px;">
+<div class="auth-screen">
 
-    <div class="auth-card">
+  {# ── Left: editorial brand panel ─────────────────────── #}
+  <aside class="auth-aside" aria-hidden="true">
+    <a href="{{ url_for('index') }}" class="auth-aside-mark">Tiaki</a>
+    <div class="auth-aside-quote">
+      <h2>Welcome back to the work.</h2>
+      <p>Every check matters. Every record counts.</p>
+    </div>
+  </aside>
 
-      {# ── Card header ── #}
-      <div class="auth-card-header">
-        <div class="">
-          <img src="{{ icon_url }}" alt="{{ site_name }}" style="width:52px; margin-bottom: 10px">
-        </div>
-        <h4>Welcome Back</h4>
-        <p>Log in to access the {{ site_name }}</p>
-      </div>
+  {# ── Right: form panel ───────────────────────────────── #}
+  <section class="auth-form-side" aria-labelledby="login-heading">
+    <div class="auth-form">
+      <h1 id="login-heading">Sign in</h1>
+      <p class="lead">Use your single Tiaki account to access every group you belong to.</p>
 
-      {# ── Card body ── #}
-      <div class="auth-card-body">
+      <form method="POST" action="{{ url_for('login') }}" id="loginForm" novalidate>
 
-        {# Flash messages inside the card #}
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ 'danger' if category == 'error' else category }}
-                          alert-dismissible fade show mb-3"
-                   style="font-size:13px; border-radius:8px;">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-
-        {# Info notice #}
-        <div class="notice green mb-3">
-          <i class="bi bi-info-circle" aria-hidden="true"></i>
-          <span>You will be redirected to the dashboard for your role after login.</span>
+        <div class="field">
+          <label for="usernameInput">Username</label>
+          <input type="text"
+                 name="username"
+                 id="usernameInput"
+                 placeholder="Your username"
+                 value="{{ username if username else '' }}"
+                 autocomplete="username"
+                 required
+                 autofocus>
         </div>
 
-        <form method="POST" action="{{ url_for('login') }}" id="loginForm">
-
-          {# Username #}
-          <div class="field-group">
-            <label class="form-label" for="usernameInput">Username</label>
-            <input type="text"
-                   class="form-control"
-                   name="username"
-                   id="usernameInput"
-                   placeholder="Enter your username"
-                   value="{{ username if username else '' }}"
-                   required autofocus>
+        <div class="field">
+          <label for="passwordInput">Password</label>
+          <div class="password-wrap">
+            <input type="password"
+                   name="password"
+                   id="passwordInput"
+                   placeholder="Your password"
+                   autocomplete="current-password"
+                   required>
+            <button type="button"
+                    id="togglePassword"
+                    class="password-toggle"
+                    aria-label="Show password"
+                    aria-pressed="false">
+              <svg class="icon-shown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="icon-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
           </div>
-
-          {# Password with show/hide toggle #}
-          <div class="field-group">
-            <label class="form-label" for="passwordInput">Password</label>
-            <div style="position:relative;">
-              <input type="password"
-                     class="form-control"
-                     name="password"
-                     id="passwordInput"
-                     placeholder="Enter your password"
-                     required
-                     style="padding-right:40px;">
-              <button type="button"
-                      id="togglePassword"
-                      aria-label="Show password"
-                      style="position:absolute;right:10px;top:50%;
-                             transform:translateY(-50%);background:none;
-                             border:none;color:#6b7c72;cursor:pointer;">
-                <i class="bi bi-eye" id="toggleIcon" aria-hidden="true"></i>
-              </button>
-            </div>
+          <div class="field-help">
+            <a href="{{ url_for('forgot_password') }}">Forgot password?</a>
           </div>
+        </div>
 
-          {# Submit #}
-          <button type="submit" class="btn-pf-full mt-3">
-            <i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>Log In
-          </button>
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
 
-        </form>
+      </form>
 
-        {% if quick_login_enabled %}
-        <div class="notice green mt-3" id="quickLoginSection">
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <i class="bi bi-lightning-charge" aria-hidden="true"></i>
-            <strong style="font-size:13px;">Quick Login (Testing)</strong>
+      {% if quick_login_enabled %}
+        <div class="quick-login" id="quickLoginSection">
+          <div class="quick-login-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            Quick login (testing)
           </div>
           <div class="d-grid gap-2">
             <button type="button"
                     class="btn btn-sm btn-outline-success quick-login-btn"
                     data-username="smitchell"
                     data-password="Password1!"
-                    data-role="Super Admin">
-              Super Admin (smitchell)
+                    data-role="Super Admin (no group)">
+              Super Admin — smitchell
             </button>
             <button type="button"
                     class="btn btn-sm btn-outline-success quick-login-btn"
-                    data-username="dchen"
+                    data-username="jparata"
+                    data-password="Password1!"
+                    data-role="Super Admin (+ group)">
+              Super Admin + Group — jparata
+            </button>
+            <button type="button"
+                    class="btn btn-sm btn-outline-success quick-login-btn"
+                    data-username="bkim"
                     data-password="Password1!"
                     data-role="Group Coordinator">
-              Group Coordinator (dchen)
+              Coordinator — bkim (PFLU)
             </button>
             <button type="button"
                     class="btn btn-sm btn-outline-success quick-login-btn"
-                    data-username="landerson"
+                    data-username="enyberg"
                     data-password="Password1!"
                     data-role="Operator">
-              Operator (landerson)
+              Operator — enyberg (PFLU)
             </button>
             <button type="button"
                     class="btn btn-sm btn-outline-success quick-login-btn"
-                    data-username="ataylor"
+                    data-username="iford"
                     data-password="Password1!"
                     data-role="Observer">
-              Observer (ataylor)
+              Observer — iford (multi-group)
             </button>
           </div>
         </div>
-        {% endif %}
+      {% endif %}
 
-        {# Footer links #}
-        <div class="auth-footer-link mt-3">
-          Don't have an account?
-          <a href="{{ url_for('register') }}">Register as Observer</a>
-        </div>
-
-        <div class="auth-footer-link" style="margin-top:6px;">
-          <a href="{{ url_for('forgot_password') }}" style="color:#6b7c72;">
-            <i class="bi bi-key me-1" aria-hidden="true"></i>Lost your password?
-          </a>
-        </div>
-
-        <div class="auth-footer-link" style="margin-top:6px;">
-          <a href="{{ url_for('index') }}" style="color:#6b7c72;">
-            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to Home
-          </a>
-        </div>
-
+      <div class="auth-link-row">
+        New to Tiaki? <a href="{{ url_for('register') }}">Create an account</a>
       </div>
+
+      <div class="auth-secondary-links">
+        <a href="{{ url_for('index') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back to home
+        </a>
+      </div>
+
     </div>
-
-    <p class="text-center mt-3" style="font-size:11px; color:#8a9e93;">
-      {{ site_name }} — COMP639 Group Project 2
-    </p>
-
-  </div>
+  </section>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/auth-login.js') }}"></script>
+<script>
+  // Inline addition: drive aria-pressed for the SVG icon swap (CSS handles visibility).
+  // Existing auth-login.js still runs but no-ops on the missing bi-eye classes.
+  (function () {
+    var btn = document.getElementById('togglePassword');
+    var input = document.getElementById('passwordInput');
+    if (!btn || !input) return;
+    btn.addEventListener('click', function () {
+      var shown = input.type === 'text';
+      btn.setAttribute('aria-pressed', shown ? 'false' : 'true');
+      btn.setAttribute('aria-label', shown ? 'Show password' : 'Hide password');
+    });
+  })();
+</script>
 {% if quick_login_enabled %}
 <script src="{{ url_for('static', filename='js/dev-quick-login.js') }}"></script>
 {% endif %}

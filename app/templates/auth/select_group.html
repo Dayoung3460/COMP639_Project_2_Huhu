@@ -1,60 +1,71 @@
 {# templates/auth/select_group.html
    Route: GET/POST /select-group  →  select_group()
-   Extends base_auth.html — no navbar, sidebar, or footer.
-   Shown when a user belongs to multiple groups.
+   Extends base_auth_marketing.html — split-screen, no Bootstrap.
+   Shown when a user belongs to multiple groups, after successful login.
 #}
-{% extends 'base_auth.html' %}
-{% block title %}Select Group{% endblock %}
+{% extends 'base_auth_marketing.html' %}
+
+{% block title %}Choose a group · Tiaki{% endblock %}
 
 {% block content %}
-<div class="auth-page" style="display:flex; align-items:center; justify-content:center; padding:40px 16px;">
-  <div style="width:100%; max-width:460px;">
+<div class="auth-screen">
 
-    <div class="auth-card">
+  {# ── Left: editorial brand panel ─────────────────────── #}
+  <aside class="auth-aside" aria-hidden="true">
+    <a href="{{ url_for('index') }}" class="auth-aside-mark">Tiaki</a>
+    <div class="auth-aside-quote">
+      <h2>Mahi tahi.</h2>
+      <p>Many hands, one purpose.</p>
+    </div>
+  </aside>
 
-      {# ── Card header ── #}
-      <div class="auth-card-header">
-        <div>
-          <img src="{{ icon_url }}" alt="{{ site_name }}" style="width:52px; margin-bottom:10px;">
-        </div>
-        <h4>Choose a Group</h4>
-        <p>You belong to multiple groups. Select which one to work in.</p>
-      </div>
+  {# ── Right: group picker ─────────────────────────────── #}
+  <section class="auth-form-side" aria-labelledby="picker-heading">
+    <div class="auth-form select-form">
+      <h1 id="picker-heading">Where to today?</h1>
+      <p class="lead">
+        You're a member of {{ memberships|length }} groups. Pick where you want to start — you can switch any time.
+      </p>
 
-      {# ── Card body ── #}
-      <div class="auth-card-body">
-
-        <div class="d-flex flex-column gap-2">
-          {% for m in memberships %}
-            <form method="POST" action="{{ url_for('select_group') }}">
+      <ul class="select-group-list" role="list">
+        {% for m in memberships %}
+          <li>
+            <form method="POST" action="{{ url_for('select_group') }}" class="select-group-form">
               <input type="hidden" name="group_id" value="{{ m.group_id }}">
               <button type="submit"
-                      class="w-100 text-start p-3 rounded border bg-white"
-                      style="cursor:pointer; transition:box-shadow 0.15s, border-color 0.15s;"
-                      onmouseover="this.style.boxShadow='0 2px 10px rgba(0,0,0,0.10)'; this.style.borderColor='#198754';"
-                      onmouseout="this.style.boxShadow='none'; this.style.borderColor='';">
-                <div style="font-weight:600; font-size:15px; color:#1a1f1b;">{{ m.group_name }}</div>
-                <div style="font-size:12px; color:#6b7c72; margin-top:2px;">
-                  <i class="bi bi-person-badge me-1" aria-hidden="true"></i>{{ m.role }}
-                </div>
+                      class="select-group-card"
+                      aria-label="Continue to {{ m.group_name }} as {{ m.role }}">
+                <span class="select-group-text">
+                  <span class="select-group-name">{{ m.group_name }}</span>
+                  <span class="role-badge role-{{ m.role|replace(' ', '-')|lower }}">
+                    <span class="dot" aria-hidden="true"></span>{{ m.role }}
+                  </span>
+                </span>
+                <span class="select-group-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </span>
               </button>
             </form>
-          {% endfor %}
-        </div>
+          </li>
+        {% endfor %}
+      </ul>
 
-        <div class="auth-footer-link mt-4">
-          <a href="{{ url_for('logout') }}" style="color:#6b7c72;">
-            <i class="bi bi-box-arrow-left me-1" aria-hidden="true"></i>Log out
-          </a>
-        </div>
-
+      <div class="auth-secondary-links">
+        <a href="{{ url_for('logout') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Log out
+        </a>
       </div>
+
     </div>
-
-    <p class="text-center mt-3" style="font-size:11px; color:#8a9e93;">
-      {{ site_name }} — COMP639 Group Project 2
-    </p>
-
-  </div>
+  </section>
 </div>
 {% endblock %}

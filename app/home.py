@@ -7,53 +7,96 @@ from app import app, db
 @app.route('/')
 def index():
     """
-    Public home page with live stats and recent catch activity from the DB.
-    Accessible to everyone — logged-in users see a 'Go to Dashboard' button.
+    Public homepage.
+
+    Shows platform-wide stats aggregated across all public groups, plus a
+    browseable grid of ALL groups (public AND private — per the brief,
+    private groups are visible but content is gated). Logged-in users see
+    slightly different CTAs but the page is otherwise the same.
     """
-    stats = {'trap_lines': 0, 'active_traps': 0, 'total_catches': 0}
-    recent_activity = []
+    stats = {
+        'total_groups':  0,
+        'total_lines':   0,
+        'total_catches': 0,
+    }
+    public_groups = []
+    featured_groups = []
 
     try:
         with db.get_cursor() as cursor:
-            # ── Hero stats ─────────────────────────────────────
-            cursor.execute(
-                'SELECT COUNT(*) AS count FROM lines WHERE is_retired = FALSE'
-            )
-            stats['trap_lines'] = cursor.fetchone()['count']
 
-            cursor.execute(
-                'SELECT COUNT(*) AS count FROM traps WHERE is_retired = FALSE'
-            )
-            stats['active_traps'] = cursor.fetchone()['count']
-
-            cursor.execute(
-                "SELECT COUNT(*) AS count FROM trap_catches "
-                "WHERE species_caught != 'None'"
-            )
-            stats['total_catches'] = cursor.fetchone()['count']
-
-            # ── Recent catch activity (last 3 records) ─────────
+            # ── Platform stats — public groups only ───────────────────────
             cursor.execute('''
-                SELECT
-                    tc.species_caught,
-                    tc.status,
-                    tc.rebaited,
-                    tc.date,
-                    t.code  AS trap_code,
-                    l.name  AS line_name
+                SELECT COUNT(*) AS count
+                FROM groups
+                WHERE is_public = TRUE
+            ''')
+            stats['total_groups'] = cursor.fetchone()['count']
+
+            cursor.execute('''
+                SELECT COUNT(*) AS count
+                FROM lines l
+                JOIN groups g ON l.group_id = g.group_id
+                WHERE g.is_public = TRUE AND l.is_retired = FALSE
+            ''')
+            stats['total_lines'] = cursor.fetchone()['count']
+
+            cursor.execute('''
+                SELECT COUNT(*) AS count
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
-                JOIN lines l ON t.line_id  = l.line_id
-                ORDER BY tc.date DESC
+                JOIN lines l ON t.line_id = l.line_id
+                JOIN groups g ON l.group_id = g.group_id
+                WHERE g.is_public = TRUE
+                  AND tc.species_caught != 'None'
+            ''')
+            stats['total_catches'] = cursor.fetchone()['count']
+
+            # ── All groups list — for the browse grid ────────────────────
+            # Per the brief: private groups must be VISIBLE in the list.
+            # Access to private group content is gated on the landing page.
+            cursor.execute('''
+                SELECT
+                    g.group_id,
+                    g.name,
+                    g.description,
+                    g.is_public,
+                    g.tile_image,
+                    g.color_theme,
+                    g.created_at,
+                    (SELECT COUNT(*) FROM group_memberships
+                       WHERE group_id = g.group_id) AS member_count,
+                    (SELECT COUNT(*) FROM lines
+                       WHERE group_id = g.group_id AND is_retired = FALSE) AS line_count
+                FROM groups g
+                ORDER BY g.is_public DESC, g.created_at ASC
+            ''')
+            public_groups = cursor.fetchall()
+
+            # ── Featured groups — top 3 PUBLIC groups for the hero cards ─
+            cursor.execute('''
+                SELECT
+                    g.name,
+                    (SELECT COUNT(*) FROM group_memberships
+                       WHERE group_id = g.group_id) AS member_count
+                FROM groups g
+                WHERE g.is_public = TRUE
+                ORDER BY member_count DESC, g.created_at ASC
                 LIMIT 3
             ''')
-            recent_activity = cursor.fetchall()
+            featured_groups = cursor.fetchall()
 
     except Exception:
-        pass  # Leave defaults if DB is unavailable
+        # Leave defaults if DB is unavailable; page still renders.
+        pass
 
-    return render_template('home.html', stats=stats,
-                           recent_activity=recent_activity)
+    return render_template(
+        'home.html',
+        stats=stats,
+        public_groups=public_groups,
+        featured_groups=featured_groups,
+    )
+
 
 @app.route('/documentation')
 def documentation():

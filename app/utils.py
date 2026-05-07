@@ -5,7 +5,7 @@ file upload helper, role-based redirect, and before_request status check.
 """
 
 from functools import wraps
-from flask import session, flash, redirect, url_for, request
+from flask import session, flash, redirect, url_for, request, abort
 import re
 import os
 
@@ -67,8 +67,7 @@ def role_required(*roles):
                 flash('Please log in to access this page.', 'danger')
                 return redirect(url_for('login'))
             if roles and session.get('group_role') not in roles:
-                flash('You do not have permission to access that page', 'danger')
-                return redirect_by_role()
+                abort(403)
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -140,6 +139,13 @@ def validate_lincoln_nz_coordinates(latitude, longitude):
     return ''
 
 
+# ── Role helpers ─────────────────────────────────────────────────────────────
+
+def get_current_group_role():
+    """Returns the active group role from the session, or None if not set."""
+    return session.get('group_role')
+
+
 # ── Role-based redirect ───────────────────────────────────────────────────────
 
 def redirect_by_role():
@@ -196,3 +202,25 @@ def check_user_status():
                 session.clear()
                 flash('Your account has been deactivated. Please contact an administrator.', 'danger')
                 return redirect(url_for('login'))
+
+        # If the user has an active group session, verify that group is still active.
+        # If the group has been deactivated, strip the group context and redirect them out.
+        group_id = session.get('group_id')
+        if group_id and request.endpoint not in ('select_group', 'logout'):
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'SELECT is_active FROM groups WHERE group_id = %s',
+                    (group_id,)
+                )
+                grp = cursor.fetchone()
+            if grp and not grp['is_active']:
+                group_name = session.get('group_name', 'your group')
+                session.pop('group_id', None)
+                session.pop('group_role', None)
+                session.pop('group_name', None)
+                flash(
+                    f'"{group_name}" has been deactivated by an administrator. '
+                    'Please select another group or contact support.',
+                    'warning'
+                )
+                return redirect(url_for('select_group'))
