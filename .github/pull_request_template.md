@@ -1,5 +1,5 @@
 ## 🎫 Jira Ticket
-* **[HUHU-XXX](https://comp-639-team-huhu.atlassian.net/browse/HUHU-XXX)**
+* **[P2-XX](https://comp-639-team-huhu.atlassian.net/browse/P2-XX)**
 
 ## 🛠️ What does this PR do?
 * (Briefly describe the changes made. e.g., "Created the PostgreSQL table for trap lines and built the Flask route to display them.")
