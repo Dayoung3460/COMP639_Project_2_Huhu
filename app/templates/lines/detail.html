@@ -6,12 +6,13 @@
   {{ pf_link_button(url_for('lines_index', filter=line_filter if line_filter != 'active' else None), 'Back to Lines', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
 
   {% if line %}
-    {% set current_filter = line_filter | default('active') %}
+    {% set current_filter = line_filter | default('all') %}
     <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
       <div>
         <div class="d-flex align-items-center gap-2">
           <h2 class="mb-0">{{ line.name }}</h2>
           {{ pf_trap_status_badge(line.is_retired) }}
+          <span class="{{ 'badge-line-bait' if line.type == 'Bait Station' else 'badge-line-trap' }}">{{ line.type }}</span>
         </div>
         {% if line.is_retired and line.retired_at %}
           <small class="text-muted">
@@ -55,50 +56,75 @@
       </div>
     </div>
 
-    {% set map_filter_actions %}
-      <div class="d-flex gap-2 align-items-center lines-map-panel-actions">
-        <div class="d-none d-md-flex gap-2 align-items-center">
-          {{ pf_link_button(
-            url_for('line_detail', line_id=line.line_id, filter='all'),
-            'All',
-            variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline',
-            attrs={'aria-current': 'page'} if current_filter == 'all' else None
-          ) }}
-          {{ pf_link_button(
-            url_for('line_detail', line_id=line.line_id),
-            'Active',
-            variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline',
-            attrs={'aria-current': 'page'} if current_filter == 'active' else None
-          ) }}
-          {{ pf_link_button(
-            url_for('line_detail', line_id=line.line_id, filter='retired'),
-            'Retired',
-            variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline',
-            attrs={'aria-current': 'page'} if current_filter == 'retired' else None
-          ) }}
+    {% call pf_panel(panel_class='mb-4') %}
+        <div class="line-map-container">
+          <div id="line-map"
+               class="line-map-canvas"
+               data-line-id="{{ line.line_id }}"
+               data-linz-api-key="{{ linz_api_key }}"
+               data-line-is-retired="{{ 'true' if line.is_retired else 'false' }}"
+               data-line-type="{{ line.type }}"></div>
+          <div class="line-map-filter-overlay">
+            <div class="d-none d-md-flex gap-1">
+              {{ pf_link_button(
+                url_for('line_detail', line_id=line.line_id, filter='all'),
+                'All',
+                variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline',
+                attrs={'aria-current': 'page'} if current_filter == 'all' else None
+              ) }}
+              {{ pf_link_button(
+                url_for('line_detail', line_id=line.line_id, filter='active'),
+                'Active',
+                variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline',
+                attrs={'aria-current': 'page'} if current_filter == 'active' else None
+              ) }}
+              {{ pf_link_button(
+                url_for('line_detail', line_id=line.line_id, filter='retired'),
+                'Retired',
+                variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline',
+                attrs={'aria-current': 'page'} if current_filter == 'retired' else None
+              ) }}
+            </div>
+            <select id="lines-status-filter" class="form-select form-select-sm d-md-none" aria-label="Filter traps by status"
+                    data-url-all="{{ url_for('line_detail', line_id=line.line_id, filter='all') }}"
+                    data-url-active="{{ url_for('line_detail', line_id=line.line_id, filter='active') }}"
+                    data-url-retired="{{ url_for('line_detail', line_id=line.line_id, filter='retired') }}">
+              <option value="all"{{ ' selected' if current_filter == 'all' }}>All</option>
+              <option value="active"{{ ' selected' if current_filter == 'active' }}>Active</option>
+              <option value="retired"{{ ' selected' if current_filter == 'retired' }}>Retired</option>
+            </select>
+          </div>
         </div>
-        <select id="lines-status-filter" class="form-select form-select-sm d-md-none" aria-label="Filter traps by status"
-                data-url-all="{{ url_for('line_detail', line_id=line.line_id, filter='all') }}"
-                data-url-active="{{ url_for('line_detail', line_id=line.line_id) }}"
-                data-url-retired="{{ url_for('line_detail', line_id=line.line_id, filter='retired') }}">
-          <option value="all"{{ ' selected' if current_filter == 'all' }}>All traps</option>
-          <option value="active"{{ ' selected' if current_filter == 'active' }}>Active traps</option>
-          <option value="retired"{{ ' selected' if current_filter == 'retired' }}>Retired traps</option>
-        </select>
-      </div>
-    {% endset %}
-    {% call pf_panel(title=('Bait Station Map' if line.type == 'Bait Station' else 'Trap Map'), meta='', actions_html=map_filter_actions, panel_class='mb-4') %}
-        <div id="line-map"
-             class="line-map-canvas"
-             data-line-id="{{ line.line_id }}"
-             data-linz-api-key="{{ linz_api_key }}"
-             data-line-is-retired="{{ 'true' if line.is_retired else 'false' }}"
-             data-line-type="{{ line.type }}"></div>
         {% if line.type == 'Bait Station' %}
           <script id="station-markers-data" type="application/json">{{ station_markers|tojson }}</script>
         {% else %}
           <script id="trap-markers-data" type="application/json">{{ trap_markers|tojson }}</script>
         {% endif %}
+        <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
+          {% if line.type == 'Bait Station' %}
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-line map-legend-line-bait" aria-hidden="true"></span>
+              <span class="map-legend-dot map-legend-dot-bait" aria-hidden="true"></span>
+              Bait station
+            </span>
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-line map-legend-line-retired" aria-hidden="true"></span>
+              <span class="map-legend-dot map-legend-dot-bait-retired" aria-hidden="true"></span>
+              Retired bait station
+            </span>
+          {% else %}
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-line map-legend-line-active" aria-hidden="true"></span>
+              <span class="map-legend-dot map-legend-dot-active" aria-hidden="true"></span>
+              Trap
+            </span>
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-line map-legend-line-retired" aria-hidden="true"></span>
+              <span class="map-legend-dot map-legend-dot-retired" aria-hidden="true"></span>
+              Retired trap
+            </span>
+          {% endif %}
+        </div>
         <p class="text-muted small mb-0 mt-2">
           Basemap tiles by LINZ Basemaps.
         </p>
@@ -138,10 +164,10 @@
                       {% if not bs.is_retired %}
                         {{ pf_link_button(url_for('edit_bait_station', line_id=line.line_id, station_id=bs.station_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit station ' ~ bs.code}) }}
                         {{ pf_button(
-                          'Deactivate',
+                          'Retire',
                           variant='btn-sm-danger',
                           attrs={
-                            'aria-label': 'Deactivate station ' ~ bs.code,
+                            'aria-label': 'Retire station ' ~ bs.code,
                             'data-bs-toggle': 'modal',
                             'data-bs-target': '#retire-station-modal',
                             'data-station-id': bs.station_id,
@@ -150,7 +176,7 @@
                         ) }}
                       {% else %}
                         <form method="POST" action="{{ url_for('activate_bait_station', line_id=line.line_id, station_id=bs.station_id) }}" class="d-inline">
-                          {{ pf_button('Activate', variant='btn-sm-outline', type='submit', attrs={'aria-label': 'Activate station ' ~ bs.code}) }}
+                          {{ pf_button('Unretire', variant='btn-sm-outline', type='submit', attrs={'aria-label': 'Unretire station ' ~ bs.code}) }}
                         </form>
                       {% endif %}
                     {% endif %}
@@ -175,11 +201,11 @@
             <input type="hidden" name="station_id" id="modal-station-id" value="" />
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title" id="retire-station-modal-title">Deactivate bait station</h5>
+                <h5 class="modal-title" id="retire-station-modal-title">Retire bait station</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                <p>Are you sure you want to deactivate station <strong id="modal-station-code"></strong>?</p>
+                <p>Are you sure you want to retire station <strong id="modal-station-code"></strong>?</p>
                 <p class="text-muted lines-modal-note">Existing records will remain visible but cannot be edited.</p>
                 <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
                   <label for="retire-station-confirm" class="w-100 mb-0 text-muted lines-modal-note">Type <strong class="text-danger">delete</strong> to continue</label>
@@ -187,8 +213,8 @@
                 </div>
               </div>
               <div class="modal-footer">
-                {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel deactivation'}) }}
-                {{ pf_button('Yes, deactivate', variant='btn-sm-danger', type='submit', attrs={'aria-label': 'Confirm deactivation'}) }}
+                {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal', 'aria-label': 'Cancel retirement'}) }}
+                {{ pf_button('Yes, retire', variant='btn-sm-danger', type='submit', attrs={'aria-label': 'Confirm retirement'}) }}
               </div>
             </div>
           </form>
@@ -239,6 +265,10 @@
                             'data-trap-code': trap.code,
                           }
                         ) }}
+                      {% else %}
+                        <form method="POST" action="{{ url_for('unretire_trap', line_id=line.line_id, trap_id=trap.trap_id) }}" class="d-inline">
+                          {{ pf_button('Unretire', variant='btn-sm-outline', type='submit', attrs={'aria-label': 'Unretire trap ' ~ trap.code}) }}
+                        </form>
                       {% endif %}
                     </td>
                   {% endif %}

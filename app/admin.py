@@ -493,6 +493,14 @@ def retire_line(line_id):
                 """,
                 (retired_by, line_id)
             )
+            cursor.execute(
+                """
+                UPDATE bait_stations
+                SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
+                WHERE line_id = %s AND is_retired = FALSE
+                """,
+                (retired_by, line_id)
+            )
 
     flash('Line retired.', 'success')
     return redirect(url_for('lines_index'))
@@ -734,6 +742,32 @@ def retire_trap(line_id):
     return redirect(url_for('line_detail', line_id=line_id))
 
 
+@app.route('/admin/traps/<int:line_id>/<int:trap_id>/unretire', methods=['POST'])
+@role_required('Super Admin', 'Group Coordinator')
+def unretire_trap(line_id, trap_id):
+    """Unretire an individual trap (set is_retired = FALSE)."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT t.trap_id FROM traps t
+            JOIN lines l ON l.line_id = t.line_id
+            WHERE t.trap_id = %s AND l.group_id = %s
+            """,
+            (trap_id, session.get('group_id'))
+        )
+        if not cursor.fetchone():
+            flash('Trap not found.', 'danger')
+            return redirect(url_for('line_detail', line_id=line_id))
+
+        cursor.execute(
+            'UPDATE traps SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE trap_id = %s',
+            (trap_id,)
+        )
+
+    flash('Trap unretired.', 'success')
+    return redirect(url_for('line_detail', line_id=line_id))
+
+
 # ── Bait stations ─────────────────────────────────────────────────────────────
 
 @app.route('/admin/lines/<int:line_id>/new-bait-station', methods=['GET', 'POST'])
@@ -890,7 +924,7 @@ def deactivate_bait_station(line_id):
     delete_confirm = request.form.get('delete-confirm')
 
     if delete_confirm != 'delete':
-        flash('You must type "delete" to confirm deactivation.', 'danger')
+        flash('You must type "delete" to confirm retirement.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
     with db.get_cursor() as cursor:
@@ -907,7 +941,7 @@ def deactivate_bait_station(line_id):
             (session['user_id'], station_id)
         )
 
-    flash('Bait station deactivated.', 'success')
+    flash('Bait station retired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
 
 
@@ -929,7 +963,7 @@ def activate_bait_station(line_id, station_id):
             (station_id,)
         )
 
-    flash('Bait station activated.', 'success')
+    flash('Bait station unretired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
 
 
