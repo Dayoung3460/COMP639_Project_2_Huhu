@@ -16,7 +16,7 @@ from app.utils import (
     allowed_file,
     UPLOAD_FOLDER,
 )
-from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data, fetch_user_info, update_user_role
+from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data, fetch_user_info, update_user_role, insert_notification
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -1211,7 +1211,7 @@ def admin_groups():
 
     query = '''
         SELECT g.group_id, g.name, g.is_public, g.is_active, g.created_at,
-               g.tile_image, g.color_theme,
+               g.image, g.color_theme,
                COUNT(DISTINCT gm.user_id) AS member_count,
                STRING_AGG(DISTINCT u.first_name || ' ' || u.last_name, ', '
                    ORDER BY u.first_name || ' ' || u.last_name)
@@ -1242,6 +1242,87 @@ def admin_groups():
                            search=search, status_filter=status_filter)
 
 
+@app.route('/admin/groups/create', methods=['GET', 'POST'])
+@role_required('Super Admin')
+def admin_group_create():
+    """Create a new group directly and optionally appoint coordinators."""
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT user_id, first_name, last_name, username
+            FROM users
+            WHERE is_super_admin = FALSE AND account_status = 'active'
+            ORDER BY first_name, last_name
+        ''')
+        all_users = cursor.fetchall()
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+        is_public = request.form.get('is_public') == '1'
+        coordinator_ids = request.form.getlist('coordinator_ids', type=int)
+        file = request.files.get('image')
+
+        errors = []
+        if not name:
+            errors.append('Group name is required.')
+        if not description:
+            errors.append('Description is required.')
+        if not coordinator_ids:
+            errors.append('At least one Group Coordinator must be selected.')
+        if file and file.filename and not allowed_file(file.filename):
+            errors.append('Image must be PNG, JPG, JPEG, or GIF.')
+
+        if errors:
+            for msg in errors:
+                flash(msg, 'danger')
+            return render_template('admin/create_group.html', all_users=all_users)
+
+        with db.get_cursor() as cursor:
+            cursor.execute('SELECT group_id FROM groups WHERE name = %s', (name,))
+            if cursor.fetchone():
+                flash(f'A group named "{name}" already exists.', 'danger')
+                return render_template('admin/create_group.html', all_users=all_users)
+
+        # Optional image upload
+        filename = None
+        if file and file.filename:
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"group_{uuid.uuid4().hex}.{ext}"
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            file.save(os.path.join(UPLOAD_FOLDER, filename))
+
+        with db.get_cursor() as cursor:
+            cursor.execute('''
+                INSERT INTO groups (name, description, is_public, image)
+                VALUES (%s, %s, %s, %s)
+                RETURNING group_id
+            ''', (name, description, is_public, filename))
+            group_id = cursor.fetchone()['group_id']
+
+        # Add coordinators and notify them
+        valid_user_ids = {u['user_id'] for u in all_users}
+        for uid in coordinator_ids:
+            if uid not in valid_user_ids:
+                continue
+            with db.get_cursor() as cursor:
+                cursor.execute('''
+                    INSERT INTO group_memberships (user_id, group_id, role)
+                    VALUES (%s, %s, 'Group Coordinator')
+                    ON CONFLICT (user_id, group_id) DO UPDATE SET role = 'Group Coordinator'
+                ''', (uid, group_id))
+            insert_notification(
+                db, uid,
+                f'You have been appointed as Group Coordinator for "{name}". '
+                'Visit your dashboard to get started.',
+                'success'
+            )
+
+        flash(f'Group "{name}" created successfully.', 'success')
+        return redirect(url_for('admin_group_detail', group_id=group_id))
+
+    return render_template('admin/create_group.html', all_users=all_users)
+
+
 @app.route('/admin/groups/<int:group_id>')
 @role_required('Super Admin')
 def admin_group_detail(group_id):
@@ -1249,7 +1330,7 @@ def admin_group_detail(group_id):
     with db.get_cursor() as cursor:
         cursor.execute('''
             SELECT g.group_id, g.name, g.description, g.is_public, g.is_active, g.created_at,
-                   g.tile_image, g.color_theme,
+                   g.image, g.color_theme,
                    COUNT(DISTINCT gm.user_id) AS member_count
             FROM groups g
             LEFT JOIN group_memberships gm ON gm.group_id = g.group_id
@@ -1396,14 +1477,14 @@ def admin_group_remove_coordinator(group_id, user_id):
 def admin_group_update_image(group_id):
     """Upload or replace the group's tile image."""
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT tile_image FROM groups WHERE group_id = %s', (group_id,))
+        cursor.execute('SELECT image FROM groups WHERE group_id = %s', (group_id,))
         group = cursor.fetchone()
 
     if not group:
         flash('Group not found.', 'danger')
         return redirect(url_for('admin_groups'))
 
-    file = request.files.get('tile_image')
+    file = request.files.get('image')
     if not file or not file.filename:
         flash('No file selected.', 'danger')
         return redirect(url_for('admin_group_detail', group_id=group_id))
@@ -1412,8 +1493,8 @@ def admin_group_update_image(group_id):
         flash('Image must be PNG, JPG, JPEG, or GIF.', 'danger')
         return redirect(url_for('admin_group_detail', group_id=group_id))
 
-    if group['tile_image']:
-        old_path = os.path.join(UPLOAD_FOLDER, group['tile_image'])
+    if group['image']:
+        old_path = os.path.join(UPLOAD_FOLDER, group['image'])
         if os.path.exists(old_path):
             os.remove(old_path)
 
@@ -1423,7 +1504,7 @@ def admin_group_update_image(group_id):
     file.save(os.path.join(UPLOAD_FOLDER, filename))
 
     with db.get_cursor() as cursor:
-        cursor.execute('UPDATE groups SET tile_image = %s WHERE group_id = %s',
+        cursor.execute('UPDATE groups SET image = %s WHERE group_id = %s',
                        (filename, group_id))
 
     flash('Group image updated.', 'success')
@@ -1435,19 +1516,19 @@ def admin_group_update_image(group_id):
 def admin_group_remove_image(group_id):
     """Remove the group's tile image."""
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT tile_image FROM groups WHERE group_id = %s', (group_id,))
+        cursor.execute('SELECT image FROM groups WHERE group_id = %s', (group_id,))
         group = cursor.fetchone()
 
     if not group:
         flash('Group not found.', 'danger')
         return redirect(url_for('admin_groups'))
 
-    if group['tile_image']:
-        old_path = os.path.join(UPLOAD_FOLDER, group['tile_image'])
+    if group['image']:
+        old_path = os.path.join(UPLOAD_FOLDER, group['image'])
         if os.path.exists(old_path):
             os.remove(old_path)
         with db.get_cursor() as cursor:
-            cursor.execute('UPDATE groups SET tile_image = NULL WHERE group_id = %s', (group_id,))
+            cursor.execute('UPDATE groups SET image = NULL WHERE group_id = %s', (group_id,))
         flash('Group image removed.', 'success')
     else:
         flash('No image to remove.', 'info')

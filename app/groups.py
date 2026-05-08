@@ -10,8 +10,11 @@ Visibility logic (per the brief):
     - Members of a group are sent straight to the in-app dashboard.
 """
 
-from flask import render_template, redirect, url_for, session, abort
+from flask import render_template, request, redirect, url_for, flash, session, abort
 from app import app, db
+from app.utils import role_required, allowed_file, CONSERVATION_GROUP_BG_FOLDER
+import os
+import uuid
 
 
 @app.route('/groups/<int:group_id>')
@@ -30,7 +33,7 @@ def group_landing(group_id):
         cursor.execute('''
             SELECT
                 g.group_id, g.name, g.description, g.is_public,
-                g.tile_image, g.color_theme, g.created_at
+                g.image, g.color_theme, g.created_at
             FROM groups g
             WHERE g.group_id = %s
         ''', (group_id,))
@@ -112,3 +115,90 @@ def group_landing(group_id):
         coordinators=coordinators,
         has_pending_request=has_pending_request,
     )
+
+@app.route('/groups/apply', methods=['GET', 'POST'])
+@role_required('Observer', 'Operator', 'Group Coordinator')
+def apply_for_group():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        user_id = session.get('user_id')
+        proposed_name = request.form.get('proposed_name', '').strip()
+        description = request.form.get('description', '').strip()
+        location = request.form.get('location', '').strip()
+        justification = request.form.get('justification', '').strip()
+
+        # ── Check user has pending applications ─────────────────────────────
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*) FROM group_applications WHERE user_id = %s AND status = 'pending'
+                """,
+                (user_id,)
+            )
+            pending_count = cursor.fetchone()
+
+            print(f"User {user_id} has {pending_count['count']} pending applications.")  # Debug log
+
+            if pending_count['count'] > 0:
+                flash('You already have a pending conservation application. Please wait for it to be reviewed before submitting another.', 'warning')
+                return redirect(url_for('apply_for_group'))
+
+        # ── Server-side validation ─────────────────────────────
+        if not all([proposed_name, description, location, justification]):
+            flash('Please fill in all required fields.', 'danger')
+            return redirect(url_for('apply_for_group'))
+        
+        # ── Check proposed_name not already taken ──────────────
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT proposed_name FROM group_applications
+                WHERE proposed_name = %s
+                """,
+                (proposed_name,)
+            )
+            existing_application = cursor.fetchone()
+
+        if existing_application:
+            flash(f'A conservation application with this name "{proposed_name}" already exists.', 'danger')
+            return redirect(url_for('apply_for_group'))
+        
+        # ── Handle profile photo upload ────────────────────────
+        profile_photo = None
+        file = request.files.get('group_image_input')
+        if file and file.filename:
+            if allowed_file(file.filename):
+                ext = file.filename.rsplit('.', 1)[1].lower()
+                filename = f"conservation_bg_{uuid.uuid4().hex[:10]}.{ext}"
+                os.makedirs(CONSERVATION_GROUP_BG_FOLDER, exist_ok=True)
+                file.save(os.path.join(CONSERVATION_GROUP_BG_FOLDER, filename))
+                profile_photo = filename
+            else:
+                flash('Profile photo must be a PNG, JPG, JPEG, or GIF.', 'danger')
+                return redirect(url_for('apply_for_group'))
+
+        with db.get_cursor() as cursor:
+            if profile_photo:
+                insert_query = """
+                INSERT INTO group_applications (user_id, proposed_name, description, location, justification, tile_image)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """
+                tuple_values = (user_id, proposed_name, description, location, justification, profile_photo)
+            else:
+                insert_query = """
+                INSERT INTO group_applications (user_id, proposed_name, description, location, justification)
+                VALUES (%s, %s, %s, %s, %s)
+                """
+                tuple_values = (user_id, proposed_name, description, location, justification)
+
+            cursor.execute(
+                insert_query,
+                tuple_values
+            )
+            flash('Your conservation application has been submitted successfully!', 'success')
+            
+            return redirect(url_for('apply_for_group'))
+
+    return render_template('groups/apply_group.html')

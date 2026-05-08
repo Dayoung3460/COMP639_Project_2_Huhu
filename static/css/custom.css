@@ -110,10 +110,10 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-pf:hover { background: var(--pf-400); color: #fff; }
 
 .btn-pf-outline {
-  background: transparent; color: var(--pf-600);
-  border: 1px solid var(--pf-600); padding: 6px 16px;
-  border-radius: 6px; font-size: 13px; cursor: pointer;
-  text-decoration: none; display: inline-block;
+  background: #fff; color: var(--pf-600);
+  font-weight: 600; border: 1px solid var(--pf-600); padding: 6px 16px;
+  border-radius: 6px; font-size: 13px; font-family: 'Cabin', sans-serif; 
+  cursor: pointer; text-decoration: none; display: inline-block;
 }
 .btn-pf-outline:hover { background: var(--pf-700); color: #fff; }
 
@@ -121,9 +121,10 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   background: var(--pf-700); color: #fff; border: none;
   width: 100%; padding: 10px; border-radius: 8px;
   font-size: 14px; font-family: 'Cabin', sans-serif;
-  font-weight: 600; cursor: pointer;
+  font-weight: 600; cursor: pointer; text-decoration: none;
+  display: inline-block;
 }
-.btn-pf-full:hover { background: var(--pf-800); }
+.btn-pf-full:hover { background: var(--pf-800); color: #fff; text-decoration: none; }
 
 .btn-sm-pf {
   background: var(--pf-700); color: #fff; border: none;
@@ -141,6 +142,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   background: transparent; color: var(--pf-700);
   border: 1px solid var(--pf-400); padding: 5px 12px;
   border-radius: 6px; font-size: 12px; cursor: pointer;
+  font-family: 'Cabin', sans-serif; font-weight: 600;
 }
 .btn-sm-outline:hover { background: var(--pf-100); }
 
@@ -148,6 +150,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   background: transparent; color: var(--red);
   border: 1px solid #f0a0a0; padding: 5px 12px;
   border-radius: 6px; font-size: 12px; cursor: pointer;
+  font-family: 'Cabin', sans-serif; font-weight: 600;
 }
 .btn-sm-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
 
@@ -156,6 +159,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border: 1px solid var(--pf-400); padding: 5px 12px;
   border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
   text-decoration: none; display: inline-block;
+  font-family: 'Cabin', sans-serif;
 }
 .btn-sm-pf-soft:hover { background: var(--pf-200); color: var(--pf-800); text-decoration: none; }
 
@@ -825,11 +829,10 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border-color: #565e64;
 }
 
-/* btn-sm-outline used as a clear/reset button inside filter shells:
-   white background, height to match form-control (44px). */
-.lines-filter-shell .btn-sm-outline {
+/* outline buttons used as clear/reset inside filter shells: height matches form-control (44px). */
+.lines-filter-shell .btn-sm-outline,
+.lines-filter-shell .btn-pf-outline {
   min-height: 44px;
-  background: #fff;
   display: inline-flex;
   align-items: center;
 }
