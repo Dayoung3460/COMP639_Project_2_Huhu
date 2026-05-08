@@ -32,15 +32,24 @@ document.addEventListener('DOMContentLoaded', function () {
       const lineId = button.getAttribute('data-line-id')
       const lineName = button.getAttribute('data-line-name')
       const lineAction = button.getAttribute('data-line-action')
-      const hasActiveTraps = button.getAttribute('data-has-active-traps') === 'true'
+      const hasActiveItems = button.getAttribute('data-has-active-traps') === 'true'
+      const lineType = button.getAttribute('data-line-type') || ''
 
       document.getElementById('modal-line-id').value = lineId
       document.getElementById('modal-line-name').textContent = lineName
       document.getElementById('modal-line-action').action = lineAction
 
-      // Show correct warning based on active traps status
-      document.getElementById('modal-warning-active').classList.toggle('d-none', !hasActiveTraps)
-      document.getElementById('modal-warning-no-active').classList.toggle('d-none', hasActiveTraps)
+      document.getElementById('modal-warning-active-trap').classList.add('d-none')
+      document.getElementById('modal-warning-active-station').classList.add('d-none')
+      document.getElementById('modal-warning-no-active').classList.add('d-none')
+
+      if (hasActiveItems && lineType === 'Bait Station') {
+        document.getElementById('modal-warning-active-station').classList.remove('d-none')
+      } else if (hasActiveItems) {
+        document.getElementById('modal-warning-active-trap').classList.remove('d-none')
+      } else {
+        document.getElementById('modal-warning-no-active').classList.remove('d-none')
+      }
     })
   }
 
@@ -48,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let map = null;
   const lineColors = [
     '#0d6efd', '#6610f2', '#20c997', '#fd7e14', '#d63384', '#198754', '#6f42c1',
-    '#dc3545', '#0dcaf0', '#ffc107', '#6c757d', '#1982c4', '#8ac926', '#ff595e',
+    '#dc3545', '#0dcaf0', '#ffc107', '#d4a017', '#1982c4', '#8ac926', '#ff595e',
     '#ff924c', '#9b5de5', '#2ec4b6', '#e71d36', '#3a86ff', '#8338ec'
   ];
   const markersByLine = {};
@@ -192,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const markersElement = document.getElementById('lines-overview-traps-data');
     const traps = markersElement ? JSON.parse(markersElement.textContent) : [];
     const linzApiKey = mapElement.dataset.linzApiKey;
-    const lineFilter = new URLSearchParams(window.location.search).get('filter') || 'active';
+    const lineFilter = new URLSearchParams(window.location.search).get('filter') || 'all';
 
     map = createLincolnMap('lines-overview-map', linzApiKey);
 
@@ -219,14 +228,17 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!shouldShowMarker) return;
 
       const lineColor = getLineColor(lineId);
-      const marker = L.circleMarker(latLng, getTrapMarkerStyle(isRetiredVisual, lineColor)).addTo(map);
+      const marker = trap.is_station
+        ? L.marker(latLng, { icon: getBaitStationIcon(isRetiredVisual, lineColor) }).addTo(map)
+        : L.circleMarker(latLng, getTrapMarkerStyle(isRetiredVisual, lineColor)).addTo(map);
 
       const lineStatusBadge = statusBadgeHtml(Boolean(trap.line_is_retired));
       const trapStatusBadge = statusBadgeHtml(Boolean(trap.trap_is_retired));
 
+      const itemLabel = trap.is_station ? 'Station Code' : 'Trap Code';
       marker.bindPopup(
         `<div class="mb-1"><strong>Line:</strong> ${trap.line_name} ${lineStatusBadge}</div>` +
-        `<div class="mb-1"><strong>Trap Code:</strong> ${trap.code} ${trapStatusBadge}</div>` +
+        `<div class="mb-1"><strong>${itemLabel}:</strong> ${trap.code} ${trapStatusBadge}</div>` +
         `<a href="${trap.detail_url}" class="small">View line details</a>`
       );
 

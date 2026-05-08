@@ -10,10 +10,10 @@ linz_api_key = os.getenv('LINZ_API_KEY', '')
 @role_required()
 def lines_index():
     """Display all active trap lines."""
-    line_filter = request.args.get('filter', 'active')
+    line_filter = request.args.get('filter', 'all')
     operator_filter = request.args.get('operator')
     if line_filter not in ('all', 'active', 'retired'):
-        line_filter = 'active'
+        line_filter = 'all'
 
     with db.get_cursor() as cursor:
         cursor.execute(
@@ -149,8 +149,23 @@ def lines_index():
         )
         line_has_active_traps = cursor.fetchall()
         active_trap_line_ids = set(
-            line['line_id'] for line in line_has_active_traps 
+            line['line_id'] for line in line_has_active_traps
             if line['has_active_trap'] > 0
+        )
+
+        cursor.execute(
+            """
+            SELECT l.line_id, COUNT(bs.station_id) AS has_active_station
+            FROM lines AS l
+            LEFT JOIN bait_stations AS bs ON bs.line_id = l.line_id
+            WHERE l.group_id = %s AND bs.is_retired = FALSE
+            GROUP BY l.line_id
+            """,
+            (session.get('group_id'),)
+        )
+        active_station_line_ids = set(
+            row['line_id'] for row in cursor.fetchall()
+            if row['has_active_station'] > 0
         )
 
         cursor.execute(
@@ -191,10 +206,47 @@ def lines_index():
         )
         trap_rows = cursor.fetchall()
 
+        cursor.execute(
+            """
+            SELECT
+                l.line_id,
+                l.name AS line_name,
+                l.is_retired AS line_is_retired,
+                bs.station_id,
+                bs.code,
+                bs.station_type,
+                bs.latitude,
+                bs.longitude,
+                bs.is_retired AS station_is_retired
+            FROM lines l
+            JOIN bait_stations bs ON bs.line_id = l.line_id
+            WHERE l.group_id = %s
+              AND (
+                CASE %s
+                    WHEN 'all' THEN TRUE
+                    WHEN 'retired' THEN l.is_retired = TRUE
+                    ELSE l.is_retired = FALSE
+                END
+              )
+              AND bs.latitude IS NOT NULL
+              AND bs.longitude IS NOT NULL
+              AND (
+                CASE %s
+                    WHEN 'all' THEN TRUE
+                    WHEN 'retired' THEN bs.is_retired = TRUE
+                    ELSE bs.is_retired = FALSE
+                END
+              )
+            ORDER BY l.name ASC, bs.code ASC
+            """,
+            (session.get('group_id'), line_filter, line_filter)
+        )
+        station_rows = cursor.fetchall()
+
     map_traps = []
     for trap in trap_rows:
         detail_url = url_for('line_detail', line_id=trap['line_id'])
-        if line_filter != 'active':
+        if line_filter != 'all':
             detail_url = f"{detail_url}?filter={line_filter}"
 
         map_traps.append({
@@ -207,6 +259,26 @@ def lines_index():
             'latitude': float(trap['latitude']),
             'longitude': float(trap['longitude']),
             'trap_is_retired': trap['trap_is_retired'],
+            'is_station': False,
+            'detail_url': detail_url
+        })
+
+    for station in station_rows:
+        detail_url = url_for('line_detail', line_id=station['line_id'])
+        if line_filter != 'all':
+            detail_url = f"{detail_url}?filter={line_filter}"
+
+        map_traps.append({
+            'line_id': station['line_id'],
+            'line_name': station['line_name'],
+            'line_is_retired': station['line_is_retired'],
+            'trap_id': None,
+            'code': station['code'],
+            'trap_type': station['station_type'],
+            'latitude': float(station['latitude']),
+            'longitude': float(station['longitude']),
+            'trap_is_retired': station['station_is_retired'],
+            'is_station': True,
             'detail_url': detail_url
         })
 
@@ -245,6 +317,7 @@ def lines_index():
         map_traps=map_traps,
         linz_api_key=linz_api_key,
         active_trap_line_ids=active_trap_line_ids,
+        active_station_line_ids=active_station_line_ids,
         available_types=available_types,
         available_operators=available_operators,
         line_colours=LINE_COLOURS
@@ -256,9 +329,9 @@ def lines_index():
 def line_detail(line_id):
     """Display a single line and all its traps or bait stations."""
     from app.utils import BAIT_STATION_TYPES
-    line_filter = request.args.get('filter', 'active')
+    line_filter = request.args.get('filter', 'all')
     if line_filter not in ('all', 'active', 'retired'):
-        line_filter = 'active'
+        line_filter = 'all'
 
     with db.get_cursor() as cursor:
         cursor.execute(
