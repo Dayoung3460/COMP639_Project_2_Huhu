@@ -57,7 +57,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const latLng = [item.latitude, item.longitude];
       const isRetired = Boolean(item.is_retired);
 
-      const marker = L.circleMarker(latLng, getTrapMarkerStyle(isRetired, lineColor)).addTo(map);
+      const marker = isBaitStation
+        ? L.marker(latLng, { icon: getBaitStationIcon(isRetired, lineColor) }).addTo(map)
+        : L.circleMarker(latLng, getTrapMarkerStyle(isRetired, lineColor)).addTo(map);
 
       const statusBadge = statusBadgeHtml(isRetired);
       let typeLabel = '';

@@ -53,9 +53,9 @@ function getTrapMarkerStyle(isRetired, color) {
     return {
       radius: 10,
       color: MAP_RETIRED_COLOR,
-      fillColor: MAP_RETIRED_FILL,
-      fillOpacity: 0.15,
-      weight: 3,
+      fillColor: MAP_RETIRED_COLOR,
+      fillOpacity: 0,
+      weight: 2.5,
       bubblingMouseEvents: false
     };
   }
@@ -82,16 +82,36 @@ function statusBadgeHtml(isRetired, label) {
 }
 
 /**
- * Return polyline style options for a trap line.
+ * Return a Leaflet divIcon for a bait station marker (solid square / hollow square).
+ * @param {boolean} isRetired
+ * @param {string}  color – base colour for active markers
+ */
+function getBaitStationIcon(isRetired, color) {
+  var html = isRetired
+    ? '<div class="map-marker-square map-marker-square-retired"></div>'
+    : '<div class="map-marker-square" style="background:' + color + ';border-color:' + color + '"></div>';
+  return L.divIcon({
+    className: '',
+    html: html,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+    popupAnchor: [0, -8]
+  });
+}
+
+/**
+ * Return polyline style options for a line.
+ * Active lines (both trap and bait station) use a solid stroke.
+ * Retired lines use a dotted gray stroke.
  * @param {boolean} isRetired
  * @param {string}  color – base colour for active lines
  */
 function getLinePolylineStyle(isRetired, color) {
   return {
     color: isRetired ? MAP_RETIRED_COLOR : color,
-    weight: isRetired ? 4 : 3,
-    opacity: isRetired ? 0.95 : 0.8,
-    dashArray: isRetired ? '8 6' : null
+    weight: 3,
+    opacity: isRetired ? 0.9 : 0.8,
+    dashArray: isRetired ? '2 8' : null
   };
 }
 
