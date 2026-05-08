@@ -3,7 +3,7 @@
 {% block title %}Lines{% endblock %}
 {% block content %}
 <div class="container py-4">
-  {% set current_filter = line_filter | default('active') %}
+  {% set current_filter = line_filter | default('all') %}
   <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
     <h2 class="mb-0">Lines</h2>
     <div class="d-flex gap-2 align-items-center lines-page-header__actions">
@@ -13,56 +13,63 @@
     </div>
   </div>
 
-  {% if lines %}
-    <section class="mb-4" aria-label="Search and filter lines">
-      <div class="row g-3 align-items-end">
-        <div class="col-lg-5">
-          <label for="lines-search-input" class="form-label mb-1">Search lines</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
-            <input
-              type="search"
-              id="lines-search-input"
-              class="form-control"
-              placeholder="Search by line name">
-          </div>
-        </div>
-        {% if available_types %}
-        <div class="col-sm-4 col-lg-2">
-          <label for="lines-type-filter" class="form-label mb-1">Line type</label>
-          <select id="lines-type-filter" class="form-select">
-            <option value="">All types</option>
-            {% for t in available_types %}
-              <option value="{{ t }}">{{ t }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        {% endif %}
-        <div class="col-sm-8 col-lg-3">
-          <label for="lines-operator-filter" class="form-label mb-1">
-            Assigned operator
-            <span id="operator-me-badge" class="badge-role-operator ms-1 {% if not (operator_filter and session.username in operator_filter) %}d-none{% endif %}">Me</span>
-          </label>
-          <select id="lines-operator-filter" class="form-select">
-            <option value="">All operators</option>
-            {% for operator_name in available_operators %}
-              <option value="{{ operator_name }}" {% if operator_filter and operator_filter in operator_name %}selected{% endif %}>
-                {{ operator_name }}{% if session.username in operator_name %} (Me){% endif %}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-sm-4 col-lg-2 d-grid">
-          {{ pf_button('Clear', variant='btn-sm-outline', extra_classes='lines-filter-shell__clear-btn', attrs={'id': 'lines-clear-filters', 'aria-label': 'Clear all filters'}) }}
+  <section class="mb-4" aria-label="Search and filter lines">
+    <div class="row g-3 align-items-end">
+      <div class="col-lg-4">
+        <label for="lines-search-input" class="form-label mb-1">Search lines</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+          <input
+            type="search"
+            id="lines-search-input"
+            class="form-control"
+            placeholder="Search by line name">
         </div>
       </div>
-    </section>
-
-    <div id="lines-empty-filter-state" class="notice blue d-none lines-empty-filter-state">
-      <i class="bi bi-funnel" aria-hidden="true"></i>
-      <div>No lines match the current search or filters.</div>
+      <div class="col-sm-6 col-lg-2">
+        <label for="lines-status-filter" class="form-label mb-1">Status</label>
+        <select id="lines-status-filter" class="form-select" aria-label="Filter lines by status"
+                data-url-all="{{ url_for('lines_index', filter='all') }}"
+                data-url-active="{{ url_for('lines_index', filter='active') }}"
+                data-url-retired="{{ url_for('lines_index', filter='retired') }}">
+          <option value="all"{{ ' selected' if current_filter == 'all' }}>All</option>
+          <option value="active"{{ ' selected' if current_filter == 'active' }}>Active</option>
+          <option value="retired"{{ ' selected' if current_filter == 'retired' }}>Retired</option>
+        </select>
+      </div>
+      <div class="col-sm-6 col-lg-2">
+        <label for="lines-type-filter" class="form-label mb-1">Line type</label>
+        <select id="lines-type-filter" class="form-select">
+          <option value="">All types</option>
+          {% for t in available_types %}
+            <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-8 col-lg-2">
+        <label for="lines-operator-filter" class="form-label mb-1">
+          Assigned operator
+          <span id="operator-me-badge" class="badge-role-operator ms-1 {% if not (operator_filter and session.username in operator_filter) %}d-none{% endif %}">Me</span>
+        </label>
+        <select id="lines-operator-filter" class="form-select">
+          <option value="">All operators</option>
+          {% for operator_name in available_operators %}
+            <option value="{{ operator_name }}" {% if operator_filter and operator_filter in operator_name %}selected{% endif %}>
+              {{ operator_name }}{% if session.username in operator_name %} (Me){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-4 col-lg-2 d-grid">
+        {{ pf_button('Clear', variant='btn-sm-outline', extra_classes='lines-filter-shell__clear-btn', attrs={'id': 'lines-clear-filters', 'aria-label': 'Clear all filters'}) }}
+      </div>
     </div>
-  {% endif %}
+  </section>
+
+  <div id="lines-empty-filter-state" class="notice blue d-none lines-empty-filter-state">
+    <i class="bi bi-funnel" aria-hidden="true"></i>
+    <div>No lines match the current search or filters.</div>
+  </div>
 
   <div class="row g-4 lines-overview-layout">
     <div class="col-12 col-xl-5">
@@ -123,6 +130,7 @@
                     {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
                       {% if not line.is_retired %}
                         {{ pf_link_button(url_for('edit_line', line_id=line.line_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit ' ~ line.name}) }}
+                        {% set has_active_items = (line.line_id in active_station_line_ids) if line.type == 'Bait Station' else (line.line_id in active_trap_line_ids) %}
                         {{ pf_button(
                           'Retire',
                           variant='btn-sm-danger',
@@ -132,8 +140,9 @@
                             'data-bs-target': '#retire-line-modal',
                             'data-line-id': line.line_id,
                             'data-line-name': line.name,
-                            'data-line-action': url_for('retire_line', line_id=line.line_id, active_traps=1 if line.line_id in active_trap_line_ids else None),
-                            'data-has-active-traps': 'true' if line.line_id in active_trap_line_ids else 'false'
+                            'data-line-type': line.type,
+                            'data-line-action': url_for('retire_line', line_id=line.line_id, active_traps=1 if has_active_items else None),
+                            'data-has-active-traps': 'true' if has_active_items else 'false'
                           }
                         ) }}
                       {% else %}
@@ -156,63 +165,42 @@
     </div>
 
     <div class="col-12 col-xl-7 lines-map-col">
-      {% set map_actions %}
-        <div class="d-flex gap-2 align-items-center lines-map-panel-actions">
-          <div class="d-none d-md-flex gap-2 align-items-center">
-            {{ pf_link_button(
-              url_for('lines_index', filter='all'),
-              'All',
-              variant='btn-sm-pf-soft' if current_filter == 'all' else 'btn-sm-outline',
-              attrs={'aria-current': 'page'} if current_filter == 'all' else None
-            ) }}
-            {{ pf_link_button(
-              url_for('lines_index'),
-              'Active',
-              variant='btn-sm-pf-soft' if current_filter == 'active' else 'btn-sm-outline',
-              attrs={'aria-current': 'page'} if current_filter == 'active' else None
-            ) }}
-            {{ pf_link_button(
-              url_for('lines_index', filter='retired'),
-              'Retired',
-              variant='btn-sm-pf-soft' if current_filter == 'retired' else 'btn-sm-outline',
-              attrs={'aria-current': 'page'} if current_filter == 'retired' else None
-            ) }}
-          </div>
-          <select id="lines-status-filter" class="form-select form-select-sm d-md-none" aria-label="Filter lines by status"
-                  data-url-all="{{ url_for('lines_index', filter='all') }}"
-                  data-url-active="{{ url_for('lines_index') }}"
-                  data-url-retired="{{ url_for('lines_index', filter='retired') }}">
-            <option value="all"{{ ' selected' if current_filter == 'all' }}>All lines</option>
-            <option value="active"{{ ' selected' if current_filter == 'active' }}>Active lines</option>
-            <option value="retired"{{ ' selected' if current_filter == 'retired' }}>Retired lines</option>
-          </select>
-        </div>
-      {% endset %}
       {% call pf_panel(
-        title='All Lines & Traps Map',
-        meta='Click a marker to view trap and line details',
-        actions_html=map_actions,
+        title='',
+        meta='',
         panel_class='mb-0 lines-map-panel-shell',
         header_class='lines-map-header'
       ) %}
-          <div id="lines-overview-map"
-               class="lines-overview-map"
-               role="img"
-               aria-label="Map showing all trap lines and traps"
-               data-linz-api-key="{{ linz_api_key }}"></div>
+          <div class="lines-map-wrapper">
+            <div id="lines-overview-map"
+                 class="lines-overview-map"
+                 role="img"
+                 aria-label="Map showing all trap lines and traps"
+                 data-linz-api-key="{{ linz_api_key }}"></div>
+          </div>
           <script id="lines-overview-traps-data" type="application/json">{{ map_traps|tojson }}</script>
-          {% if current_filter in ('all', 'retired') %}
           <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
             <span class="d-inline-flex align-items-center gap-1">
-              <span class="map-legend-line map-legend-line-retired" aria-hidden="true"></span>
-              Retired line
+              <span class="map-legend-line map-legend-line-active" aria-hidden="true"></span>
+              <span class="map-legend-dot map-legend-dot-active" aria-hidden="true"></span>
+              Trap line
             </span>
             <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-line map-legend-line-bait" aria-hidden="true"></span>
+              <span class="map-legend-dot map-legend-dot-bait" aria-hidden="true"></span>
+              Bait station line
+            </span>
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-line map-legend-line-retired" aria-hidden="true"></span>
               <span class="map-legend-dot map-legend-dot-retired" aria-hidden="true"></span>
               Retired trap
             </span>
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="map-legend-line map-legend-line-retired" aria-hidden="true"></span>
+              <span class="map-legend-dot map-legend-dot-bait-retired" aria-hidden="true"></span>
+              Retired bait station
+            </span>
           </div>
-          {% endif %}
           <p class="text-muted small mb-0 mt-2">Basemap tiles by LINZ Basemaps.</p>
       {% endcall %}
     </div>
@@ -232,8 +220,11 @@
           <div class="modal-body">
             <p>Are you sure you want to retire line <strong id="modal-line-name"></strong>?</p>
 
-            <p id="modal-warning-active" class="lines-modal-warning lines-modal-warning-danger d-none">
+            <p id="modal-warning-active-trap" class="lines-modal-warning lines-modal-warning-danger d-none">
               Warning: This line has active traps. Retiring the line will also mark all its traps as retired.
+            </p>
+            <p id="modal-warning-active-station" class="lines-modal-warning lines-modal-warning-danger d-none">
+              Warning: This line has active bait stations. Retiring the line will also mark all its stations as retired.
             </p>
             <p id="modal-warning-no-active" class="lines-modal-warning text-muted d-none">
               This line will be marked as Retired.

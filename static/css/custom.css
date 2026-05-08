@@ -159,6 +159,20 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .btn-sm-pf-soft:hover { background: var(--pf-200); color: var(--pf-800); text-decoration: none; }
 
+.line-map-filter-overlay .btn-sm-outline {
+  background: var(--pf-50);
+  color: var(--pf-600);
+  border-color: var(--pf-400);
+}
+.line-map-filter-overlay .btn-sm-outline:hover { background: var(--pf-100); color: var(--pf-700); }
+
+.line-map-filter-overlay .btn-sm-pf-soft {
+  background: var(--pf-700);
+  color: #fff;
+  border-color: var(--pf-700);
+}
+.line-map-filter-overlay .btn-sm-pf-soft:hover { background: var(--pf-800); border-color: var(--pf-800); }
+
 .btn-sm-amber {
   background: var(--amber); color: #fff; border: none;
   padding: 5px 12px; border-radius: 6px; font-size: 12px;
@@ -456,6 +470,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   font-weight: 700;
   line-height: 1.2;
   border: 1px solid transparent;
+  margin-top: 4px;
 }
 
 .trap-status-active {
@@ -690,7 +705,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .map-legend-line-retired {
   border-top-color: #343a40;
-  border-top-style: dashed;
+  border-top-style: dotted;
 }
 
 .map-legend-dot {
@@ -706,8 +721,37 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 
 .map-legend-dot-retired {
-  background: rgba(173, 181, 189, 0.2);
+  background: transparent;
   border: 2px solid #343a40;
+}
+
+.map-legend-line-bait {
+  border-top-color: var(--pf-600);
+  border-top-style: solid;
+}
+
+.map-legend-dot-bait {
+  border-radius: 2px;
+  background: var(--pf-600);
+}
+
+.map-legend-dot-bait-retired {
+  border-radius: 2px;
+  background: transparent;
+  border: 2px solid #343a40;
+}
+
+.map-marker-square {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+}
+
+.map-marker-square-retired {
+  background: transparent !important;
+  border-color: #343a40 !important;
 }
 
 /* /lines index clickable line cards */
@@ -824,6 +868,14 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .lines-map-panel-shell {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.lines-map-panel-shell .panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .lines-map-panel-actions {
@@ -847,6 +899,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  min-height: 550px;
   max-height: 550px;
   padding: 2px 8px 2px 0;
   display: flex;
@@ -943,6 +996,19 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   font-size: 0.75rem;
 }
 
+.lines-map-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.lines-map-panel-shell .lines-overview-map {
+  flex: 1;
+  height: auto;
+  min-height: 320px;
+}
+
 .lines-overview-map,
 .line-map-canvas {
   height: 430px;
@@ -951,6 +1017,17 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .line-map-canvas {
   height: 420px;
+}
+
+.line-map-container {
+  position: relative;
+}
+
+.line-map-filter-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1001;
 }
 
 .lines-modal-dialog {
@@ -1086,6 +1163,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   }
 
   .lines-list-scroll {
+    min-height: 320px;
     max-height: 320px;
     padding-right: 6px;
   }
