@@ -345,9 +345,12 @@ body {
 }
 
 /* ── Group browse grid ──────────────────────────────────── */
+/* Fixed 3-column at desktop. Drops to 2 at ≤ 900px and 1 at ≤ 640px
+   in the breakpoints below. minmax(0, 1fr) instead of plain 1fr lets
+   long card content shrink rather than push the row wider. */
 .group-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 
@@ -361,6 +364,9 @@ body {
   flex-direction: column;
   text-decoration: none;
   color: inherit;
+  /* Match the row's tallest card. The grid item (<li>) stretches by
+     default; this lets the <a> fill its parent so neighbours line up. */
+  height: 100%;
 }
 
 .group-card:hover {
@@ -568,6 +574,9 @@ body {
   }
   .section-header {
     margin-bottom: 32px;
+  }
+  .group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -950,6 +959,35 @@ body {
   margin-bottom: 8px;
 }
 
+/* "Want to join?" gate inside the private card. Wraps either the
+   request-to-join CTA (logged in) or the sign-in/create CTAs (guest)
+   so the affordance is explicit rather than free-floating. */
+.private-gate {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 24px 24px 20px;
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+}
+
+.private-gate-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.private-gate-lead {
+  font-size: 14px;
+  color: var(--color-ink-soft);
+  margin-bottom: 18px;
+  line-height: 1.55;
+}
+
 .private-actions {
   display: flex;
   gap: 12px;
@@ -1001,6 +1039,184 @@ body {
     padding: 20px 24px;
   }
   .group-stat:last-child { border-bottom: none; }
+}
+
+/* ============================================================
+   Home — group browse: search + visibility chips
+   Layered on top of the existing .group-grid / .group-card
+   block above. Card structure unchanged; only adds the
+   filter bar, the lock badge for private cards, and real
+   image rendering inside .group-card-image.
+   ============================================================ */
+
+.group-search {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.group-search-input {
+  flex: 1 1 280px;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-card);
+  font: inherit;
+  font-size: 15px;
+  color: var(--color-ink);
+  /* WCAG: 44px touch target */
+  min-height: 44px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.group-search-input::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.group-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(26, 58, 46, 0.12);
+}
+
+.group-search-input:focus-visible {
+  outline: none; /* shadow + border IS the focus ring */
+}
+
+/* Chip group ─────────────────────────────────────────── */
+.chip-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  /* WCAG: 44px touch target */
+  min-height: 36px;
+}
+
+.chip:hover {
+  color: var(--color-primary);
+}
+
+.chip.is-active {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+.chip.is-active:hover {
+  color: var(--color-bg);
+}
+
+/* Real image inside group-card-image ─────────────────── */
+.group-card-image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* z-index: 0 sits below the ::after radial tint (auto) and the
+     absolutely-positioned lock badge (z-index: 3 below). */
+  z-index: 0;
+}
+
+/* Private group treatment ─────────────────────────────── */
+.group-card-lock {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(26, 26, 26, 0.85);
+  color: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  z-index: 3;
+}
+
+.group-card-lock svg {
+  flex-shrink: 0;
+}
+
+.group-card-private-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--color-bg-soft);
+  color: var(--color-ink-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+.group-card-private-note svg {
+  flex-shrink: 0;
+}
+
+/* Tighter "no public groups" / "no match" state.
+   The base .empty-state has 80px padding which is too dramatic for
+   a sub-state surfaced inside a populated section. */
+.empty-state-quiet {
+  padding: 32px 24px;
+  margin-top: 24px;
+}
+
+.empty-state-quiet h3 {
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 640px) {
+  .group-search {
+    gap: 12px;
+  }
+  .chip-group {
+    /* Stretch chips across the row on mobile so they don't crowd */
+    width: 100%;
+    justify-content: stretch;
+  }
+  .chip {
+    flex: 1;
+    padding: 8px 12px;
+  }
+  .group-card-lock {
+    top: 10px;
+    right: 10px;
+  }
 }
 
 /* ============================================================

@@ -90,10 +90,15 @@ def index():
         # Leave defaults if DB is unavailable; page still renders.
         pass
 
+    # AC #6: empty state fires when there are zero PUBLIC groups,
+    # regardless of how many private ones exist.
+    has_public_groups = any(g['is_public'] for g in public_groups)
+
     return render_template(
         'home.html',
         stats=stats,
         public_groups=public_groups,
+        has_public_groups=has_public_groups,
         featured_groups=featured_groups,
     )
 

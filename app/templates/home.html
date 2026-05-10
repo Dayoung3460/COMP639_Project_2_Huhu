@@ -85,17 +85,52 @@
     </div>
 
     {% if public_groups %}
-      <ul class="group-grid" role="list">
+      {# ── Search + visibility chips ─────────────────────────── #}
+      <div class="group-search" role="search">
+        <label class="visually-hidden" for="group-search-input">
+          Search conservation groups by name or location
+        </label>
+        <input id="group-search-input"
+               type="search"
+               class="group-search-input"
+               placeholder="Search groups by name or location…"
+               autocomplete="off"
+               aria-controls="group-grid">
+        <div class="chip-group" role="group" aria-label="Filter by visibility">
+          <button type="button" class="chip is-active"
+                  data-visibility-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="chip"
+                  data-visibility-filter="public" aria-pressed="false">Public</button>
+          <button type="button" class="chip"
+                  data-visibility-filter="private" aria-pressed="false">Private</button>
+        </div>
+      </div>
+
+      <ul id="group-grid" class="group-grid" role="list" aria-live="polite">
         {% for g in public_groups %}
-          <li>
-            <a class="group-card"
+          {% set search_blob = ((g.name or '') ~ ' ' ~ (g.description or '') ~ ' ' ~ (g.location or ''))|lower %}
+          <li data-search="{{ search_blob }}"
+              data-visibility="{% if g.is_public %}public{% else %}private{% endif %}">
+            <a class="group-card {% if not g.is_public %}is-private{% endif %}"
                href="{{ url_for('group_landing', group_id=g.group_id) }}"
                style="--group-accent: {{ g.color_theme or '#c65d3c' }};"
-               aria-label="View {{ g.name }} — {% if g.is_public %}public{% else %}private{% endif %} group with {{ g.member_count }} member{% if g.member_count != 1 %}s{% endif %}">
+               aria-label="{% if g.is_public %}View{% else %}Request access to{% endif %} {{ g.name }} — {% if g.is_public %}public{% else %}private{% endif %} group with {{ g.member_count }} member{% if g.member_count != 1 %}s{% endif %}">
               <div class="group-card-image" aria-hidden="true">
-                <span class="group-card-badge {% if g.is_public %}public{% else %}private{% endif %}">
-                  <span class="dot" aria-hidden="true"></span>{% if g.is_public %}Public{% else %}Private{% endif %}
-                </span>
+                {% if g.image %}
+                  <img src="{{ url_for('static', filename='images/uploads/' ~ g.image) }}"
+                       alt="" loading="lazy">
+                {% endif %}
+                {% if not g.is_public %}
+                  <span class="group-card-lock">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                         stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="4" y="11" width="16" height="10" rx="2" ry="2"/>
+                      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                    </svg>
+                    Private
+                  </span>
+                {% endif %}
               </div>
               <div class="group-card-body">
                 <h3>{{ g.name }}</h3>
@@ -103,6 +138,17 @@
                   {% if g.created_at %}Founded {{ g.created_at.strftime('%Y') }}{% endif %}
                 </div>
                 <p>{{ g.description or 'A volunteer-led conservation group.' }}</p>
+                {% if not g.is_public %}
+                  <p class="group-card-private-note">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
+                         stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="4" y="11" width="16" height="10" rx="2" ry="2"/>
+                      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                    </svg>
+                    Joining requires permission
+                  </p>
+                {% endif %}
                 <div class="group-card-footer">
                   <span><strong>{{ g.member_count }}</strong> {% if g.member_count == 1 %}member{% else %}members{% endif %}</span>
                   <span><strong>{{ g.line_count }}</strong> {% if g.line_count == 1 %}line{% else %}lines{% endif %}</span>
@@ -112,9 +158,28 @@
           </li>
         {% endfor %}
       </ul>
+
+      {# Hidden by default; revealed via JS when search/chip filters
+         leave zero matching cards. #}
+      <div id="group-no-match" class="empty-state empty-state-quiet" role="status" hidden>
+        <h3>No groups match your search</h3>
+        <p>Try a different keyword, or clear your filters to see every group.</p>
+      </div>
+
+      {% if not has_public_groups %}
+        {# AC #6: zero public groups exist — surface alongside the (private-only) grid. #}
+        <div class="empty-state empty-state-quiet" role="status">
+          <h3>No public groups yet</h3>
+          <p>The first public conservation groups are still on their way. In the meantime, private groups can be requested by their members.</p>
+          {% if not session.user_id %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary">Create an account</a>
+          {% endif %}
+        </div>
+      {% endif %}
+
     {% else %}
       <div class="empty-state" role="status">
-        <h3>No groups yet</h3>
+        <h3>No public groups yet</h3>
         <p>Tiaki is still finding its first conservation groups. If you're starting one in your community, we'd love to hear from you.</p>
         {% if not session.user_id %}
           <a href="{{ url_for('register') }}" class="btn btn-primary">Create an account</a>
@@ -123,5 +188,49 @@
     {% endif %}
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+{% if public_groups %}
+<script>
+  (function () {
+    const input = document.getElementById('group-search-input');
+    const chips = document.querySelectorAll('[data-visibility-filter]');
+    const items = document.querySelectorAll('#group-grid > li');
+    const noMatch = document.getElementById('group-no-match');
+    const grid = document.getElementById('group-grid');
+
+    let activeVisibility = 'all';
+
+    function applyFilter() {
+      const term = (input.value || '').trim().toLowerCase();
+      let visibleCount = 0;
+      items.forEach(function (li) {
+        const matchesTerm = !term || (li.dataset.search || '').includes(term);
+        const matchesVis = activeVisibility === 'all'
+          || li.dataset.visibility === activeVisibility;
+        const show = matchesTerm && matchesVis;
+        li.hidden = !show;
+        if (show) visibleCount++;
+      });
+      noMatch.hidden = visibleCount > 0;
+      grid.hidden = visibleCount === 0;
+    }
+
+    input.addEventListener('input', applyFilter);
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        activeVisibility = chip.dataset.visibilityFilter;
+        chips.forEach(function (c) {
+          const isActive = c === chip;
+          c.classList.toggle('is-active', isActive);
+          c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        applyFilter();
+      });
+    });
+  })();
+</script>
+{% endif %}
 
 {% endblock %}
