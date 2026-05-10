@@ -164,6 +164,10 @@ def check_user_status():
         'login', 'register', 'index', 'static',
         'select_group', 'logout', 'forgot_password', 'reset_password',
         'apply_for_group',
+        # my_tiaki is a cross-group personal surface — reachable without
+        # an active group_role (e.g. straight after login when a user
+        # has multiple memberships and hasn't picked yet).
+        'my_tiaki',
     }
 
     if request.endpoint in excluded_routes:
