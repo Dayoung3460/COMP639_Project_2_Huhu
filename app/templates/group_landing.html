@@ -153,24 +153,33 @@
           {{ group.name }} is a private conservation group. Activity, lines, members and records aren't visible without an invitation.
         </p>
 
-        {% if session.user_id %}
-          {% if has_pending_request %}
-            <div class="private-status">
-              Your request to join is pending. A group coordinator will review it and let you know.
-            </div>
+        <div class="private-gate">
+          <h3 class="private-gate-title">Want to join?</h3>
+          {% if session.user_id %}
+            {% if has_pending_request %}
+              <p class="private-gate-lead">
+                Your request to join is with a group coordinator.
+              </p>
+              <div class="private-status" role="status">
+                Your request to join is pending. A group coordinator will review it and let you know.
+              </div>
+            {% else %}
+              <p class="private-gate-lead">
+                Send a request to the group's coordinators — they'll let you know when you're in.
+              </p>
+              {# TODO: wire to actual /groups/<id>/request POST when request flow exists #}
+              <a href="{{ url_for('select_group') }}" class="btn btn-primary">Request to join</a>
+            {% endif %}
           {% else %}
-            {# TODO: wire to actual /groups/<id>/request POST when request flow exists #}
-            <a href="{{ url_for('select_group') }}" class="btn btn-primary">Request to join</a>
+            <p class="private-gate-lead">
+              Sign in to request access. If you're already a member, signing in takes you straight to the group's dashboard.
+            </p>
+            <div class="private-actions">
+              <a href="{{ url_for('login') }}" class="btn btn-primary">Log in to join</a>
+              <a href="{{ url_for('register') }}" class="btn btn-secondary">Create an account</a>
+            </div>
           {% endif %}
-        {% else %}
-          <p class="private-note">
-            If you're already a member, sign in to access this group's dashboard.
-          </p>
-          <div class="private-actions">
-            <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in</a>
-            <a href="{{ url_for('register') }}" class="btn btn-secondary">Create an account</a>
-          </div>
-        {% endif %}
+        </div>
 
         <div class="private-back">
           <a href="{{ url_for('index') }}#groups">← Back to all groups</a>
