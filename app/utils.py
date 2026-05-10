@@ -163,6 +163,7 @@ def check_user_status():
     excluded_routes = {
         'login', 'register', 'index', 'static',
         'select_group', 'logout', 'forgot_password', 'reset_password',
+        'apply_for_group',
     }
 
     if request.endpoint in excluded_routes:
