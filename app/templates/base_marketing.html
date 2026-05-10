@@ -41,20 +41,46 @@
 
   <header class="site-header" role="banner">
     <div class="container-wide site-header-inner">
-      <a class="brand" href="{{ url_for('index') }}" aria-label="Tiaki home">
-        Tiaki <span class="brand-tagline" aria-hidden="true">— conservation, together</span>
+      <a class="brand"
+         href="{% if session.user_id %}{{ url_for('my_tiaki') }}{% else %}{{ url_for('index') }}{% endif %}"
+         aria-label="Tiaki home">
+        Tiaki
+        {% block brand_pill %}{% endblock %}
+        {% if not session.user_id %}
+          <span class="brand-tagline" aria-hidden="true">— conservation, together</span>
+        {% endif %}
       </a>
-      <nav class="site-nav" aria-label="Primary">
-        <a href="{{ url_for('index') }}#groups">Groups</a>
-        <a href="#about">About</a>
-        {% if session.user_id %}
-          <a class="btn btn-ghost btn-sm" href="{{ url_for('logout') }}">Sign out</a>
-          <a class="btn btn-primary btn-sm" href="{{ url_for('select_group') }}">My Tiaki</a>
-        {% else %}
+      {% if session.user_id %}
+        {# Logged-in nav: feed/profile/groups/requests + sign-out + avatar.
+           My groups + Requests are placeholder targets (#) until those
+           pages exist. #}
+        <nav class="site-nav site-nav-user" aria-label="Primary">
+          <a href="{{ url_for('my_tiaki') }}"
+             {% if request.endpoint == 'my_tiaki' %}aria-current="page" class="is-active"{% endif %}>Feed</a>
+          <a href="{{ url_for('profile') }}"
+             {% if request.endpoint == 'profile' %}aria-current="page" class="is-active"{% endif %}>Profile</a>
+          <a href="#">My groups</a>
+          <a href="#">Requests</a>
+          <a href="{{ url_for('logout') }}">Sign out</a>
+          {% set _parts = (nav_full_name or session.username or '').split() %}
+          {% set _initials = ((_parts[0][:1] if _parts else '?') + (_parts[-1][:1] if _parts|length > 1 else ''))|upper %}
+          <a class="user-avatar" href="{{ url_for('profile') }}"
+             aria-label="Open your profile">
+            {% if nav_profile_photo %}
+              <img src="{{ url_for('static', filename='images/uploads/' ~ nav_profile_photo) }}" alt="">
+            {% else %}
+              <span aria-hidden="true">{{ _initials }}</span>
+            {% endif %}
+          </a>
+        </nav>
+      {% else %}
+        <nav class="site-nav" aria-label="Primary">
+          <a href="{{ url_for('index') }}#groups">Groups</a>
+          <a href="#about">About</a>
           <a class="btn btn-ghost btn-sm" href="{{ url_for('login') }}">Sign in</a>
           <a class="btn btn-primary btn-sm" href="{{ url_for('register') }}">Join Tiaki</a>
-        {% endif %}
-      </nav>
+        </nav>
+      {% endif %}
     </div>
   </header>
 
