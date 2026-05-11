@@ -103,6 +103,7 @@ from app import lines
 from app import reports
 from app import general
 from app import my_tiaki
+from app import themes
 
 # ── Template globals ──────────────────────────────────────────────────────────
 
@@ -148,6 +149,27 @@ def inject_globals():
         nav_group_role=session.get('group_role', ''),
         nav_is_public=nav_is_public,
     )
+
+
+@app.context_processor
+def inject_theme_identity():
+    """Custom Themes foundation: active theme + identity for every template.
+
+    Reads the active group from session and resolves theme + identity
+    via the helpers in app/themes.py. Falls back to platform defaults if
+    the DB round-trip raises so a transient outage still renders pages.
+    """
+    group_id = session.get('group_id')
+    try:
+        theme = themes.get_active_theme(group_id)
+        identity = themes.get_active_identity(group_id)
+    except Exception:
+        theme = dict(themes.PLATFORM_DEFAULT_THEME)
+        identity = {
+            'cover_photo':   themes.DEFAULT_COVER_PHOTO,
+            'profile_photo': themes.DEFAULT_PROFILE_PHOTO,
+        }
+    return dict(theme=theme, identity=identity)
 
 # ── Template filters ──────────────────────────────────────────────────────────
 

@@ -34,7 +34,10 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  /* Themable via --theme-font when the base template injects the
+     foundation <style> block. Auth pages never inject it, so the
+     fallback 'DM Sans' wins there. */
+  font-family: var(--theme-font, 'DM Sans'), sans-serif;
   font-size: 14px;
   background: #f5f6f4;
   color: #1a1f1b;
@@ -103,7 +106,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
    ═══════════════════════════════════════════════ */
 .btn-pf {
   background: var(--pf-800); color: #fff; border: none;
-  padding: 6px 16px; border-radius: 6px; font-size: 13px;
+  padding: 6px 16px; border-radius: var(--theme-button-radius, 6px); font-size: 13px;
   font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer;
   text-decoration: none; display: inline-block;
 }
@@ -112,14 +115,14 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-pf-outline {
   background: #fff; color: var(--pf-600);
   font-weight: 600; border: 1px solid var(--pf-600); padding: 6px 16px;
-  border-radius: 6px; font-size: 13px; font-family: 'Cabin', sans-serif; 
+  border-radius: var(--theme-button-radius, 6px); font-size: 13px; font-family: 'Cabin', sans-serif;
   cursor: pointer; text-decoration: none; display: inline-block;
 }
 .btn-pf-outline:hover { background: var(--pf-700); color: #fff; }
 
 .btn-pf-full {
   background: var(--pf-700); color: #fff; border: none;
-  width: 100%; padding: 10px; border-radius: 8px;
+  width: 100%; padding: 10px; border-radius: var(--theme-button-radius, 8px);
   font-size: 14px; font-family: 'Cabin', sans-serif;
   font-weight: 600; cursor: pointer; text-decoration: none;
   display: inline-block;
@@ -128,7 +131,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .btn-sm-pf {
   background: var(--pf-700); color: #fff; border: none;
-  padding: 5px 12px; border-radius: 6px; font-size: 12px;
+  padding: 5px 12px; border-radius: var(--theme-button-radius, 6px); font-size: 12px;
   font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer;
   text-decoration: none; display: inline-block;
 }
@@ -141,7 +144,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-sm-outline {
   background: transparent; color: var(--pf-700);
   border: 1px solid var(--pf-400); padding: 5px 12px;
-  border-radius: 6px; font-size: 12px; cursor: pointer;
+  border-radius: var(--theme-button-radius, 6px); font-size: 12px; cursor: pointer;
   font-family: 'Cabin', sans-serif; font-weight: 600;
 }
 .btn-sm-outline:hover { background: var(--pf-100); }
@@ -149,7 +152,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-sm-danger {
   background: transparent; color: var(--red);
   border: 1px solid #f0a0a0; padding: 5px 12px;
-  border-radius: 6px; font-size: 12px; cursor: pointer;
+  border-radius: var(--theme-button-radius, 6px); font-size: 12px; cursor: pointer;
   font-family: 'Cabin', sans-serif; font-weight: 600;
 }
 .btn-sm-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
@@ -157,7 +160,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-sm-pf-soft {
   background: var(--pf-100); color: var(--pf-700);
   border: 1px solid var(--pf-400); padding: 5px 12px;
-  border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+  border-radius: var(--theme-button-radius, 6px); font-size: 12px; font-weight: 600; cursor: pointer;
   text-decoration: none; display: inline-block;
   font-family: 'Cabin', sans-serif;
 }
@@ -165,7 +168,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .btn-sm-amber {
   background: var(--amber); color: #fff; border: none;
-  padding: 5px 12px; border-radius: 6px; font-size: 12px;
+  padding: 5px 12px; border-radius: var(--theme-button-radius, 6px); font-size: 12px;
   font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer;
 }
 
@@ -177,7 +180,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   color: #fff;
   border: none;
   padding: 6px 16px;
-  border-radius: 6px;
+  border-radius: var(--theme-button-radius, 6px);
   cursor: pointer;
   text-decoration: none;
   display: inline-block;

@@ -14,6 +14,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  {# Custom Themes foundation — must come BEFORE the CSS links so the
+     `--theme-*` variables are defined when app.css + template-default.css
+     load. #}
+  <style>
+    :root {
+      --theme-primary:       {{ theme.primary_color }};
+      --theme-secondary:     {{ theme.secondary_color }};
+      --theme-background:    {{ theme.background_color }};
+      --theme-button-radius: {{ theme.button_radius }};
+      --theme-font:          "{{ theme.font_family }}";
+    }
+  </style>
+  {# Foundation: loaded unconditionally. KNOWN DUPLICATION — app.css and
+     this template's Google Fonts <link> below already load IBM Plex
+     Sans + Fraunces. When the themes editor ships, skip this <link>
+     if theme.font_family matches a base font already on the page. #}
+  {% if theme.font_family %}
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family={{ theme.font_family|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+  {% endif %}
+
   {# Tiaki marketing-surface CSS #}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/template-default.css') }}">
