@@ -117,7 +117,6 @@ def group_landing(group_id):
     )
 
 @app.route('/groups/apply', methods=['GET', 'POST'])
-@role_required()
 def apply_for_group():
     if 'user_id' not in session:
         return redirect(url_for('login'))
