@@ -498,145 +498,262 @@
 }
 
 /* ============================================================
-   Select-group picker — appended to auth.css
-   Reuses the split-screen layout from login. Adds the picker
-   list and role badges.
+   Group picker — /select-group
+   Centered editorial layout (NOT the split-screen .auth-screen).
+   Lives here in auth.css because it's part of the public auth
+   flow.
    ============================================================ */
 
-/* Wider form area than login — picker cards need room */
-.auth-form.select-form {
-  max-width: 520px;
+.picker-page {
+  padding-top: 88px;
+  padding-bottom: 96px;
 }
 
-/* ── Picker list ──────────────────────────────────────── */
-.select-group-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* ── Hero ──────────────────────────────────────────────── */
+.picker-hero {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto 56px;
+}
+
+.picker-greeting {
+  margin-bottom: 16px;
+}
+
+.picker-title {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 6vw, 64px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+  margin-bottom: 18px;
+}
+
+.picker-lead {
+  font-size: 16px;
+  color: var(--color-ink-soft);
   margin-bottom: 28px;
-  /* Scroll if user has many memberships */
-  max-height: 60vh;
-  overflow-y: auto;
-  padding: 4px;
-  margin-left: -4px;
-  margin-right: -4px;
+  line-height: 1.55;
 }
 
-.select-group-form {
+.picker-inline-link {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+.picker-inline-link:hover {
+  color: var(--color-primary-soft);
+}
+
+.picker-cta svg {
+  flex-shrink: 0;
+}
+
+/* ── Card grid ─────────────────────────────────────────── */
+.picker-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin: 0 auto 56px;
+  max-width: 1100px;
+}
+
+@media (min-width: 900px) {
+  .picker-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+}
+
+/* Wraps a single submit button styled as the whole card. */
+.picker-form {
   margin: 0;
 }
 
-/* Each card is a full-width button */
-.select-group-card {
+.picker-card {
   width: 100%;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  padding: 28px 28px 24px;
   background: var(--color-card);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
-  text-align: left;
   font-family: var(--font-body);
   color: inherit;
   transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
-  /* Touch target */
-  min-height: 64px;
+  /* Holds row alignment when one group has a longer title than its
+     siblings; collapses on mobile. */
+  min-height: 240px;
 }
 
-.select-group-card:hover {
+.picker-card:hover {
   border-color: var(--color-primary);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-.select-group-card:hover .select-group-chevron {
-  color: var(--color-primary);
-  transform: translateX(2px);
-}
-
-.select-group-card:focus-visible {
+.picker-card:focus-visible {
   outline: 3px solid var(--color-primary);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-.select-group-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
+.picker-role {
+  margin-bottom: 14px;
+  align-self: flex-start;
 }
 
-.select-group-name {
+.picker-card-title {
+  display: block;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--color-ink);
+  line-height: 1.2;
+  margin-bottom: 18px;
+}
+
+.picker-card-divider {
+  display: block;
+  height: 1px;
+  background: var(--color-line);
+  margin: 0 0 16px;
+}
+
+.picker-card-meta {
+  display: block;
+  font-size: 14px;
+  color: var(--color-ink-faint);
+  margin-bottom: 22px;
+}
+
+.picker-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+  margin-top: auto;
+  align-self: flex-start;
+  transition: gap 0.15s, color 0.15s;
+}
+
+.picker-card:hover .picker-card-cta {
+  gap: 12px;
+  color: var(--color-primary-soft);
+}
+
+.picker-card-cta svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Empty state (user has no memberships yet) ────────── */
+.picker-empty {
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto 56px;
+  padding: 40px 28px;
+  background: var(--color-card);
+  border: 1px dashed var(--color-line);
+  border-radius: 14px;
+}
+
+.picker-empty-title {
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--color-ink);
-  line-height: 1.2;
+  margin-bottom: 10px;
 }
 
-.select-group-chevron {
-  flex-shrink: 0;
-  color: var(--color-ink-faint);
-  transition: color 0.15s, transform 0.15s;
-  display: inline-flex;
-  align-items: center;
+.picker-empty-lead {
+  font-size: 15px;
+  color: var(--color-ink-soft);
+  line-height: 1.55;
+}
+
+/* ── Secondary actions ────────────────────────────────── */
+.picker-secondary {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-}
-
-.select-group-chevron svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* ── Role badges ──────────────────────────────────────── */
-.role-badge {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  align-self: flex-start;
-  border: 1px solid currentColor;
-  /* The colour determines text + dot + border via currentColor */
+  gap: 24px;
 }
 
-.role-badge .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+.picker-secondary-btn {
+  border: 1px solid var(--color-line);
+}
+.picker-secondary-btn:hover {
+  border-color: var(--color-primary);
 }
 
-/* Role-specific colours — paired with text + shape so colour
-   is never the only carrier of meaning. */
-.role-super-admin       { color: var(--color-primary); }
-.role-group-coordinator { color: var(--color-primary); }
-.role-operator          { color: var(--color-accent);  }
-.role-observer          { color: var(--color-ink-soft); }
+.picker-secondary-link {
+  font-size: 14px;
+  color: var(--color-ink-soft);
+  padding: 8px 4px;
+  border-radius: 4px;
+}
+.picker-secondary-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
-/* ── Custom scrollbar for the list (subtle) ──────────── */
-.select-group-list::-webkit-scrollbar {
-  width: 6px;
+/* ── Tertiary (logout escape) ─────────────────────────── */
+.picker-tertiary {
+  text-align: center;
+  margin-top: 28px;
+  font-size: 13px;
 }
-.select-group-list::-webkit-scrollbar-track {
-  background: transparent;
+.picker-tertiary a {
+  color: var(--color-ink-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 6px 8px;
+  border-radius: 4px;
 }
-.select-group-list::-webkit-scrollbar-thumb {
-  background: var(--color-line);
-  border-radius: 3px;
+.picker-tertiary a:hover {
+  color: var(--color-ink-soft);
 }
-.select-group-list::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ink-faint);
+
+/* ── Mobile ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .picker-page {
+    padding-top: 56px;
+    padding-bottom: 64px;
+  }
+  .picker-hero {
+    margin-bottom: 40px;
+  }
+  .picker-title {
+    margin-bottom: 14px;
+  }
+  .picker-lead {
+    font-size: 15px;
+    margin-bottom: 24px;
+  }
+  .picker-card {
+    min-height: auto;
+    padding: 24px 22px 22px;
+  }
+  .picker-card-title {
+    font-size: 22px;
+  }
+  .picker-secondary {
+    flex-direction: column;
+    gap: 16px;
+  }
 }
 
 /* ============================================================

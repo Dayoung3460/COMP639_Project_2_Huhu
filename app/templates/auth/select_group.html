@@ -1,71 +1,89 @@
 {# templates/auth/select_group.html
    Route: GET/POST /select-group  →  select_group()
-   Extends base_auth_marketing.html — split-screen, no Bootstrap.
-   Shown when a user belongs to multiple groups, after successful login.
+   Extends base_auth_marketing.html — marketing surface, no Bootstrap.
+   Post-login landing page for any authenticated user; shows their
+   memberships as cards (or an empty state when they have none).
 #}
 {% extends 'base_auth_marketing.html' %}
 
-{% block title %}Choose a group · Tiaki{% endblock %}
+{% block title %}Where to today? · Tiaki{% endblock %}
 
 {% block content %}
-<div class="auth-screen">
+<div class="container picker-page">
 
-  {# ── Left: editorial brand panel ─────────────────────── #}
-  <aside class="auth-aside" aria-hidden="true">
-    <a href="{{ url_for('index') }}" class="auth-aside-mark">Tiaki</a>
-    <div class="auth-aside-quote">
-      <h2>Mahi tahi.</h2>
-      <p>Many hands, one purpose.</p>
-    </div>
-  </aside>
+  {# ── Hero ─────────────────────────────────────────────── #}
+  <header class="picker-hero">
+    <p class="section-eyebrow picker-greeting">
+      Welcome back, {{ nav_first_name or session.username }}
+    </p>
+    <h1 class="picker-title">Where to today?</h1>
+    <p class="picker-lead">
+      Pick a group to record records and manage lines, or stay on
+      <a href="{{ url_for('my_tiaki') }}" class="picker-inline-link">My Tiaki</a>
+      for a cross-group view.
+    </p>
+    <a href="{{ url_for('my_tiaki') }}" class="btn btn-primary picker-cta">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+           stroke="currentColor" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="7" y1="17" x2="17" y2="7"/>
+        <polyline points="9 7 17 7 17 15"/>
+      </svg>
+      Open My Tiaki
+    </a>
+  </header>
 
-  {# ── Right: group picker ─────────────────────────────── #}
-  <section class="auth-form-side" aria-labelledby="picker-heading">
-    <div class="auth-form select-form">
-      <h1 id="picker-heading">Where to today?</h1>
-      <p class="lead">
-        You're a member of {{ memberships|length }} groups. Pick where you want to start — you can switch any time.
+  {# ── Group cards (or empty state) ─────────────────────── #}
+  {% if memberships %}
+    <ul class="picker-grid" role="list">
+      {% for m in memberships %}
+        <li>
+          <form method="POST" action="{{ url_for('select_group') }}" class="picker-form">
+            <input type="hidden" name="group_id" value="{{ m.group_id }}">
+            <button type="submit"
+                    class="picker-card"
+                    aria-label="Enter {{ m.group_name }} as {{ m.role }}">
+              <span class="section-eyebrow picker-role">{{ m.role }}</span>
+              <span class="picker-card-title">{{ m.group_name }}</span>
+              <span class="picker-card-divider" aria-hidden="true"></span>
+              {% if m.location %}
+                <span class="picker-card-meta">{{ m.location }}</span>
+              {% endif %}
+              <span class="picker-card-cta">
+                Enter group
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </span>
+            </button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="picker-empty" role="status">
+      <p class="picker-empty-title">You're not in a group yet.</p>
+      <p class="picker-empty-lead">
+        Browse public groups, or apply to start one of your own.
       </p>
-
-      <ul class="select-group-list" role="list">
-        {% for m in memberships %}
-          <li>
-            <form method="POST" action="{{ url_for('select_group') }}" class="select-group-form">
-              <input type="hidden" name="group_id" value="{{ m.group_id }}">
-              <button type="submit"
-                      class="select-group-card"
-                      aria-label="Continue to {{ m.group_name }} as {{ m.role }}">
-                <span class="select-group-text">
-                  <span class="select-group-name">{{ m.group_name }}</span>
-                  <span class="role-badge role-{{ m.role|replace(' ', '-')|lower }}">
-                    <span class="dot" aria-hidden="true"></span>{{ m.role }}
-                  </span>
-                </span>
-                <span class="select-group-chevron" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </span>
-              </button>
-            </form>
-          </li>
-        {% endfor %}
-      </ul>
-
-      <div class="auth-secondary-links">
-        <a href="{{ url_for('logout') }}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          Log out
-        </a>
-      </div>
-
     </div>
-  </section>
+  {% endif %}
+
+  {# ── Secondary actions ────────────────────────────────── #}
+  <div class="picker-secondary">
+    <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm picker-secondary-btn">Browse other groups</a>
+    <a href="{{ url_for('apply_for_group') }}" class="btn btn-ghost btn-sm picker-secondary-btn">
+      Apply to start a new group
+    </a>
+  </div>
+
+  {# Tertiary escape hatch — only way out without picking a group #}
+  <p class="picker-tertiary">
+    <a href="{{ url_for('logout') }}">Log out</a>
+  </p>
+
 </div>
 {% endblock %}

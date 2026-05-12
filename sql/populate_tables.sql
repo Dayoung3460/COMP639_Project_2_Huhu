@@ -33,15 +33,18 @@ ON CONFLICT DO NOTHING;
 -- GROUPS
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO groups (name, description, is_public, image, color_theme) VALUES
+INSERT INTO groups (name, description, location, is_public, image, color_theme) VALUES
     ('Predator Free Lincoln University',
      'Volunteer predator-control initiative across Lincoln University campus.',
+     'Lincoln, Canterbury',
      TRUE,  'group_lincoln.png', '#198754'),
     ('Christchurch City Trappers',
      'Community predator trapping group operating across central Christchurch.',
+     'Christchurch, Canterbury',
      TRUE,  'group_chch.png',    '#0d6efd'),
     ('Banks Peninsula Restoration',
      'Private restoration group operating on private land on Banks Peninsula.',
+     'Banks Peninsula, Canterbury',
      FALSE, 'group_banks.png',   '#dc3545')
 ON CONFLICT (name) DO NOTHING;
 
@@ -395,16 +398,18 @@ ON CONFLICT (user_id, group_id) DO NOTHING;
 -- Log in as smitchell / Password1! (Super Admin) to approve or reject
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO group_applications (user_id, proposed_name, description, location, justification, image, status, applied_at) VALUES
+INSERT INTO group_applications (user_id, proposed_name, description, location, justification, status, applied_at, decided_by, decided_at, decision_reason) VALUES
 (
     (SELECT user_id FROM users WHERE username = 'enyberg'),
     'Selwyn District Trappers',
     'An informal trapping network across the Selwyn District with about 15 volunteers, focused on coordinating predator control efforts.',
     'Selwyn District',
     'I coordinate an informal trapping network across the Selwyn District with about 15 volunteers. Formalising would let us centralise our data and coordinate effort more effectively.',
-    'group_selwyn.png',
-    'pending',
-    NOW() - INTERVAL '5 days'
+    'approved',
+    NOW() - INTERVAL '5 days',
+    (SELECT user_id FROM users WHERE is_super_admin = TRUE LIMIT 1),
+    NOW() - INTERVAL '3 days',
+    'Great initiative, approved and welcome to the platform.'
 ),
 (
     (SELECT user_id FROM users WHERE username = 'hpatel'),
@@ -412,9 +417,11 @@ INSERT INTO group_applications (user_id, proposed_name, description, location, j
     'A small community group focused on predator control in the Riccarton Bush reserve, running monthly trap checks.',
     'Riccarton, Christchurch',
     'A small community group focused on the Riccarton Bush reserve. We run monthly trap checks and would benefit from proper data recording tools.',
-    'group_riccarton.png',
     'pending',
-    NOW() - INTERVAL '2 days'
+    NOW() - INTERVAL '2 days',
+    NULL,
+    NULL,
+    NULL
 )
 ON CONFLICT DO NOTHING;
 

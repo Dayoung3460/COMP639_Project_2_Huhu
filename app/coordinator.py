@@ -185,7 +185,6 @@ def coordinator_members():
             FROM users u
             JOIN group_memberships gm ON gm.user_id = u.user_id
             WHERE gm.group_id = %s
-              AND gm.role != 'Super Admin'
             ORDER BY u.last_name, u.first_name
             """,
             (group_id,)

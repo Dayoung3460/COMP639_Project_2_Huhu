@@ -51,7 +51,7 @@ def admin_dashboard():
                     COUNT(DISTINCT u.user_id)                                                    AS total,
                     COUNT(*) FILTER (WHERE gm.role = 'Observer')                                 AS observers,
                     COUNT(*) FILTER (WHERE gm.role = 'Operator')                                 AS operators,
-                    COUNT(*) FILTER (WHERE gm.role = 'Super Admin')                              AS admins,
+                    COUNT(DISTINCT u.user_id) FILTER (WHERE u.is_super_admin = TRUE)             AS admins,
                     COUNT(DISTINCT u.user_id) FILTER (WHERE u.account_status = 'inactive')       AS inactive
                 FROM users u
                 LEFT JOIN group_memberships gm ON gm.user_id = u.user_id

@@ -67,3 +67,7 @@ static/images/uploads/*
 !static/images/uploads/group_banks.png
 !static/images/uploads/group_selwyn.png
 !static/images/uploads/group_riccarton.png
+
+# Claude Code
+.claude/
+CLAUDE.md

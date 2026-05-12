@@ -97,13 +97,20 @@ def register():
                      profile_photo,
                      account_status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active')
+                RETURNING user_id
             ''', (username, email, password_hash, first_name, last_name,
                   phone or None, address or None,
                   emergency_name or None, emergency_phone or None,
                   profile_photo))
+            new_user_id = cursor.fetchone()['user_id']
 
-        flash('Account created successfully! Please log in.', 'success')
-        return redirect(url_for('login'))
+        # Auto-login the new account and drop them on the picker. They
+        # have no memberships yet, so /select-group will show the empty
+        # state with "Apply to start a new group".
+        session['user_id']  = new_user_id
+        session['username'] = username
+        flash(f"Welcome to Tiaki, {first_name}!", 'success')
+        return redirect(url_for('select_group'))
 
     return render_template('auth/register.html')
 
@@ -141,7 +148,11 @@ def login():
                 quick_login_enabled=quick_login_enabled
             )
 
-        # Fetch all group memberships for this user (active groups only)
+        session['user_id']  = user['user_id']
+        session['username'] = user['username']
+
+        # Pull the user's active group memberships once; we branch on
+        # role-and-count to pick the right post-login destination.
         with db.get_cursor() as cursor:
             cursor.execute('''
                 SELECT gm.group_id, gm.role, g.name AS group_name
@@ -152,31 +163,29 @@ def login():
             ''', (user['user_id'],))
             memberships = cursor.fetchall()
 
-        session['user_id']  = user['user_id']
-        session['username'] = user['username']
-
-        if len(memberships) == 0:
-            if user['is_super_admin']:
-                # Super Admin with no group memberships — go straight to admin dashboard
-                session['group_role'] = 'Super Admin'
-                _flash_pending_notifications(user['user_id'])
-                flash(f"Welcome back, {user['username']}!", 'success')
-                return redirect(url_for('admin_dashboard'))
-            # Regular user not in any group yet — go to home to join one
+        # Super Admin with no group context → admin dashboard. The
+        # picker has nothing to offer here.
+        if user['is_super_admin'] and len(memberships) == 0:
+            session['group_role'] = 'Super Admin'
             _flash_pending_notifications(user['user_id'])
-            flash(f"Welcome, {user['username']}! Join a group to get started.", 'info')
-            return redirect(url_for('index'))
+            return redirect(url_for('admin_dashboard'))
 
-        if len(memberships) == 1:
-            session['group_id']   = memberships[0]['group_id']
-            session['group_role'] = memberships[0]['role']
-            session['group_name'] = memberships[0]['group_name']
-            flash(f"Welcome back, {user['username']}!", 'success')
+        # Regular user with exactly one membership → auto-select that
+        # group and go straight to the role dashboard. Skips the picker
+        # so single-group members don't pay an extra click per login.
+        # Super Admins are deliberately excluded so they always land on
+        # the picker when they have any group context.
+        if not user['is_super_admin'] and len(memberships) == 1:
+            m = memberships[0]
+            session['group_id']   = m['group_id']
+            session['group_role'] = m['role']
+            session['group_name'] = m['group_name']
             _flash_pending_notifications(user['user_id'])
             return redirect_by_role()
 
-        # Multiple groups — let the user pick
-        session['pending_memberships'] = [dict(m) for m in memberships]
+        # Everyone else (Super Admins with memberships, regular users
+        # with 0 or 2+ memberships) → picker. select_group() flashes
+        # notifications when the user commits to a group.
         return redirect(url_for('select_group'))
 
     return render_template('auth/login.html', quick_login_enabled=quick_login_enabled)
@@ -184,10 +193,27 @@ def login():
 
 @app.route('/select-group', methods=['GET', 'POST'])
 def select_group():
-    """Group selector shown when a user belongs to multiple groups."""
-    memberships = session.get('pending_memberships')
-    if not memberships:
+    """Group picker — the post-login landing page for any logged-in user.
+
+    Memberships are re-read from the DB on every call so the page is
+    reachable any time (typed URL, marketing-nav 'My Tiaki' link), and
+    so the list reflects the user's current memberships rather than a
+    snapshot stashed at login.
+    """
+    if 'user_id' not in session:
         return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT gm.group_id, gm.role, g.name AS group_name, g.location
+            FROM group_memberships gm
+            JOIN groups g ON gm.group_id = g.group_id
+            WHERE gm.user_id = %s AND g.is_active = TRUE
+            ORDER BY g.name
+        ''', (user_id,))
+        memberships = cursor.fetchall()
 
     if request.method == 'POST':
         group_id = request.form.get('group_id', type=int)
@@ -199,8 +225,7 @@ def select_group():
         session['group_id']   = match['group_id']
         session['group_role'] = match['role']
         session['group_name'] = match['group_name']
-        session.pop('pending_memberships', None)
-        _flash_pending_notifications(session['user_id'])
+        _flash_pending_notifications(user_id)
         return redirect_by_role()
 
     return render_template('auth/select_group.html', memberships=memberships)
