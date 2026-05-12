@@ -131,7 +131,7 @@ def lines_index():
                     ELSE l.is_retired = FALSE
                 END
             )
-            ORDER BY l.is_retired ASC, l.name ASC
+            ORDER BY l.is_retired ASC, l.line_id DESC
             """,
             (session.get('group_id'), line_filter,)
         )
