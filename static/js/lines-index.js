@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const lineCards = Array.from(document.querySelectorAll('.js-line-card'));
+  let noLocationTimeout = null;
   const searchInput = document.getElementById('lines-search-input');
   const typeFilter = document.getElementById('lines-type-filter');
   const operatorFilter = document.getElementById('lines-operator-filter');
@@ -276,6 +277,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const linePoints = linePointsByLine[lineId] || [];
       if (!map || linePoints.length === 0) {
         highlightLineCard(lineId);
+        if (map && linePoints.length === 0) {
+          const noticeEl = document.getElementById('lines-map-no-location-notice');
+          if (noticeEl) {
+            if (noLocationTimeout) clearTimeout(noLocationTimeout);
+            noticeEl.classList.add('is-visible');
+            noLocationTimeout = setTimeout(function () {
+              noticeEl.classList.remove('is-visible');
+            }, 3000);
+          }
+        }
         return;
       }
 
