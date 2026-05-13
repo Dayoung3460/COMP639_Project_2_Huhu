@@ -255,9 +255,10 @@ def request_join_group():
             )
             flash('Joined successfully!', 'success')
         else:
+            message = request.form.get('message', '').strip() or None
             cursor.execute(
-                "INSERT INTO group_join_requests (user_id, group_id, status) VALUES (%s, %s, 'pending')",
-                (user_id, group_id)
+                "INSERT INTO group_join_requests (user_id, group_id, status, message) VALUES (%s, %s, 'pending', %s)",
+                (user_id, group_id, message)
             )
             flash('Request submitted successfully!', 'success')
 
