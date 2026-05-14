@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button %}
+{% block title %}Group Identity{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width:36px;height:36px;font-size:18px;">
+    <i class="bi bi-image"></i>
+  </div>
+  Group Identity
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Group Identity</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+{#
+  The two-card surface for P2-44. Reads three sources:
+    - group_cover_path / group_profile_path  → DB row for this group
+      (drives the "Remove" button visibility — you can only remove a
+      slot you actually filled).
+    - group_identity / platform_identity     → context-processor cascade
+      (drives the preview + the source-label trichotomy).
+  Foundation invariant: identity paths are relative to /static/ and
+  always wrapped in url_for('static', filename=…).
+#}
+
+{# Effective path the cascade resolves to right now — used for preview src. #}
+{% set effective_cover   = (group_identity and group_identity.cover_photo) or platform_identity.cover_photo %}
+{% set effective_profile = (group_identity and group_identity.profile_photo) or platform_identity.profile_photo %}
+
+<div class="container py-4" style="max-width:720px;">
+
+  {# ── Cover photo card ──────────────────────────────────────── #}
+  <div class="panel identity-card">
+    <div class="panel-header">
+      <h2 class="panel-title">Cover photo</h2>
+    </div>
+    <div class="panel-body">
+
+      {# Source trichotomy. group_cover_path is the raw DB value; we use
+         it (not the cascade result) so we can tell "group has an upload"
+         apart from "group is borrowing the platform default". #}
+      {% if group_cover_path %}
+        <div class="identity-source-label identity-source-label--group">
+          <i class="bi bi-check-circle" aria-hidden="true"></i>
+          Using group upload
+        </div>
+      {% elif platform_identity.cover_photo and platform_identity.cover_photo != 'images/default-cover.jpg' %}
+        <div class="identity-source-label identity-source-label--platform">
+          <i class="bi bi-info-circle" aria-hidden="true"></i>
+          Using platform default — upload your own to override
+        </div>
+      {% else %}
+        <div class="identity-source-label identity-source-label--placeholder">
+          <i class="bi bi-image" aria-hidden="true"></i>
+          No image — using static placeholder
+        </div>
+      {% endif %}
+
+      <div class="identity-preview identity-preview--cover">
+        <img src="{{ url_for('static', filename=effective_cover) }}"
+             alt="Current cover photo for {{ session.get('group_name') }}">
+      </div>
+
+      <p class="identity-hint">
+        Recommended: 1200×400 (3:1 ratio). Max 2 MB. JPG, PNG, or WEBP.
+      </p>
+
+      <form method="POST"
+            action="{{ url_for('coordinator_identity_upload_cover') }}"
+            enctype="multipart/form-data"
+            class="identity-actions">
+        <label class="visually-hidden" for="cover_photo">Select a cover photo</label>
+        <input type="file"
+               id="cover_photo"
+               name="cover_photo"
+               accept="image/jpeg,image/png,image/webp"
+               required
+               class="form-control identity-file-input">
+        {{ pf_button('Replace photo', variant='btn-sm-pf', type='submit',
+                     icon='bi-upload') }}
+      </form>
+
+      {% if group_cover_path %}
+        <form method="POST"
+              action="{{ url_for('coordinator_identity_remove_cover') }}"
+              class="identity-remove-form"
+              onsubmit="return confirm('Remove the cover photo? The fallback image will be shown instead.');">
+          <button type="submit"
+                  class="btn-sm-danger identity-remove-btn">
+            <i class="bi bi-trash" aria-hidden="true"></i>
+            Remove cover photo
+          </button>
+        </form>
+      {% endif %}
+
+    </div>
+  </div>
+
+  {# ── Profile photo card ────────────────────────────────────── #}
+  <div class="panel identity-card">
+    <div class="panel-header">
+      <h2 class="panel-title">Profile photo</h2>
+    </div>
+    <div class="panel-body">
+
+      {% if group_profile_path %}
+        <div class="identity-source-label identity-source-label--group">
+          <i class="bi bi-check-circle" aria-hidden="true"></i>
+          Using group upload
+        </div>
+      {% elif platform_identity.profile_photo and platform_identity.profile_photo != 'images/default-profile.png' %}
+        <div class="identity-source-label identity-source-label--platform">
+          <i class="bi bi-info-circle" aria-hidden="true"></i>
+          Using platform default — upload your own to override
+        </div>
+      {% else %}
+        <div class="identity-source-label identity-source-label--placeholder">
+          <i class="bi bi-image" aria-hidden="true"></i>
+          No image — using static placeholder
+        </div>
+      {% endif %}
+
+      <div class="identity-preview identity-preview--profile">
+        <img src="{{ url_for('static', filename=effective_profile) }}"
+             alt="Current profile photo for {{ session.get('group_name') }}">
+      </div>
+
+      <p class="identity-hint">
+        Recommended: 400×400 (square). Max 2 MB. JPG, PNG, or WEBP.
+      </p>
+
+      <form method="POST"
+            action="{{ url_for('coordinator_identity_upload_profile') }}"
+            enctype="multipart/form-data"
+            class="identity-actions">
+        <label class="visually-hidden" for="profile_photo">Select a profile photo</label>
+        <input type="file"
+               id="profile_photo"
+               name="profile_photo"
+               accept="image/jpeg,image/png,image/webp"
+               required
+               class="form-control identity-file-input">
+        {{ pf_button('Replace photo', variant='btn-sm-pf', type='submit',
+                     icon='bi-upload') }}
+      </form>
+
+      {% if group_profile_path %}
+        <form method="POST"
+              action="{{ url_for('coordinator_identity_remove_profile') }}"
+              class="identity-remove-form"
+              onsubmit="return confirm('Remove the profile photo? The fallback image will be shown instead.');">
+          <button type="submit"
+                  class="btn-sm-danger identity-remove-btn">
+            <i class="bi bi-trash" aria-hidden="true"></i>
+            Remove profile photo
+          </button>
+        </form>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

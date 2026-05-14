@@ -8,24 +8,72 @@
    CSS Variables
    ═══════════════════════════════════════════════ */
 :root {
-  --pf-900: #0d2b1a;
-  --pf-800: #1a5c38;
-  --pf-700: #236b43;
-  --pf-600: #2d7a4f;
-  --pf-500: #3d9b67;
-  --pf-400: #6ab98a;
-  --pf-300: #a3d4b5;
-  --pf-200: #c8e6d5;
-  --pf-100: #e6f4ec;
-  --pf-50:  #f4faf6;
+  /* Foundation-fix: the in-app palette is derived from the active
+     theme's primary so a group's theme actually flips the chrome
+     (sidebar, primary buttons, dashboard cards). --pf-base receives
+     --theme-primary (set in the inline <style> block of base.html);
+     when none is set we fall back to Tiaki's marketing primary so
+     unthemed surfaces (auth pages) still render. Mix percentages
+     chosen so the ramp sits cohesively around any --theme-primary;
+     at Default Tiaki #1a3a2e the resulting palette shifts slightly
+     deeper/less-mint than the previous hand-tuned ramp — intentional
+     regression flagged in the commit description. */
+  --pf-base: var(--theme-primary, #1a3a2e);
+
+  --pf-50:  color-mix(in srgb, var(--pf-base)  8%, white);
+  --pf-100: color-mix(in srgb, var(--pf-base) 15%, white);
+  --pf-200: color-mix(in srgb, var(--pf-base) 25%, white);
+  --pf-300: color-mix(in srgb, var(--pf-base) 40%, white);
+  --pf-400: color-mix(in srgb, var(--pf-base) 55%, white);
+  --pf-500: color-mix(in srgb, var(--pf-base) 70%, white);
+  --pf-600: color-mix(in srgb, var(--pf-base) 85%, white);
+  --pf-700: var(--pf-base);
+  --pf-800: color-mix(in srgb, var(--pf-base) 92%, black);
+  --pf-900: color-mix(in srgb, var(--pf-base) 80%, black);
+
+  /* Functional / semaphore colours — not part of the brand ramp.
+     Amber = warning, red = danger, blue = info. Left literal so a
+     custom theme can't accidentally turn the danger button green. */
   --amber:        #e8920a;
   --amber-light:  #fef3dc;
   --red:          #c0392b;
   --red-light:    #fdecea;
   --blue:         #1a6fa8;
   --blue-light:   #e8f4fd;
+
   --sidebar-w:    240px;
   --navbar-h:     58px;
+
+  /* 2026-05-12 design tokens — net new for the chrome rework.
+     All re-stain with --theme-primary via color-mix so a theme
+     change reflows the whole neutral palette, not just the brand
+     hits. We stick with `in srgb` (codebase convention) rather
+     than design's `in oklab` — same visual result for our hues. */
+
+  /* Secondary scale (sparingly used — CTAs, badges) */
+  --sf-100: color-mix(in srgb, var(--theme-secondary) 14%, white);
+  --sf-500: var(--theme-secondary);
+  --sf-700: color-mix(in srgb, var(--theme-secondary) 75%, black);
+
+  /* Surface tokens — blended toward primary so whites feel native
+     to the brand seed. Replaces ad-hoc #fff usage in the design. */
+  --surface:       #fff;
+  --surface-alt:   color-mix(in srgb, var(--theme-primary) 3%, white);
+  --surface-sunk:  color-mix(in srgb, var(--theme-primary) 5%, white);
+
+  /* Text-tone tokens (replaces scattered #15201a / #6b7872 literals
+     in existing rules — left in place; tokens are additive). */
+  --ink:           #15201a;
+  --ink-mute:      color-mix(in srgb, var(--theme-primary) 20%, #4a554f);
+  --ink-faint:     color-mix(in srgb, var(--theme-primary) 14%, #7d8782);
+
+  /* Hairline tokens (replaces #e4ede8 / #c8d4cd literals). */
+  --line:          color-mix(in srgb, var(--theme-primary) 10%, #e3e1da);
+  --line-strong:   color-mix(in srgb, var(--theme-primary) 18%, #c9c6bc);
+
+  /* Text-on-brand — kept as a token so a high-lightness primary
+     could flip it in a future hardening pass. */
+  --on-primary:    #fff;
 }
 
 /* ═══════════════════════════════════════════════
@@ -34,18 +82,30 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  /* Themable via --theme-font when the base template injects the
+  /* Themable via --theme-font-body when the base template injects the
      foundation <style> block. Auth pages never inject it, so the
      fallback 'DM Sans' wins there. */
-  font-family: var(--theme-font, 'DM Sans'), sans-serif;
+  font-family: var(--theme-font-body, 'DM Sans'), sans-serif;
   font-size: 14px;
-  background: #f5f6f4;
+  /* Body background follows the active theme's background colour;
+     foundation-fix unhooks the previous literal #f5f6f4 so the
+     in-app surface tints with the group's theme background. */
+  background: var(--theme-background, #f5f6f4);
   color: #1a1f1b;
   margin: 0;
 }
 
+/* 2026-05-15 heading split: every h1–h6 picks up the theme's heading
+   font. Class selectors below that hardcode 'Cabin' have all been
+   re-pointed to var(--theme-font-heading, 'Cabin') via a sweep, so
+   display chrome (titles, brand wordmark, gallery names, etc.)
+   follows the active theme rather than locking to Cabin. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+
 h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
-  font-family: 'Cabin', sans-serif;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
 }
 
 /* ═══════════════════════════════════════════════
@@ -78,7 +138,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   font-size: 16px;
 }
 .pf-navbar .brand-name {
-  font-family: 'Cabin', sans-serif;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
   font-size: 17px;
   font-weight: 700;
   line-height: 1.1;
@@ -101,13 +161,141 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .pf-navbar .nav-actions { display: flex; gap: 8px; align-items: center; }
 .pf-navbar .btn-pf-outline { color: var(--pf-200); border-color: var(--pf-200); }
 
+/* 2026-05-12 brand swap: when base.html is in a group context the
+   brand becomes the group's profile photo + name, linking to the
+   user's role dashboard. Marketing surface (base_marketing.html)
+   keeps the Tiaki logo via its own .brand block — these rules
+   don't conflict because .brand--group only applies inside the
+   logged-in base.html.
+   2026-05-15: pill chrome dropped per topbar restructure. Now a
+   clean photo + name pairing — the topbar is a slim brand-and-user
+   ribbon, so the brand reads as a brand not as a chip. */
+.pf-navbar .brand--group {
+  display: flex; align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.12s, opacity 0.12s;
+  max-width: 280px;
+  min-width: 0;
+}
+.pf-navbar .brand--group:hover {
+  color: #fff;
+  opacity: 0.85;
+}
+.pf-navbar .brand--group:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.pf-navbar .brand-group-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--pf-700);
+}
+.pf-navbar .brand-group-name {
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 14px; font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+@media (max-width: 575px) {
+  .pf-navbar .brand--group { max-width: 180px; padding: 3px 10px 3px 3px; }
+  .pf-navbar .brand-group-avatar { width: 28px; height: 28px; }
+  .pf-navbar .brand-group-name { font-size: 13px; }
+}
+
+/* 2026-05-12 design integration: .user-pill replaces the inline-styled
+   user chip that used to live in base.html. Same dark-navbar context
+   as .brand--group above, so it uses the same white-alpha translucent
+   surface + border pattern (NOT the design's --surface neutrals, which
+   would be invisible on dark green). Two visible lines: name + role.
+   Initials come from inject_globals.nav_initials (first-of-each-word,
+   verified across the empty/single-name/multi-word cases). */
+.pf-navbar .user-pill {
+  display: flex; align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 4px 12px 4px 4px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.12s, border-color 0.12s;
+  max-width: 220px;
+  min-width: 0;
+}
+.pf-navbar .user-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.pf-navbar .user-pill:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+.pf-navbar .user-pill__avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--pf-600);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center; justify-content: center;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 11px; font-weight: 700;
+  color: #fff;
+}
+.pf-navbar .user-pill__avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.pf-navbar .user-pill__meta {
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+}
+.pf-navbar .user-pill__name {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-navbar .user-pill__role {
+  font-size: 11px;
+  color: var(--pf-200);
+  white-space: nowrap;
+}
+.pf-navbar .nav-logout {
+  display: flex; align-items: center; gap: 5px;
+  text-decoration: none;
+  color: var(--pf-300);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.12s;
+}
+.pf-navbar .nav-logout:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+@media (max-width: 575px) {
+  .pf-navbar .user-pill { max-width: 160px; }
+  .pf-navbar .user-pill__role { display: none; }
+}
+
 /* ═══════════════════════════════════════════════
    Buttons
    ═══════════════════════════════════════════════ */
 .btn-pf {
   background: var(--pf-800); color: #fff; border: none;
   padding: 6px 16px; border-radius: var(--theme-button-radius, 6px); font-size: 13px;
-  font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif; font-weight: 600; cursor: pointer;
   text-decoration: none; display: inline-block;
 }
 .btn-pf:hover { background: var(--pf-400); color: #fff; }
@@ -115,7 +303,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-pf-outline {
   background: #fff; color: var(--pf-600);
   font-weight: 600; border: 1px solid var(--pf-600); padding: 6px 16px;
-  border-radius: var(--theme-button-radius, 6px); font-size: 13px; font-family: 'Cabin', sans-serif;
+  border-radius: var(--theme-button-radius, 6px); font-size: 13px; font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
   cursor: pointer; text-decoration: none; display: inline-block;
 }
 .btn-pf-outline:hover { background: var(--pf-700); color: #fff; }
@@ -123,7 +311,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-pf-full {
   background: var(--pf-700); color: #fff; border: none;
   width: 100%; padding: 10px; border-radius: var(--theme-button-radius, 8px);
-  font-size: 14px; font-family: 'Cabin', sans-serif;
+  font-size: 14px; font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
   font-weight: 600; cursor: pointer; text-decoration: none;
   display: inline-block;
 }
@@ -132,7 +320,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .btn-sm-pf {
   background: var(--pf-700); color: #fff; border: none;
   padding: 5px 12px; border-radius: var(--theme-button-radius, 6px); font-size: 12px;
-  font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif; font-weight: 600; cursor: pointer;
   text-decoration: none; display: inline-block;
 }
 .btn-sm-pf:hover,
@@ -145,7 +333,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   background: transparent; color: var(--pf-700);
   border: 1px solid var(--pf-400); padding: 5px 12px;
   border-radius: var(--theme-button-radius, 6px); font-size: 12px; cursor: pointer;
-  font-family: 'Cabin', sans-serif; font-weight: 600;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif; font-weight: 600;
 }
 .btn-sm-outline:hover { background: var(--pf-100); }
 
@@ -153,7 +341,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   background: transparent; color: var(--red);
   border: 1px solid #f0a0a0; padding: 5px 12px;
   border-radius: var(--theme-button-radius, 6px); font-size: 12px; cursor: pointer;
-  font-family: 'Cabin', sans-serif; font-weight: 600;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif; font-weight: 600;
 }
 .btn-sm-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
 
@@ -162,19 +350,19 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border: 1px solid var(--pf-400); padding: 5px 12px;
   border-radius: var(--theme-button-radius, 6px); font-size: 12px; font-weight: 600; cursor: pointer;
   text-decoration: none; display: inline-block;
-  font-family: 'Cabin', sans-serif;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
 }
 .btn-sm-pf-soft:hover { background: var(--pf-200); color: var(--pf-800); text-decoration: none; }
 
 .btn-sm-amber {
   background: var(--amber); color: #fff; border: none;
   padding: 5px 12px; border-radius: var(--theme-button-radius, 6px); font-size: 12px;
-  font-family: 'Cabin', sans-serif; font-weight: 600; cursor: pointer;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif; font-weight: 600; cursor: pointer;
 }
 
 .btn-gray {
   font-size: 13px;
-  font-family: 'Cabin', sans-serif;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
   font-weight: 600;
   background-color: #6c757d;
   color: #fff;
@@ -223,7 +411,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; color: #fff;
-  font-family: 'Cabin', sans-serif;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
   flex-shrink: 0;
 }
 .user-name { font-size: 12px; font-weight: 500; color: var(--pf-100); }
@@ -340,23 +528,92 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
    ═══════════════════════════════════════════════ */
 .main-content { flex: 1; overflow-x: hidden; }
 
-.content-header {
-  background: #fff;
-  padding: 20px 28px;
-  border-bottom: 1px solid #e4ede8;
+/* 2026-05-12 page-head strip (replaces .content-header).
+   Reusable chrome a page drops its title + subtitle + breadcrumb
+   into. Surfaces only when the child fills `page_title`. Markup
+   pattern in base.html:
+     <section.page-head>
+       <div.wrap.page-head__inner>
+         <div.page-head__title>
+           <span.page-head__icon>?icon?</span>
+           <div.page-head__title-text>
+             <h1.page-head__h1>title</h1>
+             <p.page-head__sub>?subtitle?</p>
+           </div>
+         </div>
+         <div.page-head__aside>
+           <nav.breadcrumb>?crumbs?</nav>
+           <div.page-head__actions>?actions?</div>
+         </div>
+       </div>
+     </section>
+*/
+.page-head {
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--line);
+}
+.page-head__inner {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 12px;
-  top: var(--navbar-h);
-  z-index: 1200;
+  gap: 16px;
+  /* Same horizontal inset as the hero and secondary-nav so the page
+     title sits over the same column as the chrome above it. */
+  padding-inline: clamp(20px, 4vw, 36px);
+  padding-block: clamp(16px, 3vw, 24px);
+  flex-wrap: wrap;
 }
-.content-header .page-title {
-  font-size: 20px; font-weight: 700;
-  color: var(--pf-900); margin: 0;
+.page-head__title {
+  display: flex; align-items: center; gap: 14px;
+  min-width: 0;
 }
-.content-header .breadcrumb { font-size: 12px; margin: 0; }
-.content-header .breadcrumb-item + .breadcrumb-item::before { color: #a3b5aa; }
-.content-header .breadcrumb-item a { color: var(--pf-600); text-decoration: none; }
-.content-header .breadcrumb-item.active { color: #6b7c72; }
+.page-head__icon {
+  width: 40px; height: 40px; flex: none;
+  border-radius: calc(var(--theme-button-radius) * 1.25);
+  background: var(--pf-100);
+  color: var(--pf-700);
+  display: grid; place-items: center;
+}
+.page-head__icon i,
+.page-head__icon svg { font-size: 18px; }
+.page-head__title-text { min-width: 0; }
+.page-head__h1 {
+  margin: 0;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: clamp(18px, 2.4vw, 22px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.page-head__sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+.page-head__aside {
+  display: flex; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+}
+.page-head__actions {
+  display: flex; align-items: center; gap: 8px;
+}
+/* Breadcrumb inside the page-head — overrides Bootstrap's default
+   spacing so the breadcrumb sits compactly aligned with the title. */
+.page-head .breadcrumb {
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  background: transparent;
+  list-style: none;
+}
+.page-head .breadcrumb a { color: var(--ink-faint); text-decoration: none; }
+.page-head .breadcrumb a:hover { color: var(--pf-700); }
+.page-head .breadcrumb [aria-current="page"],
+.page-head .breadcrumb .breadcrumb-item.active {
+  color: var(--ink); font-weight: 500;
+}
+.page-head .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--line-strong);
+}
 
 .content-body { padding: 24px 28px; }
 
@@ -379,7 +636,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .stat-icon.red   { background: var(--red-light);  color: var(--red);   }
 .stat-value {
   font-size: 26px; font-weight: 700;
-  font-family: 'Cabin', sans-serif;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
   color: var(--pf-900); line-height: 1; margin-bottom: 3px;
 }
 .stat-label { font-size: 12px; color: #6b7c72; }
@@ -401,7 +658,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .panel-title {
   font-size: 14px; font-weight: 600;
   color: var(--pf-900); margin: 0;
-  font-family: 'Cabin', sans-serif;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
 }
 .panel-body { padding: 16px 20px; }
 
@@ -536,7 +793,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .form-section-header i { color: var(--pf-600); font-size: 15px; }
 .form-section-header span {
   font-size: 13px; font-weight: 600;
-  color: var(--pf-800); font-family: 'Cabin', sans-serif;
+  color: var(--pf-800); font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
 }
 
 /* ═══════════════════════════════════════════════
@@ -599,7 +856,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   display: flex; gap: 32px; margin-top: 40px; padding-top: 32px;
   border-top: 1px solid rgba(255,255,255,0.1);
 }
-.hero-stat .num { font-size: 28px; font-weight: 700; font-family: 'Cabin', sans-serif; }
+.hero-stat .num { font-size: 28px; font-weight: 700; font-family: var(--theme-font-heading, 'Cabin'), sans-serif; }
 .hero-stat .lbl { font-size: 11px; color: var(--pf-300); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
 .section       { padding: 64px 0; }
@@ -635,7 +892,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .step-num {
   width: 48px; height: 48px; background: var(--pf-800); color: #fff;
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 18px; font-weight: 700; font-family: 'Cabin', sans-serif;
+  font-size: 18px; font-weight: 700; font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
   margin: 0 auto 16px;
 }
 .step-card h5 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
@@ -643,7 +900,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 .role-card        { background: #fff; border: 1px solid #e4ede8; border-radius: 12px; overflow: hidden; height: 100%; }
 .role-card-header { padding: 16px 20px; border-bottom: 1px solid #e4ede8; display: flex; align-items: center; gap: 10px; }
-.role-badge       { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'Cabin', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+.role-badge       { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: var(--theme-font-heading, 'Cabin'), sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
 .role-card-body   { padding: 16px 20px; }
 .role-card-body li { font-size: 13px; color: #4a5c50; padding: 4px 0; }
 
@@ -664,7 +921,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .line-card-header:hover { background: var(--pf-50); }
 .line-header-left { display: flex; align-items: center; gap: 12px; }
 .line-dot  { width: 10px; height: 10px; border-radius: 50%; background: var(--pf-500); }
-.line-name { font-size: 14px; font-weight: 600; color: var(--pf-900); font-family: 'Cabin', sans-serif; }
+.line-name { font-size: 14px; font-weight: 600; color: var(--pf-900); font-family: var(--theme-font-heading, 'Cabin'), sans-serif; }
 .line-meta { font-size: 11px; color: #6b7c72; margin-top: 2px; }
 
 .trap-grid { padding: 14px 18px; background: var(--pf-50); }
@@ -1150,7 +1407,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .profile-avatar {
   width: 64px; height: 64px; background: var(--pf-600);
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 700; font-family: 'Cabin', sans-serif;
+  font-size: 22px; font-weight: 700; font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
   color: #fff; flex-shrink: 0;
 }
 .profile-name { font-size: 20px; font-weight: 700; }
@@ -1160,7 +1417,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
    Footer
    ═══════════════════════════════════════════════ */
 .pf-footer { background: var(--pf-900); color: var(--pf-300); padding: 40px 0 20px; font-size: 13px; }
-.pf-footer h6 { color: #fff; font-family: 'Cabin', sans-serif; font-size: 13px; margin-bottom: 12px; }
+.pf-footer h6 { color: #fff; font-family: var(--theme-font-heading, 'Cabin'), sans-serif; font-size: 13px; margin-bottom: 12px; }
 .pf-footer a  { color: var(--pf-300); text-decoration: none; display: block; margin-bottom: 6px; font-size: 12px; }
 .pf-footer a:hover { color: var(--pf-200); }
 .footer-divider { border-color: var(--pf-700); margin: 24px 0; }
@@ -1211,7 +1468,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 /* ── Insight cards (reports page) ──────────────────────── */
 .insight-card { background: var(--pf-50); border: 1px solid var(--pf-200); border-radius: 10px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
 .insight-icon { width: 32px; height: 32px; background: var(--pf-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--pf-700); font-size: 15px; flex-shrink: 0; }
-.insight-title { font-size: 12px; font-weight: 600; color: var(--pf-800); margin-bottom: 2px; font-family: 'Cabin', sans-serif; }
+.insight-title { font-size: 12px; font-weight: 600; color: var(--pf-800); margin-bottom: 2px; font-family: var(--theme-font-heading, 'Cabin'), sans-serif; }
 .insight-text { font-size: 12px; color: #6b7c72; margin: 0; line-height: 1.5; }
 
 /* ── Print / PDF styles ─────────────────────────────────── */
@@ -1226,7 +1483,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   body::before {
     content: 'PF-LU — Reports & Charts';
     display: block;
-    font-family: 'Cabin', sans-serif;
+    font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
     font-size: 18px;
     font-weight: 700;
     margin-bottom: 16px;
@@ -1287,9 +1544,9 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 .team-card { background: #fff; border: 0.5px solid #c8e6d5; border-radius: 16px; overflow: hidden; height: 100%; display: flex; flex-direction: column; }
 .team-photo { aspect-ratio: 1/1; overflow: hidden; position: relative; }
 .team-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.team-initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Cabin', sans-serif; font-size: 40px; font-weight: 700; color: rgba(255,255,255,0.3); }
+.team-initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: var(--theme-font-heading, 'Cabin'), sans-serif; font-size: 40px; font-weight: 700; color: rgba(255,255,255,0.3); }
 .team-body { padding: 18px 20px 22px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.team-name { font-family: 'Cabin', sans-serif; font-size: 15px; font-weight: 700; color: #1a1f1b; }
+.team-name { font-family: var(--theme-font-heading, 'Cabin'), sans-serif; font-size: 15px; font-weight: 700; color: #1a1f1b; }
 .team-country { font-size: 12px; color: #276342; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
 .team-bio { font-size: 12px; color: #4a5e52; line-height: 1.7; margin: 0; flex: 1; }
 .group-photo {
@@ -1317,3 +1574,1894 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
       flex-direction: column !important;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   P2-41 Theme gallery — coordinator/themes.html
+   and coordinator/theme_preview.html.
+   All selectors are .theme-* scoped to avoid
+   colliding with any existing in-app component.
+   ═══════════════════════════════════════════════ */
+
+/* "Appearance" eyebrow above the page title — gives the gallery
+   the WordPress Appearance > Themes feel without restructuring the
+   nav. Pairs with the "Customise theme" link in the subtitle / the
+   button on the right. */
+.theme-gallery-eyebrow {
+  display: inline-block;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--pf-700);
+  margin-bottom: 4px;
+}
+
+/* "Custom theme in use" notice above the grid. */
+.theme-gallery-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background: var(--pf-100);
+  border: 1px solid var(--pf-300);
+  border-left: 3px solid var(--pf-700);
+  border-radius: 8px;
+  color: var(--pf-900);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.theme-gallery-notice i {
+  color: var(--pf-700);
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Gallery tile — whole card is the link. Neutral background so the
+   preset swatches inside remain readable against any preset palette. */
+.theme-tile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e4ede8;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  /* WCAG: whole-tile touch target ≫ 44px once rendered (content alone is
+     taller). focus-visible ring lives on the <a> itself. */
+}
+.theme-tile:hover {
+  border-color: var(--pf-600);
+  box-shadow: 0 4px 12px rgba(13, 43, 26, 0.06);
+  transform: translateY(-1px);
+  text-decoration: none;
+  color: inherit;
+}
+.theme-tile:focus-visible {
+  outline: 3px solid var(--pf-700);
+  outline-offset: 2px;
+  border-color: var(--pf-700);
+}
+/* WordPress-style "Active" highlight — prominent ring around the
+   active tile so the current theme is unambiguous at a glance.
+   Combined with the .theme-tile-preview__active-badge overlay on
+   the thumbnail. */
+.theme-tile.is-applied {
+  border-color: var(--pf-700);
+  box-shadow:
+    0 0 0 2px var(--pf-700),
+    0 6px 18px -8px rgba(13, 43, 26, 0.25);
+}
+.theme-tile.is-applied:hover {
+  box-shadow:
+    0 0 0 2px var(--pf-700),
+    0 10px 24px -10px rgba(13, 43, 26, 0.3);
+}
+/* 2026-05-15 .is-previewing — JS-toggled on the tile whose preset is
+   currently overriding the page chrome via the Preview button. Uses
+   a dashed accent ring so it reads as "transient" vs the solid ring
+   on the persisted active theme. */
+.theme-tile.is-previewing,
+.theme-history-row.is-previewing {
+  border-color: var(--pf-600);
+  box-shadow:
+    0 0 0 2px var(--pf-600),
+    0 6px 18px -8px rgba(13, 43, 26, 0.25);
+  outline: 2px dashed color-mix(in srgb, var(--pf-600) 60%, white);
+  outline-offset: 2px;
+}
+
+.theme-tile-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.theme-tile-name {
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pf-900);
+  margin: 0;
+  line-height: 1.25;
+}
+
+/* Pairs icon + text so the "applied" state is not colour-only. */
+.theme-tile-applied-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--pf-100);
+  color: var(--pf-700);
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.theme-tile-applied-badge i { font-size: 12px; }
+
+/* One-line truncate per AC. */
+.theme-tile-desc {
+  font-size: 13px;
+  color: #6b7c72;
+  margin: 0 0 14px;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* WordPress-style layout preview. The tile renders a miniature
+   mockup that visibly reflects the preset's nav_position AND
+   content_width — not just colour/font. Modifier classes drive
+   the structure:
+     .theme-tile-preview--sidebar  → 2-column grid (sidebar | main)
+     .theme-tile-preview--topbar   → 2-row grid (topbar / main)
+     .theme-tile-preview--wrap     → inner chrome offset from edges
+                                     with visible matting + radius
+     .theme-tile-preview--full     → inner chrome edge-to-edge
+   Inline `--tile-*` vars on the .theme-tile-preview scope this
+   preset's actual colours / fonts / button radius to this tile
+   only. 2026-05-15: rewrites the older nav-bar-only preview. */
+.theme-tile-preview {
+  position: relative;
+  /* Fixed proportion keeps every tile the same height regardless
+     of layout variant — gallery rows align. */
+  aspect-ratio: 16 / 10;
+  /* Slightly darker matte on the outer frame so the wrap card lifts
+     visibly against it. Full-width tiles paint over this matte
+     entirely so the matte never shows on them. */
+  background: color-mix(in srgb, var(--tile-primary, #1a3a2e) 14%, white);
+  border: 1px solid rgba(13, 43, 26, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  font-family: var(--tile-font-body, 'IBM Plex Sans', sans-serif);
+  user-select: none;
+}
+/* Active + Customised badges — overlaid on the thumbnail top-left.
+   When a preset-derived theme has been tweaked, BOTH badges show
+   (stacked horizontally) so the state reads as "active AND
+   customised", not as one concatenated string. */
+.theme-tile-preview__badges {
+  position: absolute;
+  top: 8px; left: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 16px);
+}
+.theme-tile-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+}
+.theme-tile-badge i { font-size: 11px; }
+.theme-tile-badge--active {
+  background: var(--pf-700);
+  color: #fff;
+}
+.theme-tile-badge--customised {
+  background: #fff;
+  color: var(--pf-700);
+  border: 1px solid var(--pf-300);
+}
+
+/* Inner chrome — the actual mockup. Wrap mode offsets it from the
+   tile edges so the surrounding matting shows; full mode fills. */
+.theme-tile-preview__inner {
+  position: absolute; inset: 0;
+  display: grid;
+  background: var(--tile-background, #f5f0e6);
+  overflow: hidden;
+}
+/* Wrap mode — the inner mockup sits visibly inset from the tile
+   edges with a lifted "card" treatment, mirroring how the live
+   .app-wrap looks against the matted body in wrap layouts. The
+   asymmetric inset (much more on the sides than top/bottom) makes
+   the "wrapped" reading unmistakable next to the edge-to-edge full
+   variant in the gallery. */
+.theme-tile-preview--wrap .theme-tile-preview__inner {
+  inset: 8px 32px;
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px rgba(15, 30, 22, 0.06),
+    0 10px 22px -10px rgba(15, 30, 22, 0.25);
+}
+
+/* Sidebar variant — vertical nav column on the left. */
+.theme-tile-preview--sidebar .theme-tile-preview__inner {
+  grid-template-columns: 24% 1fr;
+}
+.ttp-sidebar {
+  background: var(--tile-primary, #1a3a2e);
+  padding: 10px 8px;
+  display: flex; flex-direction: column;
+  gap: 6px;
+}
+.ttp-sidebar-brand {
+  height: 8px; width: 70%;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 2px;
+  margin-bottom: 4px;
+}
+
+/* Topbar variant — horizontal nav strip across the top. */
+.theme-tile-preview--topbar .theme-tile-preview__inner {
+  grid-template-rows: 18% 1fr;
+}
+.ttp-topbar {
+  background: var(--tile-primary, #1a3a2e);
+  padding: 0 10px;
+  display: flex; align-items: center;
+  gap: 8px;
+}
+.ttp-topbar-brand {
+  height: 6px; width: 32px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 2px;
+  margin-right: auto;
+}
+
+/* Navigation items — abstract rectangles. Distinct sizing per
+   variant so the sidebar's items read as full-width rows and the
+   topbar's read as compact tabs. */
+.ttp-navitem {
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 2px;
+}
+.ttp-sidebar .ttp-navitem { height: 5px; width: 78%; }
+.ttp-sidebar .ttp-navitem--short { width: 56%; }
+.ttp-topbar .ttp-navitem { height: 4px; width: 26px; }
+
+/* Main content area — flex column with three bands: hero (top),
+   content (middle, flexes), footer (bottom). Reads as a tiny
+   screenshot of an actual page rather than a single content blob.
+   Same shape across sidebar / topbar variants. */
+.ttp-main {
+  display: flex; flex-direction: column;
+  min-width: 0; min-height: 0;
+  overflow: hidden;
+  background: var(--tile-background, #f5f0e6);
+}
+/* Hero band — colour-tinted strip that stands in for the live
+   .hero. Uses --tile-secondary as the accent so the preset's
+   secondary colour is visible in every thumbnail. Small chip on
+   the right mimics the public / private hero-chip. */
+.ttp-hero {
+  flex: 0 0 22%;
+  background: color-mix(in srgb, var(--tile-primary, #1a3a2e) 55%, var(--tile-secondary, #c65d3c));
+  display: flex; align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+}
+.ttp-hero__title {
+  height: 5px; width: 45%;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 2px;
+}
+.ttp-hero__chip {
+  height: 5px; width: 16px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  margin-left: auto;
+}
+/* Content area between hero and footer. Holds the heading-font
+   sample, body-text strips and the sample button. */
+.ttp-content {
+  flex: 1 1 auto;
+  padding: 10px 12px 8px;
+  display: flex; flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+  overflow: hidden;
+}
+.ttp-heading {
+  margin: 0 0 3px;
+  font-family: var(--tile-font-heading, 'Cabin'), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tile-primary, #1a3a2e);
+}
+.ttp-line {
+  height: 4px;
+  background: rgba(13, 43, 26, 0.18);
+  border-radius: 2px;
+  margin: 0;
+  width: 100%;
+}
+.ttp-line--short { width: 65%; }
+.ttp-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 3px 9px;
+  background: var(--tile-secondary, var(--tile-primary, #1a3a2e));
+  color: #fff;
+  font-family: var(--tile-font-heading, 'Cabin'), sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+  border-radius: var(--tile-btn-radius, 6px);
+  pointer-events: none;
+}
+/* Footer band — dark strip mirroring the in-app .site-footer.
+   Three small "column" rectangles stand in for the brand /
+   account / legal columns. */
+.ttp-footer {
+  flex: 0 0 18%;
+  background: color-mix(in srgb, var(--tile-primary, #1a3a2e) 80%, black);
+  display: flex; align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+.ttp-footer__col {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  flex: 1;
+  max-width: 24px;
+}
+
+/* Tile actions row sits at the bottom via margin-top:auto so cards align
+   cleanly when descriptions wrap differently across the grid. */
+.theme-tile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.theme-tile-apply-form { margin: 0; }
+.theme-tile-apply-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+.theme-tile-action-applied {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pf-700);
+}
+.theme-tile-customise-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pf-700);
+  text-decoration: none;
+}
+.theme-tile-customise-link:hover {
+  color: var(--pf-800);
+  text-decoration: underline;
+}
+
+/* ── Fuller preview page ───────────────────────────────── */
+
+.theme-preview-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-700);
+  text-decoration: none;
+  margin-bottom: 16px;
+}
+.theme-preview-back:hover { color: var(--pf-800); text-decoration: underline; }
+
+.theme-preview-desc {
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+.theme-preview-section { margin-bottom: 16px; padding: 20px; }
+.theme-preview-section-title {
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--pf-700);
+  margin-bottom: 16px;
+}
+
+/* 3-up at desktop, 1-up at mobile. */
+.theme-preview-swatch-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 575px) {
+  .theme-preview-swatch-row { grid-template-columns: 1fr; }
+}
+
+.theme-preview-swatch { margin: 0; }
+.theme-preview-swatch-box {
+  width: 100%;
+  height: 96px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(13, 43, 26, 0.12);
+  margin-bottom: 8px;
+}
+.theme-preview-swatch figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.theme-preview-swatch-label {
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--pf-900);
+}
+.theme-preview-swatch-hex {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 13px;
+  color: #6b7c72;
+}
+
+/* Typography sample. Inline font-family override on the parent <div>
+   applies the preset's font_family loaded via {% block head_extra %}. */
+.theme-preview-type-display {
+  font-size: 28px;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  color: var(--pf-900);
+}
+.theme-preview-type-body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #2e3a33;
+  margin: 0;
+}
+
+.theme-preview-button-row { margin-bottom: 8px; }
+/* Sample button is inline-styled per preset; this rule only handles
+   the visual chrome (padding, font, baseline border) — colour and
+   radius come from inline style attributes. Disabled visually so a
+   user doesn't mistake it for an apply action. */
+.theme-preview-sample-btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border: none;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: not-allowed;
+  opacity: 0.95;
+}
+
+.theme-preview-meta {
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 12px;
+  color: #6b7c72;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 12px 0 0;
+}
+.theme-preview-meta strong {
+  color: var(--pf-900);
+  font-weight: 600;
+}
+
+/* ── P2-42 Apply action header (theme_preview.html) ─────
+   Sits between the h1/description and the Colours section.
+   Holds either the Apply form OR the "Currently applied"
+   static tag — never both. Uses flex so a future Customise
+   action (P2-43) can slot in next to Apply without layout
+   churn. */
+.theme-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.theme-preview-apply-form { margin: 0; }
+
+.theme-preview-apply-btn {
+  /* Slightly larger than the default .btn-pf to read as the page's
+     primary action. Colour + radius come from .btn-pf above so this
+     button still flows through the theme-button-radius variable. */
+  padding: 10px 22px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Static "Currently applied" pill — shown instead of the Apply form
+   when this preset is already the group's effective theme. Matches
+   the .theme-tile-applied-badge styling so the visual signal is
+   consistent between gallery and preview. role="status" on the parent
+   span (in the template) makes screen readers announce it. */
+.theme-preview-applied-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: var(--pf-100);
+  color: var(--pf-700);
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+.theme-preview-applied-tag i { font-size: 14px; }
+
+/* ══════════════════════════════════════════════════════════════
+   Group hero cover banner
+   ══════════════════════════════════════════════════════════════
+   Rendered by base.html only when session.group_id is set, so the
+   selectors are inert on pages without an active group context.
+   Falls through group_identity → platform_identity → static
+   defaults in the template, so the CSS never sees an empty src.
+
+   2026-05-12 cleanup: the old `.sidebar-group` block (group avatar
+   row in the sidebar) and the `.navbar-group-chip` (decorative
+   group chip in the topbar) were both removed as part of the
+   brand swap. Group context is now expressed by `.brand--group`
+   in the navbar — one canonical place. */
+
+/* 2026-05-12 hero rebuild (from design integration).
+   Layered composition:
+     1. Cover photo at full opacity (per user tweak — Coordinators
+        upload these to be SEEN, not dimmed).
+     2. Fern SVG decoration at 0.7 with mix-blend-mode: screen
+        (from /static/images/decorations/fern.svg).
+     3. Gradient bottom-anchored scrim for title legibility (.hero::after).
+     4. Eyebrow + title + chip row content over everything.
+   Without cover photo: gradient fallback shows through.
+
+   Top corners follow .app-wrap's clip. Bottom is flat so the hero
+   connects cleanly into the page-head strip / content below. */
+.hero {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  height: clamp(220px, 32vw, 340px);
+  overflow: hidden;
+  /* Fallback gradient — visible when no cover photo, or behind the
+     photo. Derived from theme primary so it themes correctly. */
+  background:
+    linear-gradient(180deg,
+      transparent 0%,
+      transparent 45%,
+      color-mix(in srgb, var(--pf-900) 75%, transparent) 100%),
+    radial-gradient(120% 80% at 80% 10%,
+      color-mix(in srgb, var(--pf-300) 60%, transparent) 0%,
+      transparent 60%),
+    linear-gradient(135deg, var(--pf-800) 0%, var(--pf-700) 50%, var(--pf-600) 100%);
+}
+/* Fern overlay sits between cover photo and content. */
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: url('/static/images/decorations/fern.svg');
+  background-size: 600px 400px;
+  background-repeat: repeat;
+  opacity: 0.7;
+  mix-blend-mode: screen;
+  z-index: 0;
+  pointer-events: none;
+}
+/* Dark scrim — bottom-anchored gradient that fades the lower half of
+   the hero toward near-black so the white eyebrow / title / chips stay
+   legible against bright cover photos (e.g. midday fern photography).
+   Starts fully transparent up top, ramps to ~78% opacity at the
+   bottom edge. Sits above the fern via document order. */
+.hero::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(13, 26, 20, 0.45) 70%,
+    rgba(8, 18, 12, 0.78) 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+/* Cover photo — full opacity (not dimmed) so uploaded photos are
+   seen as Coordinators intended. Sits BEHIND the fern via z-index. */
+.hero__img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+.hero__inner {
+  /* Absolute-fill the hero so flex-end has a known box to anchor to.
+     A previous `height: 100%` version computed to auto under some
+     parent contexts and the content drifted toward vertical centre.
+     `inset: 0` + flex column + justify-content: flex-end pins the
+     stack to the bottom edge unambiguously. */
+  position: absolute; inset: 0;
+  z-index: 1;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  /* Inline padding lives here (the .wrap utility on the same element
+     has no rules of its own). Block padding anchors content away
+     from the top/bottom edges so chips don't kiss the page-head below
+     and the eyebrow doesn't crowd the top edge if content ever grows. */
+  padding-inline: clamp(20px, 4vw, 36px);
+  padding-block: clamp(20px, 3vw, 32px);
+  gap: 12px;
+}
+/* Eyebrow chip — small static label above the title. */
+.hero__eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  align-self: flex-start;
+  padding: 5px 10px 5px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 18%, transparent);
+  border: 1px solid color-mix(in srgb, white 28%, transparent);
+  color: #fff;
+  font-size: 11.5px; font-weight: 600;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  letter-spacing: 0.04em;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.hero__eyebrow::before {
+  content: "";
+  width: 6px; height: 6px; border-radius: 999px;
+  background: color-mix(in srgb, var(--pf-200) 80%, white);
+  box-shadow: 0 0 8px currentColor;
+}
+.hero__row {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hero__title {
+  margin: 0;
+  color: #fff;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: clamp(28px, 4.4vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.3);
+}
+.hero__meta {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+}
+/* Hero chips — public/private + member count. Frosted-glass style
+   on the dark hero. Icon + text per WCAG (not colour-only). */
+.hero-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 14%, transparent);
+  border: 1px solid color-mix(in srgb, white 24%, transparent);
+  color: #fff;
+  font-size: 12px; font-weight: 500;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+.hero-chip i,
+.hero-chip svg { font-size: 13px; flex-shrink: 0; opacity: 0.9; }
+.hero-chip--public  i,
+.hero-chip--public  svg { color: #b9ffb0; }
+.hero-chip--private i,
+.hero-chip--private svg { color: #ffd6d6; }
+
+@media (max-width: 768px) {
+  .hero-chip { font-size: 11px; padding: 5px 10px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   P2-44 Group identity — cover + profile upload cards
+   ══════════════════════════════════════════════════════════════
+   Each .identity-card is a .panel (background, border, 12px radius
+   inherited). Only the bits the panel doesn't already supply live
+   below: preview frame aspect ratios, source-label trichotomy,
+   file-input focus ring, and the remove-button icon spacing. */
+
+.identity-card { /* hook for future per-card overrides */ }
+
+.identity-source-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600;
+  padding: 4px 10px; border-radius: 999px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  margin-bottom: 12px;
+}
+.identity-source-label i { font-size: 13px; }
+.identity-source-label--group       { background: var(--pf-100);   color: var(--pf-800); }
+.identity-source-label--platform    { background: var(--blue-light); color: var(--blue); }
+.identity-source-label--placeholder { background: #f1f5f9;          color: #64748b; }
+
+.identity-preview {
+  position: relative;
+  border: 1px solid #e4ede8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8faf8;
+  margin-bottom: 12px;
+}
+.identity-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.identity-preview--cover {
+  /* 3:1 banner ratio matches the .group-header recommendation. */
+  aspect-ratio: 3 / 1;
+}
+.identity-preview--profile {
+  /* 1:1, capped width so it doesn't dominate the card on desktop. */
+  aspect-ratio: 1 / 1;
+  width: 200px;
+  max-width: 100%;
+  border-radius: 50%;
+}
+
+.identity-hint {
+  font-size: 12px; color: #6b7872; margin: 4px 0 16px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+
+.identity-actions {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.identity-file-input {
+  flex: 1 1 240px; min-width: 0;
+  font-size: 13px;
+}
+/* Visible keyboard focus — WCAG 2.4.7. Bootstrap's default .form-control
+   focus uses a subtle blue glow that's hard to see against the white
+   panel; this strengthens it without overriding the colour scheme. */
+.identity-file-input:focus-visible {
+  outline: 2px solid var(--pf-600);
+  outline-offset: 2px;
+  border-color: var(--pf-600);
+}
+
+.identity-remove-form { margin: 0; }
+.identity-remove-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.identity-remove-btn i { font-size: 13px; }
+
+@media (max-width: 575px) {
+  .identity-actions { flex-direction: column; align-items: stretch; }
+  .identity-actions .btn-sm-pf,
+  .identity-actions button[type="submit"] { width: 100%; }
+  .identity-preview--profile { width: 140px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   2026-05-12 Two-axis layout system
+   ══════════════════════════════════════════════════════════════
+   Two orthogonal axes:
+     nav_position  → sidebar | topbar  (body.layout-nav-*)
+     content_width → wrap    | full    (body.layout-width-*)
+
+   Four combos:
+     sidebar + wrap → traditional centred chrome, max-width content
+     sidebar + full → sidebar + edge-to-edge content
+     topbar  + wrap → horizontal nav + centred content  (NEW combo)
+     topbar  + full → horizontal nav + edge-to-edge      (minimal chrome)
+
+   The body markup is decided by base.html's conditional include of
+   partials/_nav_sidebar.html OR partials/_nav_topbar.html. Rules
+   are body-scoped so auth/marketing surfaces (which don't extend
+   base.html) remain unaffected.
+
+   The "wider sidebar" treatment that used to differentiate the old
+   `sidebar` layout from `centred` is dropped — `content_width=full`
+   alone now delivers the sidebar-prominent feel. Single
+   `--sidebar-w: 260px` for all sidebar combos.
+
+   Replaces the previous P2-43 layout block which used a single
+   `body.layout-*` class — the related `.navbar-group-chip*` rules
+   are also gone (chip removed by the brand swap). */
+
+/* ── Nav axis ──────────────────────────────────────────────────── */
+body.layout-nav-sidebar {
+  --sidebar-w: 260px;
+}
+body.layout-nav-topbar .app-layout { display: block; }
+body.layout-nav-topbar .pf-navbar {
+  padding: 0 16px;
+  gap: 12px;
+}
+
+/* ── Width axis ────────────────────────────────────────────────── */
+/* Outer app wrap. In wrap mode it becomes a rounded "card on a desk"
+   with all-4-side matting visible on wide monitors. In full mode
+   it's a passthrough (max-width: none, no radius/shadow). Mobile
+   (<640px) collapses to full-bleed regardless of axis — radius/
+   shadow/matting drop so the chrome reaches edges on phone.
+
+   .main-content has zero own-padding so the hero banner naturally
+   reaches the wrap edges. Content children (.page-head .wrap,
+   .content-body, .main-content > .wrap) bring their own gutters. */
+.app-wrap {
+  max-width: none;       /* default = full (unconstrained) */
+  margin: 0 auto;        /* centred when constrained */
+}
+
+/* Wrap mode: cap the wrap, give it a "card" treatment — rounded
+   corners, soft shadow, body padding on all four sides for matting.
+   The body bg flips to --surface-alt so the matte is visible against
+   the wrap's --surface bg. */
+body.layout-width-wrap {
+  /* --wrap-pad-y is the body's matting in the wrap layout. Lifted
+     into a var so other rules (sidebar height, .app-wrap min-height)
+     can subtract it from 100vh without re-typing the clamp() . */
+  --wrap-pad-y: clamp(24px, 4vw, 40px);
+  background: var(--surface-alt);
+  padding: var(--wrap-pad-y) clamp(16px, 3vw, 32px);
+  min-height: 100vh;
+}
+body.layout-width-wrap .app-wrap {
+  max-width: 1400px;
+  background: var(--surface);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 2px rgba(15, 30, 22, 0.04),
+    0 12px 32px -16px rgba(15, 30, 22, 0.12);
+  overflow: hidden;
+  min-height: calc(100vh - var(--wrap-pad-y) * 2);
+}
+/* Sidebar height correction for wrap layout.
+   The base .sidebar declares `height: calc(100vh - navbar)` so it
+   can stick to the viewport edge in full layouts — but in wrap
+   mode the wrap card is often TALLER than one viewport (long
+   gallery / list pages), and the explicit pixel height stops the
+   sidebar short, leaving a visible gap inside the wrap card below
+   the last nav item. Fix: in wrap mode drop the explicit height
+   (so flex stretch from .app-layout takes over and fills the card
+   vertically) and drop the sticky positioning (sticky on an
+   element taller than its scroll range doesn't actually stick;
+   keeping it would leave the sidebar visually clipped at the
+   sticky range). The trade-off — sidebar nav scrolls away with
+   page content rather than staying pinned — is the conventional
+   feel for a wrap/card layout, where the card itself is the
+   bounded surface. */
+body.layout-width-wrap .app-layout {
+  min-height: calc(100vh - var(--navbar-h) - var(--wrap-pad-y) * 2);
+}
+body.layout-width-wrap .sidebar {
+  height: auto;
+  position: static;
+  top: auto;
+}
+
+/* Mobile: full-bleed regardless of width axis. The "card" treatment
+   doesn't fit phone viewports — strip radius, shadow, and body
+   padding so the chrome reaches the screen edges. */
+@media (max-width: 640px) {
+  body.layout-width-wrap {
+    /* Zero the matting var so dependent rules (sidebar height,
+       .app-wrap min-height) stop subtracting it on phone widths. */
+    --wrap-pad-y: 0px;
+    background: var(--surface);
+    padding: 0;
+    min-height: auto;
+  }
+  body.layout-width-wrap .app-wrap {
+    max-width: none;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100vh;
+  }
+}
+/* topbar + full "minimal chrome" hint: tighten dashboard grids so
+   the extra width gets more cards per row. Targets existing grid
+   classes only — doesn't force grid layout on other pages. */
+body.layout-nav-topbar.layout-width-full .stats-grid,
+body.layout-nav-topbar.layout-width-full .role-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Secondary nav strip — primary tabs + overflow hamburger.
+   2026-05-15 chrome restructure: lifted out of the dark .pf-navbar
+   into a light strip between the hero and the page-head. Topbar
+   layout only — sidebar layout carries primary nav in the sidebar.
+   ══════════════════════════════════════════════════════════════ */
+.secondary-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+/* 2026-05-15 — both nav surfaces (sidebar partial AND secondary-nav)
+   are rendered unconditionally so the editor can swap them live by
+   flipping the body class. These rules hide whichever one isn't
+   active for the layout. Without them the page would show BOTH at
+   once after the editor flipped the body class. */
+body.layout-nav-topbar  .sidebar       { display: none !important; }
+body.layout-nav-sidebar .secondary-nav { display: none !important; }
+.secondary-nav__inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  /* Inline padding mirrors .hero__inner and .page-head__inner so all
+     three strips inset from the wrap edges at the same gutter. */
+  padding-inline: clamp(20px, 4vw, 36px);
+  padding-block: 6px;
+  min-height: 48px;
+}
+
+/* The .navbar-tabs / .topbar-hamburger rules below were written for
+   the dark .pf-navbar context (white-on-dark colours). The overrides
+   under .secondary-nav flip them to dark-on-light for the new strip,
+   keeping all existing layout / focus / scrollbar behaviour. */
+body.layout-nav-topbar .secondary-nav .navbar-tabs {
+  scrollbar-color: rgba(13, 43, 26, 0.18) transparent;
+}
+body.layout-nav-topbar .secondary-nav .navbar-tabs::-webkit-scrollbar-thumb {
+  background: rgba(13, 43, 26, 0.18);
+}
+body.layout-nav-topbar .secondary-nav .navbar-tab {
+  color: var(--pf-700);
+}
+body.layout-nav-topbar .secondary-nav .navbar-tab:hover {
+  background: var(--pf-50);
+  color: var(--pf-800);
+}
+body.layout-nav-topbar .secondary-nav .navbar-tab.active {
+  background: var(--pf-100);
+  color: var(--pf-800);
+  font-weight: 600;
+}
+body.layout-nav-topbar .secondary-nav .navbar-tab:focus-visible {
+  outline: 2px solid var(--pf-700);
+  outline-offset: 1px;
+}
+body.layout-nav-topbar .secondary-nav .topbar-hamburger {
+  color: var(--pf-700);
+}
+body.layout-nav-topbar .secondary-nav .topbar-hamburger:hover {
+  background: var(--pf-50);
+  color: var(--pf-800);
+}
+body.layout-nav-topbar .secondary-nav .topbar-hamburger[aria-expanded="true"] {
+  background: var(--pf-100);
+  color: var(--pf-800);
+}
+body.layout-nav-topbar .secondary-nav .topbar-hamburger.active {
+  background: var(--pf-50);
+  color: var(--pf-800);
+}
+body.layout-nav-topbar .secondary-nav .topbar-hamburger:focus-visible {
+  outline: 2px solid var(--pf-700);
+  outline-offset: 1px;
+}
+
+/* ── Topbar primary navigation ─────────────────────────────────── */
+/* The horizontal tab bar that takes the sidebar's place in topbar
+   mode. Horizontal scroll for role configurations with 15+ links;
+   base.html runs scrollIntoView() on first paint so the active tab
+   is centred even when the bar overflows. */
+body.layout-nav-topbar .navbar-tabs {
+  display: flex; align-items: center; gap: 4px;
+  flex: 1 1 auto; min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+body.layout-nav-topbar .navbar-tabs::-webkit-scrollbar { height: 4px; }
+body.layout-nav-topbar .navbar-tabs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+body.layout-nav-topbar .navbar-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 6px;
+  color: var(--pf-200); text-decoration: none;
+  font-size: 13px; font-family: 'DM Sans', sans-serif;
+  white-space: nowrap; flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+body.layout-nav-topbar .navbar-tab i { font-size: 14px; }
+body.layout-nav-topbar .navbar-tab:hover {
+  background: rgba(255, 255, 255, 0.08); color: #fff;
+}
+body.layout-nav-topbar .navbar-tab.active {
+  background: rgba(255, 255, 255, 0.12); color: #fff;
+}
+body.layout-nav-topbar .navbar-tab:focus-visible {
+  outline: 2px solid #fff; outline-offset: 1px;
+}
+
+/* ── Topbar hamburger overflow ─────────────────────────────────── */
+/* Button + dropdown for non-primary nav items. ARIA menu pattern
+   driven by JS in base.html (roving tabindex, ESC closes, etc.).
+   The `.active` state on the hamburger lights up when the current
+   request.endpoint lives in the overflow set — subtle indicator
+   that the current page is "in here" without forcing the menu open. */
+body.layout-nav-topbar .topbar-overflow-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+body.layout-nav-topbar .topbar-hamburger {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--pf-200);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+body.layout-nav-topbar .topbar-hamburger i { font-size: 18px; }
+body.layout-nav-topbar .topbar-hamburger:hover {
+  background: rgba(255, 255, 255, 0.08); color: #fff;
+}
+body.layout-nav-topbar .topbar-hamburger[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.12); color: #fff;
+}
+/* .active = current page lives in overflow. Distinct from the
+   hover/open states via a small underline accent. */
+body.layout-nav-topbar .topbar-hamburger.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  position: relative;
+}
+body.layout-nav-topbar .topbar-hamburger.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; left: 50%;
+  transform: translateX(-50%);
+  width: 16px; height: 2px;
+  background: var(--pf-500);
+  border-radius: 2px;
+}
+body.layout-nav-topbar .topbar-hamburger:focus-visible {
+  outline: 2px solid #fff; outline-offset: 1px;
+}
+
+body.layout-nav-topbar .topbar-overflow {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  max-width: 320px;
+  background: #fff;
+  border: 1px solid #e4ede8;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 6px;
+  z-index: 2100;
+}
+body.layout-nav-topbar .topbar-overflow[hidden] { display: none; }
+body.layout-nav-topbar .topbar-overflow-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  color: var(--pf-900);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s;
+}
+body.layout-nav-topbar .topbar-overflow-item i {
+  font-size: 14px; width: 18px;
+  color: var(--pf-700);
+}
+body.layout-nav-topbar .topbar-overflow-item:hover {
+  background: var(--pf-50);
+  color: var(--pf-900);
+}
+body.layout-nav-topbar .topbar-overflow-item.active {
+  background: var(--pf-100);
+  color: var(--pf-800);
+  font-weight: 600;
+}
+body.layout-nav-topbar .topbar-overflow-item:focus-visible {
+  outline: 2px solid var(--pf-600);
+  outline-offset: -2px;
+}
+body.layout-nav-topbar .topbar-overflow-divider {
+  height: 1px;
+  background: #e4ede8;
+  margin: 4px 0;
+}
+/* 2026-05-15 — section label inside the overflow drawer (mirrors
+   .sidebar-section-label so the two nav surfaces feel coherent).
+   Uppercase, faint, non-interactive — sits below a divider. */
+body.layout-nav-topbar .topbar-overflow-label {
+  padding: 4px 12px 2px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--pf-600);
+  pointer-events: none;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+/* Sidebar mode inherits the existing .sidebar.collapsed mobile
+   behaviour from the base sidebar CSS (collapsed-to-52px below
+   768px via the JS in base.html). No new rules needed.
+
+   Topbar mode wraps the navbar on narrow viewports so the tab bar
+   gets a full-width row of its own. */
+@media (max-width: 640px) {
+  body.layout-nav-topbar .pf-navbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  body.layout-nav-topbar .navbar-tabs {
+    order: 3; flex-basis: 100%;
+    padding-bottom: 4px;
+  }
+  body.layout-nav-topbar .navbar-tab {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  body.layout-nav-topbar .topbar-overflow {
+    right: 0;
+    min-width: 200px;
+    max-width: calc(100vw - 24px);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   P2-43 Custom theme editor (coordinator/theme_edit.html)
+   ══════════════════════════════════════════════════════════════
+   Two-column on desktop (form left, preview right). Stacks on mobile
+   with preview ABOVE the form so picking a colour and seeing the
+   result feels natural without scrolling back up. Preview is scoped
+   via inline CSS variables set by JS — see updatePreview(). */
+
+.theme-edit-page { max-width: 1200px; }
+
+.theme-edit-header { margin-bottom: 24px; }
+.theme-edit-subhead {
+  font-size: 16px; font-weight: 500;
+  color: var(--pf-700); margin: 0 0 4px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+.theme-edit-subhead strong { color: var(--pf-900); }
+
+.theme-edit-grid {
+  display: grid; gap: 24px;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+/* ── Form column ── */
+.theme-edit-form {
+  background: #fff; border: 1px solid #e4ede8;
+  border-radius: 12px; padding: 24px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.theme-edit-section { border: 0; padding: 0; margin: 0; }
+.theme-edit-legend,
+.theme-edit-label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--pf-900); margin-bottom: 8px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+.theme-edit-label-hint {
+  display: inline; font-weight: 400; font-size: 12px;
+  color: #6b7872; margin-left: 6px;
+}
+
+.theme-edit-colour { margin-bottom: 14px; }
+.theme-edit-colour:last-child { margin-bottom: 0; }
+.theme-edit-colour-row {
+  display: flex; gap: 10px; align-items: center;
+}
+.theme-edit-colour-picker {
+  width: 44px; height: 38px; padding: 2px;
+  border: 1px solid #c8d4cd; border-radius: 6px;
+  background: #fff; cursor: pointer;
+}
+.theme-edit-colour-picker:focus-visible {
+  outline: 2px solid var(--pf-600); outline-offset: 2px;
+}
+.theme-edit-colour-hex {
+  flex: 0 1 120px; min-width: 0;
+  padding: 8px 10px; font-size: 13px;
+  border: 1px solid #c8d4cd; border-radius: 6px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  text-transform: lowercase;
+}
+.theme-edit-colour-hex:focus-visible {
+  outline: 2px solid var(--pf-600); outline-offset: 2px;
+  border-color: var(--pf-600);
+}
+
+.theme-edit-select {
+  width: 100%; padding: 8px 12px; font-size: 14px;
+  border: 1px solid #c8d4cd; border-radius: 6px;
+  background: #fff; font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+.theme-edit-select:focus-visible {
+  outline: 2px solid var(--pf-600); outline-offset: 2px;
+  border-color: var(--pf-600);
+}
+
+/* Radio cards (button style + layout template) */
+.theme-edit-radio-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.theme-edit-radio-card {
+  flex: 1 1 0; min-width: 110px;
+  position: relative; cursor: pointer;
+}
+.theme-edit-radio-card input {
+  position: absolute; opacity: 0;
+  width: 1px; height: 1px; pointer-events: none;
+}
+.theme-edit-radio-card-body {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 12px 8px;
+  border: 1.5px solid #c8d4cd; border-radius: 8px;
+  background: #fff; transition: border-color 0.15s, background 0.15s;
+}
+.theme-edit-radio-card input:checked + .theme-edit-radio-card-body {
+  border-color: var(--pf-600); background: var(--pf-50);
+}
+.theme-edit-radio-card input:focus-visible + .theme-edit-radio-card-body {
+  outline: 2px solid var(--pf-600); outline-offset: 2px;
+}
+.theme-edit-radio-card-swatch {
+  width: 56px; height: 22px;
+  background: var(--pf-700);
+  border: 1px solid var(--pf-800);
+}
+.theme-edit-radio-card-label {
+  font-size: 13px; font-weight: 600;
+  color: var(--pf-900);
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+/* Small descriptor under the main label on the radio cards
+   ("Left rail" / "Horizontal" / "Constrained, centred" /
+   "Edge-to-edge") — orients the user without forcing tooltips. */
+.theme-edit-radio-card-sublabel {
+  font-size: 11px;
+  color: #6b7872;
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 2px;
+  text-align: center;
+}
+
+/* Wireframe icons for the two-axis layout radios. Tiny CSS-only
+   mockups — not pixel-accurate previews, just visibly distinct
+   shapes so the controls aren't a lie. Four variants now, one per
+   axis-value combination of the two radio groups. */
+.theme-edit-layout-wireframe {
+  display: inline-block; position: relative;
+  width: 56px; height: 36px;
+  border: 1.5px solid #b8c5be;
+  border-radius: 4px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Nav axis — sidebar (dark left rail) vs topbar (dark top bar). */
+.theme-edit-wireframe--nav-sidebar {
+  background:
+    linear-gradient(var(--pf-600), var(--pf-600)) left  / 14px 100% no-repeat,
+    linear-gradient(#eef3ef, #eef3ef)             right / calc(100% - 14px) 100% no-repeat
+    #fff;
+}
+.theme-edit-wireframe--nav-topbar {
+  background:
+    linear-gradient(var(--pf-600), var(--pf-600)) top    / 100% 10px no-repeat,
+    linear-gradient(#eef3ef, #eef3ef)             bottom / 100% calc(100% - 10px) no-repeat
+    #fff;
+}
+
+/* Width axis — wrap (narrow centred content rectangle) vs full
+   (edge-to-edge content rectangle). */
+.theme-edit-wireframe--width-wrap::after {
+  content: ''; position: absolute;
+  top: 6px; bottom: 6px; left: 14px; right: 14px;
+  background: #c8d4cd; border-radius: 2px;
+}
+.theme-edit-wireframe--width-full::after {
+  content: ''; position: absolute;
+  top: 6px; bottom: 6px; left: 4px; right: 4px;
+  background: #c8d4cd; border-radius: 2px;
+}
+
+.theme-edit-actions {
+  display: flex; gap: 12px; align-items: center;
+  flex-wrap: wrap; margin-top: 8px;
+}
+.theme-edit-cancel {
+  font-size: 13px; color: #6b7872;
+  text-decoration: none; font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+.theme-edit-cancel:hover { color: var(--pf-700); text-decoration: underline; }
+
+/* Validation error styling — borders go red, message is associated
+   via aria-describedby on the input (set in the template). */
+.theme-edit-error {
+  font-size: 12px; color: var(--red);
+  margin-top: 6px; font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+.theme-edit-colour.is-invalid .theme-edit-colour-picker,
+.theme-edit-colour.is-invalid .theme-edit-colour-hex,
+.theme-edit-select.is-invalid,
+.theme-edit-radio-row.is-invalid .theme-edit-radio-card-body {
+  border-color: var(--red);
+}
+
+/* ── Preview column ── */
+.theme-edit-preview {
+  background: var(--theme-background, #f5f0e6);
+  border: 1px solid #e4ede8; border-radius: 12px;
+  padding: 24px; position: sticky; top: 16px;
+  /* font-family resolved against --theme-font-body, which JS sets on
+     this same element; falls back to IBM Plex Sans if unset. */
+  font-family: var(--theme-font-body, 'IBM Plex Sans'), system-ui, sans-serif;
+}
+.theme-edit-preview-heading {
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 1.4px; color: #6b7872;
+  font-weight: 600; margin: 0 0 16px;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+.theme-edit-preview-canvas {
+  background: var(--theme-background, #f5f0e6);
+  padding: 8px 0;
+}
+.theme-edit-preview-display {
+  color: var(--theme-primary, #1a3a2e);
+  font-size: 24px; font-weight: 700; margin: 0 0 10px;
+}
+.theme-edit-preview-body {
+  color: #2a2a2a; font-size: 14px; line-height: 1.55;
+  margin: 0 0 18px;
+}
+.theme-edit-preview-buttons {
+  display: flex; gap: 12px; align-items: center;
+  margin-bottom: 20px;
+}
+.theme-edit-preview-btn-primary {
+  background: var(--theme-primary, #1a3a2e);
+  color: var(--theme-background, #f5f0e6);
+  border: 0; padding: 10px 18px;
+  font-size: 14px; font-weight: 600;
+  border-radius: var(--theme-button-radius, 8px);
+  font-family: inherit;
+  cursor: not-allowed; opacity: 0.95;
+}
+.theme-edit-preview-accent {
+  display: inline-block; width: 32px; height: 32px;
+  background: var(--theme-secondary, #c65d3c);
+  border-radius: 50%;
+}
+.theme-edit-preview-layout-hint {
+  display: flex; align-items: center; gap: 10px;
+  padding-top: 14px; border-top: 1px dashed #c8d4cd;
+}
+.theme-edit-preview-layout-hint-label {
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 1px; color: #6b7872; font-weight: 600;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+}
+/* Layout wireframe inside the preview shares the same size/shape
+   styling — JS adds the variant modifier class. */
+.theme-edit-preview-layout-hint .theme-edit-layout-wireframe {
+  width: 60px; height: 38px;
+}
+
+/* Responsive — stack at <992px, with preview ABOVE form on mobile so
+   colour-then-scroll-up isn't required. Sticky preview becomes
+   non-sticky when stacked. */
+@media (max-width: 991px) {
+  .theme-edit-grid { grid-template-columns: 1fr; }
+  .theme-edit-preview { position: static; order: -1; }
+}
+@media (max-width: 575px) {
+  .theme-edit-form { padding: 16px; }
+  .theme-edit-preview { padding: 16px; }
+  .theme-edit-radio-row { gap: 8px; }
+  .theme-edit-radio-card { min-width: 0; }
+  .theme-edit-actions .btn-pf,
+  .theme-edit-actions button { width: 100%; }
+  .theme-edit-cancel { width: 100%; text-align: center; }
+}
+
+/* Entry-point button spacing on the gallery + preview pages — kept
+   minimal so they don't visually fight the existing Apply CTA. */
+.theme-gallery-customise-btn,
+.theme-preview-customise-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.theme-preview-customise-btn { margin-left: 8px; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   Site footer (in-app surface — included by base.html)
+   2026-05-12 design integration. Distinct from the legacy
+   .pf-footer block above (which is the marketing-surface footer
+   used by base_marketing.html). Both surfaces coexist; classes
+   don't collide because the two templates never share chrome.
+   4-col grid → 2-col @ <960px → 1-col @ <640px.
+   ═══════════════════════════════════════════════════════════════ */
+.site-footer {
+  background: var(--pf-900);
+  color: var(--pf-300);
+  /* Top corners flat — the footer connects into the .app-layout
+     above without a visible seam. Bottom corners are rounded ONLY
+     when the wrap is active (so the footer's curve matches the
+     wrap's bottom clip). The full-width override below flattens
+     them, since a free-floating rounded footer reads as a card
+     against an edge-to-edge body. */
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  overflow: hidden;
+}
+body.layout-width-full .site-footer {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.site-footer__top {
+  padding: 32px 28px 24px;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+.footer-brand__row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.footer-brand__mark {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.footer-brand__mark-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.footer-brand__name {
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 15px; font-weight: 600;
+  color: #fff;
+  line-height: 1.2;
+  display: flex; flex-direction: column;
+}
+.footer-brand__name small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--pf-300);
+  letter-spacing: 0.4px;
+}
+.footer-brand__tag {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--pf-300);
+  margin: 0 0 12px;
+  max-width: 360px;
+}
+.footer-brand__socials {
+  display: flex; gap: 8px;
+}
+.footer-brand__socials a {
+  width: 28px; height: 28px;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--pf-200);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+.footer-brand__socials a:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.footer-col__title {
+  color: #fff;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+.footer-col__list {
+  list-style: none;
+  padding: 0; margin: 0;
+}
+.footer-col__list li {
+  margin-bottom: 6px;
+}
+/* Platform column wraps the primary-nav macro directly (no <li>
+   wrappers); macro emits bare <a> tags that would otherwise flow
+   inline. Forcing block + margin gives the same vertical rhythm as
+   the <li>-wrapped columns next door. show_icons=False on the macro
+   strips the leading <i>; no icon-margin rule needed any more. */
+.footer-col__list--nav .footer-link {
+  display: block;
+  margin-bottom: 6px;
+}
+.footer-link {
+  color: var(--pf-300);
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.12s;
+}
+.footer-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+.footer-link-placeholder {
+  opacity: 0.55;
+  cursor: default;
+}
+.footer-link-placeholder:hover {
+  color: var(--pf-300);
+  text-decoration: none;
+}
+.site-footer__bottom-wrap {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.15);
+}
+.site-footer__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 28px;
+  font-size: 12px;
+  color: var(--pf-300);
+}
+.site-footer__bottom__legal {
+  display: flex; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+}
+.site-footer__locale {
+  display: inline-flex; align-items: center;
+  gap: 6px;
+  color: var(--pf-300);
+}
+
+@media (max-width: 960px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .footer-grid { grid-template-columns: 1fr; gap: 22px; }
+  .site-footer__top { padding: 26px 20px 20px; }
+  .site-footer__bottom { padding: 12px 20px; }
+}
+
+/* ── Legal pages (privacy / terms / accessibility / cookies) ─────
+   Shared long-form layout — readable max-width + section rhythm.
+   Each template extends base.html, fills page_title, and wraps its
+   sections in `.legal-page` + `.legal-section`. */
+.legal-page {
+  max-width: 760px;
+}
+.legal-page .legal-meta {
+  background: var(--surface-alt);
+  border-left: 3px solid var(--pf-700);
+  padding: 12px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink-mute);
+  margin-bottom: 28px;
+}
+.legal-section {
+  margin-bottom: 28px;
+}
+.legal-section h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--pf-800);
+  margin: 0 0 10px;
+}
+.legal-section h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--pf-800);
+  margin: 14px 0 6px;
+}
+.legal-section p,
+.legal-section li {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.legal-section ul {
+  padding-left: 22px;
+  margin: 0 0 10px;
+}
+.legal-section ul li {
+  margin-bottom: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Theme gallery — header row + Featured (active) + Other sections.
+   2026-05-15: WordPress-style restructure. The header now carries
+   Export/Import alongside the Customise CTA; the active preset
+   gets a large side-by-side card; the rest of the presets sit in
+   the grid below.
+   ══════════════════════════════════════════════════════════════ */
+.theme-gallery-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.theme-gallery-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.theme-gallery-import-form { margin: 0; }
+.theme-gallery-import-label {
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+
+.theme-gallery-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--pf-700);
+  margin: 0 0 14px;
+}
+.theme-gallery-featured {
+  margin-bottom: 32px;
+}
+.theme-tile--featured {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 20px;
+  /* The active card gets the same prominent ring as a regular
+     applied tile, just bigger. */
+  border: 1px solid var(--pf-300);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 0 0 2px var(--pf-700),
+    0 8px 24px -12px rgba(13, 43, 26, 0.18);
+}
+.theme-tile--featured .theme-tile-preview {
+  margin-bottom: 0;
+}
+.theme-tile--featured__body {
+  display: flex; flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.theme-tile-badges {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.theme-tile--featured__name {
+  margin: 0;
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--pf-900);
+}
+.theme-tile--featured__desc {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-mute);
+  line-height: 1.55;
+  /* No truncation on the featured card — full description is
+     useful for the active theme. */
+}
+.theme-tile--featured__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  margin: 6px 0 8px;
+  padding: 12px 14px;
+  background: var(--surface-alt);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.theme-tile--featured__meta > div {
+  display: flex; align-items: baseline; gap: 6px;
+  min-width: 0;
+}
+.theme-tile--featured__meta dt {
+  font-weight: 600;
+  color: var(--pf-700);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 10px;
+  margin: 0;
+}
+.theme-tile--featured__meta dd {
+  margin: 0;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theme-tile--featured__actions {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-top: auto;
+  padding-top: 4px;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .theme-tile--featured {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+  .theme-tile--featured__name { font-size: 22px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Customise history page — coordinator/theme_history.html.
+   Two list sections (Saved themes + Recent customisations) share
+   .theme-history-row; each row is a 3-track flex strip of
+   swatches + meta + actions. The Save-as form at the top is its
+   own flex row so the input grows and the button stays compact.
+   ══════════════════════════════════════════════════════════════ */
+.theme-history-saveas {
+  background: #fff;
+  border: 1px solid var(--pf-200);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 28px;
+}
+.theme-history-saveas-form {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.theme-history-saveas-form .form-control {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.theme-history-section { margin-bottom: 28px; }
+.theme-history-count {
+  font-size: 12px;
+  color: var(--pf-500);
+  margin-left: 6px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.theme-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.theme-history-row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--pf-200);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+/* Wraps the tile_preview so its 16:10 aspect ratio renders at a
+   row-friendly height (~112px tall at 180px wide). Overrides the
+   gallery's default 14px bottom margin on the tile. */
+.theme-history-row__preview {
+  width: 180px;
+  flex-shrink: 0;
+}
+.theme-history-row__preview .theme-tile-preview {
+  margin-bottom: 0;
+}
+.theme-history-row__body { min-width: 0; }
+.theme-history-row__title {
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theme-history-row__meta {
+  font-size: 12px;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theme-history-row__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.theme-history-action-form { margin: 0; }
+
+@media (max-width: 640px) {
+  .theme-history-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "preview"
+      "body"
+      "actions";
+  }
+  .theme-history-row__preview { grid-area: preview; width: 100%; }
+  .theme-history-row__body    { grid-area: body; }
+  .theme-history-row__actions { grid-area: actions; justify-content: flex-end; }
+  .theme-history-row__title,
+  .theme-history-row__meta {
+    white-space: normal;
+  }
+}
+
+

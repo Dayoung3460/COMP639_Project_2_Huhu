@@ -11,7 +11,7 @@ Visibility logic (per the brief):
 """
 
 from flask import render_template, request, redirect, url_for, flash, session, abort
-from app import app, db
+from app import app, db, themes
 from app.utils import role_required, allowed_file, CONSERVATION_GROUP_BG_FOLDER
 import os
 import uuid
@@ -33,7 +33,7 @@ def group_landing(group_id):
         cursor.execute('''
             SELECT
                 g.group_id, g.name, g.description, g.is_public,
-                g.image, g.color_theme, g.created_at
+                g.cover_photo, g.color_theme, g.created_at
             FROM groups g
             WHERE g.group_id = %s
         ''', (group_id,))
@@ -108,12 +108,19 @@ def group_landing(group_id):
             ''', (user_id, group_id))
             has_pending_request = cursor.fetchone() is not None
 
+    # Foundation-fix: /groups/<id> is a marketing-surface page that's
+    # *about* this group, so it previews that group's brand. The override
+    # is consumed by base_marketing.html's <style> block; routes that
+    # don't pass an override (e.g. /, /select-group) fall through to
+    # platform_theme so Tiaki stays Tiaki.
     return render_template(
         'group_landing.html',
         group=group,
         stats=stats,
         coordinators=coordinators,
         has_pending_request=has_pending_request,
+        override_theme=themes.get_active_theme(group_id),
+        override_identity=themes.get_active_identity(group_id),
     )
 
 @app.route('/groups/apply', methods=['GET', 'POST'])

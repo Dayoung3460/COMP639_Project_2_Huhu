@@ -1,0 +1,443 @@
+{# coordinator/theme_edit.html — P2-43 Custom theme editor.
+   Routes:
+     GET  /coordinator/themes/customise               — entry path (a)
+     GET  /coordinator/themes/customise?from_preset=N — entry path (b)
+     POST /coordinator/themes/customise               — save
+
+   Two-column on desktop (form left, live preview right). Stacks on
+   mobile with preview ABOVE the form so picking a colour and seeing
+   the result feels natural without scroll.
+
+   The preview is scoped — JS sets --theme-* CSS variables on the
+   preview container, NOT on document.documentElement. This way the
+   page chrome stays on the active theme while the user explores.
+#}
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button %}
+
+{% block title %}Customise theme{% endblock %}
+
+{% block page_title %}Customise theme{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('coordinator_themes') }}">Themes</a>
+    </li>
+    <li class="breadcrumb-item active">Customise</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head_extra %}
+  {# Eager-load the editor's currently-selected font. Other whitelist
+     fonts are lazy-loaded by JS on user selection (one <link> append
+     per font ever picked, idempotent via a Set). #}
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family={{ values.font_family|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 theme-edit-page">
+
+  <header class="theme-edit-header">
+    <h2 class="theme-edit-subhead">
+      {% if based_on_preset_name %}
+        Customising from <strong>{{ based_on_preset_name }}</strong>
+      {% else %}
+        Customising from scratch
+      {% endif %}
+    </h2>
+    <p class="text-muted mb-0">
+      Pick colours, font, button style and layout. The preview updates
+      live — nothing saves until you click <strong>Save changes</strong>.
+    </p>
+  </header>
+
+  <div class="theme-edit-grid">
+
+    {# ══════════════════════════════════════════════════
+       FORM COLUMN
+       ══════════════════════════════════════════════════ #}
+    <form id="themeForm"
+          method="POST"
+          action="{{ url_for('coordinator_theme_customise_save') }}"
+          class="theme-edit-form"
+          novalidate>
+
+      {# Hidden: carries based_on_preset through POST + re-render on
+         validation errors. Empty string for "from scratch". #}
+      <input type="hidden"
+             name="based_on_preset"
+             value="{{ based_on_preset or '' }}">
+
+      {# ── Colours ─────────────────────────────────────── #}
+      <fieldset class="theme-edit-section">
+        <legend class="theme-edit-legend">Colours</legend>
+
+        {% for slot in [
+            ('primary_color',    'Primary',    'Buttons, links, accents'),
+            ('secondary_color',  'Secondary',  'Highlights and badges'),
+            ('background_color', 'Background', 'Page background tint'),
+        ] %}
+          {% set field = slot[0] %}
+          {% set label = slot[1] %}
+          {% set hint  = slot[2] %}
+          <div class="theme-edit-colour {% if errors.get(field) %}is-invalid{% endif %}">
+            <label for="{{ field }}_picker" class="theme-edit-label">
+              {{ label }}
+              <span class="theme-edit-label-hint">{{ hint }}</span>
+            </label>
+            <div class="theme-edit-colour-row">
+              <input type="color"
+                     id="{{ field }}_picker"
+                     name="{{ field }}"
+                     value="{{ values[field] }}"
+                     class="theme-edit-colour-picker"
+                     {% if errors.get(field) %}aria-invalid="true"
+                        aria-describedby="{{ field }}_err"{% endif %}>
+              {# Paired hex text input — screen-reader friendly and lets
+                 hex-typers paste a value directly. JS keeps the picker
+                 and this field in sync on every input event. #}
+              <label for="{{ field }}_hex" class="visually-hidden">
+                {{ label }} hex value
+              </label>
+              <input type="text"
+                     id="{{ field }}_hex"
+                     value="{{ values[field] }}"
+                     class="theme-edit-colour-hex"
+                     pattern="^#[0-9A-Fa-f]{6}$"
+                     maxlength="7"
+                     spellcheck="false"
+                     autocomplete="off"
+                     aria-label="{{ label }} hex value">
+            </div>
+            {% if errors.get(field) %}
+              <div id="{{ field }}_err" class="theme-edit-error" role="alert">
+                {{ errors[field] }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </fieldset>
+
+      {# ── Font ────────────────────────────────────────── #}
+      <div class="theme-edit-section">
+        <label for="font_family" class="theme-edit-label">
+          Font family
+          <span class="theme-edit-label-hint">Body text and headings</span>
+        </label>
+        <select id="font_family"
+                name="font_family"
+                class="theme-edit-select {% if errors.get('font_family') %}is-invalid{% endif %}"
+                {% if errors.get('font_family') %}aria-invalid="true"
+                   aria-describedby="font_family_err"{% endif %}>
+          {% for f in fonts %}
+            <option value="{{ f }}" {% if f == values.font_family %}selected{% endif %}>{{ f }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.get('font_family') %}
+          <div id="font_family_err" class="theme-edit-error" role="alert">
+            {{ errors.font_family }}
+          </div>
+        {% endif %}
+      </div>
+
+      {# ── Button style ───────────────────────────────── #}
+      <fieldset class="theme-edit-section">
+        <legend class="theme-edit-legend">Button style</legend>
+        <div class="theme-edit-radio-row {% if errors.get('button_style') %}is-invalid{% endif %}">
+          {% for opt in [('rounded', 'Rounded', '8px'), ('square', 'Square', '0')] %}
+            <label class="theme-edit-radio-card">
+              <input type="radio"
+                     name="button_style"
+                     value="{{ opt[0] }}"
+                     {% if opt[0] == values.button_style %}checked{% endif %}>
+              <span class="theme-edit-radio-card-body">
+                <span class="theme-edit-radio-card-swatch"
+                      style="border-radius: {{ opt[2] }};"
+                      aria-hidden="true"></span>
+                <span class="theme-edit-radio-card-label">{{ opt[1] }}</span>
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+        {% if errors.get('button_style') %}
+          <div class="theme-edit-error" role="alert">{{ errors.button_style }}</div>
+        {% endif %}
+      </fieldset>
+
+      {# ── Navigation position (2026-05-12 layout split, axis 1) ───── #}
+      <fieldset class="theme-edit-section">
+        <legend class="theme-edit-legend">Navigation position</legend>
+        <div class="theme-edit-radio-row theme-edit-radio-row--layout
+                    {% if errors.get('nav_position') %}is-invalid{% endif %}">
+          {% for opt in [
+              ('sidebar', 'Sidebar', 'Left rail'),
+              ('topbar',  'Top bar', 'Horizontal'),
+          ] %}
+            <label class="theme-edit-radio-card">
+              <input type="radio"
+                     name="nav_position"
+                     value="{{ opt[0] }}"
+                     {% if opt[0] == values.nav_position %}checked{% endif %}>
+              <span class="theme-edit-radio-card-body">
+                <span class="theme-edit-layout-wireframe theme-edit-wireframe--nav-{{ opt[0] }}"
+                      aria-hidden="true"></span>
+                <span class="theme-edit-radio-card-label">{{ opt[1] }}</span>
+                <span class="theme-edit-radio-card-sublabel">{{ opt[2] }}</span>
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+        {% if errors.get('nav_position') %}
+          <div class="theme-edit-error" role="alert">{{ errors.nav_position }}</div>
+        {% endif %}
+      </fieldset>
+
+      {# ── Content width (2026-05-12 layout split, axis 2) ─────────── #}
+      <fieldset class="theme-edit-section">
+        <legend class="theme-edit-legend">Content width</legend>
+        <div class="theme-edit-radio-row theme-edit-radio-row--layout
+                    {% if errors.get('content_width') %}is-invalid{% endif %}">
+          {% for opt in [
+              ('wrap', 'Wrap', 'Constrained, centred'),
+              ('full', 'Full', 'Edge-to-edge'),
+          ] %}
+            <label class="theme-edit-radio-card">
+              <input type="radio"
+                     name="content_width"
+                     value="{{ opt[0] }}"
+                     {% if opt[0] == values.content_width %}checked{% endif %}>
+              <span class="theme-edit-radio-card-body">
+                <span class="theme-edit-layout-wireframe theme-edit-wireframe--width-{{ opt[0] }}"
+                      aria-hidden="true"></span>
+                <span class="theme-edit-radio-card-label">{{ opt[1] }}</span>
+                <span class="theme-edit-radio-card-sublabel">{{ opt[2] }}</span>
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+        {% if errors.get('content_width') %}
+          <div class="theme-edit-error" role="alert">{{ errors.content_width }}</div>
+        {% endif %}
+      </fieldset>
+
+      {# ── Actions ────────────────────────────────────── #}
+      <div class="theme-edit-actions">
+        {{ pf_button('Save changes', variant='btn-pf', type='submit',
+                     icon='bi-check2-circle') }}
+        <button type="button" id="resetBtn" class="btn-pf-outline">
+          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+          Reset to {{ based_on_preset_name or 'saved theme' }}
+        </button>
+        <a href="{{ url_for('coordinator_themes') }}"
+           class="theme-edit-cancel">Cancel</a>
+      </div>
+
+    </form>
+
+    {# ══════════════════════════════════════════════════
+       PREVIEW COLUMN
+       ══════════════════════════════════════════════════ #}
+    <aside id="preview"
+           class="theme-edit-preview"
+           data-reset-primary="{{ reset_theme.primary_color }}"
+           data-reset-secondary="{{ reset_theme.secondary_color }}"
+           data-reset-background="{{ reset_theme.background_color }}"
+           data-reset-font="{{ reset_theme.font_body }}"
+           data-reset-button="{{ reset_theme.button_style }}"
+           data-reset-nav="{{ reset_theme.nav_position }}"
+           data-reset-width="{{ reset_theme.content_width }}"
+           aria-label="Live theme preview">
+
+      <h3 class="theme-edit-preview-heading">Live preview</h3>
+
+      <div class="theme-edit-preview-canvas">
+
+        <h4 class="theme-edit-preview-display">A predator-free future</h4>
+        <p class="theme-edit-preview-body">
+          Volunteers across Aotearoa track traps, log catches and watch the
+          land recover. Conservation, made visible.
+        </p>
+
+        <div class="theme-edit-preview-buttons">
+          <button type="button" id="previewBtn" class="theme-edit-preview-btn-primary" disabled>
+            Primary action
+          </button>
+          <span class="theme-edit-preview-accent" aria-hidden="true"></span>
+        </div>
+
+        <div class="theme-edit-preview-layout-hint">
+          <span class="theme-edit-preview-layout-hint-label">Nav</span>
+          <span id="previewNavHint" class="theme-edit-layout-wireframe"></span>
+          <span class="theme-edit-preview-layout-hint-label">Width</span>
+          <span id="previewWidthHint" class="theme-edit-layout-wireframe"></span>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function () {
+  'use strict';
+
+  // Vanilla JS — no jQuery.
+  const form = document.getElementById('themeForm');
+  const preview = document.getElementById('preview');
+  const navHint   = document.getElementById('previewNavHint');
+  const widthHint = document.getElementById('previewWidthHint');
+  const loadedFonts = new Set();
+
+  // Track the font already eager-loaded by the head_extra block so
+  // we don't append a duplicate <link> when the user reselects it.
+  loadedFonts.add(document.getElementById('font_family').value);
+
+  function loadFont(name) {
+    if (!name || loadedFonts.has(name)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family='
+              + encodeURIComponent(name).replace(/%20/g, '+')
+              + ':wght@400;500;600;700&display=swap';
+    document.head.appendChild(link);
+    loadedFonts.add(name);
+  }
+
+  function readValues() {
+    const data = new FormData(form);
+    return {
+      primary_color:    data.get('primary_color'),
+      secondary_color:  data.get('secondary_color'),
+      background_color: data.get('background_color'),
+      font_family:      data.get('font_family'),
+      button_style:     data.get('button_style'),
+      nav_position:     data.get('nav_position'),
+      content_width:    data.get('content_width'),
+    };
+  }
+
+  function updatePreview() {
+    const v = readValues();
+    if (!v.primary_color) return; // form not fully populated yet
+
+    // 2026-05-15 — apply form changes to the WHOLE page live by
+    // overriding :root, not just the preview pane. The override is
+    // session-only (JS state, not persisted) so navigating away or
+    // reloading without saving reverts cleanly to the stored theme.
+    // (Earlier behaviour scoped overrides to the preview container;
+    //  reverted on request — the editor should feel like a live
+    //  customiser, not a sandbox.)
+    const root = document.documentElement;
+    root.style.setProperty('--theme-primary',       v.primary_color);
+    root.style.setProperty('--theme-secondary',     v.secondary_color);
+    root.style.setProperty('--theme-background',    v.background_color);
+    // Editor today exposes ONE font picker — set both --theme-font-*
+    // vars to the same value so the preview matches what save_custom_theme
+    // will commit (copies the single picked value into BOTH columns).
+    root.style.setProperty('--theme-font-heading',  '"' + v.font_family + '"');
+    root.style.setProperty('--theme-font-body',     '"' + v.font_family + '"');
+    root.style.setProperty(
+      '--theme-button-radius',
+      v.button_style === 'rounded' ? '8px' : '0'
+    );
+
+    // Layout axes are body-class driven (.layout-nav-* / .layout-width-*)
+    // — flip them too so picking sidebar vs topbar / wrap vs full
+    // reshapes the actual page chrome in real time.
+    if (v.nav_position) {
+      document.body.classList.remove('layout-nav-sidebar', 'layout-nav-topbar');
+      document.body.classList.add('layout-nav-' + v.nav_position);
+    }
+    if (v.content_width) {
+      document.body.classList.remove('layout-width-wrap', 'layout-width-full');
+      document.body.classList.add('layout-width-' + v.content_width);
+    }
+
+    loadFont(v.font_family);
+
+    // Wireframes inside the editor's preview pane still flip via
+    // their own classes — they're the abstract layout indicator
+    // sitting alongside the live chrome.
+    navHint.classList.remove(
+      'theme-edit-wireframe--nav-sidebar',
+      'theme-edit-wireframe--nav-topbar'
+    );
+    widthHint.classList.remove(
+      'theme-edit-wireframe--width-wrap',
+      'theme-edit-wireframe--width-full'
+    );
+    if (v.nav_position) {
+      navHint.classList.add('theme-edit-wireframe--nav-' + v.nav_position);
+    }
+    if (v.content_width) {
+      widthHint.classList.add('theme-edit-wireframe--width-' + v.content_width);
+    }
+
+    // Keep paired hex text inputs in sync when the colour picker changes.
+    ['primary_color', 'secondary_color', 'background_color'].forEach(function (k) {
+      const txt = document.getElementById(k + '_hex');
+      if (txt && txt.value.toLowerCase() !== (v[k] || '').toLowerCase()) {
+        txt.value = v[k];
+      }
+    });
+  }
+
+  // Typing a valid hex into the paired text input updates its colour
+  // picker (which in turn fires updatePreview through the form 'input'
+  // bubbling listener below). Invalid hex is ignored — the picker
+  // never holds an out-of-spec value, only valid #RRGGBB.
+  ['primary_color', 'secondary_color', 'background_color'].forEach(function (k) {
+    const txt = document.getElementById(k + '_hex');
+    const pic = document.getElementById(k + '_picker');
+    if (!txt || !pic) return;
+    txt.addEventListener('input', function () {
+      const val = (txt.value || '').trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        pic.value = val.toLowerCase();
+        updatePreview();
+      }
+    });
+  });
+
+  form.addEventListener('input', updatePreview);
+
+  // 2026-05-15 Reset target: the currently selected theme, NOT the
+  // platform default. Server passes `reset_theme` (preset row if the
+  // group is preset-derived, else the saved group_themes row) and the
+  // template emits its columns as data-reset-* attrs. Clicking Reset
+  // pulls them back into the form + triggers updatePreview() so the
+  // live preview reverts immediately. No confirm dialog (spec).
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    const p = preview.dataset;
+    form.elements['primary_color'].value     = p.resetPrimary;
+    form.elements['secondary_color'].value   = p.resetSecondary;
+    form.elements['background_color'].value  = p.resetBackground;
+    document.getElementById('primary_color_hex').value    = p.resetPrimary;
+    document.getElementById('secondary_color_hex').value  = p.resetSecondary;
+    document.getElementById('background_color_hex').value = p.resetBackground;
+    form.elements['font_family'].value       = p.resetFont;
+    // Radio inputs — explicit re-check from data-reset-* attrs.
+    document.querySelectorAll('input[name="button_style"]').forEach(function (r) {
+      r.checked = (r.value === p.resetButton);
+    });
+    document.querySelectorAll('input[name="nav_position"]').forEach(function (r) {
+      r.checked = (r.value === p.resetNav);
+    });
+    document.querySelectorAll('input[name="content_width"]').forEach(function (r) {
+      r.checked = (r.value === p.resetWidth);
+    });
+    updatePreview();
+  });
+
+  updatePreview();  // initial render
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,156 @@
+{# terms.html — Terms of Service.
+   Route: GET /terms (app/home.py:terms). Sibling to privacy.html.
+   Drafted 2026-05-15. Working draft — review by counsel needed
+   before non-test deployment. #}
+{% extends 'base.html' %}
+
+{% block title %}Terms of Service · Tiaki{% endblock %}
+
+{% block page_title %}Terms of service{% endblock %}
+{% block page_subtitle %}The agreement between you and Tiaki when you use this platform.{% endblock %}
+
+{% block content %}
+<div class="container py-4 legal-page">
+
+  <p class="legal-meta">
+    <strong>Last updated:</strong> {{ current_year }}-05-15.
+    Working draft — these terms describe how we currently expect the
+    platform to be used and will be tightened before launch.
+  </p>
+
+  <section class="legal-section" aria-labelledby="terms-acceptance">
+    <h2 id="terms-acceptance">Accepting these terms</h2>
+    <p>
+      By creating an account or joining a group on Tiaki, you agree
+      to these terms. If you don't agree, please don't use the
+      platform. We may update these terms; when we do, the date at
+      the top of the page changes and we'll surface the update on
+      your next login.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-account">
+    <h2 id="terms-account">Your account</h2>
+    <ul>
+      <li>Keep your login credentials private. You're responsible
+          for activity that happens through your account.</li>
+      <li>The personal information you enter must be accurate —
+          Coordinators rely on it for safety coordination (emergency
+          contact, address) and reporting.</li>
+      <li>You may have one account per email address. Re-using
+          someone else's account is not permitted.</li>
+      <li>Tell a Coordinator or platform administrator promptly if
+          you think your account has been accessed without your
+          permission.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-acceptable">
+    <h2 id="terms-acceptable">Acceptable use</h2>
+    <p>
+      Tiaki exists to support community-led predator control. Use it
+      for that. In particular, you agree not to:
+    </p>
+    <ul>
+      <li>Submit falsified or deliberately misleading catch /
+          observation records — conservation data is used to inform
+          regional planning and bad data has real-world impact.</li>
+      <li>Upload content that you don't have the right to share
+          (someone else's photos, personal information about people
+          who haven't consented, copyrighted material).</li>
+      <li>Attempt to access groups, records, or administrative
+          features you're not authorised to see.</li>
+      <li>Use the platform to harass other users.</li>
+      <li>Probe, scrape, or stress-test the platform without prior
+          written permission from a platform administrator.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-data">
+    <h2 id="terms-data">Data you contribute</h2>
+    <p>
+      Records you create (catches, observations, line operations)
+      belong to the group that recorded them and form part of that
+      group's conservation history. By contributing, you grant Tiaki
+      a non-exclusive licence to store, display, and aggregate that
+      data for the platform's normal operation, including export to
+      formats compatible with national systems such as
+      <a href="https://trap.nz" rel="noopener">trap.nz</a>.
+    </p>
+    <p>
+      You can request that your name be anonymised on records you
+      previously authored if you leave a group — see the privacy
+      policy for the data-rights process.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-ip">
+    <h2 id="terms-ip">Platform intellectual property</h2>
+    <p>
+      The Tiaki name, logo, code, and user-interface design are
+      owned by the platform's maintainers. You may reference the
+      platform in conservation-related publications without
+      additional permission. Forking the codebase or rebranding the
+      platform requires written permission.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-termination">
+    <h2 id="terms-termination">Suspension and termination</h2>
+    <ul>
+      <li>You can leave a group at any time through your profile.</li>
+      <li>You can request full account deletion — see the privacy
+          policy.</li>
+      <li>A Coordinator can remove a member from their group; a
+          platform administrator can suspend or remove an account
+          that violates these terms.</li>
+      <li>Suspension or removal does not delete a group's
+          conservation records authored before the action; those
+          remain in the group's archive (with anonymisation on
+          request).</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-disclaimer">
+    <h2 id="terms-disclaimer">Disclaimer</h2>
+    <p>
+      Tiaki is provided as-is and without warranty. We do our best
+      to keep the platform available and your data safe (see the
+      privacy policy for security details), but we can't guarantee
+      uninterrupted service. Don't rely on Tiaki as your only record
+      of safety-critical information — keep your group's emergency
+      procedures up to date independently.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-liability">
+    <h2 id="terms-liability">Liability</h2>
+    <p>
+      To the extent permitted by New Zealand law, the platform's
+      maintainers are not liable for indirect or consequential losses
+      arising from use of Tiaki. Your statutory rights under the
+      Consumer Guarantees Act 1993 and the Fair Trading Act 1986 are
+      not affected.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-law">
+    <h2 id="terms-law">Governing law</h2>
+    <p>
+      These terms are governed by New Zealand law. Any dispute that
+      can't be resolved informally is subject to the exclusive
+      jurisdiction of the New Zealand courts.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="terms-contact">
+    <h2 id="terms-contact">Contact</h2>
+    <p>
+      For questions about these terms, contact a platform
+      administrator. A formal contact channel will land alongside
+      the platform's first non-test deployment.
+    </p>
+  </section>
+
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{#
+  _nav_topbar_overflow.html — Hamburger drawer for topbar layout.
+
+  Role-gated list of non-primary nav items. Included by
+  _nav_topbar.html inside the .topbar-overflow-wrap div.
+
+  Accessibility:
+    - The container has role="menu" and aria-labelledby pointing at the
+      hamburger button.
+    - Each item is role="menuitem" with tabindex="-1" by default;
+      base.html's JS focuses the first item on open and uses roving
+      tabindex (current = 0, others = -1) for arrow-key navigation.
+    - `hidden` attribute on the container hides via the browser default;
+      JS toggles it on open/close.
+
+  When adding a new sidebar link, decide primary vs overflow:
+    primary  → add to _nav_topbar.html's role-gated primary block
+    overflow → add here AND to the overflow_endpoints list at the
+               bottom of _nav_topbar.html (so the hamburger's .active
+               state still triggers when the user is on that page).
+#}
+<div id="topbarOverflowMenu"
+     class="topbar-overflow"
+     role="menu"
+     aria-labelledby="topbarMenuBtn"
+     hidden>
+
+  {# Super Admin system + manage lists. #}
+  {% if session.get('group_role') == 'Super Admin' %}
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('admin_users') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
+      <i class="bi bi-people" aria-hidden="true"></i> User Management
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('admin_groups') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint in ['admin_groups','admin_group_detail'] }}">
+      <i class="bi bi-collection" aria-hidden="true"></i> Manage Groups
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('manage_species') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'manage_species' }}">
+      <i class="bi bi-bug" aria-hidden="true"></i> Species
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('manage_statuses') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'manage_statuses' }}">
+      <i class="bi bi-tags" aria-hidden="true"></i> Statuses
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('manage_bait_types') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'manage_bait_types' }}">
+      <i class="bi bi-basket" aria-hidden="true"></i> Bait Types
+    </a>
+  {% endif %}
+
+  {# Coordinator-only overflow. #}
+  {% if session.get('group_role') == 'Group Coordinator' %}
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('coordinator_lines_assign') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint in ('coordinator_lines_assign', 'coordinator_assign_operators') }}">
+      <i class="bi bi-person-lines-fill" aria-hidden="true"></i> Assign Operators
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('coordinator_requests') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'coordinator_requests' }}">
+      <i class="bi bi-person-check" aria-hidden="true"></i> Join Requests
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('coordinator_settings') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'coordinator_settings' }}">
+      <i class="bi bi-gear" aria-hidden="true"></i> Group Settings
+    </a>
+  {% endif %}
+
+  {# New Line — Super Admin and Group Coordinator. Kept here above
+     the Appearance group because it's an "add" action, not chrome
+     configuration. #}
+  {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('new_line') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'new_line' }}">
+      <i class="bi bi-plus-circle-dotted" aria-hidden="true"></i> New Line
+    </a>
+  {% endif %}
+
+  {# 2026-05-15 Appearance group — Themes (gallery), Customise
+     (editor), and Group Identity (cover/profile assets). Same role
+     gate as before. Section label uses .topbar-overflow-divider
+     visually + the "Appearance" header below for the label text;
+     the drawer's own divider styling separates this group from
+     adjacent items. #}
+  {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+    <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
+    <div class="topbar-overflow-label" role="presentation">Appearance</div>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('coordinator_themes') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint in ('coordinator_themes', 'coordinator_theme_preview') }}">
+      <i class="bi bi-palette" aria-hidden="true"></i> Themes
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('coordinator_theme_customise') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint in ('coordinator_theme_customise', 'coordinator_theme_customise_save') }}">
+      <i class="bi bi-sliders" aria-hidden="true"></i> Customise
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('coordinator_theme_history') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint in ('coordinator_theme_history', 'coordinator_theme_history_save_as', 'coordinator_theme_history_restore', 'coordinator_theme_history_delete') }}">
+      <i class="bi bi-clock-history" aria-hidden="true"></i> History
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('coordinator_group_identity') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'coordinator_group_identity' }}">
+      <i class="bi bi-image" aria-hidden="true"></i> Group Identity
+    </a>
+  {% endif %}
+
+  {# Operator overflow — Data + Reports. Their primary slots are the
+     "add" actions, so the unfiltered Data views live here. #}
+  {% if session.get('group_role') == 'Operator' %}
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('lines_index') }}"
+       class="topbar-overflow-item {% if request.endpoint == 'lines_index' %}active{% endif %}">
+      <i class="bi bi-geo-alt" aria-hidden="true"></i> Trap Lines
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('catch_records') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'catch_records' }}">
+      <i class="bi bi-table" aria-hidden="true"></i> Catch Records
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('observations') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'observations' }}">
+      <i class="bi bi-binoculars" aria-hidden="true"></i> Observations
+    </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('reports') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'reports' }}">
+      <i class="bi bi-graph-up" aria-hidden="true"></i> Reports
+    </a>
+  {% endif %}
+
+  {# Account — all roles. Divider above signals a section change. #}
+  <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
+  <a role="menuitem" tabindex="-1"
+     href="{{ url_for('profile') }}"
+     class="topbar-overflow-item {{ 'active' if request.endpoint == 'profile' }}">
+    <i class="bi bi-person" aria-hidden="true"></i> My Profile
+  </a>
+  <a role="menuitem" tabindex="-1"
+     href="{{ url_for('change_password') }}"
+     class="topbar-overflow-item {{ 'active' if request.endpoint == 'change_password' }}">
+    <i class="bi bi-key" aria-hidden="true"></i> Change Password
+  </a>
+
+</div>

@@ -1,0 +1,202 @@
+{#
+  _nav_sidebar.html — Sidebar navigation. Consumed by base.html when
+  nav_position == 'sidebar'. Topbar mode includes _nav_topbar.html
+  instead. Width and prominence are now driven by content_width via
+  the body.layout-width-* CSS rules (no separate sidebar-width axis).
+
+  When adding a new sidebar link, update BOTH this file AND
+  partials/_nav_topbar.html (or its overflow partial) so the
+  topbar nav doesn't drift out of sync.
+#}
+<aside class="sidebar collapsed no-transition" id="sidebar" aria-label="Main navigation">
+    <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar" aria-label="Collapse sidebar">
+      <i class="bi bi-layout-sidebar-reverse" id="sidebarToggleIcon" aria-hidden="true"></i>
+      <span class="toggle-label" id="sidebarToggleLabel">Collapse</span>
+    </button>
+  <div class="sidebar-user">
+    <div class="user-avatar">
+      {{ (nav_first_name or session.get('username', 'U'))[:2].upper() }}
+    </div>
+    <div>
+      <div class="user-name">{{ nav_full_name or session.get('username') }}</div>
+      <div class="user-role">{{ session.get('group_role') }}</div>
+    </div>
+  </div>
+
+  {# 2026-05-12 identity cleanup: the group avatar + name row that
+     used to sit here has been removed. Group context is now expressed
+     by the brand swap in the navbar (group profile photo + name as
+     the brand itself), so duplicating it inside the sidebar was
+     redundant chrome. Related dead CSS (.sidebar-group*) is removed
+     in Phase 7. #}
+
+  <nav class="sidebar-nav">
+
+    {# Overview #}
+    <div class="sidebar-section-label">Overview</div>
+    {% if session.get('group_role') == 'Super Admin' %}
+      <a href="{{ url_for('admin_dashboard') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
+        <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
+      </a>
+    {% elif session.get('group_role') == 'Group Coordinator' %}
+      <a href="{{ url_for('coordinator_dashboard') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_dashboard' }}">
+        <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
+      </a>
+    {% elif session.get('group_role') == 'Operator' %}
+      <a href="{{ url_for('operator_dashboard') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'operator_dashboard' }}">
+        <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
+      </a>
+    {% else %}
+      <a href="{{ url_for('observer_dashboard') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'observer_dashboard' }}">
+        <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
+      </a>
+    {% endif %}
+
+    {# Operator work #}
+    {% if session.get('group_role') == 'Operator' %}
+      <div class="sidebar-section-label">My Work</div>
+      <a href="{{ url_for('add_catch') }}"
+          class="sidebar-link {{ 'active' if request.endpoint == 'add_catch' }}">
+        <i class="bi bi-plus-circle" aria-hidden="true"></i> <span class="link-text">Add Catch Record</span>
+      </a>
+      <a href="{{ url_for('add_observation') }}"
+          class="sidebar-link {{ 'active' if request.endpoint == 'add_observation' }}">
+        <i class="bi bi-binoculars" aria-hidden="true"></i> <span class="link-text">Add Observation</span>
+      </a>
+      <a href="{{ url_for('my_records') }}"
+          class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
+        <i class="bi bi-pencil-square" aria-hidden="true"></i> <span class="link-text">My Catch Records</span>
+      </a>
+      <a href="{{ url_for('lines_index', operator=session.username) }}" class="sidebar-link">
+        <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+        <span class="link-text">My Trap Lines</span>
+      </a>
+    {% endif %}
+
+    {# View data — all roles #}
+    <div class="sidebar-section-label">Data</div>
+    <a href="{{ url_for('lines_index') }}"
+       class="sidebar-link {% if request.endpoint == 'lines_index' %}active{% endif %}">
+      <i class="bi bi-geo-alt" aria-hidden="true"></i> <span class="link-text">Trap Lines</span>
+    </a>
+    <a href="{{ url_for('catch_records') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'catch_records' }}">
+      <i class="bi bi-table" aria-hidden="true"></i> <span class="link-text">Catch Records</span>
+    </a>
+    <a href="{{ url_for('observations') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'observations' }}">
+      <i class="bi bi-binoculars" aria-hidden="true"></i> <span class="link-text">Observations</span>
+    </a>
+
+    {# Reports — all roles #}
+    <div class="sidebar-section-label">Reports</div>
+    <a href="{{ url_for('reports') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
+      <i class="bi bi-graph-up" aria-hidden="true"></i> <span class="link-text">Reports &amp; Charts</span>
+    </a>
+
+    {# Super Admin system links #}
+    {% if session.get('group_role') == 'Super Admin' %}
+      <div class="sidebar-section-label">System</div>
+      <a href="{{ url_for('admin_users') }}"
+         class="sidebar-link {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
+        <i class="bi bi-people" aria-hidden="true"></i> <span class="link-text">User Management</span>
+      </a>
+      <a href="{{ url_for('admin_groups') }}"
+         class="sidebar-link {{ 'active' if request.endpoint in ['admin_groups','admin_group_detail'] }}">
+        <i class="bi bi-collection" aria-hidden="true"></i> <span class="link-text">Manage Groups</span>
+      </a>
+      <div class="sidebar-section-label">Manage Lists</div>
+      <a href="{{ url_for('manage_species') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'manage_species' }}">
+        <i class="bi bi-bug" aria-hidden="true"></i> <span class="link-text">Species</span>
+      </a>
+      <a href="{{ url_for('manage_statuses') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'manage_statuses' }}">
+        <i class="bi bi-tags" aria-hidden="true"></i> <span class="link-text">Statuses</span>
+      </a>
+      <a href="{{ url_for('manage_bait_types') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'manage_bait_types' }}">
+        <i class="bi bi-basket" aria-hidden="true"></i> <span class="link-text">Bait Types</span>
+      </a>
+    {% endif %}
+
+    {# Manage lines — Super Admin and Group Coordinator #}
+    {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+      <div class="sidebar-section-label">Manage</div>
+      <a href="{{ url_for('new_line') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'new_line' }}">
+        <i class="bi bi-plus-circle-dotted" aria-hidden="true"></i> <span class="link-text">New Line</span>
+      </a>
+      {% if session.get('group_role') == 'Group Coordinator' %}
+        <a href="{{ url_for('coordinator_members') }}"
+           class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_members', 'coordinator_member_change_role', 'coordinator_member_remove') }}">
+          <i class="bi bi-people" aria-hidden="true"></i> <span class="link-text">Members</span>
+        </a>
+        <a href="{{ url_for('coordinator_lines_assign') }}"
+           class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_lines_assign', 'coordinator_assign_operators') }}">
+          <i class="bi bi-person-lines-fill" aria-hidden="true"></i> <span class="link-text">Assign Operators</span>
+        </a>
+        <a href="{{ url_for('coordinator_requests') }}"
+           class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_requests' }}">
+          <i class="bi bi-person-check" aria-hidden="true"></i> <span class="link-text">Join Requests</span>
+        </a>
+        <a href="{{ url_for('coordinator_settings') }}"
+           class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_settings' }}">
+          <i class="bi bi-gear" aria-hidden="true"></i> <span class="link-text">Group Settings</span>
+        </a>
+      {% endif %}
+    {% endif %}
+
+    {# 2026-05-15 Appearance section — lifts theme + identity routes
+       out of the Manage block into their own grouping (mirrors the
+       WordPress "Appearance" parent menu). Same role gate as the
+       former placement (Super Admin + Group Coordinator). The
+       Customise link sits between Themes (gallery) and Group
+       identity (cover/profile photos) so the order reads:
+       browse → tweak → upload assets. #}
+    {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+      <div class="sidebar-section-label">Appearance</div>
+      <a href="{{ url_for('coordinator_themes') }}"
+         class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_themes', 'coordinator_theme_preview') }}">
+        <i class="bi bi-palette" aria-hidden="true"></i> <span class="link-text">Themes</span>
+      </a>
+      <a href="{{ url_for('coordinator_theme_customise') }}"
+         class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_theme_customise', 'coordinator_theme_customise_save') }}">
+        <i class="bi bi-sliders" aria-hidden="true"></i> <span class="link-text">Customise</span>
+      </a>
+      <a href="{{ url_for('coordinator_theme_history') }}"
+         class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_theme_history', 'coordinator_theme_history_save_as', 'coordinator_theme_history_restore', 'coordinator_theme_history_delete') }}">
+        <i class="bi bi-clock-history" aria-hidden="true"></i> <span class="link-text">History</span>
+      </a>
+      <a href="{{ url_for('coordinator_group_identity') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_group_identity' }}">
+        <i class="bi bi-image" aria-hidden="true"></i> <span class="link-text">Group identity</span>
+      </a>
+    {% endif %}
+
+    {# Account — all roles #}
+    <div class="sidebar-section-label">Account</div>
+    <a href="{{ url_for('profile') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'profile' }}">
+      <i class="bi bi-person" aria-hidden="true"></i> <span class="link-text">My Profile</span>
+    </a>
+    <a href="{{ url_for('change_password') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'change_password' }}">
+      <i class="bi bi-key" aria-hidden="true"></i> <span class="link-text">Change Password</span>
+    </a>
+
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{{ url_for('logout') }}">
+      <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+      <span class="link-text">Log Out</span>
+    </a>
+  </div>
+</aside>
+{# End sidebar #}

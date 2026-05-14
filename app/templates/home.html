@@ -111,13 +111,19 @@
           {% set search_blob = ((g.name or '') ~ ' ' ~ (g.description or '') ~ ' ' ~ (g.location or ''))|lower %}
           <li data-search="{{ search_blob }}"
               data-visibility="{% if g.is_public %}public{% else %}private{% endif %}">
+            {# Group card accent: per-group color_theme if set, otherwise
+               the active theme's secondary, with a hard fallback so cards
+               render even when CSS vars are unsupported (color-mix() era
+               browsers). #}
             <a class="group-card {% if not g.is_public %}is-private{% endif %}"
                href="{{ url_for('group_landing', group_id=g.group_id) }}"
-               style="--group-accent: {{ g.color_theme or '#c65d3c' }};"
+               style="--group-accent: {% if g.color_theme %}{{ g.color_theme }}{% else %}var(--theme-secondary, #c65d3c){% endif %};"
                aria-label="{% if g.is_public %}View{% else %}Request access to{% endif %} {{ g.name }} — {% if g.is_public %}public{% else %}private{% endif %} group with {{ g.member_count }} member{% if g.member_count != 1 %}s{% endif %}">
               <div class="group-card-image" aria-hidden="true">
-                {% if g.image %}
-                  <img src="{{ url_for('static', filename='images/uploads/' ~ g.image) }}"
+                {% if g.cover_photo %}
+                  {# cover_photo paths are relative to /static/ per the
+                     foundation convention (e.g. uploads/group_3/cover.jpg). #}
+                  <img src="{{ url_for('static', filename=g.cover_photo) }}"
                        alt="" loading="lazy">
                 {% endif %}
                 {% if not g.is_public %}
