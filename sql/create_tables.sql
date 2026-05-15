@@ -1,342 +1,515 @@
 -- =============================================================
 -- create_tables.sql — Conservation Groups Platform
--- COMP639 Group Project 2 — Semester 1, 2026
+-- COMP639 Group Project 2, Team Huhu — Lincoln University
+-- Semester 1, 2026
 --
--- Run this first, then run populate_tables.sql
+-- Generated from live DB via TablePlus on 2026-05-15.
+-- Re-runnable: every DROP uses CASCADE.
+--
+-- Run order on a fresh PostgreSQL database:
+--   1. create_tables.sql      (this file — all 22 tables incl. theme system)
+--   2. populate_tables.sql    (seed users, groups, traps, catches, etc.)
+--   3. themes_populate.sql    (seed theme presets + platform default)
+--
+-- Note: the older sql/themes_create.sql is now redundant; its tables
+-- (theme_presets, group_themes, platform_theme, theme_history) are
+-- included in this file. Delete themes_create.sql after switching.
 -- =============================================================
 
--- ── Drop tables (children before parents) ─────────────────────
-DROP TABLE IF EXISTS password_reset_tokens   CASCADE;
-DROP TABLE IF EXISTS bait_station_records    CASCADE;
-DROP TABLE IF EXISTS bait_stations           CASCADE;
-DROP TABLE IF EXISTS incidental_observations CASCADE;
-DROP TABLE IF EXISTS trap_catches            CASCADE;
-DROP TABLE IF EXISTS operator_lines          CASCADE;
-DROP TABLE IF EXISTS traps                   CASCADE;
-DROP TABLE IF EXISTS lines                   CASCADE;
-DROP TABLE IF EXISTS user_notifications      CASCADE;
-DROP TABLE IF EXISTS group_join_requests     CASCADE;
-DROP TABLE IF EXISTS group_applications      CASCADE;
-DROP TABLE IF EXISTS group_memberships       CASCADE;
-DROP TABLE IF EXISTS groups                  CASCADE;
-DROP TABLE IF EXISTS users                   CASCADE;
-DROP TABLE IF EXISTS species                 CASCADE;
-DROP TABLE IF EXISTS trap_statuses           CASCADE;
-DROP TABLE IF EXISTS bait_types              CASCADE;
+-- -------------------------------------------------------------
+-- TablePlus 6.9.0(668)
+--
+-- https://tableplus.com/
+--
+-- Database: Tiaki_2
+-- Generation Time: 2026-05-15 19:18:53.8250
+-- -------------------------------------------------------------
 
--- ── Drop ENUMs ────────────────────────────────────────────────
-DROP TYPE IF EXISTS group_role_type       CASCADE;
-DROP TYPE IF EXISTS account_status_type   CASCADE;
-DROP TYPE IF EXISTS line_type_enum        CASCADE;
-DROP TYPE IF EXISTS trap_type_enum        CASCADE;
-DROP TYPE IF EXISTS sex_type              CASCADE;
-DROP TYPE IF EXISTS maturity_type         CASCADE;
-DROP TYPE IF EXISTS rebaited_type         CASCADE;
-DROP TYPE IF EXISTS trap_condition_type   CASCADE;
-DROP TYPE IF EXISTS observation_type_enum CASCADE;
-DROP TYPE IF EXISTS request_status_enum   CASCADE;
 
--- ==============================================================
--- 1. ENUMs
--- ==============================================================
+DROP TABLE IF EXISTS "public"."traps" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS traps_trap_id_seq;
+DROP TYPE IF EXISTS "public"."trap_type_enum" CASCADE;
+CREATE TYPE "public"."trap_type_enum" AS ENUM ('A24', 'DOC 150', 'DOC 200', 'DOC 250', 'Flipping Timmy', 'Rat trap', 'T-Rex Rat Trap', 'Trapinator', 'Victor');
 
-CREATE TYPE group_role_type AS ENUM (
-    'Observer',
-    'Operator',
-    'Group Coordinator'
+-- Table Definition
+CREATE TABLE "public"."traps" (
+    "trap_id" int4 NOT NULL DEFAULT nextval('traps_trap_id_seq'::regclass),
+    "code" varchar(255) NOT NULL,
+    "trap_type" "public"."trap_type_enum" NOT NULL,
+    "line_id" int4 NOT NULL,
+    "latitude" numeric(9,6) NOT NULL,
+    "longitude" numeric(9,6) NOT NULL,
+    "is_retired" bool NOT NULL DEFAULT false,
+    "retired_at" timestamp,
+    "retired_by" int4,
+    PRIMARY KEY ("trap_id")
 );
 
-CREATE TYPE account_status_type AS ENUM ('active', 'inactive');
+DROP TABLE IF EXISTS "public"."bait_stations" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS bait_stations_station_id_seq;
 
--- Lines are either Trap lines or Bait Station lines — no combination
-CREATE TYPE line_type_enum AS ENUM ('Trap', 'Bait Station');
-
-CREATE TYPE trap_type_enum AS ENUM (
-    'A24',
-    'DOC 150',
-    'DOC 200',
-    'DOC 250',
-    'Flipping Timmy',
-    'Rat trap',
-    'T-Rex Rat Trap',
-    'Trapinator',
-    'Victor'
+-- Table Definition
+CREATE TABLE "public"."bait_stations" (
+    "station_id" int4 NOT NULL DEFAULT nextval('bait_stations_station_id_seq'::regclass),
+    "code" varchar(255) NOT NULL,
+    "station_type" varchar(100) NOT NULL,
+    "other_type" varchar(255) DEFAULT NULL::character varying,
+    "line_id" int4 NOT NULL,
+    "latitude" numeric(9,6) NOT NULL,
+    "longitude" numeric(9,6) NOT NULL,
+    "is_retired" bool NOT NULL DEFAULT false,
+    "retired_at" timestamp,
+    "retired_by" int4,
+    PRIMARY KEY ("station_id")
 );
 
-CREATE TYPE sex_type AS ENUM ('Male', 'Female');
-
-CREATE TYPE maturity_type AS ENUM ('Juvenile', 'Adult');
-
-CREATE TYPE rebaited_type AS ENUM ('Yes', 'No');
-
-CREATE TYPE trap_condition_type AS ENUM (
-    'OK',
-    'Needs maintenance',
-    'Repaired',
-    'Regassed',
-    'Recurred',
-    'Battery charge'
+DROP TABLE IF EXISTS "public"."operator_lines" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."operator_lines" (
+    "operator_id" int4 NOT NULL,
+    "line_id" int4 NOT NULL,
+    PRIMARY KEY ("operator_id","line_id")
 );
 
-CREATE TYPE observation_type_enum AS ENUM (
-    'Bird sighting',
-    'Predator sighting',
-    'Predator tracks',
-    'Native species tracks',
-    'Native species sign',
-    'Other'
+DROP TABLE IF EXISTS "public"."trap_catches" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS trap_catches_catch_id_seq;
+DROP TYPE IF EXISTS "public"."sex_type" CASCADE;
+CREATE TYPE "public"."sex_type" AS ENUM ('Male', 'Female');
+DROP TYPE IF EXISTS "public"."maturity_type" CASCADE;
+CREATE TYPE "public"."maturity_type" AS ENUM ('Juvenile', 'Adult');
+DROP TYPE IF EXISTS "public"."rebaited_type" CASCADE;
+CREATE TYPE "public"."rebaited_type" AS ENUM ('Yes', 'No');
+DROP TYPE IF EXISTS "public"."trap_condition_type" CASCADE;
+CREATE TYPE "public"."trap_condition_type" AS ENUM ('OK', 'Needs maintenance', 'Repaired', 'Regassed', 'Recurred', 'Battery charge');
+
+-- Table Definition
+CREATE TABLE "public"."trap_catches" (
+    "catch_id" int4 NOT NULL DEFAULT nextval('trap_catches_catch_id_seq'::regclass),
+    "trap_id" int4 NOT NULL,
+    "date" timestamp NOT NULL,
+    "recorded_by_id" int4,
+    "species_caught" varchar(100) NOT NULL,
+    "sex" "public"."sex_type",
+    "maturity" "public"."maturity_type",
+    "status" varchar(100) NOT NULL,
+    "rebaited" "public"."rebaited_type" NOT NULL,
+    "bait_type" varchar(100) NOT NULL,
+    "bait_details" text,
+    "trap_condition" "public"."trap_condition_type" NOT NULL,
+    "strikes" int4 NOT NULL CHECK (strikes >= 0),
+    "notes" text,
+    PRIMARY KEY ("catch_id")
 );
 
--- Shared status ENUM for join requests and group applications
-CREATE TYPE request_status_enum AS ENUM ('pending', 'approved', 'rejected');
-
--- ==============================================================
--- 2. Lookup tables — Super Admin managed
--- ==============================================================
-
-CREATE TABLE species (
-    name VARCHAR(100) PRIMARY KEY
+DROP TABLE IF EXISTS "public"."species" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."species" (
+    "name" varchar(100) NOT NULL,
+    PRIMARY KEY ("name")
 );
 
-CREATE TABLE trap_statuses (
-    name VARCHAR(100) PRIMARY KEY
+DROP TABLE IF EXISTS "public"."trap_statuses" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."trap_statuses" (
+    "name" varchar(100) NOT NULL,
+    PRIMARY KEY ("name")
 );
 
-CREATE TABLE bait_types (
-    name VARCHAR(100) PRIMARY KEY
+DROP TABLE IF EXISTS "public"."bait_types" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."bait_types" (
+    "name" varchar(100) NOT NULL,
+    PRIMARY KEY ("name")
 );
 
--- ==============================================================
--- 3. Users — site-wide role via is_super_admin; group role lives in group_memberships
--- ==============================================================
+DROP TABLE IF EXISTS "public"."bait_station_records" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS bait_station_records_record_id_seq;
 
-CREATE TABLE users (
-    user_id       SERIAL PRIMARY KEY,
-    username      VARCHAR(255) NOT NULL UNIQUE,
-    email         VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    first_name    VARCHAR(255) NOT NULL,
-    last_name     VARCHAR(255) NOT NULL,
-
-    phone         VARCHAR(20)  DEFAULT NULL,
-    address       VARCHAR(255) DEFAULT NULL,
-
-    emergency_contact_name  VARCHAR(100) DEFAULT NULL,
-    emergency_contact_phone VARCHAR(20)  DEFAULT NULL,
-
-    profile_photo VARCHAR(255) DEFAULT NULL,
-    notes         TEXT         DEFAULT NULL,
-
-    is_super_admin BOOLEAN             NOT NULL DEFAULT FALSE,
-    account_status account_status_type NOT NULL DEFAULT 'active',
-
-    date_joined TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_login  TIMESTAMP DEFAULT NULL
+-- Table Definition
+CREATE TABLE "public"."bait_station_records" (
+    "record_id" int4 NOT NULL DEFAULT nextval('bait_station_records_record_id_seq'::regclass),
+    "station_id" int4 NOT NULL,
+    "date" timestamp NOT NULL,
+    "recorded_by_id" int4,
+    "target_species" varchar(100) NOT NULL,
+    "active_ingredient" varchar(100) NOT NULL,
+    "formulation" varchar(100) NOT NULL,
+    "concentration" numeric(5,2) NOT NULL,
+    "bait_remaining" numeric(8,3) NOT NULL,
+    "bait_removed" numeric(8,3) DEFAULT NULL::numeric,
+    "bait_added" numeric(8,3) DEFAULT NULL::numeric,
+    "notes" text,
+    "edited_by_id" int4 DEFAULT NULL,
+    "edited_at" timestamp DEFAULT NULL,
+    PRIMARY KEY ("record_id")
 );
 
--- ==============================================================
--- 4. Groups
--- ==============================================================
+DROP TABLE IF EXISTS "public"."incidental_observations" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS incidental_observations_observation_id_seq;
+DROP TYPE IF EXISTS "public"."observation_type_enum" CASCADE;
+CREATE TYPE "public"."observation_type_enum" AS ENUM ('Bird sighting', 'Predator sighting', 'Predator tracks', 'Native species tracks', 'Native species sign', 'Other');
 
-CREATE TABLE groups (
-    group_id    SERIAL PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL UNIQUE,
-    description TEXT,
-    location    VARCHAR(255),
-    is_public   BOOLEAN      NOT NULL DEFAULT TRUE,
-    is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
-    image       VARCHAR(255) DEFAULT NULL,
-    color_theme VARCHAR(7)   NOT NULL DEFAULT '#198754',
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- Table Definition
+CREATE TABLE "public"."incidental_observations" (
+    "observation_id" int4 NOT NULL DEFAULT nextval('incidental_observations_observation_id_seq'::regclass),
+    "date" timestamp NOT NULL,
+    "operator_id" int4 NOT NULL,
+    "observation_type" "public"."observation_type_enum" NOT NULL,
+    "notes" text,
+    "latitude" numeric(9,6),
+    "longitude" numeric(9,6),
+    "line_id" int4 NOT NULL,
+    "trap_id" int4,
+    PRIMARY KEY ("observation_id")
 );
 
--- ==============================================================
--- 5. Group memberships — one row per user per group
--- ==============================================================
-
-CREATE TABLE group_memberships (
-    membership_id SERIAL PRIMARY KEY,
-    user_id       INTEGER   NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    group_id      INTEGER   NOT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
-    role          group_role_type NOT NULL,
-    joined_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (user_id, group_id)
+DROP TABLE IF EXISTS "public"."password_reset_tokens" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."password_reset_tokens" (
+    "token" varchar(64) NOT NULL,
+    "user_id" int4 NOT NULL,
+    "expires_at" timestamp NOT NULL,
+    "used" bool NOT NULL DEFAULT false,
+    PRIMARY KEY ("token")
 );
 
--- ==============================================================
--- 6. Group join requests — for private groups
--- ==============================================================
+DROP TABLE IF EXISTS "public"."users" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS users_user_id_seq;
+DROP TYPE IF EXISTS "public"."account_status_type" CASCADE;
+CREATE TYPE "public"."account_status_type" AS ENUM ('active', 'inactive');
 
-CREATE TABLE group_join_requests (
-    request_id   SERIAL PRIMARY KEY,
-    user_id      INTEGER             NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    group_id     INTEGER             NOT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
-    status       request_status_enum NOT NULL DEFAULT 'pending',
-    message      TEXT                DEFAULT NULL,
-    requested_at TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (user_id, group_id)
+-- Table Definition
+CREATE TABLE "public"."users" (
+    "user_id" int4 NOT NULL DEFAULT nextval('users_user_id_seq'::regclass),
+    "username" varchar(255) NOT NULL,
+    "email" varchar(255) NOT NULL,
+    "password_hash" varchar(255) NOT NULL,
+    "first_name" varchar(255) NOT NULL,
+    "last_name" varchar(255) NOT NULL,
+    "phone" varchar(20) DEFAULT NULL::character varying,
+    "address" varchar(255) DEFAULT NULL::character varying,
+    "emergency_contact_name" varchar(100) DEFAULT NULL::character varying,
+    "emergency_contact_phone" varchar(20) DEFAULT NULL::character varying,
+    "profile_photo" varchar(255) DEFAULT NULL::character varying,
+    "notes" text,
+    "is_super_admin" bool NOT NULL DEFAULT false,
+    "account_status" "public"."account_status_type" NOT NULL DEFAULT 'active'::account_status_type,
+    "date_joined" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "last_login" timestamp,
+    PRIMARY KEY ("user_id")
 );
 
--- ==============================================================
--- 7. User notifications — flashed once on next login/group select
--- ==============================================================
+DROP TABLE IF EXISTS "public"."group_memberships" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS group_memberships_membership_id_seq;
+DROP TYPE IF EXISTS "public"."group_role_type" CASCADE;
+CREATE TYPE "public"."group_role_type" AS ENUM ('Observer', 'Operator', 'Group Coordinator');
 
-CREATE TABLE user_notifications (
-    notification_id SERIAL PRIMARY KEY,
-    user_id         INTEGER     NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    message         TEXT        NOT NULL,
-    category        VARCHAR(20) NOT NULL DEFAULT 'info',
-    is_active       BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- Table Definition
+CREATE TABLE "public"."group_memberships" (
+    "membership_id" int4 NOT NULL DEFAULT nextval('group_memberships_membership_id_seq'::regclass),
+    "user_id" int4 NOT NULL,
+    "group_id" int4 NOT NULL,
+    "role" "public"."group_role_type" NOT NULL,
+    "joined_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY ("membership_id")
 );
 
--- ==============================================================
--- 8. Group applications — users applying to form a new group
--- ==============================================================
+DROP TABLE IF EXISTS "public"."group_join_requests" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS group_join_requests_request_id_seq;
+DROP TYPE IF EXISTS "public"."request_status_enum" CASCADE;
+CREATE TYPE "public"."request_status_enum" AS ENUM ('pending', 'approved', 'rejected');
 
-CREATE TABLE group_applications (
-    application_id  SERIAL PRIMARY KEY,
-    user_id         INTEGER             NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    proposed_name   VARCHAR(255)        NOT NULL,
-    description     TEXT                NOT NULL,
-    location        VARCHAR(255)        NOT NULL,
-    justification   TEXT                NOT NULL,
-    image           VARCHAR(500)        DEFAULT NULL,
-    status          request_status_enum NOT NULL DEFAULT 'pending',
-    applied_at      TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    -- Decided part
-    decided_by      INTEGER             DEFAULT NULL REFERENCES users(user_id),
-    decided_at      TIMESTAMP           DEFAULT NULL,
-    decision_reason TEXT                DEFAULT NULL
+-- Table Definition
+CREATE TABLE "public"."group_join_requests" (
+    "request_id" int4 NOT NULL DEFAULT nextval('group_join_requests_request_id_seq'::regclass),
+    "user_id" int4 NOT NULL,
+    "group_id" int4 NOT NULL,
+    "status" "public"."request_status_enum" NOT NULL DEFAULT 'pending'::request_status_enum,
+    "message" text,
+    "requested_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY ("request_id")
 );
 
--- ==============================================================
--- 8. Lines — scoped to a group; type is Trap or Bait Station
--- ==============================================================
+DROP TABLE IF EXISTS "public"."user_notifications" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS user_notifications_notification_id_seq;
 
-CREATE TABLE lines (
-    line_id    SERIAL PRIMARY KEY,
-    name       VARCHAR(255)   NOT NULL UNIQUE,
-    type       line_type_enum NOT NULL,
-    group_id   INTEGER        NOT NULL REFERENCES groups(group_id),
-    is_retired BOOLEAN        NOT NULL DEFAULT FALSE,
-    retired_at TIMESTAMP      DEFAULT NULL,
-    retired_by INTEGER        DEFAULT NULL REFERENCES users(user_id)
+-- Table Definition
+CREATE TABLE "public"."user_notifications" (
+    "notification_id" int4 NOT NULL DEFAULT nextval('user_notifications_notification_id_seq'::regclass),
+    "user_id" int4 NOT NULL,
+    "message" text NOT NULL,
+    "category" varchar(20) NOT NULL DEFAULT 'info'::character varying,
+    "is_active" bool NOT NULL DEFAULT true,
+    "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY ("notification_id")
 );
 
--- ==============================================================
--- 9. Traps — belong to a Trap type line
--- ==============================================================
+DROP TABLE IF EXISTS "public"."group_applications" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS group_applications_application_id_seq;
 
-CREATE TABLE traps (
-    trap_id    SERIAL PRIMARY KEY,
-    code       VARCHAR(255)   NOT NULL UNIQUE,
-    trap_type  trap_type_enum NOT NULL,
-    line_id    INTEGER        NOT NULL REFERENCES lines(line_id),
-    latitude   NUMERIC(9, 6)  NOT NULL,
-    longitude  NUMERIC(9, 6)  NOT NULL,
-    is_retired BOOLEAN        NOT NULL DEFAULT FALSE,
-    retired_at TIMESTAMP      DEFAULT NULL,
-    retired_by INTEGER        DEFAULT NULL REFERENCES users(user_id)
+-- Table Definition
+CREATE TABLE "public"."group_applications" (
+    "application_id" int4 NOT NULL DEFAULT nextval('group_applications_application_id_seq'::regclass),
+    "user_id" int4 NOT NULL,
+    "proposed_name" varchar(255) NOT NULL,
+    "description" text NOT NULL,
+    "location" varchar(255) NOT NULL,
+    "justification" text NOT NULL,
+    "image" varchar(500) DEFAULT NULL::character varying,
+    "status" "public"."request_status_enum" NOT NULL DEFAULT 'pending'::request_status_enum,
+    "applied_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "decided_by" int4,
+    "decided_at" timestamp,
+    "decision_reason" text,
+    PRIMARY KEY ("application_id")
 );
 
--- ==============================================================
--- 10. Bait stations — belong to a Bait Station type line
--- ==============================================================
+DROP TABLE IF EXISTS "public"."lines" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS lines_line_id_seq;
+DROP TYPE IF EXISTS "public"."line_type_enum" CASCADE;
+CREATE TYPE "public"."line_type_enum" AS ENUM ('Trap', 'Bait Station');
 
-CREATE TABLE bait_stations (
-    station_id   SERIAL PRIMARY KEY,
-    code         VARCHAR(255)  NOT NULL UNIQUE,
-    station_type VARCHAR(100)  NOT NULL,
-    other_type   VARCHAR(255)  DEFAULT NULL,
-    line_id      INTEGER       NOT NULL REFERENCES lines(line_id),
-    latitude     NUMERIC(9, 6) NOT NULL,
-    longitude    NUMERIC(9, 6) NOT NULL,
-    is_retired   BOOLEAN       NOT NULL DEFAULT FALSE,
-    retired_at   TIMESTAMP     DEFAULT NULL,
-    retired_by   INTEGER       DEFAULT NULL REFERENCES users(user_id),
-    CONSTRAINT other_type_required CHECK (
-        station_type != 'Other' OR other_type IS NOT NULL
-    )
+-- Table Definition
+CREATE TABLE "public"."lines" (
+    "line_id" int4 NOT NULL DEFAULT nextval('lines_line_id_seq'::regclass),
+    "name" varchar(255) NOT NULL,
+    "type" "public"."line_type_enum" NOT NULL,
+    "group_id" int4 NOT NULL,
+    "is_retired" bool NOT NULL DEFAULT false,
+    "retired_at" timestamp,
+    "retired_by" int4,
+    PRIMARY KEY ("line_id")
 );
 
--- ==============================================================
--- 11. Operator–line assignments
--- ==============================================================
+DROP TABLE IF EXISTS "public"."groups" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS groups_group_id_seq;
 
-CREATE TABLE operator_lines (
-    operator_id INTEGER NOT NULL REFERENCES users(user_id),
-    line_id     INTEGER NOT NULL REFERENCES lines(line_id),
-    PRIMARY KEY (operator_id, line_id)
+-- Table Definition
+CREATE TABLE "public"."groups" (
+    "group_id" int4 NOT NULL DEFAULT nextval('groups_group_id_seq'::regclass),
+    "name" varchar(255) NOT NULL,
+    "description" text,
+    "location" varchar(255),
+    "is_public" bool NOT NULL DEFAULT true,
+    "is_active" bool NOT NULL DEFAULT true,
+    "cover_photo" varchar(255) DEFAULT NULL::character varying,
+    "color_theme" varchar(7) NOT NULL DEFAULT '#198754'::character varying,
+    "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "profile_photo" varchar(255),
+    PRIMARY KEY ("group_id")
 );
 
--- ==============================================================
--- 12. Trap catch records
--- ==============================================================
+-- Column Comment
+COMMENT ON COLUMN "public"."groups"."cover_photo" IS 'Large banner shown at top of group pages and on browse cards.';
+COMMENT ON COLUMN "public"."groups"."profile_photo" IS 'Group avatar shown in nav, member lists, and My Groups.';
 
-CREATE TABLE trap_catches (
-    catch_id       SERIAL PRIMARY KEY,
-    trap_id        INTEGER             NOT NULL REFERENCES traps(trap_id),
-    date           TIMESTAMP           NOT NULL,
-    recorded_by_id INTEGER             REFERENCES users(user_id),
-    species_caught VARCHAR(100)        NOT NULL REFERENCES species(name) ON UPDATE CASCADE,
-    sex            sex_type,
-    maturity       maturity_type,
-    status         VARCHAR(100)        NOT NULL REFERENCES trap_statuses(name) ON UPDATE CASCADE,
-    rebaited       rebaited_type       NOT NULL,
-    bait_type      VARCHAR(100)        NOT NULL REFERENCES bait_types(name) ON UPDATE CASCADE,
-    bait_details   TEXT,
-    trap_condition trap_condition_type NOT NULL,
-    strikes        INTEGER             NOT NULL CHECK (strikes >= 0),
-    notes          TEXT,
-    CHECK ((strikes = 0 AND species_caught = 'None') OR strikes >= 1),
-    CHECK ((rebaited = 'No' AND bait_type = 'None') OR rebaited = 'Yes')
+DROP TABLE IF EXISTS "public"."platform_settings" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."platform_settings" (
+    "id" int4 NOT NULL DEFAULT 1 CHECK (id = 1),
+    "cover_photo" varchar(255),
+    "profile_photo" varchar(255),
+    "updated_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_by" int4,
+    PRIMARY KEY ("id")
 );
 
--- ==============================================================
--- 13. Bait station records
--- ==============================================================
+DROP TABLE IF EXISTS "public"."theme_presets" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS theme_presets_preset_id_seq;
+DROP TYPE IF EXISTS "public"."button_style_type" CASCADE;
+CREATE TYPE "public"."button_style_type" AS ENUM ('rounded', 'square');
+DROP TYPE IF EXISTS "public"."nav_position_type" CASCADE;
+CREATE TYPE "public"."nav_position_type" AS ENUM ('sidebar', 'topbar');
+DROP TYPE IF EXISTS "public"."content_width_type" CASCADE;
+CREATE TYPE "public"."content_width_type" AS ENUM ('wrap', 'full');
 
-CREATE TABLE bait_station_records (
-    record_id         SERIAL PRIMARY KEY,
-    station_id        INTEGER       NOT NULL REFERENCES bait_stations(station_id),
-    date              TIMESTAMP     NOT NULL,
-    recorded_by_id    INTEGER       REFERENCES users(user_id),
-    target_species    VARCHAR(100)  DEFAULT NULL,
-    active_ingredient VARCHAR(100)  NOT NULL,
-    formulation       VARCHAR(100)  NOT NULL,
-    concentration     NUMERIC(5, 2) NOT NULL,
-    bait_remaining    NUMERIC(8, 3) NOT NULL,
-    bait_removed      NUMERIC(8, 3) DEFAULT NULL,
-    bait_added        NUMERIC(8, 3) DEFAULT NULL,
-    notes             TEXT          DEFAULT NULL,
-    edited_by_id      INTEGER       DEFAULT NULL REFERENCES users(user_id),
-    edited_at         TIMESTAMP     DEFAULT NULL
+-- Table Definition
+CREATE TABLE "public"."theme_presets" (
+    "preset_id" int4 NOT NULL DEFAULT nextval('theme_presets_preset_id_seq'::regclass),
+    "name" varchar(100) NOT NULL,
+    "description" text,
+    "primary_color" varchar(7) NOT NULL CHECK ((primary_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "secondary_color" varchar(7) NOT NULL CHECK ((secondary_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "background_color" varchar(7) NOT NULL CHECK ((background_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "button_style" "public"."button_style_type" NOT NULL,
+    "preview_image" varchar(255),
+    "display_order" int4 NOT NULL DEFAULT 0,
+    "nav_position" "public"."nav_position_type" NOT NULL,
+    "content_width" "public"."content_width_type" NOT NULL,
+    "font_heading" varchar(80) NOT NULL,
+    "font_body" varchar(80) NOT NULL,
+    PRIMARY KEY ("preset_id")
 );
 
--- ==============================================================
--- 14. Incidental observations
--- ==============================================================
+DROP TABLE IF EXISTS "public"."group_themes" CASCADE;
 
-CREATE TABLE incidental_observations (
-    observation_id   SERIAL PRIMARY KEY,
-    date             TIMESTAMP             NOT NULL,
-    operator_id      INTEGER               NOT NULL REFERENCES users(user_id),
-    observation_type observation_type_enum NOT NULL,
-    notes            TEXT,
-    latitude         NUMERIC(9, 6),
-    longitude        NUMERIC(9, 6),
-    line_id          INTEGER               NOT NULL REFERENCES lines(line_id),
-    trap_id          INTEGER               REFERENCES traps(trap_id)
+-- Table Definition
+CREATE TABLE "public"."group_themes" (
+    "group_id" int4 NOT NULL,
+    "primary_color" varchar(7) NOT NULL CHECK ((primary_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "secondary_color" varchar(7) NOT NULL CHECK ((secondary_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "background_color" varchar(7) NOT NULL CHECK ((background_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "button_style" "public"."button_style_type" NOT NULL,
+    "based_on_preset" int4,
+    "updated_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_by" int4,
+    "nav_position" "public"."nav_position_type" NOT NULL,
+    "content_width" "public"."content_width_type" NOT NULL,
+    "font_heading" varchar(80) NOT NULL,
+    "font_body" varchar(80) NOT NULL,
+    PRIMARY KEY ("group_id")
 );
 
--- ==============================================================
--- 15. Password reset tokens
--- ==============================================================
+DROP TABLE IF EXISTS "public"."platform_theme" CASCADE;
 
-CREATE TABLE password_reset_tokens (
-    token      VARCHAR(64) PRIMARY KEY,
-    user_id    INTEGER     NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    expires_at TIMESTAMP   NOT NULL,
-    used       BOOLEAN     NOT NULL DEFAULT FALSE
+-- Table Definition
+CREATE TABLE "public"."platform_theme" (
+    "id" int4 NOT NULL DEFAULT 1 CHECK (id = 1),
+    "primary_color" varchar(7) NOT NULL CHECK ((primary_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "secondary_color" varchar(7) NOT NULL CHECK ((secondary_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "background_color" varchar(7) NOT NULL CHECK ((background_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "button_style" "public"."button_style_type" NOT NULL,
+    "based_on_preset" int4,
+    "updated_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_by" int4,
+    "nav_position" "public"."nav_position_type" NOT NULL,
+    "content_width" "public"."content_width_type" NOT NULL,
+    "font_heading" varchar(80) NOT NULL,
+    "font_body" varchar(80) NOT NULL,
+    PRIMARY KEY ("id")
 );
+
+DROP TABLE IF EXISTS "public"."theme_history" CASCADE;
+-- Sequence and defined type
+CREATE SEQUENCE IF NOT EXISTS theme_history_history_id_seq;
+
+-- Table Definition
+CREATE TABLE "public"."theme_history" (
+    "history_id" int4 NOT NULL DEFAULT nextval('theme_history_history_id_seq'::regclass),
+    "group_id" int4,
+    "primary_color" varchar(7) NOT NULL CHECK ((primary_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "secondary_color" varchar(7) NOT NULL CHECK ((secondary_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "background_color" varchar(7) NOT NULL CHECK ((background_color)::text ~ '^#[0-9A-Fa-f]{6}$'::text),
+    "button_style" "public"."button_style_type" NOT NULL,
+    "based_on_preset" int4,
+    "saved_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "saved_by" int4,
+    "nav_position" "public"."nav_position_type" NOT NULL,
+    "content_width" "public"."content_width_type" NOT NULL,
+    "font_heading" varchar(80) NOT NULL,
+    "font_body" varchar(80) NOT NULL,
+    "name" varchar(80),
+    "is_pinned" bool NOT NULL DEFAULT false,
+    PRIMARY KEY ("history_id")
+);
+
+ALTER TABLE "public"."traps" ADD FOREIGN KEY ("line_id") REFERENCES "public"."lines"("line_id");
+ALTER TABLE "public"."traps" ADD FOREIGN KEY ("retired_by") REFERENCES "public"."users"("user_id");
+
+
+-- Indices
+CREATE UNIQUE INDEX traps_code_key ON public.traps USING btree (code);
+ALTER TABLE "public"."bait_stations" ADD FOREIGN KEY ("line_id") REFERENCES "public"."lines"("line_id");
+ALTER TABLE "public"."bait_stations" ADD FOREIGN KEY ("retired_by") REFERENCES "public"."users"("user_id");
+
+
+-- Indices
+CREATE UNIQUE INDEX bait_stations_code_key ON public.bait_stations USING btree (code);
+ALTER TABLE "public"."operator_lines" ADD FOREIGN KEY ("line_id") REFERENCES "public"."lines"("line_id");
+ALTER TABLE "public"."operator_lines" ADD FOREIGN KEY ("operator_id") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."trap_catches" ADD FOREIGN KEY ("recorded_by_id") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."trap_catches" ADD FOREIGN KEY ("bait_type") REFERENCES "public"."bait_types"("name") ON UPDATE CASCADE;
+ALTER TABLE "public"."trap_catches" ADD FOREIGN KEY ("trap_id") REFERENCES "public"."traps"("trap_id");
+ALTER TABLE "public"."trap_catches" ADD FOREIGN KEY ("status") REFERENCES "public"."trap_statuses"("name") ON UPDATE CASCADE;
+ALTER TABLE "public"."trap_catches" ADD FOREIGN KEY ("species_caught") REFERENCES "public"."species"("name") ON UPDATE CASCADE;
+ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("station_id") REFERENCES "public"."bait_stations"("station_id");
+ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("recorded_by_id") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("edited_by_id") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."incidental_observations" ADD FOREIGN KEY ("operator_id") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."incidental_observations" ADD FOREIGN KEY ("trap_id") REFERENCES "public"."traps"("trap_id");
+ALTER TABLE "public"."incidental_observations" ADD FOREIGN KEY ("line_id") REFERENCES "public"."lines"("line_id");
+ALTER TABLE "public"."password_reset_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
+
+
+-- Indices
+CREATE UNIQUE INDEX users_username_key ON public.users USING btree (username);
+CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email);
+ALTER TABLE "public"."group_memberships" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
+ALTER TABLE "public"."group_memberships" ADD FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id") ON DELETE CASCADE;
+
+
+-- Indices
+CREATE UNIQUE INDEX group_memberships_user_id_group_id_key ON public.group_memberships USING btree (user_id, group_id);
+ALTER TABLE "public"."group_join_requests" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
+ALTER TABLE "public"."group_join_requests" ADD FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id") ON DELETE CASCADE;
+
+
+-- Indices
+CREATE UNIQUE INDEX group_join_requests_user_id_group_id_key ON public.group_join_requests USING btree (user_id, group_id);
+ALTER TABLE "public"."user_notifications" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
+ALTER TABLE "public"."group_applications" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
+ALTER TABLE "public"."group_applications" ADD FOREIGN KEY ("decided_by") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."lines" ADD FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id");
+ALTER TABLE "public"."lines" ADD FOREIGN KEY ("retired_by") REFERENCES "public"."users"("user_id");
+
+
+-- Indices
+CREATE UNIQUE INDEX lines_name_key ON public.lines USING btree (name);
+
+
+-- Indices
+CREATE UNIQUE INDEX groups_name_key ON public.groups USING btree (name);
+ALTER TABLE "public"."platform_settings" ADD FOREIGN KEY ("updated_by") REFERENCES "public"."users"("user_id");
+
+
+-- Indices
+CREATE UNIQUE INDEX theme_presets_name_key ON public.theme_presets USING btree (name);
+ALTER TABLE "public"."group_themes" ADD FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id") ON DELETE CASCADE;
+ALTER TABLE "public"."group_themes" ADD FOREIGN KEY ("updated_by") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."group_themes" ADD FOREIGN KEY ("based_on_preset") REFERENCES "public"."theme_presets"("preset_id") ON DELETE SET NULL;
+ALTER TABLE "public"."platform_theme" ADD FOREIGN KEY ("based_on_preset") REFERENCES "public"."theme_presets"("preset_id") ON DELETE SET NULL;
+ALTER TABLE "public"."platform_theme" ADD FOREIGN KEY ("updated_by") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."theme_history" ADD FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id") ON DELETE CASCADE;
+ALTER TABLE "public"."theme_history" ADD FOREIGN KEY ("based_on_preset") REFERENCES "public"."theme_presets"("preset_id") ON DELETE SET NULL;
+ALTER TABLE "public"."theme_history" ADD FOREIGN KEY ("saved_by") REFERENCES "public"."users"("user_id");
+
+
+-- Indices
+CREATE INDEX theme_history_group_saved ON public.theme_history USING btree (group_id, saved_at DESC);
+CREATE INDEX theme_history_group_pinned_saved ON public.theme_history USING btree (group_id, is_pinned DESC, saved_at DESC);
+
+
+-- =============================================================
+-- Table-level CHECK constraints
+-- TablePlus does not export table-level CHECK constraints, so they
+-- are re-applied here explicitly.
+-- =============================================================
+
+ALTER TABLE "public"."bait_stations"
+    ADD CONSTRAINT other_type_required
+    CHECK (station_type != 'Other' OR other_type IS NOT NULL);
+
+ALTER TABLE "public"."trap_catches"
+    ADD CONSTRAINT strikes_species_consistency
+    CHECK ((strikes = 0 AND species_caught = 'None') OR strikes >= 1);
+
+ALTER TABLE "public"."trap_catches"
+    ADD CONSTRAINT rebaited_bait_consistency
+    CHECK ((rebaited = 'No' AND bait_type = 'None') OR rebaited = 'Yes');
+
+ALTER TABLE "public"."theme_history"
+    ADD CONSTRAINT th_pinned_requires_name
+    CHECK (is_pinned = FALSE OR name IS NOT NULL);

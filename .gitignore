@@ -68,6 +68,12 @@ static/images/uploads/*
 !static/images/uploads/group_selwyn.png
 !static/images/uploads/group_riccarton.png
 
+# ── P2-44 group identity uploads — canonical going forward ──────
+# static/uploads/ is the new convention; static/images/uploads/ above
+# is legacy and intentionally retained for the existing routes that
+# still write there.
+static/uploads/*
+
 # Claude Code
 .claude/
 CLAUDE.md

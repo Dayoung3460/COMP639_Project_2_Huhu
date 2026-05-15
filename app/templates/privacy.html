@@ -1,0 +1,165 @@
+{# privacy.html — Privacy Policy.
+   Route: GET /privacy (app/home.py:privacy). Reachable from the
+   in-app site-footer (logged-in) and from any deep link.
+
+   Drafted 2026-05-15 to back the "Privacy" link in the footer.
+   Content is intentionally specific to Tiaki's data model (groups,
+   trap lines, observations) so users can read what's collected
+   without wading through generic boilerplate. This page should be
+   reviewed by counsel before the platform's first non-test
+   deployment — the text below is a working draft, not legal advice. #}
+{% extends 'base.html' %}
+
+{% block title %}Privacy Policy · Tiaki{% endblock %}
+
+{% block page_title %}Privacy policy{% endblock %}
+{% block page_subtitle %}How Tiaki handles the data you and your group contribute.{% endblock %}
+
+{% block content %}
+<div class="container py-4 legal-page">
+
+  <p class="legal-meta">
+    <strong>Last updated:</strong> {{ current_year }}-05-15.
+    This is a working draft and has not been reviewed by counsel —
+    it reflects our current data handling and will be tightened
+    before the platform's first non-test deployment.
+  </p>
+
+  <section class="legal-section" aria-labelledby="privacy-summary">
+    <h2 id="privacy-summary">In short</h2>
+    <p>
+      Tiaki is a coordinated platform for community-led predator
+      control across Aotearoa. We collect only what we need to run
+      your group's trap lines, records, and reports, and we do not
+      sell or share that data with advertisers or marketers.
+    </p>
+    <ul>
+      <li>Your account details stay inside your group's context.</li>
+      <li>Catch and observation records belong to the group that
+          recorded them.</li>
+      <li>You can request a copy or deletion of your personal data
+          from your group's Coordinator or a platform administrator.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="privacy-collect">
+    <h2 id="privacy-collect">What we collect</h2>
+    <h3>Account information</h3>
+    <ul>
+      <li>Username, email, hashed password.</li>
+      <li>First and last name, phone, address, emergency contact
+          details (optional — used by Coordinators for field-safety
+          coordination).</li>
+      <li>Profile photo (optional).</li>
+      <li>Login activity (last login timestamp).</li>
+    </ul>
+    <h3>Group activity</h3>
+    <ul>
+      <li>Group memberships, role within each group, join dates.</li>
+      <li>Trap lines and traps you own or operate, including
+          coordinates, status, and operator assignments.</li>
+      <li>Catch records: date, location, species, status, trap
+          condition, notes, and the operator who recorded them.</li>
+      <li>Observation records: similar shape, plus optional photos.</li>
+    </ul>
+    <h3>Operational data</h3>
+    <ul>
+      <li>Server logs (IP address, user agent, request path, timing).
+          Used for debugging and security; retained for 30 days then
+          rotated.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="privacy-use">
+    <h2 id="privacy-use">How we use your data</h2>
+    <ul>
+      <li>Authenticating you and authorising access to your group's
+          data.</li>
+      <li>Rendering dashboards, reports, and exports for your role.</li>
+      <li>Letting Coordinators manage their group's membership and
+          operator assignments.</li>
+      <li>Reconciling catch and observation records against the
+          national <a href="https://trap.nz" rel="noopener">trap.nz</a>
+          CSV format for groups that choose to export.</li>
+      <li>Debugging incidents and recovering from data loss.</li>
+    </ul>
+    <p>
+      We do <strong>not</strong> use your data for advertising,
+      marketing analytics, or profiling. We do not sell your data.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="privacy-share">
+    <h2 id="privacy-share">Who can see what</h2>
+    <ul>
+      <li><strong>You</strong> can see your own profile, the records
+          you authored, and any group context you've joined.</li>
+      <li><strong>Operators</strong> in your group can see trap-line
+          assignments and the catch / observation records relevant
+          to lines they operate.</li>
+      <li><strong>Coordinators</strong> of your group can see all
+          membership, line, and record data for that group.</li>
+      <li><strong>Super Administrators</strong> can see all groups
+          and users on the platform, for safety and support reasons.</li>
+      <li><strong>Public groups</strong> expose a landing page with
+          group name, cover photo, and aggregate counts —
+          <em>never</em> individual records or member contact details.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="privacy-rights">
+    <h2 id="privacy-rights">Your rights</h2>
+    <p>
+      Under the New Zealand Privacy Act 2020 you can ask us to:
+    </p>
+    <ul>
+      <li>Confirm what personal information we hold about you.</li>
+      <li>Give you a copy of that information.</li>
+      <li>Correct it if it's wrong.</li>
+      <li>Delete your account and the personal data associated with it.</li>
+    </ul>
+    <p>
+      For most requests, contact your group's Coordinator first.
+      For platform-wide requests, contact a Super Administrator via
+      the channels below.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="privacy-retention">
+    <h2 id="privacy-retention">How long we keep your data</h2>
+    <ul>
+      <li>Active account records — for as long as you have an active
+          membership in at least one group.</li>
+      <li>Deactivated account records — retained for 12 months after
+          your last membership ends, then deleted.</li>
+      <li>Catch and observation records — retained indefinitely as
+          part of the group's conservation history; if you leave a
+          group, your authored records stay in the group's archive
+          but your name is anonymised on request.</li>
+      <li>Server logs — 30 days.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="privacy-security">
+    <h2 id="privacy-security">Security</h2>
+    <ul>
+      <li>Passwords are hashed at rest (never stored or logged in
+          plain text).</li>
+      <li>Database access is gated behind application role checks;
+          super-admin reads are intentional, not casual.</li>
+      <li>Cover and profile photo uploads are stored on the platform's
+          file system; uploaded files are scoped per-group.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="privacy-contact">
+    <h2 id="privacy-contact">Contact</h2>
+    <p>
+      For privacy questions or data requests, contact a group
+      Coordinator or a platform administrator. A dedicated privacy
+      contact channel will land alongside the formal launch.
+    </p>
+  </section>
+
+</div>
+{% endblock %}

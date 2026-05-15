@@ -1,0 +1,33 @@
+{# Theme target pill — shows for Super Admins on every theme page.
+   Coordinators always see a single fixed target (their group) and never
+   need to switch, so the pill is hidden for them.
+
+   Args:
+     target — the dict from themes.resolve_theme_target (already in
+              template context on every theme route). Used for the
+              display label.
+
+   The pill links to /coordinator/themes/select-target (the picker).
+   Once we want an inline dropdown rather than a full-page picker,
+   swap the <a> for a <details> or a JS-driven menu — the pill
+   wrapper class stays the same.
+#}
+{% if session.get('group_role') == 'Super Admin' and target %}
+  <div class="theme-target-switcher" role="status">
+    <span class="theme-target-switcher__label">Managing themes for:</span>
+    <strong class="theme-target-switcher__name">
+      {% if target.type == 'platform' %}
+        <i class="bi bi-globe2" aria-hidden="true"></i>
+      {% else %}
+        <i class="bi bi-people-fill" aria-hidden="true"></i>
+      {% endif %}
+      {{ target.name }}
+    </strong>
+    <a href="{{ url_for('coordinator_theme_select_target') }}"
+       class="theme-target-switcher__switch"
+       aria-label="Switch theme target">
+      <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+      Switch
+    </a>
+  </div>
+{% endif %}

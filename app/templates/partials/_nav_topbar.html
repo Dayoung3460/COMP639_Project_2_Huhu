@@ -1,0 +1,103 @@
+{#
+  _nav_topbar.html — Topbar navigation (primary + hamburger overflow).
+  Included into <nav class="pf-navbar"> in base.html when
+  nav_position == 'topbar'.
+
+  Keyboard tab order through the topbar navbar (intentional, verified):
+    1. brand <a>            (already in navbar)
+    2. primary tab <a>s     (this file — navbar-tab)
+    3. hamburger <button>   (this file — topbar-hamburger)
+    4. user avatar chip <a> (already in nav-actions, after this)
+    5. logout <a>           (already in nav-actions, last)
+
+  The hamburger opens a role-gated dropdown of non-primary links
+  (_nav_topbar_overflow.html). Focus management lives in base.html's
+  inline script — roving tabindex, ESC closes, outside-click closes.
+
+  Active-state on hamburger: the button gets .active when the current
+  request.endpoint is in the role's overflow set. Subtle indicator
+  that the current page is "in here" without forcing the menu open.
+
+  Primary nav per role (5-7 items, per spec):
+    Super Admin:        Dashboard, Trap Lines, Catches, Observations, Reports
+    Group Coordinator:  Dashboard, Trap Lines, Catches, Observations, Reports, Members
+    Operator:           Dashboard, My Records, Add Catch, Add Observation, My Lines
+    Observer:           Dashboard, Trap Lines, Catches, Observations, Reports
+
+  When adding a new sidebar link, decide primary vs overflow, then
+  update BOTH this file's role-gated primary block AND/OR the
+  overflow partial.
+#}
+
+{# 2026-05-12 identity cleanup: the group identity chip that used to
+   sit here has been removed. Group context is now expressed by the
+   brand swap in the navbar (group profile photo + name as the brand
+   itself), so duplicating it inside the topbar was redundant chrome.
+   Related dead CSS (.navbar-group-chip*) is removed in Phase 7. #}
+
+{# ── Primary navigation — role-gated, 5-7 items inline ───────────
+   The link list lives in the _primary_nav_links macro so the footer
+   PLATFORM column can render the same items from a single source.
+   Sidebar uses its own full-list rendering (different shape, kept
+   separate). #}
+{% import 'partials/_primary_nav_links.html' as nav_links %}
+<nav class="navbar-tabs" aria-label="Primary navigation">
+  {{ nav_links.primary_nav_links(wrapper_class='navbar-tab') }}
+</nav>
+
+{# ── Hamburger overflow ─────────────────────────────────────────
+   The button + drawer wrap together in a relative-positioned div so
+   the drawer can position itself absolutely beneath the button. The
+   drawer is the included _nav_topbar_overflow.html partial which
+   carries role-gated <a role="menuitem"> children.
+
+   `overflow_endpoints` is a flat list of all overflow endpoint names
+   for the active role — used here to decide the hamburger's .active
+   state. The overflow partial does its own role-gated link
+   rendering; the duplication is intentional (flat string list vs
+   richly-rendered link blocks — manageable, refactor only if a new
+   role lands).
+#}
+{% set overflow_endpoints = ['profile', 'change_password'] %}
+{% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+  {% set overflow_endpoints = overflow_endpoints + [
+    'new_line',
+    'coordinator_themes', 'coordinator_theme_preview',
+    'coordinator_theme_customise', 'coordinator_theme_customise_save',
+    'coordinator_group_identity',
+  ] %}
+{% endif %}
+{% if session.get('group_role') == 'Super Admin' %}
+  {% set overflow_endpoints = overflow_endpoints + [
+    'admin_users', 'admin_user_detail',
+    'admin_groups', 'admin_group_detail',
+    'manage_species', 'manage_statuses', 'manage_bait_types',
+  ] %}
+{% endif %}
+{% if session.get('group_role') == 'Group Coordinator' %}
+  {% set overflow_endpoints = overflow_endpoints + [
+    'coordinator_lines_assign', 'coordinator_assign_operators',
+    'coordinator_operator_add', 'coordinator_operator_remove',
+    'coordinator_requests', 'coordinator_decide_request',
+    'coordinator_settings',
+  ] %}
+{% endif %}
+{% if session.get('group_role') == 'Operator' %}
+  {% set overflow_endpoints = overflow_endpoints + [
+    'lines_index', 'catch_records', 'observations', 'reports',
+  ] %}
+{% endif %}
+
+<div class="topbar-overflow-wrap">
+  <button id="topbarMenuBtn"
+          type="button"
+          class="topbar-hamburger {{ 'active' if request.endpoint in overflow_endpoints }}"
+          aria-label="More navigation"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="topbarOverflowMenu">
+    <i class="bi bi-list" aria-hidden="true"></i>
+  </button>
+
+  {% include 'partials/_nav_topbar_overflow.html' %}
+</div>

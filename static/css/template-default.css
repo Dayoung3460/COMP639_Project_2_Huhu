@@ -16,23 +16,28 @@
      accent (#c65d3c)     on bg (#f5f0e6)   =  4.13 : 1  (AA large only)
      bg (#f5f0e6)         on primary        = 11.56 : 1  (AAA)
      ink-faint is used ONLY for meta/eyebrow text ≥ 14px.   */
-  --color-bg:        #f5f0e6;
+  /* Custom Themes foundation — three tokens flow through --theme-*
+     when the server-rendered <style> block in the base template sets
+     them; otherwise the literal fallback preserves today's defaults
+     (kept verbatim so auth pages, which never get the <style> block,
+     stay unthemed). */
+  --color-bg:        var(--theme-background, #f5f0e6);
   --color-bg-soft:   #ede5d3;
   --color-card:      #fbf8f1;
   --color-line:      #d9d0bd;
   --color-ink:       #1a1a1a;
   --color-ink-soft:  #4a4a4a;
   --color-ink-faint: #8a8278;
-  --color-primary:        #1a3a2e;
+  --color-primary:        var(--theme-primary, #1a3a2e);
   --color-primary-soft:   #2d5544;
-  --color-accent:         #c65d3c;
+  --color-accent:         var(--theme-secondary, #c65d3c);
   --color-accent-soft:    #e8a489;
   --color-success: #2d6a4f;
   --color-danger:  #9d2e2e;
 
   /* Typography */
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body:    'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-display: var(--theme-font-heading, 'Fraunces'), Georgia, serif;
+  --font-body:    var(--theme-font-body, 'IBM Plex Sans'), system-ui, -apple-system, sans-serif;
   --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
 
   /* Shadows */

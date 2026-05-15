@@ -1,0 +1,159 @@
+{#
+  _footer.html — Site footer for the in-app surface.
+
+  Included by base.html at the bottom of .app-wrap, below the
+  content block, above scripts. Renders four columns:
+    - Brand     (group profile photo + name + platform tagline +
+                 social placeholders)
+    - Platform  (role-gated primary nav via _primary_nav_links macro)
+    - Community (placeholder links — features not built yet)
+    - Support   (placeholder links — features not built yet)
+
+  Bottom bar: dynamic copyright year + static tagline + legal +
+  locale picker placeholder.
+
+  Placeholder strategy (per the design integration plan):
+    - .footer-link-placeholder class on <a href="#"> for Community
+      and Support — low opacity, no hover underline. When the
+      real route lands, drop the placeholder class.
+    - Social icons render as <a href="#"> with no styling cue —
+      future story: "platform social URLs in platform_settings,
+      Coordinator-overridable in group settings".
+
+  Mobile responsive: 4-col → 2-col at <960px → 1-col at <640px.
+#}
+{% import 'partials/_primary_nav_links.html' as nav_links %}
+
+<footer class="site-footer" aria-label="Site footer">
+  <div class="site-footer__top">
+    <div class="footer-grid">
+
+      {# ── Col 1: Brand ── #}
+      <div class="footer-brand">
+        <div class="footer-brand__row">
+          <span class="footer-brand__mark" aria-hidden="true">
+            {% if session.get('group_id') %}
+              {% set _footer_profile = (group_identity and group_identity.profile_photo) or platform_identity.profile_photo %}
+              <img src="{{ _footer_profile }}"
+                   alt=""
+                   class="footer-brand__mark-img">
+            {% else %}
+              {# Default mark — stylised fern / koru. Matches the asset
+                 we'd want to swap into default-profile.png in a future
+                 design-asset story. #}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 20c8 0 16-6 16-16"/>
+                <path d="M4 20c0-6 4-12 12-12"/>
+                <path d="M4 20c0-3 2-7 7-9"/>
+                <circle cx="4" cy="20" r="1.2" fill="currentColor"/>
+              </svg>
+            {% endif %}
+          </span>
+          <span class="footer-brand__name">
+            {{ session.get('group_name') or site_name }}
+            <small>Tiaki Platform</small>
+          </span>
+        </div>
+        <p class="footer-brand__tag">
+          A coordinated platform for community-led predator control
+          across Aotearoa. Built by conservationists, for conservationists.
+        </p>
+        <div class="footer-brand__socials" aria-label="Social channels">
+          {# Placeholders — future story will populate from
+             platform_settings (Coordinator-overridable). #}
+          <a href="#" aria-label="X / Twitter">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2H21.5l-7.51 8.59L23 22h-6.91l-5.41-7.06L4.5 22H1.24l8.07-9.22L1 2h7.08l4.88 6.45L18.24 2Zm-1.21 18h1.83L7.05 3.87H5.1L17.03 20Z"/></svg>
+          </a>
+          <a href="#" aria-label="Instagram">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+          </a>
+          <a href="#" aria-label="GitHub">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.69-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+          </a>
+          <a href="#" aria-label="LinkedIn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3V9Zm6 0h3.8v1.7h.05c.53-1 1.84-2.05 3.78-2.05C20.7 8.65 22 10.5 22 13.78V21h-4v-6.4c0-1.53-.03-3.5-2.13-3.5-2.13 0-2.45 1.66-2.45 3.39V21H9V9Z"/></svg>
+          </a>
+        </div>
+      </div>
+
+      {# ── Col 2: Platform — primary nav (vertical, no icons).
+         The macro emits bare <a> tags; CSS on .footer-col__list--nav
+         flips them to block-level for the vertical stack the footer
+         wants (the topbar caller keeps them inline). #}
+      <div class="footer-col">
+        <h4 class="footer-col__title">Platform</h4>
+        <div class="footer-col__list footer-col__list--nav">
+          {{ nav_links.primary_nav_links(wrapper_class='footer-link', show_icons=False) }}
+        </div>
+      </div>
+
+      {# ── Col 3: Account — role-gated personal + manage links.
+         "Make sure any menu items respect the current logged-in
+         capability" (2026-05-15): every link below is wrapped in a
+         role check that mirrors the route's own gate. Operators see
+         just Profile + Change password; Coordinators add the group
+         management routes; Super Admins add the platform admin
+         routes. #}
+      <div class="footer-col">
+        <h4 class="footer-col__title">Account</h4>
+        <ul class="footer-col__list">
+          {% if session.get('user_id') %}
+            <li><a class="footer-link" href="{{ url_for('profile') }}">My profile</a></li>
+            <li><a class="footer-link" href="{{ url_for('change_password') }}">Change password</a></li>
+          {% endif %}
+          {% if session.get('group_role') in ('Group Coordinator', 'Super Admin') %}
+            <li><a class="footer-link" href="{{ url_for('coordinator_group_identity') }}">Group identity</a></li>
+            <li><a class="footer-link" href="{{ url_for('coordinator_themes') }}">Theme gallery</a></li>
+          {% endif %}
+          {% if session.get('group_role') == 'Group Coordinator' %}
+            <li><a class="footer-link" href="{{ url_for('coordinator_requests') }}">Member requests</a></li>
+            <li><a class="footer-link" href="{{ url_for('coordinator_settings') }}">Group settings</a></li>
+          {% endif %}
+          {% if session.get('group_role') == 'Super Admin' %}
+            <li><a class="footer-link" href="{{ url_for('admin_users') }}">All users</a></li>
+            <li><a class="footer-link" href="{{ url_for('admin_groups') }}">All groups</a></li>
+            <li><a class="footer-link" href="{{ url_for('manage_species') }}">Lookup tables</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      {# ── Col 4: Help & Legal — Privacy is a real route, the rest
+         stay as placeholders until those pages land. #}
+      <div class="footer-col">
+        <h4 class="footer-col__title">Help &amp; Legal</h4>
+        <ul class="footer-col__list">
+          <li><a class="footer-link" href="{{ url_for('privacy') }}">Privacy policy</a></li>
+          <li><a class="footer-link" href="{{ url_for('terms') }}">Terms of service</a></li>
+          <li><a class="footer-link" href="{{ url_for('accessibility') }}">Accessibility</a></li>
+          <li><a class="footer-link" href="{{ url_for('cookies') }}">Cookie policy</a></li>
+          <li><a class="footer-link footer-link-placeholder" href="#">Contact us</a></li>
+          <li><a class="footer-link footer-link-placeholder" href="#">Report an issue</a></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  {# ── Bottom bar: copyright + legal + locale ── #}
+  <div class="site-footer__bottom-wrap">
+    <div class="site-footer__bottom">
+      <span>© {{ current_year }} Tiaki Conservation Aotearoa. Mahi tahi tātou.</span>
+      <div class="site-footer__bottom__legal">
+        <a class="footer-link" href="{{ url_for('privacy') }}">Privacy</a>
+        <a class="footer-link" href="{{ url_for('terms') }}">Terms</a>
+        <a class="footer-link" href="{{ url_for('accessibility') }}">Accessibility</a>
+        <a class="footer-link" href="{{ url_for('cookies') }}">Cookies</a>
+        <span class="site-footer__locale" aria-label="Language and region">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
+          </svg>
+          EN · NZ
+        </span>
+      </div>
+    </div>
+  </div>
+</footer>

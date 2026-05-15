@@ -15,6 +15,12 @@ import os
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads')
 CONSERVATION_GROUP_BG_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads', 'conservation-group-bg')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Group identity photos (P2-44) — narrower than ALLOWED_EXTENSIONS.
+# No gif (animated badges have no place as a group avatar) and webp
+# added (modern format, far smaller than equivalent JPG/PNG).
+IDENTITY_PHOTO_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'svg'}
+IDENTITY_PHOTO_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
 LINCOLN_NZ_LAT_RANGE = (-43.6600, -43.6350)
 LINCOLN_NZ_LON_RANGE = (172.4550, 172.4900)
 LINCOLN_NZ_CENTER = (
@@ -112,6 +118,46 @@ def allowed_file(filename):
     """
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def sniff_image_kind(head_bytes):
+    """
+    Magic-byte sniff for the identity-photo formats accepted by P2-44.
+    Returns 'jpeg' | 'png' | 'webp' | 'svg' | None.
+
+    Threat model: a client renames a GIF (or anything else) to .png and
+    uploads it. The extension passes the allow-list but the file bytes
+    disagree. This sniffer is the authoritative MIME source — never
+    trust the extension or the client-claimed Content-Type alone.
+
+    SVG note: SVG is text/XML, so its "signature" is fuzzy. We check for
+    the `<svg` tag in the first ~1 KB after a leading optional XML
+    prolog or HTML/XML comment. Callers should pass enough head_bytes
+    for that lookup — 1024 bytes is plenty for any real SVG. A
+    defense-in-depth `<script>`-tag check lives in the route validator,
+    not here (the sniffer's job is identification, not security).
+
+    Note: this is a signature check, not a full image decoder. A
+    malformed-but-signature-valid file would slip through. Acceptable
+    given uploads are served as static assets, not decoded server-side.
+    """
+    if head_bytes.startswith(b'\xff\xd8\xff'):
+        return 'jpeg'
+    if head_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 'png'
+    # WEBP = RIFF container + 'WEBP' format ID at byte 8.
+    if (len(head_bytes) >= 12
+            and head_bytes[0:4] == b'RIFF'
+            and head_bytes[8:12] == b'WEBP'):
+        return 'webp'
+    # SVG — case-insensitive search for the <svg root element. Real
+    # SVGs may start with <?xml prolog or whitespace, then optional
+    # comments, then <svg. Any occurrence in the head block is enough
+    # to identify; the route validator handles security separately.
+    lowered = head_bytes.lower()
+    if b'<svg' in lowered:
+        return 'svg'
+    return None
 
 
 def validate_lincoln_nz_coordinates(latitude, longitude):

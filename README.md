@@ -54,6 +54,16 @@ Built as part of **COMP639 Group Project 1, Semester 1, 2026** by Team Huhu at L
 - Manage lookup data — species, trap statuses, bait types
 - Retire lines and traps
 
+**Group Coordinator + Super Admin** (theme management)
+- Browse a gallery of pre-made themes, apply one in a click, or customise from scratch
+- Save customised themes by name and re-apply them later from the gallery's **Saved themes** section
+- View a 10-deep auto-snapshot history; pin a snapshot to keep it past the cap; restore any past snapshot
+- Export the current theme as JSON for off-platform archive; re-import to apply
+- Upload a group cover photo and profile photo (JPG / PNG / WEBP / SVG); ungenerated slots fall back to a branded gradient with the group's initials
+- Super Admin can manage either the platform default theme or any group's theme via the target picker
+
+See [Custom Themes Epic](#custom-themes-epic) below for the architecture deep-dive.
+
 ---
 
 ## Test Accounts
@@ -187,6 +197,134 @@ All team members utilised Generative AI tools (including ChatGPT, Claude, and Ge
 - CSS component design and `custom.css` structure
 
 While GenAI served as a valuable development accelerator for everyone, the team mostly independently managed core application architecture, database schema design, UI/UX decisions, and final code reviews to ensure the project met all requirements.
+
+---
+
+## Custom Themes Epic
+
+The Custom Themes epic lets a Group Coordinator brand their group's pages — colours, fonts, button style, navigation layout — and lets a Super Admin do the same for the platform default that every un-themed group inherits. The whole epic flows through one set of theme tables, one editor, and one gallery — everything else is layered on top.
+
+### Architecture at a glance
+
+```
+                     ┌──────────────────────────────────────────┐
+                     │  inject_theme_identity (context proc)    │
+                     │  reads session['group_id'] each request  │
+                     └────────────────┬─────────────────────────┘
+                                      │
+              ┌───────────────────────┴───────────────────────┐
+              │                                               │
+   group_themes (per-group overrides)            platform_theme (singleton fallback)
+              │                                               │
+              └────────────────┬──────────────────────────────┘
+                               │
+                  base.html emits a <style> block with
+                  --theme-primary / --theme-secondary /
+                  --theme-background / --theme-button-radius
+                  + Google Fonts <link>s
+                               │
+                  custom.css derives --pf-* shades from --theme-primary
+                  via color-mix() so the in-app chrome flips too
+```
+
+### Database tables
+
+| Table | Purpose |
+|---|---|
+| `theme_presets` | Library of seed themes shown in the gallery (Default Tiaki, Forest, Coastal, Tussock, Pōhutukawa). |
+| `platform_theme` | Singleton (`CHECK (id = 1)`) — the fallback every un-themed group inherits. Default Tiaki preset row mirrors this on every write. |
+| `group_themes` | Per-group override row (PK = `group_id`). Falls back to `platform_theme` when absent. |
+| `theme_history` | Pre-overwrite snapshots. Auto-snapshots cap at 10 per group; pinned rows (named, `is_pinned = TRUE`) are exempt and persist indefinitely as **Saved themes**. |
+| `groups.cover_photo` / `groups.profile_photo` | Per-group identity uploads, relative to `/static/`. NULL falls back to the generated SVG default. |
+
+### Theme columns (shared shape)
+
+`theme_presets`, `platform_theme`, `group_themes`, and `theme_history` all carry the same eight themable columns plus tracking:
+
+| Column | Type / values |
+|---|---|
+| `primary_color`, `secondary_color`, `background_color` | `VARCHAR(7)` hex with `^#[0-9A-Fa-f]{6}$` CHECK |
+| `button_style` | ENUM `button_style_type` — `'rounded'` or `'square'` |
+| `font_heading`, `font_body` | `VARCHAR(80)` from `themes.FONT_HEADING_WHITELIST` / `FONT_BODY_WHITELIST` |
+| `nav_position` | ENUM `nav_position_type` — `'sidebar'` or `'topbar'` |
+| `content_width` | ENUM `content_width_type` — `'wrap'` or `'full'` |
+| `based_on_preset` | FK → `theme_presets(preset_id)`, preserved across customisations as the lineage marker |
+
+### Routes
+
+| Method · Path | Purpose |
+|---|---|
+| `GET /coordinator/themes` | Theme gallery — Featured active card, **Saved themes** section, preset grid (with Start-from-scratch tile leading) |
+| `GET /coordinator/themes/<id>` | Single-preset preview page |
+| `POST /coordinator/themes/<id>/apply` | Apply a preset to the active target (atomic snapshot → UPSERT → cap) |
+| `POST /coordinator/themes/saved/<history_id>/apply` | Apply a pinned saved theme to the active group target |
+| `GET /coordinator/themes/customise` | Editor — `?from_preset=<id>` to inherit, `?blank=1` for the blank canvas |
+| `POST /coordinator/themes/customise` | Save the customised theme; optional `save_name` also pins it to Saved themes |
+| `GET /coordinator/themes/history` | Saved themes (pinned) + Recent customisations (auto-snapshots) |
+| `POST /coordinator/themes/history/save-as` | Pin the current theme with a name |
+| `POST /coordinator/themes/history/<id>/restore` | Re-apply a snapshot (snapshots the current state first → reversible) |
+| `POST /coordinator/themes/history/<id>/delete` | Delete a pinned snapshot |
+| `GET /coordinator/themes/export` | Download the current theme as JSON (`tiaki_theme_format: 1`) |
+| `POST /coordinator/themes/import` | Re-apply a previously exported JSON |
+| `GET /coordinator/themes/select-target` | Super Admin picker — Platform default + every active group |
+| `POST /coordinator/themes/select-target` | Stash the chosen target in `session['theme_target_*']` |
+| `GET /coordinator/group/identity` | Cover + profile upload page |
+| `POST /coordinator/group/identity/{cover,profile}` | Upload (JPG / PNG / WEBP / SVG, max 2 MB, magic-byte sniffed, SVGs script-stripped) |
+| `POST /coordinator/group/identity/{cover,profile}/remove` | Remove the uploaded slot → fall back to the generated default |
+| `GET /identity/default/group/<id>/{cover,profile}.svg` | On-the-fly branded SVG default (primary→secondary gradient with group initials) |
+| `GET /identity/default/platform/{cover,profile}.svg` | Platform SVG defaults (initial "T") |
+
+### Super Admin admin path
+
+Super Admins have no group membership, so their session has no `group_id`. The theme target picker page lists every active group plus a "Platform default" tile; clicking one stashes `session['theme_target_type']` / `session['theme_target_group_id']` / `session['theme_target_name']`. The keys are intentionally **separate** from `session['group_id']` — managing Group X's hot-pink theme doesn't flip the Super Admin's own admin dashboard into hot-pink.
+
+Every theme route opens with `themes.resolve_theme_target(session)` which returns the right target for both Coordinators (their session group) and Super Admins (the picked target), or `None` → redirect to the picker. Reads and writes dispatch through `themes.get_target_theme` / `apply_preset_to_target` / `save_custom_target_theme` so the platform-vs-group branch stays out of the handlers.
+
+### Default Tiaki preset ⇄ platform_theme sync
+
+The "Default Tiaki" preset row (`theme_presets.preset_id = 1`) is treated as the **visible identity** of the platform default. Writes via `apply_preset_to_platform` or `save_custom_platform_theme` mirror their eight themable columns into the preset row inside the same transaction, so the gallery's Default Tiaki tile always reflects the live platform look.
+
+Other presets stay immutable seeds. The Reset button in the editor reads from `themes.get_reset_baseline_for_preset(preset_id)` which falls back to the hardcoded `PLATFORM_DEFAULT_THEME` constant for Default Tiaki — so "Reset to Default Tiaki" always means the **original** Tiaki styling, regardless of how the preset row has drifted.
+
+### Generated default cover + logo SVGs
+
+A group with no uploaded cover/profile still has a branded default: a small SVG rendered on the fly from the group's name and theme colours.
+
+- **Profile**: solid circle in the theme's `primary_color`, 1–3 letter initials in white, 400×400. Initials derive from the group name ("Predator Free Lincoln University" → "PFL").
+- **Cover**: `primary_color` → `secondary_color` linear gradient with a white disc at centre carrying the same initials in primary, 1200×400.
+- **Platform fallback**: initial "T".
+
+The identity helpers in `themes.py` (`get_active_identity` / `get_platform_identity` / `get_group_identity`) return `<img src>`-ready URLs — `/static/...` for uploads, `/identity/default/...` for the generated route — so templates render `<img src="{{ group_identity.cover_photo }}">` directly without any `url_for('static', ...)` wrapping.
+
+### Customise history + Save-as-Preset
+
+Every preset apply and every customise save writes a snapshot of the **previous** state into `theme_history`. Two row classes share the table:
+
+- **Auto-snapshots** (`name IS NULL`, `is_pinned = FALSE`) — capped at the 10 most recent per group. Acts as a safety net for accidental overwrites.
+- **Saved themes** (`name` set, `is_pinned = TRUE`) — exempt from the cap, surface as their own gallery section, and can be re-applied with one click.
+
+A coordinator pins a snapshot by typing a name in the editor's optional "Save as…" field on a normal save, or via the "Save current as…" form at the top of the history page. Restoring a pinned row goes through the same atomic snapshot → UPSERT → cap flow as a customise, so the restore is itself reversible.
+
+### Files
+
+| File | Role |
+|---|---|
+| `app/themes.py` | All theme helpers: read, validation, write helpers (group + platform), target resolver, dispatch helpers, history. |
+| `app/coordinator.py` | Theme routes (gallery, preview, apply, customise, history, export/import, identity, picker). |
+| `app/identity_defaults.py` | Four SVG-generating routes for default covers and profiles. |
+| `app/templates/coordinator/themes.html` | Gallery: Featured / Saved themes / Other themes (with Start-from-scratch tile). |
+| `app/templates/coordinator/theme_edit.html` | Customise editor with optional Save-as name input + live preview. |
+| `app/templates/coordinator/theme_history.html` | Saved themes + Recent customisations lists. |
+| `app/templates/coordinator/theme_select_target.html` | Super Admin target picker. |
+| `app/templates/coordinator/group_identity.html` | Cover + profile upload UI. |
+| `app/templates/partials/_theme_tile_preview.html` | Reusable theme thumbnail macro (used by gallery, history, picker). |
+| `app/templates/partials/_theme_target_switcher.html` | "Managing themes for: NAME ▾" pill rendered on every theme page (Super Admin only). |
+| `static/css/custom.css` | All `.theme-*`, `.theme-tile-*`, `.theme-history-*`, `.theme-target-*` styles + derived `--pf-*` ramp. |
+| `static/js/theme-preview.js` | Live-preview JS: sets `--theme-*` on `<html>` + flips body layout classes when a Preview button is clicked. |
+| `sql/themes_create.sql` | DDL for the four theme tables + ENUMs + indexes. |
+| `sql/themes_populate.sql` | Seeds platform_theme + the 5 presets. |
+| `sql/themes_font_split.sql` | Migration: `font_family` → `font_heading` + `font_body`. |
+| `sql/themes_history_save_as.sql` | Migration: `theme_history.name` + `is_pinned` columns. |
 
 ---
 
