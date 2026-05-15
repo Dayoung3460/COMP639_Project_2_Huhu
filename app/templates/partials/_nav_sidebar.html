@@ -169,10 +169,16 @@
          class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_theme_customise', 'coordinator_theme_customise_save') }}">
         <i class="bi bi-sliders" aria-hidden="true"></i> <span class="link-text">Customise</span>
       </a>
-      <a href="{{ url_for('coordinator_theme_history') }}"
-         class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_theme_history', 'coordinator_theme_history_save_as', 'coordinator_theme_history_restore', 'coordinator_theme_history_delete') }}">
-        <i class="bi bi-clock-history" aria-hidden="true"></i> <span class="link-text">History</span>
-      </a>
+      {# History is group-only (theme_history.group_id is NOT NULL).
+         For Super Admins managing the Platform default the link
+         would always redirect with a flash, so hide it. #}
+      {% if not (session.get('group_role') == 'Super Admin'
+                 and session.get('theme_target_type') == 'platform') %}
+        <a href="{{ url_for('coordinator_theme_history') }}"
+           class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_theme_history', 'coordinator_theme_history_save_as', 'coordinator_theme_history_restore', 'coordinator_theme_history_delete') }}">
+          <i class="bi bi-clock-history" aria-hidden="true"></i> <span class="link-text">History</span>
+        </a>
+      {% endif %}
       <a href="{{ url_for('coordinator_group_identity') }}"
          class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_group_identity' }}">
         <i class="bi bi-image" aria-hidden="true"></i> <span class="link-text">Group identity</span>

@@ -34,7 +34,7 @@
           <span class="footer-brand__mark" aria-hidden="true">
             {% if session.get('group_id') %}
               {% set _footer_profile = (group_identity and group_identity.profile_photo) or platform_identity.profile_photo %}
-              <img src="{{ url_for('static', filename=_footer_profile) }}"
+              <img src="{{ _footer_profile }}"
                    alt=""
                    class="footer-brand__mark-img">
             {% else %}

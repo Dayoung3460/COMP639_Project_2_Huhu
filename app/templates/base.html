@@ -92,7 +92,7 @@
     <a class="brand brand--group" href="{{ nav_dashboard_url }}"
        aria-label="{{ session.get('group_name') }} — go to dashboard">
       <img class="brand-group-avatar"
-           src="{{ url_for('static', filename=_brand_profile) }}"
+           src="{{ _brand_profile }}"
            alt="">
       <span class="brand-group-name">{{ session.get('group_name') }}</span>
     </a>
@@ -234,7 +234,7 @@
         <section class="hero"
                  aria-label="{{ session.get('group_name') }} hero">
           <img class="hero__img"
-               src="{{ url_for('static', filename=_cover) }}"
+               src="{{ _cover }}"
                alt="">
           <div class="wrap hero__inner">
             <span class="hero__eyebrow">Conservation Group</span>

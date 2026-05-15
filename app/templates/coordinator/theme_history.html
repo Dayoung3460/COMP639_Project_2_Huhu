@@ -5,12 +5,12 @@
 
      • Saved themes (is_pinned = TRUE, name set)
          Coordinator-archived snapshots. Created via the "Save current
-         as…" form at the top of the page. Exempt from the 7-row cap.
+         as…" form at the top of the page. Exempt from the auto-snapshot cap.
          Each row exposes Restore + Delete.
 
      • Recent customisations (is_pinned = FALSE, name IS NULL)
          Auto-snapshots written by apply_preset / save_custom_theme
-         before any overwrite. Capped at the most recent 7. Each row
+         before any overwrite. Capped at the most recent N. Each row
          exposes Restore only (delete is left to the cap so a freshly
          deleted auto-snapshot can't desync the user's mental model).
 
@@ -48,9 +48,10 @@
       <h1 class="page-title mb-1">Customise history</h1>
       <p class="text-muted mb-0">
         Snapshot a look you want to keep, or roll back to a previous
-        customisation. The seven most recent automatic snapshots are
-        kept; saved themes are kept indefinitely.
+        customisation. The {{ history_cap }} most recent automatic snapshots
+        are kept; saved themes are kept indefinitely.
       </p>
+      {% include 'partials/_theme_target_switcher.html' %}
     </div>
     <div class="theme-gallery-header__actions">
       <a href="{{ url_for('coordinator_themes') }}"
@@ -68,7 +69,7 @@
     </h2>
     <p class="text-muted mb-2">
       Name this version so you can come back to it next month. Saved
-      themes don't count against the seven-snapshot cap.
+      themes don't count against the {{ history_cap }}-snapshot cap.
     </p>
     <form method="POST"
           action="{{ url_for('coordinator_theme_history_save_as') }}"
@@ -122,7 +123,7 @@
     </h2>
     <p class="text-muted mb-2">
       Captured automatically each time you apply a preset or save a
-      customisation. Only the seven most recent are kept.
+      customisation. Only the {{ history_cap }} most recent are kept.
     </p>
 
     {% if recent %}

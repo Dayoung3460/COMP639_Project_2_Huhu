@@ -136,6 +136,7 @@ from app import reports
 from app import general
 from app import my_tiaki
 from app import themes
+from app import identity_defaults  # noqa: F401 — registers /identity/default/* routes
 
 # ── Template globals ──────────────────────────────────────────────────────────
 
@@ -254,10 +255,13 @@ def inject_theme_identity():
         group_theme       = themes.get_group_theme(group_id)
         group_identity    = themes.get_group_identity(group_id)
     except Exception:
-        platform_theme    = dict(themes.PLATFORM_DEFAULT_THEME)
+        platform_theme = dict(themes.PLATFORM_DEFAULT_THEME)
+        # Generated SVG routes don't need the DB to mint a URL — they
+        # only hit the DB when actually fetched. So even when the theme
+        # query failed we can still hand templates a working <img src>.
         platform_identity = {
-            'cover_photo':   themes.DEFAULT_COVER_PHOTO,
-            'profile_photo': themes.DEFAULT_PROFILE_PHOTO,
+            'cover_photo':   url_for('identity_default_platform_cover'),
+            'profile_photo': url_for('identity_default_platform_profile'),
         }
         group_theme    = None
         group_identity = None

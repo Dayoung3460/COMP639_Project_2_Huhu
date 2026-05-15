@@ -32,12 +32,16 @@ the returned string with `url_for('static', filename=…)`.
 
 import re
 
+from flask import url_for
+
 from app import db
 
 
-# Hardcoded fallbacks when both the per-group row and platform_settings
-# leave a column NULL. Paths are relative to /static/ to stay consistent
-# with the DB convention.
+# Legacy static placeholders. Kept for the DB-unreachable exception
+# path where `url_for` can still fail (e.g. ServerSelectionTimeoutError
+# before app context). Live identity rendering uses the generated SVG
+# routes registered by app/identity_defaults.py — see
+# `_default_cover_url` / `_default_profile_url` below.
 DEFAULT_COVER_PHOTO   = 'images/default-cover.jpg'
 DEFAULT_PROFILE_PHOTO = 'images/default-profile.png'
 
@@ -83,7 +87,29 @@ FONT_BODY_WHITELIST = (
     'DM Sans',
 )
 
+# Neutral starting values for the editor's "Start from scratch" path
+# (?blank=1). Deliberately understated: black-on-white with the first
+# whitelisted body font, square buttons, sidebar+wrap layout. The point
+# is "no inheritance from the active theme" — the coordinator sees a
+# clean palette and types in colours from there.
+BLANK_CANVAS_DEFAULTS = {
+    'primary_color':    '#1f1f1f',
+    'secondary_color':  '#666666',
+    'background_color': '#ffffff',
+    'button_style':     'rounded',
+    'font_family':      'IBM Plex Sans',
+    'nav_position':     'sidebar',
+    'content_width':    'wrap',
+}
+
 _HEX_RE = re.compile(r'^#[0-9A-Fa-f]{6}$')
+
+# Auto-snapshot cap. apply_preset / save_custom_theme / restore_from_history
+# each end with a DELETE … WHERE NOT is_pinned … OFFSET HISTORY_CAP, so the
+# table holds at most this many auto-snapshots per group. Pinned rows
+# (is_pinned = TRUE, written by save_current_as_pinned) are exempt — they
+# never count toward the cap and are never trimmed.
+HISTORY_CAP = 10
 
 _THEME_COLUMNS = (
     'primary_color, secondary_color, background_color, '
@@ -130,14 +156,41 @@ def get_active_theme(group_id=None):
     return _shape_theme(row) if row else dict(PLATFORM_DEFAULT_THEME)
 
 
+def _default_cover_url(group_id=None):
+    """URL for the generated default cover SVG. Group-scoped when
+    `group_id` is supplied; platform fallback otherwise."""
+    if group_id:
+        return url_for('identity_default_group_cover', group_id=group_id)
+    return url_for('identity_default_platform_cover')
+
+
+def _default_profile_url(group_id=None):
+    """URL for the generated default profile SVG. Group-scoped when
+    `group_id` is supplied; platform fallback otherwise."""
+    if group_id:
+        return url_for('identity_default_group_profile', group_id=group_id)
+    return url_for('identity_default_platform_profile')
+
+
+def _static_url(rel_path):
+    """url_for('static', filename=rel_path) — wrapped so callers stay
+    out of url_for ergonomics. Returns None if rel_path is falsy."""
+    return url_for('static', filename=rel_path) if rel_path else None
+
+
 def get_active_identity(group_id=None):
-    """Return {cover_photo, profile_photo} as paths relative to /static/.
+    """Return {cover_photo, profile_photo} as `<img src>`-ready URLs.
 
     Each column resolves independently — a group can override just the
     cover and inherit the platform default profile photo, or vice versa.
 
-    Fallback chain per column: groups → platform_settings → hardcoded
-    DEFAULT_* constants.
+    Fallback chain per column:
+      1. groups.<col> (uploaded asset)             → /static/uploads/...
+      2. platform_settings.<col> (platform upload) → /static/...
+      3. Generated SVG default                     → /identity/default/...
+
+    Generated SVGs render in the group's theme colours and carry the
+    group's initials, so even un-uploaded groups have a branded look.
     """
     cover, profile = None, None
 
@@ -162,8 +215,8 @@ def get_active_identity(group_id=None):
             profile = profile or ps['profile_photo']
 
     return {
-        'cover_photo':   cover   or DEFAULT_COVER_PHOTO,
-        'profile_photo': profile or DEFAULT_PROFILE_PHOTO,
+        'cover_photo':   _static_url(cover)   or _default_cover_url(group_id),
+        'profile_photo': _static_url(profile) or _default_profile_url(group_id),
     }
 
 
@@ -192,8 +245,11 @@ def get_platform_theme():
 
 
 def get_platform_identity():
-    """Return {cover_photo, profile_photo} from platform_settings,
-    with hardcoded defaults filling any NULL. Never None."""
+    """Return {cover_photo, profile_photo} as `<img src>`-ready URLs.
+
+    Source order: platform_settings upload → generated platform SVG.
+    Never None — generated SVG always wins when no upload exists.
+    """
     cover, profile = None, None
     try:
         with db.get_cursor() as cursor:
@@ -205,10 +261,10 @@ def get_platform_identity():
         if row:
             cover, profile = row['cover_photo'], row['profile_photo']
     except Exception:
-        pass  # fall through to constant defaults
+        pass  # fall through to generated SVGs
     return {
-        'cover_photo':   cover   or DEFAULT_COVER_PHOTO,
-        'profile_photo': profile or DEFAULT_PROFILE_PHOTO,
+        'cover_photo':   _static_url(cover)   or _default_cover_url(),
+        'profile_photo': _static_url(profile) or _default_profile_url(),
     }
 
 
@@ -229,10 +285,15 @@ def get_group_theme(group_id):
 
 
 def get_group_identity(group_id):
-    """Return {cover_photo, profile_photo} read directly from the groups
-    row, or None if group_id is falsy or the group doesn't exist. Values
-    can themselves be None — the consuming template handles per-field
-    fallback against platform_identity."""
+    """Return {cover_photo, profile_photo} as `<img src>`-ready URLs
+    for a specific group, or None if group_id is falsy or the group
+    doesn't exist.
+
+    Each column resolves independently: a group can upload just its
+    cover and still get a generated profile SVG with its initials.
+    The consuming template no longer needs to OR-fall-back to
+    platform_identity — the generated SVG is the per-group default.
+    """
     if not group_id:
         return None
     with db.get_cursor() as cursor:
@@ -240,7 +301,13 @@ def get_group_identity(group_id):
             'SELECT cover_photo, profile_photo FROM groups WHERE group_id = %s',
             (group_id,)
         )
-        return cursor.fetchone()
+        row = cursor.fetchone()
+    if not row:
+        return None
+    return {
+        'cover_photo':   _static_url(row['cover_photo'])   or _default_cover_url(group_id),
+        'profile_photo': _static_url(row['profile_photo']) or _default_profile_url(group_id),
+    }
 
 
 # ── Theme presets (P2-41 Browse pre-made theme gallery) ─────────────────────
@@ -285,6 +352,27 @@ def get_preset(preset_id):
         return cursor.fetchone()
 
 
+def get_reset_baseline_for_preset(preset_id):
+    """Return the canonical "Reset to <preset>" baseline for the editor.
+
+    For Default Tiaki (preset_id = 1) the DB row drifts whenever a
+    Super Admin customises the platform default — we sync the preset
+    row to keep the gallery tile honest. So reading get_preset(1) after
+    a customisation returns the customised values, which would defeat
+    the Reset button entirely. Return the hardcoded
+    PLATFORM_DEFAULT_THEME constant instead so "Reset to Default Tiaki"
+    always means original Tiaki styling, regardless of platform state.
+
+    For any other preset the DB row is the source of truth (those rows
+    are immutable seed themes — nothing in the app mutates them).
+    """
+    if preset_id == _DEFAULT_TIAKI_PRESET_ID:
+        # The constant has the same eight themable columns the template
+        # data-reset-* attrs read, so it's a drop-in for a preset row.
+        return dict(PLATFORM_DEFAULT_THEME)
+    return get_preset(preset_id)
+
+
 def get_group_based_on_preset(group_id):
     """Return the group's `based_on_preset` value (int or None).
 
@@ -306,6 +394,22 @@ def get_group_based_on_preset(group_id):
     return row['based_on_preset'] if row else None
 
 
+def get_platform_based_on_preset():
+    """Return platform_theme.based_on_preset (int or None).
+
+    Same lineage marker as get_group_based_on_preset, but for the
+    singleton platform_theme row. Used by the gallery when the
+    Super Admin's active target is the platform default, so the
+    "Active" badge still surfaces if the platform is on a preset.
+    """
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT based_on_preset FROM platform_theme WHERE id = 1'
+        )
+        row = cursor.fetchone()
+    return row['based_on_preset'] if row else None
+
+
 def find_matching_preset(current_theme, presets):
     """Return the preset_id whose six themable columns exactly match
     `current_theme`, or None if the group is on a custom theme.
@@ -318,6 +422,139 @@ def find_matching_preset(current_theme, presets):
         if all(p[k] == current_theme.get(k) for k in _THEME_MATCH_KEYS):
             return p['preset_id']
     return None
+
+
+# ── Theme target resolution (Super Admin admin path) ────────────────────────
+# Coordinators always operate on their own group — session['group_id'] is set
+# at login and the theme routes have always read it directly. Super Admins
+# without a group membership land on /admin/dashboard with no group_id in
+# session, so the theme routes couldn't run for them at all.
+#
+# resolve_theme_target() bridges that: Coordinators see the same group they
+# always did; Super Admins read three dedicated session keys
+# (theme_target_type / theme_target_group_id / theme_target_name) that the
+# picker page sets. The keys are deliberately separate from session['group_id']
+# so a Super Admin managing Group X's brand doesn't see their own dashboard
+# flip into that brand — the inject_theme_identity context processor still
+# reads group_id, not these target keys.
+
+
+def resolve_theme_target(session):
+    """Return the theme target the current request should operate on.
+
+    Shape:
+      {'type': 'group',    'group_id': <int>, 'name': <str>}
+      {'type': 'platform', 'group_id': None,  'name': 'Platform default'}
+      None — Super Admin hasn't picked yet; caller redirects to picker.
+
+    For a Coordinator (or any non–Super Admin role allowed by the route
+    gate) the answer is always the group from session — same data the
+    routes have always used, new wrapper shape. For a Super Admin the
+    answer comes from the dedicated theme_target_* session keys.
+    """
+    if session.get('group_role') == 'Super Admin':
+        t = session.get('theme_target_type')
+        if t == 'platform':
+            return {'type': 'platform', 'group_id': None,
+                    'name': 'Platform default'}
+        if t == 'group' and session.get('theme_target_group_id'):
+            return {'type': 'group',
+                    'group_id': session['theme_target_group_id'],
+                    'name': (session.get('theme_target_name')
+                             or f"Group #{session['theme_target_group_id']}")}
+        return None
+
+    if session.get('group_id'):
+        return {'type': 'group',
+                'group_id': session['group_id'],
+                'name': session.get('group_name')}
+    return None
+
+
+def list_active_groups():
+    """Every active group (group_id + name), ordered by name.
+
+    Used by the Super Admin picker and the header switcher. Trimmed
+    version of admin.py's admin_groups() query — no member counts or
+    coordinator aggregation, since the picker just needs a clickable
+    list.
+    """
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT group_id, name FROM groups '
+            'WHERE is_active = TRUE ORDER BY name ASC'
+        )
+        return cursor.fetchall()
+
+
+def is_active_group(group_id):
+    """Return True if group_id exists and is_active. Used by the picker
+    setter to reject pointing the target at a deleted/inactive group."""
+    if not group_id:
+        return False
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT name FROM groups WHERE group_id = %s AND is_active = TRUE',
+            (group_id,)
+        )
+        return cursor.fetchone() is not None
+
+
+def get_group_name(group_id):
+    """Return the group's name, or None if not found. Used by the
+    picker setter to cache the display label in session."""
+    if not group_id:
+        return None
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT name FROM groups WHERE group_id = %s',
+            (group_id,)
+        )
+        row = cursor.fetchone()
+    return row['name'] if row else None
+
+
+# ── Target dispatch helpers ─────────────────────────────────────────────────
+# Routes call these instead of branching on target['type'] themselves. Keeps
+# the group/platform fork in one place; routes read like the original
+# group-only flow with `target` substituted for `group_id`. apply_preset and
+# save_custom_theme stay untouched so existing call sites keep working.
+
+
+def get_target_theme(target):
+    """Effective theme for a target dict. Mirrors get_active_theme but
+    routes platform targets to platform_theme directly."""
+    if target['type'] == 'platform':
+        return get_platform_theme()
+    return get_active_theme(target['group_id'])
+
+
+def get_target_based_on_preset(target):
+    """Lineage marker for a target dict — either group_themes or
+    platform_theme depending on type."""
+    if target['type'] == 'platform':
+        return get_platform_based_on_preset()
+    return get_group_based_on_preset(target['group_id'])
+
+
+def apply_preset_to_target(target, preset_id, user_id):
+    """Apply a preset to whatever the target points at. Returns the
+    preset's name on success. Raises PresetNotFound if preset_id is
+    unknown. Wraps the existing apply_preset / apply_preset_to_platform
+    pair so route handlers stay branchless."""
+    if target['type'] == 'platform':
+        return apply_preset_to_platform(preset_id, user_id)
+    return apply_preset(target['group_id'], preset_id, user_id)
+
+
+def save_custom_target_theme(target, theme_values, based_on_preset, user_id):
+    """Save a customised theme to whatever the target points at.
+    Wraps save_custom_theme / save_custom_platform_theme so route
+    handlers stay branchless. Raises ValidationError on bad input."""
+    if target['type'] == 'platform':
+        return save_custom_platform_theme(theme_values, based_on_preset, user_id)
+    return save_custom_theme(target['group_id'], theme_values,
+                              based_on_preset, user_id)
 
 
 # ── Apply a preset (P2-42) ──────────────────────────────────────────────────
@@ -439,19 +676,124 @@ def apply_preset(group_id, preset_id, user_id):
                  preset_id, user_id)
             )
 
-            # Step d — cap auto-snapshots at 7 per group. Pinned rows
-            # (is_pinned = TRUE, written by save_current_as_pinned) are
-            # exempt: both the count and the deletion target only
-            # NOT is_pinned rows. OFFSET handles "no-op when ≤ 7" and
-            # "delete the surplus when > 7" in one statement.
+            # Step d — cap auto-snapshots at HISTORY_CAP per group.
+            # Pinned rows (is_pinned = TRUE, written by
+            # save_current_as_pinned) are exempt: both the count and the
+            # deletion target only NOT is_pinned rows. OFFSET handles
+            # "no-op when ≤ HISTORY_CAP" and "delete the surplus" in
+            # one statement.
             cursor.execute(
                 'DELETE FROM theme_history WHERE history_id IN ('
                 '  SELECT history_id FROM theme_history '
                 '  WHERE group_id = %s AND NOT is_pinned '
                 '  ORDER BY saved_at DESC, history_id DESC '
-                '  OFFSET 7'
+                f'  OFFSET {HISTORY_CAP}'
                 ')',
                 (group_id,)
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.autocommit = prev_autocommit
+
+    return preset['name']
+
+
+# The "Default Tiaki" preset row is treated as the visible identity of
+# the platform default theme — its column values are kept in sync with
+# platform_theme so the gallery's Default Tiaki tile always reflects
+# what the platform currently looks like. Other presets (Forest /
+# Coastal / Tussock / Pōhutukawa) stay immutable seed themes.
+_DEFAULT_TIAKI_PRESET_ID = 1
+
+
+def _sync_default_tiaki_preset(cursor, primary, secondary, background,
+                               button_style, font_heading, font_body,
+                               nav_position, content_width):
+    """Mirror the eight themable columns into the Default Tiaki preset row.
+
+    Called from inside the same transaction as a platform_theme write so
+    the two stay consistent. `name`, `description`, `preview_image`,
+    `display_order` are intentionally NOT touched — only the visual
+    columns. If preset_id 1 has been deleted, this UPDATE is a no-op
+    (rowcount 0) and the platform write still succeeds.
+    """
+    cursor.execute(
+        'UPDATE theme_presets SET '
+        '  primary_color    = %s, '
+        '  secondary_color  = %s, '
+        '  background_color = %s, '
+        '  button_style     = %s, '
+        '  font_heading     = %s, '
+        '  font_body        = %s, '
+        '  nav_position     = %s, '
+        '  content_width    = %s '
+        'WHERE preset_id = %s',
+        (primary, secondary, background, button_style,
+         font_heading, font_body, nav_position, content_width,
+         _DEFAULT_TIAKI_PRESET_ID)
+    )
+
+
+def apply_preset_to_platform(preset_id, user_id):
+    """Apply a preset to the singleton platform_theme. Returns its name.
+
+    Sibling of apply_preset for the Super Admin "Platform default"
+    target. Same UPSERT shape, but writes to platform_theme (id = 1)
+    instead of group_themes, and skips the theme_history snapshot
+    + cap — platform history is deferred (platform_theme is low-churn;
+    theme_history.group_id is NOT NULL so a platform snapshot would
+    need a schema change). `based_on_preset` lineage is preserved
+    exactly like in the group path.
+
+    The Default Tiaki preset row is also kept in sync — the gallery's
+    Default Tiaki tile is treated as the visible identity of the
+    platform default. Wrapped in a transaction so the two writes
+    commit together.
+    """
+    preset = get_preset(preset_id)
+    if not preset:
+        raise PresetNotFound(preset_id)
+
+    conn = db.get_db()
+    prev_autocommit = conn.autocommit
+    conn.autocommit = False
+    try:
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO platform_theme '
+                '(id, primary_color, secondary_color, '
+                ' background_color, button_style, font_heading, font_body, '
+                ' nav_position, content_width, '
+                ' based_on_preset, updated_at, updated_by) '
+                'VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s) '
+                'ON CONFLICT (id) DO UPDATE SET '
+                '  primary_color    = EXCLUDED.primary_color, '
+                '  secondary_color  = EXCLUDED.secondary_color, '
+                '  background_color = EXCLUDED.background_color, '
+                '  button_style     = EXCLUDED.button_style, '
+                '  font_heading     = EXCLUDED.font_heading, '
+                '  font_body        = EXCLUDED.font_body, '
+                '  nav_position     = EXCLUDED.nav_position, '
+                '  content_width    = EXCLUDED.content_width, '
+                '  based_on_preset  = EXCLUDED.based_on_preset, '
+                '  updated_at       = EXCLUDED.updated_at, '
+                '  updated_by       = EXCLUDED.updated_by',
+                (preset['primary_color'], preset['secondary_color'],
+                 preset['background_color'], preset['button_style'],
+                 preset['font_heading'], preset['font_body'],
+                 preset['nav_position'], preset['content_width'],
+                 preset_id, user_id)
+            )
+
+            _sync_default_tiaki_preset(
+                cursor,
+                preset['primary_color'], preset['secondary_color'],
+                preset['background_color'], preset['button_style'],
+                preset['font_heading'], preset['font_body'],
+                preset['nav_position'], preset['content_width'],
             )
         conn.commit()
     except Exception:
@@ -639,16 +981,84 @@ def save_custom_theme(group_id, theme_values, based_on_preset, user_id):
                  based_on_preset, user_id)
             )
 
-            # Step d — cap auto-snapshots at 7 per group. See note in
-            # apply_preset; pinned rows are exempt.
+            # Step d — cap auto-snapshots at HISTORY_CAP per group.
+            # See note in apply_preset; pinned rows are exempt.
             cursor.execute(
                 'DELETE FROM theme_history WHERE history_id IN ('
                 '  SELECT history_id FROM theme_history '
                 '  WHERE group_id = %s AND NOT is_pinned '
                 '  ORDER BY saved_at DESC, history_id DESC '
-                '  OFFSET 7'
+                f'  OFFSET {HISTORY_CAP}'
                 ')',
                 (group_id,)
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.autocommit = prev_autocommit
+
+
+def save_custom_platform_theme(theme_values, based_on_preset, user_id):
+    """Save a coordinator-customised theme to platform_theme (singleton).
+
+    Sibling of save_custom_theme for the Super Admin "Platform default"
+    target. Same validation pass + UPSERT shape, but writes to
+    platform_theme (id = 1) instead of group_themes, and skips the
+    history snapshot + cap — platform history is deferred (see
+    apply_preset_to_platform). `based_on_preset` lineage is preserved
+    exactly like in the group path.
+
+    Also mirrors the column values into the Default Tiaki preset row
+    (preset_id = 1) so the gallery's Default Tiaki tile stays in sync
+    with the live platform default. Wrapped in a transaction so both
+    writes commit together.
+    """
+    clean, errors = _validate_theme_values(theme_values)
+    if errors:
+        raise ValidationError(errors)
+
+    if based_on_preset is not None and not isinstance(based_on_preset, int):
+        raise ValidationError({'based_on_preset': 'Invalid preset reference.'})
+
+    conn = db.get_db()
+    prev_autocommit = conn.autocommit
+    conn.autocommit = False
+    try:
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO platform_theme '
+                '(id, primary_color, secondary_color, '
+                ' background_color, button_style, font_heading, font_body, '
+                ' nav_position, content_width, '
+                ' based_on_preset, updated_at, updated_by) '
+                'VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s) '
+                'ON CONFLICT (id) DO UPDATE SET '
+                '  primary_color    = EXCLUDED.primary_color, '
+                '  secondary_color  = EXCLUDED.secondary_color, '
+                '  background_color = EXCLUDED.background_color, '
+                '  button_style     = EXCLUDED.button_style, '
+                '  font_heading     = EXCLUDED.font_heading, '
+                '  font_body        = EXCLUDED.font_body, '
+                '  nav_position     = EXCLUDED.nav_position, '
+                '  content_width    = EXCLUDED.content_width, '
+                '  based_on_preset  = EXCLUDED.based_on_preset, '
+                '  updated_at       = EXCLUDED.updated_at, '
+                '  updated_by       = EXCLUDED.updated_by',
+                (clean['primary_color'], clean['secondary_color'],
+                 clean['background_color'], clean['button_style'],
+                 clean['font_heading'], clean['font_body'],
+                 clean['nav_position'], clean['content_width'],
+                 based_on_preset, user_id)
+            )
+
+            _sync_default_tiaki_preset(
+                cursor,
+                clean['primary_color'], clean['secondary_color'],
+                clean['background_color'], clean['button_style'],
+                clean['font_heading'], clean['font_body'],
+                clean['nav_position'], clean['content_width'],
             )
         conn.commit()
     except Exception:
@@ -662,9 +1072,10 @@ def save_custom_theme(group_id, theme_values, based_on_preset, user_id):
 # Surfaces the existing theme_history snapshots to coordinators via the
 # /coordinator/themes/history page. Auto-snapshots (name IS NULL,
 # is_pinned = FALSE) accumulate from apply_preset / save_custom_theme and
-# trim to the most recent 7 per group. Pinned rows (named, is_pinned = TRUE)
-# are written by save_current_as_pinned and never auto-trim — they're the
-# coordinator's archive of "monthly" customisations.
+# trim to the most recent HISTORY_CAP per group. Pinned rows (named,
+# is_pinned = TRUE) are written by save_current_as_pinned and never
+# auto-trim — they're the coordinator's archive of "monthly"
+# customisations.
 
 class HistoryNotFound(LookupError):
     """Raised when a history_id doesn't exist for the given group."""
@@ -721,7 +1132,7 @@ def save_current_as_pinned(group_id, user_id, name):
     here. The snapshot mirrors the auto-snapshot shape used by apply_preset
     / save_custom_theme — same column set, same based_on_preset preservation
     — but with `name` set and `is_pinned = TRUE`, exempting it from the
-    7-row cap. Returns the new history_id.
+    auto-snapshot cap. Returns the new history_id.
 
     If the group has no group_themes row yet, the snapshot uses the platform
     fallback so the coordinator can still pin "the look I have right now",
@@ -779,8 +1190,8 @@ def restore_from_history(group_id, history_id, user_id):
       c. UPSERT group_themes with the snapshot's values, preserving its
          based_on_preset lineage (so the gallery still flags the originating
          preset as "Active" after a restore).
-      d. Cap auto-snapshots at 7 per group; pinned rows (including the
-         source row, if it was pinned) are exempt.
+      d. Cap auto-snapshots at HISTORY_CAP per group; pinned rows
+         (including the source row, if it was pinned) are exempt.
 
     Raises HistoryNotFound if history_id doesn't exist for the group.
     """
@@ -854,13 +1265,13 @@ def restore_from_history(group_id, history_id, user_id):
                  snapshot['based_on_preset'], user_id)
             )
 
-            # Step d — cap auto-snapshots at 7 per group.
+            # Step d — cap auto-snapshots at HISTORY_CAP per group.
             cursor.execute(
                 'DELETE FROM theme_history WHERE history_id IN ('
                 '  SELECT history_id FROM theme_history '
                 '  WHERE group_id = %s AND NOT is_pinned '
                 '  ORDER BY saved_at DESC, history_id DESC '
-                '  OFFSET 7'
+                f'  OFFSET {HISTORY_CAP}'
                 ')',
                 (group_id,)
             )
@@ -889,3 +1300,80 @@ def delete_history_entry(group_id, history_id):
             (history_id, group_id)
         )
         return cursor.rowcount > 0
+
+
+def list_pinned_for_group(group_id):
+    """Pinned-only history rows for a group, newest first.
+
+    Used by the gallery to surface "Saved themes" as their own section.
+    Trims list_group_history's two-section output down to just the
+    named/archived snapshots so the gallery never mixes them with the
+    auto-rolling recent snapshots (those stay on the history page).
+    """
+    if not group_id:
+        return []
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            f'SELECT {_HISTORY_LIST_COLUMNS} FROM theme_history '
+            'WHERE group_id = %s AND is_pinned = TRUE '
+            'ORDER BY saved_at DESC, history_id DESC',
+            (group_id,)
+        )
+        return [_shape_theme(r) for r in cursor.fetchall()]
+
+
+def apply_saved_theme_to_target(target, history_id, user_id):
+    """Apply a pinned theme_history row's column values to the target.
+
+    Different shape from restore_from_history: restore re-applies a
+    snapshot inside its own group (and writes a fresh snapshot of the
+    pre-restore state). This helper is the gallery "Use this saved
+    theme" action — it writes the chosen pinned row's values to the
+    current target via save_custom_target_theme so the same atomic
+    snapshot+cap behaviour as a manual editor save applies.
+
+    The pinned row's `based_on_preset` lineage is preserved (so the
+    gallery's Active badge still surfaces on the originating preset).
+
+    Raises HistoryNotFound if the history_id isn't a pinned row of the
+    group it claims to belong to. Returns the row's `name` on success
+    so the route can flash it back.
+
+    Note: pinned rows are group-scoped (theme_history.group_id NOT NULL),
+    so this helper rejects platform targets — there's nothing to apply
+    from. The caller should gate at the route level for a clearer error.
+    """
+    if target['type'] == 'platform':
+        raise ValueError("Saved themes can't be applied to the platform "
+                         "default target (saved themes are group-scoped).")
+    if not history_id:
+        raise HistoryNotFound(history_id)
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            f'SELECT {_HISTORY_LIST_COLUMNS} FROM theme_history '
+            'WHERE history_id = %s AND is_pinned = TRUE',
+            (history_id,)
+        )
+        row = cursor.fetchone()
+    if not row:
+        raise HistoryNotFound(history_id)
+    snapshot = _shape_theme(row)
+
+    # save_custom_target_theme handles validation + group snapshot + cap
+    # for group targets. For the column shape it expects the same dict
+    # the editor POST produces; remap a couple of keys.
+    payload = {
+        'primary_color':    snapshot['primary_color'],
+        'secondary_color':  snapshot['secondary_color'],
+        'background_color': snapshot['background_color'],
+        'button_style':     snapshot['button_style'],
+        'font_heading':     snapshot['font_heading'],
+        'font_body':        snapshot['font_body'],
+        'nav_position':     snapshot['nav_position'],
+        'content_width':    snapshot['content_width'],
+    }
+    save_custom_target_theme(
+        target, payload, snapshot['based_on_preset'], user_id
+    )
+    return snapshot['name']

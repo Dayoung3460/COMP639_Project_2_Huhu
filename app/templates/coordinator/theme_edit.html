@@ -45,6 +45,8 @@
     <h2 class="theme-edit-subhead">
       {% if based_on_preset_name %}
         Customising from <strong>{{ based_on_preset_name }}</strong>
+      {% elif is_blank %}
+        <strong>Starting from scratch</strong> — blank canvas
       {% else %}
         Customising from scratch
       {% endif %}
@@ -53,6 +55,7 @@
       Pick colours, font, button style and layout. The preview updates
       live — nothing saves until you click <strong>Save changes</strong>.
     </p>
+    {% include 'partials/_theme_target_switcher.html' %}
   </header>
 
   <div class="theme-edit-grid">
@@ -224,13 +227,50 @@
         {% endif %}
       </fieldset>
 
+      {# ── Save as… (optional name) ───────────────────── #}
+      {# Group-only: theme_history.group_id is NOT NULL so the
+         "save as a pinned snapshot" side-effect doesn't run for
+         platform targets. The input is shown but the hint copy
+         explains why it won't pin. #}
+      <fieldset class="theme-edit-fieldset theme-edit-saveas">
+        <legend class="theme-edit-legend">
+          {% if is_blank %}
+            Name this theme
+          {% else %}
+            Save as <span class="theme-edit-optional">(optional)</span>
+          {% endif %}
+        </legend>
+        <p class="theme-edit-hint">
+          {% if is_blank %}
+            Give your new theme a name so you can re-apply it later
+            from the gallery's <strong>Saved themes</strong> section.
+          {% else %}
+            Add a name to pin this version as a saved theme alongside
+            the presets in the gallery. Leave blank to just update the
+            current theme.
+          {% endif %}
+          {% if target and target.type == 'platform' %}
+            <br><em class="text-muted">Saved themes are group-scoped, so
+            this name won't apply to the platform default.</em>
+          {% endif %}
+        </p>
+        <input id="save_name"
+               name="save_name"
+               type="text"
+               maxlength="80"
+               class="form-control"
+               placeholder="e.g. May newsletter, Conservation Week, Matariki"
+               {% if target and target.type == 'platform' %}disabled aria-disabled="true"{% endif %}>
+      </fieldset>
+
       {# ── Actions ────────────────────────────────────── #}
       <div class="theme-edit-actions">
         {{ pf_button('Save changes', variant='btn-pf', type='submit',
                      icon='bi-check2-circle') }}
         <button type="button" id="resetBtn" class="btn-pf-outline">
           <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-          Reset to {{ based_on_preset_name or 'saved theme' }}
+          Reset to
+          {% if is_blank %}blank canvas{% else %}{{ based_on_preset_name or 'saved theme' }}{% endif %}
         </button>
         <a href="{{ url_for('coordinator_themes') }}"
            class="theme-edit-cancel">Cancel</a>

@@ -56,14 +56,16 @@
       <span class="theme-gallery-eyebrow">Appearance</span>
       <h1 class="page-title mb-1">Themes</h1>
       <p class="text-muted mb-0">
-        Choose a pre-made theme for {{ nav_group_name or 'this group' }},
+        Choose a pre-made theme for
+        {{ target.name if target else (nav_group_name or 'this group') }},
         or jump to <a href="{{ url_for('coordinator_theme_customise') }}">Customise theme</a>
         to tweak the active one.
       </p>
+      {% include 'partials/_theme_target_switcher.html' %}
     </div>
     <div class="theme-gallery-header__actions">
       {# Export the current group theme as JSON. Acts as a manual
-         archive that survives the 7-row history cap. #}
+         archive that survives the auto-snapshot history cap. #}
       <a href="{{ url_for('coordinator_theme_export') }}"
          class="btn-pf-outline btn-sm-pf-soft"
          aria-label="Export current theme as JSON">
@@ -162,6 +164,61 @@
     </section>
   {% endif %}
 
+  {# ── Saved themes — pinned theme_history rows for this group ─ #}
+  {% if saved_themes %}
+    <section class="theme-gallery-saved" aria-labelledby="saved-heading">
+      <h2 id="saved-heading" class="theme-gallery-section-title">
+        Saved themes
+        <span class="theme-history-count">({{ saved_themes|length }})</span>
+      </h2>
+      <div class="row g-3">
+        {% for s in saved_themes %}
+          <div class="col-12 col-sm-6 col-lg-4">
+            <article class="theme-tile" aria-label="{{ s.name }} saved theme">
+              {{ tile_preview(s, False, False) }}
+
+              <div class="theme-tile-head">
+                <h2 class="theme-tile-name">
+                  <i class="bi bi-bookmark-fill" aria-hidden="true"></i>
+                  {{ s.name }}
+                </h2>
+              </div>
+              <p class="theme-tile-desc text-muted">
+                Saved {{ s.saved_at.strftime('%d %b %Y') }}
+              </p>
+
+              <div class="theme-tile-actions">
+                <button type="button"
+                        class="btn-pf-outline theme-tile-preview-btn"
+                        aria-label="Preview {{ s.name }} on this page"
+                        data-preview-primary="{{ s.primary_color }}"
+                        data-preview-secondary="{{ s.secondary_color }}"
+                        data-preview-background="{{ s.background_color }}"
+                        data-preview-font-heading="{{ s.font_heading }}"
+                        data-preview-font-body="{{ s.font_body }}"
+                        data-preview-button-radius="{% if s.button_style == 'rounded' %}8px{% else %}0{% endif %}"
+                        data-preview-nav="{{ s.nav_position }}"
+                        data-preview-width="{{ s.content_width }}">
+                  <i class="bi bi-eye" aria-hidden="true"></i>
+                  Preview
+                </button>
+                <form method="POST"
+                      action="{{ url_for('coordinator_apply_saved_theme', history_id=s.history_id) }}"
+                      class="theme-tile-apply-form">
+                  <button type="submit"
+                          class="btn-pf theme-tile-apply-btn"
+                          aria-label="Use saved theme {{ s.name }}">
+                    Use this theme
+                  </button>
+                </form>
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
   {# ── Other themes — grid ───────────────────────────────────── #}
   {% if other_presets %}
     <section class="theme-gallery-other" aria-labelledby="other-heading">
@@ -169,6 +226,26 @@
         {{ 'Other themes' if featured_preset else 'Choose a theme' }}
       </h2>
       <div class="row g-3">
+
+        {# Start-from-scratch tile leads the preset grid so coordinators
+           who want to skip pre-made themes can land on the editor
+           directly. ?blank=1 tells the editor to seed neutral values
+           rather than the active theme. #}
+        <div class="col-12 col-sm-6 col-lg-4">
+          <article class="theme-tile theme-tile--blank-canvas"
+                   aria-label="Start a new theme from scratch">
+            <a href="{{ url_for('coordinator_theme_customise', blank=1) }}"
+               class="theme-tile--blank-canvas__cta">
+              <span class="theme-tile--blank-canvas__plus" aria-hidden="true">+</span>
+              <span class="theme-tile--blank-canvas__label">Start from scratch</span>
+              <span class="theme-tile--blank-canvas__sub text-muted">
+                Open the editor with a blank canvas. Save it with a name
+                to add it to <strong>Saved themes</strong>.
+              </span>
+            </a>
+          </article>
+        </div>
+
         {% for p in other_presets %}
           <div class="col-12 col-sm-6 col-lg-4">
             <article class="theme-tile" aria-label="{{ p.name }} theme">

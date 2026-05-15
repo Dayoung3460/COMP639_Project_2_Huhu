@@ -103,11 +103,16 @@
        class="topbar-overflow-item {{ 'active' if request.endpoint in ('coordinator_theme_customise', 'coordinator_theme_customise_save') }}">
       <i class="bi bi-sliders" aria-hidden="true"></i> Customise
     </a>
-    <a role="menuitem" tabindex="-1"
-       href="{{ url_for('coordinator_theme_history') }}"
-       class="topbar-overflow-item {{ 'active' if request.endpoint in ('coordinator_theme_history', 'coordinator_theme_history_save_as', 'coordinator_theme_history_restore', 'coordinator_theme_history_delete') }}">
-      <i class="bi bi-clock-history" aria-hidden="true"></i> History
-    </a>
+    {# Hidden for Super Admin while the active target is platform —
+       history is group-scoped. See sidebar partial for context. #}
+    {% if not (session.get('group_role') == 'Super Admin'
+               and session.get('theme_target_type') == 'platform') %}
+      <a role="menuitem" tabindex="-1"
+         href="{{ url_for('coordinator_theme_history') }}"
+         class="topbar-overflow-item {{ 'active' if request.endpoint in ('coordinator_theme_history', 'coordinator_theme_history_save_as', 'coordinator_theme_history_restore', 'coordinator_theme_history_delete') }}">
+        <i class="bi bi-clock-history" aria-hidden="true"></i> History
+      </a>
+    {% endif %}
     <a role="menuitem" tabindex="-1"
        href="{{ url_for('coordinator_group_identity') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint == 'coordinator_group_identity' }}">

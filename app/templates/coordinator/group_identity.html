@@ -28,11 +28,14 @@
       slot you actually filled).
     - group_identity / platform_identity     → context-processor cascade
       (drives the preview + the source-label trichotomy).
-  Foundation invariant: identity paths are relative to /static/ and
-  always wrapped in url_for('static', filename=…).
+  2026-05-15: the identity cascade now returns ready-to-use URLs.
+  Static-asset uploads become `/static/...`; un-uploaded slots fall
+  back to the generated SVG route under `/identity/default/...`.
+  Templates use the URL directly — no url_for('static', filename=…)
+  wrapping needed.
 #}
 
-{# Effective path the cascade resolves to right now — used for preview src. #}
+{# Effective URL the cascade resolves to right now — used for preview src. #}
 {% set effective_cover   = (group_identity and group_identity.cover_photo) or platform_identity.cover_photo %}
 {% set effective_profile = (group_identity and group_identity.profile_photo) or platform_identity.profile_photo %}
 
@@ -45,33 +48,34 @@
     </div>
     <div class="panel-body">
 
-      {# Source trichotomy. group_cover_path is the raw DB value; we use
-         it (not the cascade result) so we can tell "group has an upload"
-         apart from "group is borrowing the platform default". #}
+      {# Source trichotomy. group_cover_path is the raw DB column for
+         this group — uses it (not the cascade) so we can distinguish
+         "group has an upload" from "group is borrowing the platform
+         default or the generated default". #}
       {% if group_cover_path %}
         <div class="identity-source-label identity-source-label--group">
           <i class="bi bi-check-circle" aria-hidden="true"></i>
           Using group upload
         </div>
-      {% elif platform_identity.cover_photo and platform_identity.cover_photo != 'images/default-cover.jpg' %}
+      {% elif platform_cover_uploaded %}
         <div class="identity-source-label identity-source-label--platform">
           <i class="bi bi-info-circle" aria-hidden="true"></i>
           Using platform default — upload your own to override
         </div>
       {% else %}
         <div class="identity-source-label identity-source-label--placeholder">
-          <i class="bi bi-image" aria-hidden="true"></i>
-          No image — using static placeholder
+          <i class="bi bi-stars" aria-hidden="true"></i>
+          Generated from your group name — upload your own to brand it
         </div>
       {% endif %}
 
       <div class="identity-preview identity-preview--cover">
-        <img src="{{ url_for('static', filename=effective_cover) }}"
+        <img src="{{ effective_cover }}"
              alt="Current cover photo for {{ session.get('group_name') }}">
       </div>
 
       <p class="identity-hint">
-        Recommended: 1200×400 (3:1 ratio). Max 2 MB. JPG, PNG, or WEBP.
+        Recommended: 1200×400 (3:1 ratio). Max 2 MB. JPG, PNG, WEBP, or SVG.
       </p>
 
       <form method="POST"
@@ -82,7 +86,7 @@
         <input type="file"
                id="cover_photo"
                name="cover_photo"
-               accept="image/jpeg,image/png,image/webp"
+               accept="image/jpeg,image/png,image/webp,image/svg+xml,.svg"
                required
                class="form-control identity-file-input">
         {{ pf_button('Replace photo', variant='btn-sm-pf', type='submit',
@@ -117,25 +121,25 @@
           <i class="bi bi-check-circle" aria-hidden="true"></i>
           Using group upload
         </div>
-      {% elif platform_identity.profile_photo and platform_identity.profile_photo != 'images/default-profile.png' %}
+      {% elif platform_profile_uploaded %}
         <div class="identity-source-label identity-source-label--platform">
           <i class="bi bi-info-circle" aria-hidden="true"></i>
           Using platform default — upload your own to override
         </div>
       {% else %}
         <div class="identity-source-label identity-source-label--placeholder">
-          <i class="bi bi-image" aria-hidden="true"></i>
-          No image — using static placeholder
+          <i class="bi bi-stars" aria-hidden="true"></i>
+          Generated from your group name — upload your own to brand it
         </div>
       {% endif %}
 
       <div class="identity-preview identity-preview--profile">
-        <img src="{{ url_for('static', filename=effective_profile) }}"
+        <img src="{{ effective_profile }}"
              alt="Current profile photo for {{ session.get('group_name') }}">
       </div>
 
       <p class="identity-hint">
-        Recommended: 400×400 (square). Max 2 MB. JPG, PNG, or WEBP.
+        Recommended: 400×400 (square). Max 2 MB. JPG, PNG, WEBP, or SVG.
       </p>
 
       <form method="POST"
@@ -146,7 +150,7 @@
         <input type="file"
                id="profile_photo"
                name="profile_photo"
-               accept="image/jpeg,image/png,image/webp"
+               accept="image/jpeg,image/png,image/webp,image/svg+xml,.svg"
                required
                class="form-control identity-file-input">
         {{ pf_button('Replace photo', variant='btn-sm-pf', type='submit',

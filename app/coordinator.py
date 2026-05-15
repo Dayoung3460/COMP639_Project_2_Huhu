@@ -393,30 +393,109 @@ def coordinator_decide_request(request_id):
     return redirect(url_for('coordinator_requests'))
 
 
+# ── Super Admin theme-target picker (2026-05-15) ────────────────────────────
+# Super Admins have no session['group_id'], so the theme routes that read it
+# can't run for them. The picker lets a Super Admin choose either the
+# Platform default or any active group as the "theme target", stashes the
+# choice in session keys separate from group_id, and redirects to the
+# gallery. Coordinators never see the picker — resolve_theme_target reads
+# their session group directly.
+
+
+@app.route('/coordinator/themes/select-target')
+@role_required('Super Admin')
+def coordinator_theme_select_target():
+    """Picker page — list every active group + Platform default tile.
+
+    Each tile previews that target's current effective theme. Clicking
+    Manage POSTs to the setter route which writes the three theme_target_*
+    session keys and redirects to the gallery.
+    """
+    platform_theme = themes.get_platform_theme()
+    groups_raw = themes.list_active_groups()
+    groups = []
+    for g in groups_raw:
+        gt = themes.get_group_theme(g['group_id']) or platform_theme
+        groups.append({
+            'group_id': g['group_id'],
+            'name':     g['name'],
+            'theme':    gt,
+        })
+    active = themes.resolve_theme_target(session)
+    return render_template(
+        'coordinator/theme_select_target.html',
+        platform_theme=platform_theme,
+        groups=groups,
+        active_target=active,
+    )
+
+
+@app.route('/coordinator/themes/select-target', methods=['POST'])
+@role_required('Super Admin')
+def coordinator_theme_select_target_set():
+    """Stash the picked target in session and bounce to the gallery."""
+    target_type = (request.form.get('target_type') or '').strip()
+
+    if target_type == 'platform':
+        session['theme_target_type'] = 'platform'
+        session.pop('theme_target_group_id', None)
+        session['theme_target_name'] = 'Platform default'
+        flash('Now managing the platform default theme.', 'success')
+        return redirect(url_for('coordinator_themes'))
+
+    if target_type == 'group':
+        raw = (request.form.get('target_group_id') or '').strip()
+        gid = int(raw) if raw.isdigit() else None
+        if not gid or not themes.is_active_group(gid):
+            flash('That group is no longer available.', 'warning')
+            return redirect(url_for('coordinator_theme_select_target'))
+        name = themes.get_group_name(gid) or f'Group #{gid}'
+        session['theme_target_type']     = 'group'
+        session['theme_target_group_id'] = gid
+        session['theme_target_name']     = name
+        flash(f'Now managing themes for {name}.', 'success')
+        return redirect(url_for('coordinator_themes'))
+
+    flash('Pick a target to manage.', 'warning')
+    return redirect(url_for('coordinator_theme_select_target'))
+
+
 # ── Theme gallery (P2-41) ────────────────────────────────────────────────────
 # Note: this route admits both 'Group Coordinator' and 'Super Admin' — a
 # deliberate divergence from the rest of this module, which gates on
 # Coordinator only. Per spec for P2-41. Whether Super Admin should also
 # admin the other coordinator routes is a separate policy question.
+#
+# 2026-05-15 Super Admin support: every theme route now opens with
+# `target = themes.resolve_theme_target(session)`. For a Coordinator that
+# returns the group from session (same data the routes have always used);
+# for a Super Admin it reads the dedicated theme_target_* session keys
+# the picker page sets, or returns None → redirect to the picker. Reads
+# and writes dispatch through themes.get_target_* / apply_preset_to_target
+# / save_custom_target_theme so the platform_theme branch stays out of
+# the handlers.
 
 @app.route('/coordinator/themes')
 @role_required('Group Coordinator', 'Super Admin')
 def coordinator_themes():
-    """Browse pre-made theme presets for the active group.
+    """Browse pre-made theme presets for the active target.
 
-    "Active" lineage: we mark whichever preset the group is currently
-    BASED ON (group_themes.based_on_preset). That stays true even if
-    the coordinator has tweaked colours/fonts since applying — the
-    preset tile keeps its Active badge, and the template surfaces a
-    small "Customised" sub-label when the live columns no longer
-    match the preset exactly. If based_on_preset is NULL the group
-    is on a from-scratch custom theme; no tile is marked Active and
-    the "Custom theme in use" notice appears.
+    "Active" lineage: we mark whichever preset the target is currently
+    BASED ON (group_themes.based_on_preset or platform_theme.based_on_preset).
+    That stays true even if the coordinator has tweaked colours/fonts since
+    applying — the preset tile keeps its Active badge, and the template
+    surfaces a small "Customised" sub-label when the live columns no longer
+    match the preset exactly. If based_on_preset is NULL the target is on a
+    from-scratch custom theme; no tile is marked Active and the "Custom
+    theme in use" notice appears.
     """
-    group_id = session['group_id']
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return redirect(url_for('coordinator_theme_select_target'))
+
     presets = themes.list_presets()
-    current_theme = themes.get_active_theme(group_id)
-    applied_preset_id = themes.get_group_based_on_preset(group_id)
+    current_theme = themes.get_target_theme(target)
+    applied_preset_id = themes.get_target_based_on_preset(target)
     exact_match_id = themes.find_matching_preset(current_theme, presets)
     is_customised = (
         applied_preset_id is not None
@@ -437,13 +516,25 @@ def coordinator_themes():
         p for p in presets if p['preset_id'] != applied_preset_id
     ]
 
+    # Saved (pinned) themes are group-scoped — theme_history.group_id is
+    # NOT NULL, so the platform target has none. The gallery surfaces
+    # them as their own "Saved themes" section between the active card
+    # and the preset grid; coordinators apply one with a single click.
+    saved_themes = (
+        themes.list_pinned_for_group(target['group_id'])
+        if target['type'] == 'group'
+        else []
+    )
+
     return render_template(
         'coordinator/themes.html',
+        target=target,
         featured_preset=featured_preset,
         other_presets=other_presets,
         applied_preset_id=applied_preset_id,
         is_customised=is_customised,
         is_custom_theme=(applied_preset_id is None),
+        saved_themes=saved_themes,
     )
 
 
@@ -452,19 +543,22 @@ def coordinator_themes():
 def coordinator_theme_preview(preset_id):
     """Fuller preview of a single preset, with Apply action (P2-42).
 
-    Pulls the group's currently-effective theme so the preview can hide
+    Pulls the target's currently-effective theme so the preview can hide
     the Apply button (and show a static "Currently applied" tag) when
     this preset is already the active theme.
     """
     preset = themes.get_preset(preset_id)
     if not preset:
         abort(404)
-    group_id = session['group_id']
-    current_theme = themes.get_active_theme(group_id)
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return redirect(url_for('coordinator_theme_select_target'))
+    current_theme = themes.get_target_theme(target)
     presets = themes.list_presets()
     applied_preset_id = themes.find_matching_preset(current_theme, presets)
     return render_template(
         'coordinator/theme_preview.html',
+        target=target,
         preset=preset,
         is_currently_applied=(applied_preset_id == preset_id),
     )
@@ -473,26 +567,77 @@ def coordinator_theme_preview(preset_id):
 @app.route('/coordinator/themes/<int:preset_id>/apply', methods=['POST'])
 @role_required('Group Coordinator', 'Super Admin')
 def coordinator_apply_theme(preset_id):
-    """Apply a pre-made theme preset to the active group (P2-42).
+    """Apply a pre-made theme preset to the active target (P2-42).
 
-    The heavy lifting (snapshot → UPSERT → cap history) lives in
-    themes.apply_preset() so it can roll back atomically.
+    For a group target: snapshot → UPSERT → cap history (atomic).
+    For platform target: UPSERT platform_theme only (no history, no cap).
+    Both paths live behind themes.apply_preset_to_target.
     """
-    group_id = session['group_id']
-    user_id  = session['user_id']
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return redirect(url_for('coordinator_theme_select_target'))
+    user_id = session['user_id']
     try:
-        preset_name = themes.apply_preset(group_id, preset_id, user_id)
+        preset_name = themes.apply_preset_to_target(target, preset_id, user_id)
     except themes.PresetNotFound:
         abort(404)
     except Exception:
         logger.exception(
-            'apply_preset failed for group %s preset %s', group_id, preset_id
+            'apply_preset_to_target failed for target %s preset %s',
+            target, preset_id
         )
         flash('Failed to apply the theme. Please try again.', 'danger')
         return redirect(
             url_for('coordinator_theme_preview', preset_id=preset_id)
         )
     flash(f"'{preset_name}' theme applied.", 'success')
+    return redirect(url_for('coordinator_themes'))
+
+
+@app.route('/coordinator/themes/saved/<int:history_id>/apply',
+           methods=['POST'])
+@role_required('Group Coordinator', 'Super Admin')
+def coordinator_apply_saved_theme(history_id):
+    """Apply a pinned theme_history row's values to the active group target.
+
+    Gallery's "Use this saved theme" button posts here. Saved themes are
+    group-scoped (theme_history.group_id NOT NULL); applying to the
+    platform default doesn't make sense, so reject with a flash.
+    """
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return redirect(url_for('coordinator_theme_select_target'))
+    if target['type'] != 'group':
+        flash("Saved themes can only be applied to a group target.",
+              'warning')
+        return redirect(url_for('coordinator_themes'))
+
+    user_id = session['user_id']
+    try:
+        name = themes.apply_saved_theme_to_target(target, history_id, user_id)
+    except themes.HistoryNotFound:
+        flash('That saved theme no longer exists.', 'warning')
+        return redirect(url_for('coordinator_themes'))
+    except themes.ValidationError:
+        # Shouldn't happen — pinned rows come from the same validator
+        # path. Treat as a hard failure.
+        logger.exception(
+            'apply_saved_theme_to_target validation failed for target %s '
+            'history %s', target, history_id
+        )
+        flash('Could not apply that saved theme.', 'danger')
+        return redirect(url_for('coordinator_themes'))
+    except Exception:
+        logger.exception(
+            'apply_saved_theme_to_target failed for target %s history %s',
+            target, history_id
+        )
+        flash('Could not apply that saved theme. Please try again.',
+              'danger')
+        return redirect(url_for('coordinator_themes'))
+
+    label = name or 'Saved theme'
+    flash(f"'{label}' applied.", 'success')
     return redirect(url_for('coordinator_themes'))
 
 
@@ -520,12 +665,13 @@ def _theme_export_filename(group_name):
 @app.route('/coordinator/themes/export')
 @role_required('Group Coordinator', 'Super Admin')
 def coordinator_theme_export():
-    """Download the group's current theme as a JSON archive."""
-    group_id = session['group_id']
-    group_name = session.get('group_name', 'group')
+    """Download the active target's current theme as a JSON archive."""
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return redirect(url_for('coordinator_theme_select_target'))
 
-    current = themes.get_active_theme(group_id)
-    based_on = themes.get_group_based_on_preset(group_id)
+    current = themes.get_target_theme(target)
+    based_on = themes.get_target_based_on_preset(target)
     based_on_name = None
     if based_on is not None:
         preset = themes.get_preset(based_on)
@@ -534,7 +680,7 @@ def coordinator_theme_export():
     payload = {
         'tiaki_theme_format': _THEME_EXPORT_FORMAT,
         'exported_at':        datetime.now(timezone.utc).isoformat(),
-        'exported_from_group': group_name,
+        'exported_from_group': target['name'],
         'based_on_preset_name': based_on_name,
         'theme': {
             'primary_color':    current['primary_color'],
@@ -550,7 +696,7 @@ def coordinator_theme_export():
     }
 
     body = json.dumps(payload, indent=2, ensure_ascii=False)
-    filename = _theme_export_filename(group_name)
+    filename = _theme_export_filename(target['name'])
     return Response(
         body,
         mimetype='application/json',
@@ -561,16 +707,17 @@ def coordinator_theme_export():
 @app.route('/coordinator/themes/import', methods=['POST'])
 @role_required('Group Coordinator', 'Super Admin')
 def coordinator_theme_import():
-    """Apply a previously exported theme JSON to the active group.
+    """Apply a previously exported theme JSON to the active target.
 
-    Goes through `themes.save_custom_theme` so the same validation +
-    history snapshot semantics apply as a manual editor save. Lineage
-    (`based_on_preset`) is preserved when the referenced preset still
-    exists in the platform's library; otherwise the imported theme
-    lands as a from-scratch custom.
+    Goes through `themes.save_custom_target_theme` so the same validation
+    semantics apply as a manual editor save. Lineage (`based_on_preset`)
+    is preserved when the referenced preset still exists in the platform's
+    library; otherwise the imported theme lands as a from-scratch custom.
     """
-    group_id = session['group_id']
-    user_id  = session['user_id']
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return redirect(url_for('coordinator_theme_select_target'))
+    user_id = session['user_id']
 
     upload = request.files.get('theme_file')
     if not upload or not upload.filename:
@@ -605,13 +752,15 @@ def coordinator_theme_import():
             based_on = None
 
     try:
-        themes.save_custom_theme(group_id, theme_payload, based_on, user_id)
+        themes.save_custom_target_theme(
+            target, theme_payload, based_on, user_id
+        )
     except themes.ValidationError as e:
         details = ', '.join(sorted(e.errors.keys()))
         flash(f'Imported theme failed validation ({details}).', 'danger')
         return redirect(url_for('coordinator_themes'))
     except Exception:
-        logger.exception('Theme import failed for group %s', group_id)
+        logger.exception('Theme import failed for target %s', target)
         flash('Could not import that theme. Try again.', 'danger')
         return redirect(url_for('coordinator_themes'))
 
@@ -630,8 +779,19 @@ def coordinator_theme_import():
 # submitted values so the user doesn't lose work.
 
 
-def _initial_values_for_editor(group_id, from_preset_raw):
+def _initial_values_for_editor(target, from_preset_raw, blank=False):
     """Resolve initial form values + header label for the editor GET path.
+
+    `target` is the dict returned by themes.resolve_theme_target.
+
+    Three entry paths:
+      • `blank=True`        → seed neutral BLANK_CANVAS_DEFAULTS,
+                              based_on_preset=NULL. The "Start from
+                              scratch" tile in the gallery uses this.
+      • `from_preset_raw`   → seed from that preset, based_on_preset
+                              set to its id.
+      • neither             → seed from the active target theme,
+                              preserve the live lineage marker.
 
     Returns a dict with:
       field_values        — six themable keys, ready for form pre-fill
@@ -639,17 +799,24 @@ def _initial_values_for_editor(group_id, from_preset_raw):
       based_on_preset_name— preset name for the header label, or None
       font_warning        — True when the source font was snapped to the
                             whitelist default; route should flash.
+      is_blank            — True when this is a Start-from-scratch entry,
+                            so the template can adjust copy (e.g. nudge
+                            the user to give the new theme a name).
     """
     based_on_preset = None
     based_on_preset_name = None
     font_warning = False
+    is_blank = False
 
     # The editor today exposes ONE font picker (the heading-split UI is
     # the next story). We seed it from font_body — that's what the user
     # reads-types-and-edits in the dashboard; the heading sample they see
     # is whatever ships from the source theme. On save the same picked
     # value lands in BOTH columns (see themes._validate_theme_values).
-    if from_preset_raw and from_preset_raw.isdigit():
+    if blank:
+        is_blank = True
+        values = dict(themes.BLANK_CANVAS_DEFAULTS)
+    elif from_preset_raw and from_preset_raw.isdigit():
         preset = themes.get_preset(int(from_preset_raw))
         if not preset:
             abort(404)
@@ -665,7 +832,7 @@ def _initial_values_for_editor(group_id, from_preset_raw):
             'content_width':    preset['content_width'],
         }
     else:
-        current = themes.get_active_theme(group_id)
+        current = themes.get_target_theme(target)
         values = {
             'primary_color':    current['primary_color'],
             'secondary_color':  current['secondary_color'],
@@ -676,14 +843,13 @@ def _initial_values_for_editor(group_id, from_preset_raw):
             'content_width':    current['content_width'],
         }
         # Entering with no ?from_preset (e.g. the nav's "Customise" link)
-        # should still preserve whatever preset the group is currently
-        # based on. Without this, saving would clear group_themes.based_on_preset
-        # and the Active badge would disappear from the gallery — the very
+        # should still preserve whatever preset the target is currently
+        # based on. Without this, saving would clear based_on_preset and
+        # the Active badge would disappear from the gallery — the very
         # state the WordPress-style "active even when customised" wants
-        # to avoid. Reading directly from the DB keeps a single source of
-        # truth (the live lineage marker) rather than re-deriving from
-        # column matching.
-        based_on_preset = themes.get_group_based_on_preset(group_id)
+        # to avoid. Reading from the live lineage marker keeps a single
+        # source of truth rather than re-deriving from column matching.
+        based_on_preset = themes.get_target_based_on_preset(target)
         if based_on_preset is not None:
             preset = themes.get_preset(based_on_preset)
             based_on_preset_name = preset['name'] if preset else None
@@ -700,6 +866,7 @@ def _initial_values_for_editor(group_id, from_preset_raw):
         'based_on_preset':      based_on_preset,
         'based_on_preset_name': based_on_preset_name,
         'font_warning':         font_warning,
+        'is_blank':             is_blank,
     }
 
 
@@ -708,14 +875,18 @@ def _initial_values_for_editor(group_id, from_preset_raw):
 def coordinator_theme_customise():
     """GET — render the custom theme editor.
 
-    Reads ?from_preset=<int> to decide entry path. Passes platform_theme
-    separately so the client-side Reset button has authoritative values
-    (via data-* attrs on the preview container).
+    Reads ?from_preset=<int> for the "Customise this theme" entry path,
+    or ?blank=1 for the gallery's "Start from scratch" tile. Passes the
+    active target's current theme (or the selected preset) as the Reset
+    baseline (via data-* attrs).
     """
-    group_id = session['group_id']
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return redirect(url_for('coordinator_theme_select_target'))
 
+    blank = (request.args.get('blank') == '1')
     initial = _initial_values_for_editor(
-        group_id, request.args.get('from_preset')
+        target, request.args.get('from_preset'), blank=blank
     )
 
     if initial['font_warning']:
@@ -726,21 +897,35 @@ def coordinator_theme_customise():
         )
 
     # 2026-05-15: Reset target = the currently *selected* theme, not
-    # the platform default. If the group is on a preset, Reset reverts
+    # the platform default. If the target is on a preset, Reset reverts
     # to that preset's pristine column values; if it's on a from-scratch
-    # custom theme, Reset reverts to the saved group_themes row (i.e.
-    # discards unsaved edits in the editor session). Either way the
-    # user lands back on the theme they think is "theirs".
-    if initial['based_on_preset'] is not None:
-        reset_theme = themes.get_preset(initial['based_on_preset'])
+    # custom theme, Reset reverts to the saved theme row (i.e. discards
+    # unsaved edits in the editor session). Either way the user lands
+    # back on the theme they think is "theirs". For ?blank=1 the Reset
+    # baseline is the neutral defaults the editor opened with.
+    if initial['is_blank']:
+        reset_theme = dict(themes.BLANK_CANVAS_DEFAULTS,
+                           font_heading=themes.BLANK_CANVAS_DEFAULTS['font_family'],
+                           font_body=themes.BLANK_CANVAS_DEFAULTS['font_family'])
+    elif initial['based_on_preset'] is not None:
+        # For Default Tiaki (preset_id 1) the DB row drifts whenever a
+        # Super Admin customises the platform default — the helper falls
+        # back to the canonical PLATFORM_DEFAULT_THEME constant so Reset
+        # always means "original Tiaki defaults", not "whatever the
+        # platform was last set to".
+        reset_theme = themes.get_reset_baseline_for_preset(
+            initial['based_on_preset']
+        )
     else:
-        reset_theme = themes.get_active_theme(group_id)
+        reset_theme = themes.get_target_theme(target)
 
     return render_template(
         'coordinator/theme_edit.html',
+        target=target,
         values=initial['field_values'],
         based_on_preset=initial['based_on_preset'],
         based_on_preset_name=initial['based_on_preset_name'],
+        is_blank=initial['is_blank'],
         reset_theme=reset_theme,
         fonts=themes.FONT_BODY_WHITELIST,
         errors={},
@@ -759,8 +944,10 @@ def coordinator_theme_customise_save():
 
     On any other exception: log + flash + redirect back to the editor.
     """
-    group_id = session['group_id']
-    user_id  = session['user_id']
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return redirect(url_for('coordinator_theme_select_target'))
+    user_id = session['user_id']
 
     submitted = {
         'primary_color':    request.form.get('primary_color', ''),
@@ -773,44 +960,77 @@ def coordinator_theme_customise_save():
     }
     raw_bop = request.form.get('based_on_preset', '').strip()
     based_on_preset = int(raw_bop) if raw_bop.isdigit() else None
+    # Optional "Save as..." label. When the coordinator fills this in,
+    # we ALSO pin the saved state to theme_history so it appears in the
+    # gallery's "Saved themes" section. Empty string → no pinning, the
+    # save is just a regular customise.
+    save_name = (request.form.get('save_name') or '').strip()
 
     try:
-        themes.save_custom_theme(
-            group_id, submitted, based_on_preset, user_id
+        themes.save_custom_target_theme(
+            target, submitted, based_on_preset, user_id
         )
     except themes.ValidationError as e:
         based_on_name = None
         if based_on_preset is not None:
             p = themes.get_preset(based_on_preset)
             based_on_name = p['name'] if p else None
-        # Reset target for the re-render: same logic as the GET path.
+        # Reset target for the re-render: same logic as the GET path —
+        # immutable canonical baseline for Default Tiaki, DB row for
+        # everything else, current target theme when not preset-based.
         if based_on_preset is not None:
-            reset_theme = themes.get_preset(based_on_preset)
+            reset_theme = themes.get_reset_baseline_for_preset(based_on_preset)
         else:
-            reset_theme = themes.get_active_theme(group_id)
+            reset_theme = themes.get_target_theme(target)
         flash('Some values need fixing. See highlighted fields below.', 'danger')
         return render_template(
             'coordinator/theme_edit.html',
+            target=target,
             values=submitted,
             based_on_preset=based_on_preset,
             based_on_preset_name=based_on_name,
+            is_blank=(based_on_preset is None),
             reset_theme=reset_theme,
             fonts=themes.FONT_BODY_WHITELIST,
             errors=e.errors,
         ), 400
     except Exception:
         logger.exception(
-            'save_custom_theme failed for group %s', group_id
+            'save_custom_target_theme failed for target %s', target
         )
         flash('Could not save the theme. Please try again.', 'danger')
         return redirect(url_for('coordinator_theme_customise'))
 
+    # If the user typed a name, also pin a snapshot of the just-saved
+    # theme. Group-only — pinned rows are group-scoped (theme_history
+    # has NOT NULL group_id), so silently ignore for platform target.
+    pinned_ok = False
+    if save_name and target['type'] == 'group':
+        try:
+            themes.save_current_as_pinned(target['group_id'], user_id, save_name)
+            pinned_ok = True
+        except themes.ValidationError as e:
+            # Only the name field has validation rules here — surface its
+            # message but don't fail the underlying save (already
+            # committed).
+            flash(e.errors.get('name', 'Could not save under that name.'),
+                  'warning')
+        except Exception:
+            logger.exception(
+                'save_current_as_pinned failed for target %s', target
+            )
+            flash('Saved the theme, but could not pin it under that name.',
+                  'warning')
+
     # 2026-05-15: stay on the editor after a successful save so the
     # coordinator can keep iterating without bouncing back to the
     # gallery. The next GET pulls the just-saved values via
-    # _initial_values_for_editor → get_active_theme, so the form
+    # _initial_values_for_editor → get_target_theme, so the form
     # re-renders with the persisted state.
-    flash('Custom theme saved.', 'success')
+    if pinned_ok:
+        flash(f'Custom theme saved as "{save_name}".', 'success')
+    else:
+        flash('Custom theme saved.', 'success')
     return redirect(url_for('coordinator_theme_customise'))
 
 
@@ -818,31 +1038,53 @@ def coordinator_theme_customise_save():
 #
 # Surfaces the snapshots that apply_preset / save_custom_theme already write
 # into theme_history. Two row classes share the same table:
-#   • Auto-snapshots (name IS NULL, is_pinned = FALSE) — capped at 7 per group.
+#   • Auto-snapshots (name IS NULL, is_pinned = FALSE) — capped per group
+#     (themes.HISTORY_CAP, currently 10) by an OFFSET-based DELETE.
 #   • Pinned saves   (name set,     is_pinned = TRUE)  — exempt from the cap,
 #                                                         the coordinator's
 #                                                         monthly archive.
 # Restore takes either kind and re-applies it via the same 3-step atomic
 # write apply_preset uses, so the restore is itself reversible.
+#
+# Platform-target history is deferred (theme_history.group_id is NOT NULL).
+# All four routes below gate on `target['type'] == 'group'` and redirect to
+# the gallery with a flash when the active target is the platform default.
+
+
+def _require_group_target_for_history():
+    """Return the active group target, or a redirect Response. Centralises
+    the 'history is group-only' guard used by all four history routes."""
+    target = themes.resolve_theme_target(session)
+    if not target:
+        return None, redirect(url_for('coordinator_theme_select_target'))
+    if target['type'] != 'group':
+        flash("History isn't available for the platform default theme.",
+              'warning')
+        return None, redirect(url_for('coordinator_themes'))
+    return target, None
 
 
 @app.route('/coordinator/themes/history')
 @role_required('Group Coordinator', 'Super Admin')
 def coordinator_theme_history():
-    """List this group's theme_history snapshots.
+    """List the active group target's theme_history snapshots.
 
     Pinned rows are surfaced first as "Saved themes"; auto-snapshots follow
     as "Recent customisations". The template splits by is_pinned in one
     pass — themes.list_group_history orders pinned-first.
     """
-    group_id = session['group_id']
-    entries  = themes.list_group_history(group_id)
-    pinned   = [e for e in entries if e['is_pinned']]
-    recent   = [e for e in entries if not e['is_pinned']]
+    target, bail = _require_group_target_for_history()
+    if bail is not None:
+        return bail
+    entries = themes.list_group_history(target['group_id'])
+    pinned  = [e for e in entries if e['is_pinned']]
+    recent  = [e for e in entries if not e['is_pinned']]
     return render_template(
         'coordinator/theme_history.html',
+        target=target,
         pinned=pinned,
         recent=recent,
+        history_cap=themes.HISTORY_CAP,
     )
 
 
@@ -855,7 +1097,10 @@ def coordinator_theme_history_save_as():
     flash and re-render the history page; success flashes and returns
     there too.
     """
-    group_id = session['group_id']
+    target, bail = _require_group_target_for_history()
+    if bail is not None:
+        return bail
+    group_id = target['group_id']
     user_id  = session['user_id']
     name     = request.form.get('name', '')
 
@@ -881,7 +1126,10 @@ def coordinator_theme_history_save_as():
 @role_required('Group Coordinator', 'Super Admin')
 def coordinator_theme_history_restore(history_id):
     """Re-apply a history snapshot to the active group's theme."""
-    group_id = session['group_id']
+    target, bail = _require_group_target_for_history()
+    if bail is not None:
+        return bail
+    group_id = target['group_id']
     user_id  = session['user_id']
 
     try:
@@ -906,7 +1154,10 @@ def coordinator_theme_history_restore(history_id):
 @role_required('Group Coordinator', 'Super Admin')
 def coordinator_theme_history_delete(history_id):
     """Remove a history row (typically used to unpin a saved theme)."""
-    group_id = session['group_id']
+    target, bail = _require_group_target_for_history()
+    if bail is not None:
+        return bail
+    group_id = target['group_id']
 
     try:
         deleted = themes.delete_history_entry(group_id, history_id)
@@ -955,7 +1206,7 @@ def _validate_identity_upload(file):
     # 1. Extension allow-list (client hint).
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
     if ext not in IDENTITY_PHOTO_EXTENSIONS:
-        return None, 'Only JPG, PNG, and WEBP are accepted.'
+        return None, 'Only JPG, PNG, WEBP, and SVG are accepted.'
 
     # 2. Size — Werkzeug spools to a SpooledTemporaryFile above ~500KB,
     #    so seek/tell is the reliable way to measure the actual payload.
@@ -968,7 +1219,11 @@ def _validate_identity_upload(file):
     # 3. Magic-byte sniff — authoritative MIME source. Reject if the
     #    file's bytes disagree with the declared extension (catches the
     #    rename-a-GIF-to-.png attack).
-    head = file.stream.read(12)
+    #
+    #    1024 bytes covers the worst case: SVG payloads may carry a
+    #    long XML prolog + comments + xmlns attributes before the
+    #    <svg root element, and the sniffer needs to spot it.
+    head = file.stream.read(1024)
     file.stream.seek(0)
     sniffed = sniff_image_kind(head)
     # Normalise so 'jpg' and 'jpeg' compare equal against sniffer's 'jpeg'.
@@ -976,6 +1231,27 @@ def _validate_identity_upload(file):
     sniffed_norm = 'jpg' if sniffed == 'jpeg' else sniffed
     if sniffed_norm is None or sniffed_norm != ext_norm:
         return None, "File contents don't match the file extension."
+
+    # 4. SVG-specific safety: SVGs can contain <script> tags + event
+    #    handlers that execute when rendered inline or via <object>.
+    #    The templates only ever load these via <img src=...>, which
+    #    sandboxes scripts in modern browsers — but reject scripts
+    #    server-side anyway so a future <object>/inline render can't
+    #    accidentally turn an old upload into XSS.
+    #
+    #    Scan the FULL payload, not just the head: <script> can appear
+    #    anywhere in the SVG. Lowercase-once on the bytes for case-
+    #    insensitive checks; also reject inline `on*=` event handlers
+    #    and `javascript:` URLs.
+    if sniffed_norm == 'svg':
+        body = file.stream.read()
+        file.stream.seek(0)
+        body_lc = body.lower()
+        if (b'<script' in body_lc
+                or b'javascript:' in body_lc
+                or re.search(rb'\son[a-z]+\s*=', body_lc)):
+            return None, ("SVG contains scripts or event handlers — "
+                          "remove them and try again.")
 
     return ext, None
 
@@ -1121,11 +1397,19 @@ def coordinator_group_identity():
             (group_id,),
         )
         row = cursor.fetchone()
+        cursor.execute(
+            'SELECT cover_photo, profile_photo FROM platform_settings WHERE id = 1'
+        )
+        ps = cursor.fetchone()
 
     return render_template(
         'coordinator/group_identity.html',
-        group_cover_path=(row['cover_photo'] if row else None),
+        group_cover_path=(row['cover_photo']   if row else None),
         group_profile_path=(row['profile_photo'] if row else None),
+        # Booleans so the template can label the source without
+        # URL-sniffing the cascaded `<img src>` value.
+        platform_cover_uploaded=bool(ps and ps['cover_photo']),
+        platform_profile_uploaded=bool(ps and ps['profile_photo']),
     )
 
 

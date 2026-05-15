@@ -3464,4 +3464,161 @@ body.layout-width-full .site-footer {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   Theme target switcher — pill shown to Super Admins on every theme
+   page (gallery, editor, history) and on the picker. Hidden for
+   Coordinators by the partial's `if group_role == Super Admin` gate.
+   Communicates which target (group OR Platform default) the page's
+   actions are writing to, and links to the picker to switch.
+   ══════════════════════════════════════════════════════════════ */
+.theme-target-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--pf-700) 8%, white);
+  border: 1px solid var(--pf-300);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--pf-800);
+}
+.theme-target-switcher__label {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pf-600);
+}
+.theme-target-switcher__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--pf-800);
+}
+.theme-target-switcher__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--pf-700);
+  color: #fff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.theme-target-switcher__switch:hover,
+.theme-target-switcher__switch:focus {
+  background: var(--pf-800);
+  color: #fff;
+}
+
+/* Picker page — sits between theme_select_target.html and the
+   shared .theme-tile rules. The featured platform tile reuses
+   .theme-tile--featured exactly; the groups grid reuses
+   .theme-tile + .row.g-3. The only picker-specific touch is the
+   Manage form spacing inside .theme-tile-actions. */
+.theme-target-pick-form { margin: 0; width: 100%; }
+.theme-target-pick-form .btn-pf { width: 100%; }
+.theme-tile--featured .theme-target-pick-form { width: auto; }
+.theme-tile--featured .theme-target-pick-form .btn-pf { width: auto; }
+
+/* ══════════════════════════════════════════════════════════════
+   Gallery: Saved-themes section + Start-from-scratch tile.
+   Saved themes use the standard .theme-tile rules; only the tiny
+   bookmark glyph in the name gets a dedicated colour. The
+   blank-canvas tile is its own variant — a dashed-border drop zone
+   with a big plus, fills its grid cell so it lines up with the
+   preset tiles next to it.
+   ══════════════════════════════════════════════════════════════ */
+.theme-gallery-saved { margin-bottom: 28px; }
+.theme-tile-name .bi-bookmark-fill { color: var(--pf-700); }
+
+.theme-tile--blank-canvas {
+  display: flex;
+  padding: 0;
+  border: 2px dashed var(--pf-300);
+  background: color-mix(in srgb, var(--pf-700) 4%, white);
+  min-height: 100%;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.theme-tile--blank-canvas:hover,
+.theme-tile--blank-canvas:focus-within {
+  border-color: var(--pf-700);
+  background: color-mix(in srgb, var(--pf-700) 8%, white);
+}
+.theme-tile--blank-canvas__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 28px 20px;
+  gap: 8px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--pf-800);
+}
+.theme-tile--blank-canvas__plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--pf-700);
+  color: #fff;
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.theme-tile--blank-canvas__label {
+  font-family: var(--theme-font-heading, 'Cabin'), sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--pf-900);
+}
+.theme-tile--blank-canvas__sub {
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 28ch;
+}
+
+/* Editor: Save-as fieldset. Tiaki-green tinted box that mirrors the
+   pinned bookmark surfaces elsewhere, so the optional name input
+   reads as "this is the doorway to your Saved themes section". */
+.theme-edit-saveas {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--pf-700) 5%, white);
+  border: 1px solid var(--pf-200);
+  border-radius: 8px;
+}
+.theme-edit-saveas .theme-edit-legend {
+  margin-bottom: 6px;
+}
+.theme-edit-optional {
+  font-weight: 400;
+  color: var(--pf-500);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  margin-left: 4px;
+}
+.theme-edit-hint {
+  font-size: 13px;
+  color: var(--ink);
+  opacity: 0.85;
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+.theme-edit-saveas .form-control {
+  width: 100%;
+}
+
 
