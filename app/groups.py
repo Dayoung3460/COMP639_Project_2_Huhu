@@ -10,22 +10,16 @@ Visibility logic (per the brief):
     - Members of a group are sent straight to the in-app dashboard.
 """
 
-from flask import render_template, request, redirect, url_for, flash, session, abort
-from app import app, db, themes
-from app.utils import role_required, allowed_file, CONSERVATION_GROUP_BG_FOLDER
+from flask import render_template, request, redirect, url_for, flash, session, abort, jsonify
+from app import app, db
+from app.utils import role_required, allowed_file, CONSERVATION_GROUP_BG_FOLDER, redirect_by_role
 import os
 import uuid
 
 
 @app.route('/groups/<int:group_id>')
 def group_landing(group_id):
-    """Public landing page for a single group.
-
-    Behaviour:
-      - Members → redirect to dashboard (already inside the group).
-      - Public group + non-member/anonymous → full landing page.
-      - Private group + non-member/anonymous → minimal "request to join" view.
-    """
+    """Public landing page for a single group."""
     user_id = session.get('user_id')
 
     with db.get_cursor() as cursor:
@@ -33,27 +27,34 @@ def group_landing(group_id):
         cursor.execute('''
             SELECT
                 g.group_id, g.name, g.description, g.is_public,
-                g.cover_photo, g.color_theme, g.created_at
+                g.image, g.color_theme, g.created_at, g.is_active
             FROM groups g
             WHERE g.group_id = %s
         ''', (group_id,))
         group = cursor.fetchone()
 
-        if not group:
+        if not group or not group['is_active']:
             abort(404)
 
-        # ── Membership check ─────────────────────────────────────
+        # ── Super admin check ─────────────────────────────────────
+        is_super_admin = False
+        if user_id:
+            cursor.execute('SELECT is_super_admin FROM users WHERE user_id = %s', (user_id,))
+            u = cursor.fetchone()
+            is_super_admin = bool(u and u['is_super_admin'])
+
+        # ── Membership check — fetch role for "Go to Group" button ─
         is_member = False
+        member_role = None
         if user_id:
             cursor.execute('''
-                SELECT 1 FROM group_memberships
+                SELECT role FROM group_memberships
                 WHERE user_id = %s AND group_id = %s
             ''', (user_id, group_id))
-            is_member = cursor.fetchone() is not None
-
-        # If they're already in this group, send them to the dashboard.
-        if is_member:
-            return redirect(url_for('select_group'))
+            membership = cursor.fetchone()
+            if membership:
+                is_member = True
+                member_role = membership['role']
 
         # ── Stats — only computed for public groups, never leaked ─
         stats = None
@@ -89,7 +90,6 @@ def group_landing(group_id):
                 'catches': catch_count,
             }
 
-            # Coordinator names — humanises the page
             cursor.execute('''
                 SELECT u.first_name, u.last_name
                 FROM group_memberships gm
@@ -99,9 +99,9 @@ def group_landing(group_id):
             ''', (group_id,))
             coordinators = cursor.fetchall()
 
-        # ── Pending join request? (for private groups, logged-in users) ──
+        # ── Pending request — for all logged-in non-members (not super admin) ──
         has_pending_request = False
-        if user_id and not group['is_public']:
+        if user_id and not is_member and not is_super_admin:
             cursor.execute('''
                 SELECT 1 FROM group_join_requests
                 WHERE user_id = %s AND group_id = %s AND status = 'pending'
@@ -119,12 +119,12 @@ def group_landing(group_id):
         stats=stats,
         coordinators=coordinators,
         has_pending_request=has_pending_request,
-        override_theme=themes.get_active_theme(group_id),
-        override_identity=themes.get_active_identity(group_id),
+        is_member=is_member,
+        member_role=member_role,
+        is_super_admin=is_super_admin,
     )
 
 @app.route('/groups/apply', methods=['GET', 'POST'])
-@role_required()
 def apply_for_group():
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -209,3 +209,88 @@ def apply_for_group():
             return redirect(url_for('apply_for_group'))
 
     return render_template('groups/apply_group.html')
+
+@app.route('/group/join', methods=['POST'])
+def request_join_group():
+    user_id = session.get('user_id')
+
+    # 1. Not logged in → 401
+    if not user_id:
+        abort(401)
+
+    group_id = request.form.get('group_id', type=int)
+
+    with db.get_cursor() as cursor:
+        # 2. Super Admin → 403
+        cursor.execute('SELECT is_super_admin FROM users WHERE user_id = %s', (user_id,))
+        u = cursor.fetchone()
+        if u and u['is_super_admin']:
+            abort(403)
+
+        # 3. Group exists and is active → 404
+        cursor.execute(
+            'SELECT group_id, name, is_public, is_active FROM groups WHERE group_id = %s',
+            (group_id,)
+        )
+        group = cursor.fetchone()
+        if not group or not group['is_active']:
+            abort(404)
+
+        # 4. Already a member → 400
+        cursor.execute(
+            'SELECT 1 FROM group_memberships WHERE user_id = %s AND group_id = %s',
+            (user_id, group_id)
+        )
+        if cursor.fetchone():
+            return jsonify({'error': 'You are already a member of this group'}), 400
+
+        # 5. Duplicate pending request → 400
+        cursor.execute(
+            "SELECT 1 FROM group_join_requests WHERE user_id = %s AND group_id = %s AND status = 'pending'",
+            (user_id, group_id)
+        )
+        if cursor.fetchone():
+            return jsonify({'error': 'You already have a pending request for this group'}), 400
+
+        # 6. Public → join immediately as Observer; Private → create pending request
+        if group['is_public']:
+            cursor.execute(
+                "INSERT INTO group_memberships (user_id, group_id, role) VALUES (%s, %s, 'Observer')",
+                (user_id, group_id)
+            )
+            flash('Joined successfully!', 'success')
+        else:
+            message = request.form.get('message', '').strip() or None
+            cursor.execute(
+                "INSERT INTO group_join_requests (user_id, group_id, status, message) VALUES (%s, %s, 'pending', %s)",
+                (user_id, group_id, message)
+            )
+            flash('Request submitted successfully!', 'success')
+
+    return redirect(url_for('group_landing', group_id=group_id))
+
+
+@app.route('/groups/<int:group_id>/enter')
+def enter_group(group_id):
+    """Sets the session context for a group the user is already a member of."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT gm.role, g.name, g.is_active
+            FROM group_memberships gm
+            JOIN groups g ON gm.group_id = g.group_id
+            WHERE gm.user_id = %s AND gm.group_id = %s
+        ''', (user_id, group_id))
+        membership = cursor.fetchone()
+
+    if not membership or not membership['is_active']:
+        abort(404)
+
+    session['group_id']   = group_id
+    session['group_role'] = membership['role']
+    session['group_name'] = membership['name']
+
+    return redirect_by_role()
