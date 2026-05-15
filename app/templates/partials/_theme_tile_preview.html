@@ -1,0 +1,82 @@
+{# Shared theme-thumbnail macro — used by the gallery
+   (`coordinator/themes.html`) and the customise history page
+   (`coordinator/theme_history.html`). Renders a WordPress-style
+   mini-mockup of a theme: sidebar/topbar chrome, hero strip,
+   content body, footer columns, all coloured + typed from the
+   passed-in theme dict.
+
+   Inline `--tile-*` CSS vars scope the look to this single block;
+   CSS does the layout via the `--sidebar`/`--topbar`/`--wrap`/`--full`
+   modifier classes.
+
+   Args:
+     p              — dict with primary_color, secondary_color,
+                      background_color, font_heading, font_body,
+                      button_style, nav_position, content_width.
+                      Both `theme_presets` rows and `theme_history`
+                      rows shape-match.
+     is_applied     — show the "Active" badge over the thumbnail.
+                      History rows pass False — they're snapshots,
+                      not live themes.
+     is_customised  — show the "Customised" badge alongside Active.
+                      Only meaningful when is_applied is True.
+#}
+{% macro tile_preview(p, is_applied=False, is_customised=False) %}
+<div class="theme-tile-preview theme-tile-preview--{{ p.nav_position }} theme-tile-preview--{{ p.content_width }}"
+     style="--tile-primary: {{ p.primary_color }};
+            --tile-secondary: {{ p.secondary_color }};
+            --tile-background: {{ p.background_color }};
+            --tile-font-heading: '{{ p.font_heading }}', sans-serif;
+            --tile-font-body: '{{ p.font_body }}', sans-serif;
+            --tile-btn-radius: {% if p.button_style == 'rounded' %}6px{% else %}0{% endif %};"
+     aria-hidden="true">
+
+  {% if is_applied %}
+    <div class="theme-tile-preview__badges">
+      <span class="theme-tile-badge theme-tile-badge--active">Active</span>
+      {% if is_customised %}
+        <span class="theme-tile-badge theme-tile-badge--customised">Customised</span>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="theme-tile-preview__inner">
+    {% if p.nav_position == 'sidebar' %}
+      <aside class="ttp-sidebar">
+        <span class="ttp-sidebar-brand"></span>
+        <span class="ttp-navitem"></span>
+        <span class="ttp-navitem"></span>
+        <span class="ttp-navitem"></span>
+        <span class="ttp-navitem"></span>
+        <span class="ttp-navitem ttp-navitem--short"></span>
+      </aside>
+    {% else %}
+      <header class="ttp-topbar">
+        <span class="ttp-topbar-brand"></span>
+        <span class="ttp-navitem"></span>
+        <span class="ttp-navitem"></span>
+        <span class="ttp-navitem"></span>
+        <span class="ttp-navitem"></span>
+      </header>
+    {% endif %}
+
+    <div class="ttp-main">
+      <div class="ttp-hero">
+        <span class="ttp-hero__title"></span>
+        <span class="ttp-hero__chip"></span>
+      </div>
+      <div class="ttp-content">
+        <p class="ttp-heading">Aa Bb Cc</p>
+        <p class="ttp-line"></p>
+        <p class="ttp-line ttp-line--short"></p>
+        <span class="ttp-btn">Action</span>
+      </div>
+      <div class="ttp-footer">
+        <span class="ttp-footer__col"></span>
+        <span class="ttp-footer__col"></span>
+        <span class="ttp-footer__col"></span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}

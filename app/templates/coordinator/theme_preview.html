@@ -1,0 +1,160 @@
+{# coordinator/theme_preview.html — P2-41 Fuller preview of one preset.
+   Route: GET /coordinator/themes/<preset_id>
+   Three large colour swatches with hex, typography sample in the
+   preset's font, a sample button using the preset's primary +
+   button_style. No apply action in this story.
+#}
+{% extends 'base.html' %}
+
+{% block title %}{{ preset.name }} preview{% endblock %}
+
+{% block head_extra %}
+  {# Load both heading + body fonts so the typography section can render
+     each sample in its own family. Deduped when they happen to match. #}
+  {% if preset.font_heading %}
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family={{ preset.font_heading|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+  {% endif %}
+  {% if preset.font_body and preset.font_body != preset.font_heading %}
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family={{ preset.font_body|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <a class="theme-preview-back" href="{{ url_for('coordinator_themes') }}">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to gallery
+  </a>
+
+  <h1 class="page-title mb-1">{{ preset.name }}</h1>
+  {% if preset.description %}
+    <p class="text-muted theme-preview-desc">{{ preset.description }}</p>
+  {% endif %}
+
+  {# ── Apply action (P2-42) ─────────────────────────────────
+     Sits above the preview content so the primary action is
+     visible without scrolling. The form is the only mutation
+     surface in this whole flow.
+  #}
+  <div class="theme-preview-actions">
+    {% if is_currently_applied %}
+      <span class="theme-preview-applied-tag" role="status">
+        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        This theme is currently applied
+      </span>
+    {% else %}
+      <form method="POST"
+            action="{{ url_for('coordinator_apply_theme', preset_id=preset.preset_id) }}"
+            class="theme-preview-apply-form">
+        <button type="submit"
+                class="btn-pf theme-preview-apply-btn"
+                aria-label="Apply {{ preset.name }} theme to {{ nav_group_name or 'this group' }}">
+          <i class="bi bi-palette" aria-hidden="true"></i>
+          Apply this theme
+        </button>
+      </form>
+    {% endif %}
+    {# P2-43 entry path (b) — Customise from this preset. Sits next to
+       Apply / applied tag so it reads as a secondary action on the same
+       preset. When the preset is already applied, this becomes the
+       primary action (you can't apply what's applied, but you can
+       still tweak it). #}
+    <a href="{{ url_for('coordinator_theme_customise', from_preset=preset.preset_id) }}"
+       class="btn-pf-outline theme-preview-customise-btn">
+      <i class="bi bi-sliders" aria-hidden="true"></i>
+      Customise this theme
+    </a>
+  </div>
+
+  {# ── Colours ──────────────────────────────────────────────── #}
+  <section class="panel theme-preview-section" aria-labelledby="preview-colours">
+    <h2 id="preview-colours" class="theme-preview-section-title">Colours</h2>
+    <div class="theme-preview-swatch-row">
+
+      <figure class="theme-preview-swatch">
+        <div class="theme-preview-swatch-box"
+             style="background: {{ preset.primary_color }};"
+             aria-hidden="true"></div>
+        <figcaption>
+          <span class="theme-preview-swatch-label">Primary</span>
+          <code class="theme-preview-swatch-hex">{{ preset.primary_color }}</code>
+        </figcaption>
+      </figure>
+
+      <figure class="theme-preview-swatch">
+        <div class="theme-preview-swatch-box"
+             style="background: {{ preset.secondary_color }};"
+             aria-hidden="true"></div>
+        <figcaption>
+          <span class="theme-preview-swatch-label">Secondary</span>
+          <code class="theme-preview-swatch-hex">{{ preset.secondary_color }}</code>
+        </figcaption>
+      </figure>
+
+      <figure class="theme-preview-swatch">
+        <div class="theme-preview-swatch-box"
+             style="background: {{ preset.background_color }};"
+             aria-hidden="true"></div>
+        <figcaption>
+          <span class="theme-preview-swatch-label">Background</span>
+          <code class="theme-preview-swatch-hex">{{ preset.background_color }}</code>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  {# ── Typography ─────────────────────────────────────────── #}
+  <section class="panel theme-preview-section" aria-labelledby="preview-typography">
+    <h2 id="preview-typography" class="theme-preview-section-title">Typography</h2>
+    <div class="theme-preview-type">
+      {# Display sample renders in the preset's heading font; body sample
+         in the body font. Inline styles so the swap is visible per-row
+         without depending on the global cascade. #}
+      <p class="theme-preview-type-display"
+         style="font-family: '{{ preset.font_heading }}', serif;">
+        The quick brown fox jumps over the lazy dog
+      </p>
+      <p class="theme-preview-type-body"
+         style="font-family: '{{ preset.font_body }}', sans-serif;">
+        Pack my box with five dozen liquor jugs. The five boxing wizards
+        jump quickly. How vexingly quick daft zebras jump.
+      </p>
+    </div>
+    <p class="theme-preview-meta">
+      Heading: <strong>{{ preset.font_heading }}</strong>
+      &nbsp;·&nbsp;
+      Body: <strong>{{ preset.font_body }}</strong>
+    </p>
+  </section>
+
+  {# ── Sample button ────────────────────────────────────── #}
+  <section class="panel theme-preview-section" aria-labelledby="preview-button">
+    <h2 id="preview-button" class="theme-preview-section-title">Sample button</h2>
+    <div class="theme-preview-button-row">
+      {# Inline-styled to mirror the preset's primary colour and its
+         button_style enum ('rounded' → 8px / 'square' → 0). This is a
+         visual sample, not a real button — disabled to make that
+         explicit. #}
+      <button type="button"
+              class="theme-preview-sample-btn"
+              disabled
+              style="background: {{ preset.primary_color }};
+                     color: {{ preset.background_color }};
+                     border-radius: {% if preset.button_style == 'rounded' %}8px{% else %}0{% endif %};">
+        Sample button
+      </button>
+    </div>
+    <p class="theme-preview-meta">
+      Style: <strong>{{ preset.button_style }}</strong>
+      &nbsp;·&nbsp;
+      Nav: <strong>{{ preset.nav_position }}</strong>
+      &nbsp;·&nbsp;
+      Width: <strong>{{ preset.content_width }}</strong>
+    </p>
+  </section>
+
+</div>
+{% endblock %}

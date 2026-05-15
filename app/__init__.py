@@ -9,8 +9,40 @@ route modules, template filters, and global context processors.
 from flask import Flask, session, request as flask_request, url_for, render_template
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail
-from datetime import timedelta
+from datetime import datetime, timedelta
 import os
+
+
+def _compute_initials(first_name, last_name, username):
+    """Two-character initials for the user avatar in the navbar chrome.
+
+    Cascading sources: first_name (+ last_name) → username → '?'.
+
+    Cases verified:
+      ('Bo',  None)       → 'BO'      (single word, 2+ chars: first 2)
+      ('Bo',  'Kim')      → 'BK'      (two words: first letter of each)
+      ('Mary Jane', 'Smith') → 'MS'   (3 words: first letter of first + last)
+      ('A',   None)       → 'A'       (single char stays single, CSS centres it)
+      (None,  None) + 'admin' → 'AD'  (falls back to username)
+      empty all                → '?'
+    """
+    parts = []
+    if first_name and first_name.strip():
+        parts.extend(first_name.strip().split())
+    if last_name and last_name.strip():
+        parts.extend(last_name.strip().split())
+
+    if len(parts) >= 2:
+        return (parts[0][0] + parts[-1][0]).upper()
+    if len(parts) == 1:
+        single = parts[0]
+        return single[:2].upper()
+
+    if username and username.strip():
+        u = username.strip()
+        return u[:2].upper()
+
+    return '?'
 
 def load_env_file(env_path):
     """Load key=value pairs from a .env file into process environment."""
@@ -103,16 +135,28 @@ from app import lines
 from app import reports
 from app import general
 from app import my_tiaki
+from app import themes
+from app import identity_defaults  # noqa: F401 — registers /identity/default/* routes
 
 # ── Template globals ──────────────────────────────────────────────────────────
+
+_ROLE_TO_DASHBOARD = {
+    'Super Admin':       'admin_dashboard',
+    'Group Coordinator': 'coordinator_dashboard',
+    'Operator':          'operator_dashboard',
+    # Observer + any other unrecognised role falls through to
+    # observer_dashboard via dict.get's default below.
+}
+
 
 @app.context_processor
 def inject_globals():
     """Makes global variables available to all Jinja2 templates."""
-    profile_photo    = None
-    first_name       = None
-    last_name        = None
-    nav_is_public    = None
+    profile_photo = None
+    first_name    = None
+    last_name     = None
+    nav_is_public = None
+    nav_group_member_count = 0
     nav_notifications = []
     if session.get('user_id'):
         try:
@@ -134,6 +178,17 @@ def inject_globals():
                     g = cursor.fetchone()
                     if g:
                         nav_is_public = g['is_public']
+                    # Member count — consumed by the new hero pill. Same
+                    # DB round-trip block as nav_is_public so cost is
+                    # one extra query per request, not a separate trip.
+                    cursor.execute(
+                        'SELECT COUNT(*) AS n FROM group_memberships WHERE group_id = %s',
+                        (session['group_id'],)
+                    )
+                    mc = cursor.fetchone()
+                    if mc:
+                        nav_group_member_count = mc['n']
+                
                 if (session.get('group_role') == 'Group Coordinator'
                         and session.get('group_id')):
                     cursor.execute(
@@ -148,6 +203,22 @@ def inject_globals():
                     nav_notifications = cursor.fetchall()
         except Exception:
             pass
+
+    # Dashboard URL for the active role — consumed by base.html's brand
+    # link so a click on the group brand lands the user on their role
+    # dashboard (mirrors redirect_by_role()). Logged-out + missing-role
+    # users get '/' so the brand on auth/marketing pages still works.
+    if session.get('user_id'):
+        endpoint = _ROLE_TO_DASHBOARD.get(
+            session.get('group_role'), 'observer_dashboard'
+        )
+        try:
+            nav_dashboard_url = url_for(endpoint)
+        except Exception:
+            nav_dashboard_url = url_for('index')
+    else:
+        nav_dashboard_url = url_for('index')
+
     return dict(
         site_name='Tiaki',
         site_tagline='Conservation Group Management',
@@ -157,10 +228,63 @@ def inject_globals():
         nav_profile_photo=profile_photo,
         nav_first_name=first_name,
         nav_full_name=f"{first_name} {last_name}".strip(),
+        nav_initials=_compute_initials(
+            first_name, last_name, session.get('username')
+        ),
         nav_group_name=session.get('group_name', ''),
         nav_group_role=session.get('group_role', ''),
         nav_is_public=nav_is_public,
         nav_notifications=nav_notifications,
+        nav_group_member_count=nav_group_member_count,
+        nav_dashboard_url=nav_dashboard_url,
+        current_year=datetime.now().year,
+    )
+
+
+@app.context_processor
+def inject_theme_identity():
+    """Custom Themes — surface-scoped theme + identity for every render.
+
+    Exposes four variables so templates pick the right scope:
+      - platform_theme    — Tiaki's own brand. Always set.
+      - platform_identity — Tiaki's cover/profile. Always set.
+      - group_theme       — active group's theme dict, or None.
+      - group_identity    — active group's cover/profile, or None.
+
+    Marketing surface (base_marketing.html) renders in platform_theme by
+    default; a route that's *about* a specific group (group_landing) can
+    pass `override_theme` / `override_identity` to preview that group
+    without changing Tiaki's identity globally.
+
+    In-app surface (base.html) renders in `group_theme or platform_theme`
+    — the active group's brand inside its own context, Tiaki defaults
+    when no group is selected.
+
+    Auth bases inject no <style> block at all, so the var fallbacks in
+    the CSS resolve to literal defaults → auth pages stay on Tiaki.
+    """
+    group_id = session.get('group_id')
+    try:
+        platform_theme    = themes.get_platform_theme()
+        platform_identity = themes.get_platform_identity()
+        group_theme       = themes.get_group_theme(group_id)
+        group_identity    = themes.get_group_identity(group_id)
+    except Exception:
+        platform_theme = dict(themes.PLATFORM_DEFAULT_THEME)
+        # Generated SVG routes don't need the DB to mint a URL — they
+        # only hit the DB when actually fetched. So even when the theme
+        # query failed we can still hand templates a working <img src>.
+        platform_identity = {
+            'cover_photo':   url_for('identity_default_platform_cover'),
+            'profile_photo': url_for('identity_default_platform_profile'),
+        }
+        group_theme    = None
+        group_identity = None
+    return dict(
+        platform_theme=platform_theme,
+        platform_identity=platform_identity,
+        group_theme=group_theme,
+        group_identity=group_identity,
     )
 
 # ── Template filters ──────────────────────────────────────────────────────────

@@ -5,9 +5,11 @@
   Blocks:
     title          — page <title> text
     content        — main page content
-    page_title     — heading in content-header (dashboard pages)
-    breadcrumb     — breadcrumb inside content-header
-    header_actions — buttons in top-right of content-header
+    page_title     — heading in page-head strip (dashboard pages)
+    page_subtitle  — small descriptor under the title (optional)
+    page_head_icon — small icon left of the title (optional)
+    breadcrumb     — breadcrumb in the page-head aside
+    header_actions — buttons in top-right of page-head aside
     scripts        — extra scripts at end of body
 #}
 <!DOCTYPE html>
@@ -17,28 +19,95 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ site_name }}{% endblock %} | {{ site_tagline }}</title>
   <meta name="description" content="content="{{ site_name }} — {{ site_tagline }}. Trap monitoring and predator control at Lincoln University."">
+
+  {# Custom Themes — in-app surface reflects the active group's theme,
+     falling through to Tiaki's platform theme when no group is selected.
+     Must come BEFORE the CSS links so the `--theme-*` variables are
+     defined when Bootstrap + custom.css load. #}
+  {% set _t = group_theme or platform_theme %}
+  <style>
+    :root {
+      --theme-primary:       {{ _t.primary_color }};
+      --theme-secondary:     {{ _t.secondary_color }};
+      --theme-background:    {{ _t.background_color }};
+      --theme-button-radius: {{ _t.button_radius }};
+      --theme-font-heading:  "{{ _t.font_heading }}";
+      --theme-font-body:     "{{ _t.font_body }}";
+    }
+  </style>
+  {# Load the active theme's heading + body fonts. Dedupe when they match
+     so we don't fire two identical Google Fonts requests (e.g. a custom
+     theme where the Coordinator picked one font for both today). The
+     hardcoded Cabin link below stays for buttons/badges that still use
+     it stylistically. #}
+  {% set _heading_font = _t.font_heading %}
+  {% set _body_font = _t.font_body %}
+  {% if _heading_font %}
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family={{ _heading_font|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+  {% endif %}
+  {% if _body_font and _body_font != _heading_font %}
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family={{ _body_font|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+  {% endif %}
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
   <link rel="icon" type="image/png" href="{{ favicon_url }}">
+
+  {# Per-page additional <head> content (extra stylesheets, fonts, meta). #}
+  {% block head_extra %}{% endblock %}
 </head>
-<body>
+{# 2026-05-12 layout split: body class encodes two orthogonal axes.
+   `_t` holds the active theme dict and is referenced below for the
+   navbar-topbar conditional and the sidebar inclusion gate. Falls
+   through to platform_theme when no group is active. Marketing +
+   auth surfaces don't extend this base, so they remain unscoped —
+   intentional. #}
+{% set _t = group_theme or platform_theme %}
+<body class="layout-nav-{{ _t.nav_position }} layout-width-{{ _t.content_width }}">
+{# 2026-05-12 app-wrap: outer container that the content_width axis
+   constrains. In wrap mode, .app-wrap caps at 1400px and body
+   background shows around it (matting on wide monitors). In full
+   mode, .app-wrap is a passthrough (max-width: none). Closes
+   immediately before </body>. #}
+<div class="app-wrap">
 
 {# ══════════════════════════════════════════════════════ #}
 {# NAVBAR                                                 #}
 {# ══════════════════════════════════════════════════════ #}
 <nav class="pf-navbar">
-  <a class="brand" href="{{ url_for('index') }}">
-    <img src="{{ logo_url }}"
-        alt="{{ site_name }}"
-        class="d-none d-md-block"
-        style="height:36px; width:auto;">
-    <img src="{{ icon_url }}"
-        alt="{{ site_name }}"
-        class="d-md-none"
-        style="height:36px; width:auto;">
-  </a>
+  {# Brand area — group-context-aware. When a group is active, the
+     brand becomes the group's profile photo + name and links to the
+     user's role dashboard. Marketing surface (base_marketing.html)
+     uses its own brand block and is unaffected. The Tiaki-logo fallback
+     here is defensive: base.html runs inside a logged-in route, and
+     check_user_status strips group-less sessions before render — but
+     /select-group reaches base.html without a group_id, so the
+     fallback is required. #}
+  {% if session.get('group_id') %}
+    {% set _brand_profile = (group_identity and group_identity.profile_photo) or platform_identity.profile_photo %}
+    <a class="brand brand--group" href="{{ nav_dashboard_url }}"
+       aria-label="{{ session.get('group_name') }} — go to dashboard">
+      <img class="brand-group-avatar"
+           src="{{ _brand_profile }}"
+           alt="">
+      <span class="brand-group-name">{{ session.get('group_name') }}</span>
+    </a>
+  {% else %}
+    <a class="brand" href="{{ url_for('index') }}">
+      <img src="{{ logo_url }}"
+          alt="{{ site_name }}"
+          class="d-none d-md-block"
+          style="height:36px; width:auto;">
+      <img src="{{ icon_url }}"
+          alt="{{ site_name }}"
+          class="d-md-none"
+          style="height:36px; width:auto;">
+    </a>
+  {% endif %}
 
   {% if not session.get('user_id') %}
     {# Public nav — logged out #}
@@ -53,57 +122,41 @@
     </div>
 
   {% else %}
-    {# Logged-in nav #}
+    {# 2026-05-15 chrome restructure: the topbar primary nav used to
+       live INSIDE this navbar, which crowded the row with brand +
+       tabs + hamburger + user + logout. Now the navbar is a slim
+       ribbon (brand + user + logout only) and the primary nav lives
+       in a `.secondary-nav` strip BELOW the hero (see further down
+       in this file, inside <main>). Tab order through the navbar:
+         brand → user avatar chip → logout
+       and continues into the secondary-nav row when present:
+         → primary tabs → hamburger #}
+
+    {# Logged-in nav. 2026-05-12 design integration: the inline-styled
+       user chip + logout link became the class-based .user-pill and
+       .nav-logout components in custom.css. Initials are precomputed
+       in inject_globals (nav_initials) so the template doesn't
+       re-derive them; handles single-name, multi-word, and
+       username-only cases (see _compute_initials). #}
     <div class="nav-actions">
 
-      {# Profile photo / avatar chip — links to profile #}
-      <a href="{{ url_for('profile') }}"
-         style="display:flex; align-items:center; gap:8px; text-decoration:none;
-                background: #185534; border:1px solid rgba(255,255,255,0.15);
-                border-radius:20px; padding:4px 12px 4px 4px; transition:background 0.15s;"
-         onmouseover="this.style.background='#185534cc'"
-         onmouseout="this.style.background='#185534'">
-        {# Avatar circle #}
-        <div style="width:28px; height:28px; border-radius:50%;
-                    background:var(--pf-600); flex-shrink:0; overflow:hidden;
-                    display:flex; align-items:center; justify-content:center;
-                    font-size:11px; font-weight:700; color:#fff;
-                    font-family:'Cabin',sans-serif;">
+      <a href="{{ url_for('profile') }}" class="user-pill">
+        <div class="user-pill__avatar">
           {% if nav_profile_photo %}
             <img src="{{ url_for('static', filename='images/uploads/' + nav_profile_photo) }}"
-                 alt="{{ nav_first_name or session.get('username') }}'s profile photo"
-                 style="width:100%; height:100%; object-fit:cover;">
+                 alt="{{ nav_first_name or session.get('username') }}'s profile photo">
           {% else %}
-            {{ (nav_first_name or session.get('username', 'U'))[:2].upper() }}
+            {{ nav_initials }}
           {% endif %}
         </div>
-        {# Username + role #}
-        <div style="line-height:1.2;">
-          <div style="font-size:14px; color:#fff; font-weight:500;">
+        <div class="user-pill__meta">
+          <div class="user-pill__name">
             {{ nav_first_name or session.get('username') }}
           </div>
-          <div style="font-size:11px; color:#bbf4d0;">
+          <div class="user-pill__role">
             {{ session.get('group_role') }}
           </div>
         </div>
-        {% if session.get('group_name') and session.get('group_role') not in ('Super Admin', None) %}
-          <span style="font-size:11px; font-weight:600; color:#fff;
-                       background:rgba(255,255,255,0.15); border-radius:10px;
-                       padding:2px 8px; white-space:nowrap;">
-            {{ session.get('group_name') }}
-          </span>
-          {% if nav_is_public is not none %}
-            <span style="font-size:10px; font-weight:600; border-radius:10px;
-                         padding:2px 7px; white-space:nowrap;
-                         {% if nav_is_public %}
-                           background:rgba(255,255,255,0.2); color:#bbf4d0;
-                         {% else %}
-                           background:rgba(220,53,69,0.35); color:#ffc8c8;
-                         {% endif %}">
-              {{ 'Public' if nav_is_public else 'Private' }}
-            </span>
-          {% endif %}
-        {% endif %}
       </a>
 
       {% if session.get('group_role') == 'Group Coordinator' %}
@@ -156,14 +209,9 @@
         </div>
       {% endif %}
 
-      <a href="{{ url_for('logout') }}"
-         style="display:flex; align-items:center; gap:5px; text-decoration:none;
-                color:#c5ffda; font-size:13px; padding:4px 8px;
-                border-radius:6px; transition:color 0.15s;"
-         onmouseover="this.style.color='#fff'"
-         onmouseout="this.style.color='var(--pf-300)'">
+      <a href="{{ url_for('logout') }}" class="nav-logout">
         <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-        <span style="font-size:12px;">Logout</span>
+        <span>Logout</span>
       </a>
     </div>
   {% endif %}
@@ -206,180 +254,113 @@
 
   <div class="app-layout">
 
-    {# ── Sidebar ── #}
-    <aside class="sidebar collapsed no-transition" id="sidebar" aria-label="Main navigation">
-        <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar" aria-label="Collapse sidebar">
-          <i class="bi bi-layout-sidebar-reverse" id="sidebarToggleIcon" aria-hidden="true"></i>
-          <span class="toggle-label" id="sidebarToggleLabel">Collapse</span>
-        </button>
-      <div class="sidebar-user">
-        <div class="user-avatar">
-          {{ (nav_first_name or session.get('username', 'U'))[:2].upper() }}
-        </div>
-        <div>
-          <div class="user-name">{{ nav_full_name or session.get('username') }}</div>
-          <div class="user-role">{{ session.get('group_role') }}</div>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav">
-
-        {# Overview #}
-        <div class="sidebar-section-label">Overview</div>
-        {% if session.get('group_role') == 'Super Admin' %}
-          <a href="{{ url_for('admin_dashboard') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
-            <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
-          </a>
-        {% elif session.get('group_role') == 'Group Coordinator' %}
-          <a href="{{ url_for('coordinator_dashboard') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_dashboard' }}">
-            <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
-          </a>
-        {% elif session.get('group_role') == 'Operator' %}
-          <a href="{{ url_for('operator_dashboard') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'operator_dashboard' }}">
-            <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
-          </a>
-        {% else %}
-          <a href="{{ url_for('observer_dashboard') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'observer_dashboard' }}">
-            <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
-          </a>
-        {% endif %}
-
-        {# Operator work #}
-        {% if session.get('group_role') == 'Operator' %}
-          <div class="sidebar-section-label">My Work</div>
-          <a href="{{ url_for('add_catch') }}"
-              class="sidebar-link {{ 'active' if request.endpoint == 'add_catch' }}">
-            <i class="bi bi-plus-circle" aria-hidden="true"></i> <span class="link-text">Add Catch Record</span>
-          </a>
-          <a href="{{ url_for('add_observation') }}"
-              class="sidebar-link {{ 'active' if request.endpoint == 'add_observation' }}">
-            <i class="bi bi-binoculars" aria-hidden="true"></i> <span class="link-text">Add Observation</span>
-          </a>
-          <a href="{{ url_for('my_records') }}"
-              class="sidebar-link {{ 'active' if request.endpoint == 'my_records' }}">
-            <i class="bi bi-pencil-square" aria-hidden="true"></i> <span class="link-text">My Catch Records</span>
-          </a>
-          <a href="{{ url_for('lines_index', operator=session.username) }}" class="sidebar-link">
-            <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
-            <span class="link-text">My Trap Lines</span>
-          </a>
-        {% endif %}
-
-        {# View data — all roles #}
-        <div class="sidebar-section-label">Data</div>
-        <a href="{{ url_for('lines_index') }}"
-           class="sidebar-link {% if request.endpoint == 'lines_index' %}active{% endif %}">
-          <i class="bi bi-geo-alt" aria-hidden="true"></i> <span class="link-text">Trap Lines</span>
-        </a>
-        <a href="{{ url_for('catch_records') }}"
-           class="sidebar-link {{ 'active' if request.endpoint == 'catch_records' }}">
-          <i class="bi bi-table" aria-hidden="true"></i> <span class="link-text">Catch Records</span>
-        </a>
-        <a href="{{ url_for('observations') }}"
-           class="sidebar-link {{ 'active' if request.endpoint == 'observations' }}">
-          <i class="bi bi-binoculars" aria-hidden="true"></i> <span class="link-text">Observations</span>
-        </a>
-
-        {# Reports — all roles #}
-        <div class="sidebar-section-label">Reports</div>
-        <a href="{{ url_for('reports') }}"
-           class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
-          <i class="bi bi-graph-up" aria-hidden="true"></i> <span class="link-text">Reports &amp; Charts</span>
-        </a>
-
-        {# Super Admin system links #}
-        {% if session.get('group_role') == 'Super Admin' %}
-          <div class="sidebar-section-label">System</div>
-          <a href="{{ url_for('admin_users') }}"
-             class="sidebar-link {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
-            <i class="bi bi-people" aria-hidden="true"></i> <span class="link-text">User Management</span>
-          </a>
-          <a href="{{ url_for('admin_groups') }}"
-             class="sidebar-link {{ 'active' if request.endpoint in ['admin_groups','admin_group_detail'] }}">
-            <i class="bi bi-collection" aria-hidden="true"></i> <span class="link-text">Manage Groups</span>
-          </a>
-          <div class="sidebar-section-label">Manage Lists</div>
-          <a href="{{ url_for('manage_species') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'manage_species' }}">
-            <i class="bi bi-bug" aria-hidden="true"></i> <span class="link-text">Species</span>
-          </a>
-          <a href="{{ url_for('manage_statuses') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'manage_statuses' }}">
-            <i class="bi bi-tags" aria-hidden="true"></i> <span class="link-text">Statuses</span>
-          </a>
-          <a href="{{ url_for('manage_bait_types') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'manage_bait_types' }}">
-            <i class="bi bi-basket" aria-hidden="true"></i> <span class="link-text">Bait Types</span>
-          </a>
-        {% endif %}
-
-        {# Manage lines — Super Admin and Group Coordinator #}
-        {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
-          <div class="sidebar-section-label">Manage</div>
-          <a href="{{ url_for('new_line') }}"
-             class="sidebar-link {{ 'active' if request.endpoint == 'new_line' }}">
-            <i class="bi bi-plus-circle-dotted" aria-hidden="true"></i> <span class="link-text">New Line</span>
-          </a>
-          {% if session.get('group_role') == 'Group Coordinator' %}
-            <a href="{{ url_for('coordinator_members') }}"
-               class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_members', 'coordinator_member_change_role', 'coordinator_member_remove') }}">
-              <i class="bi bi-people" aria-hidden="true"></i> <span class="link-text">Members</span>
-            </a>
-            <a href="{{ url_for('coordinator_lines_assign') }}"
-               class="sidebar-link {{ 'active' if request.endpoint in ('coordinator_lines_assign', 'coordinator_assign_operators') }}">
-              <i class="bi bi-person-lines-fill" aria-hidden="true"></i> <span class="link-text">Assign Operators</span>
-            </a>
-            <a href="{{ url_for('coordinator_requests') }}"
-               class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_requests' }}">
-              <i class="bi bi-person-check" aria-hidden="true"></i> <span class="link-text">Join Requests</span>
-            </a>
-            <a href="{{ url_for('coordinator_settings') }}"
-               class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_settings' }}">
-              <i class="bi bi-gear" aria-hidden="true"></i> <span class="link-text">Group Settings</span>
-            </a>
-          {% endif %}
-        {% endif %}
-
-        {# Account — all roles #}
-        <div class="sidebar-section-label">Account</div>
-        <a href="{{ url_for('profile') }}"
-           class="sidebar-link {{ 'active' if request.endpoint == 'profile' }}">
-          <i class="bi bi-person" aria-hidden="true"></i> <span class="link-text">My Profile</span>
-        </a>
-        <a href="{{ url_for('change_password') }}"
-           class="sidebar-link {{ 'active' if request.endpoint == 'change_password' }}">
-          <i class="bi bi-key" aria-hidden="true"></i> <span class="link-text">Change Password</span>
-        </a>
-
-      </nav>
-
-      <div class="sidebar-footer">
-        <a href="{{ url_for('logout') }}">
-          <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-          <span class="link-text">Log Out</span>
-        </a>
-      </div>
-    </aside>
-    {# End sidebar #}
+    {# ── Sidebar ──
+       2026-05-15: rendered UNCONDITIONALLY so the editor's live
+       preview can flip between sidebar and topbar by toggling the
+       body class alone — no full page reload needed. CSS in
+       custom.css (`body.layout-nav-topbar .sidebar { display:none }`)
+       hides it when the topbar layout is active. The trade-off is a
+       small constant HTML weight; that's worth the live-customise UX. #}
+    {% include 'partials/_nav_sidebar.html' %}
 
     {# ── Main content ── #}
     <main class="main-content">
 
-      {# Content header — only shown when child template fills in page_title block #}
+      {# 2026-05-12 hero rebuild (from design). Layered composition:
+           1. Cover photo at full opacity (or gradient fallback when no
+              photo). Per user tweak: don't dim the cover photo —
+              Coordinators upload them so they're SEEN.
+           2. Fern SVG decoration overlaid at 0.7 / mix-blend-mode:screen.
+           3. Bottom-anchored dark scrim for title legibility.
+         Content:
+           - Eyebrow chip ("Conservation Group" — static for now)
+           - Title (group name)
+           - Chip row: Public/Private pill + member count
+           - Location pill OMITTED (groups.location column doesn't exist;
+             flagged as P2-X schema-add).
+      #}
+      {% if session.get('group_id') %}
+        {% set _cover = (group_identity and group_identity.cover_photo) or platform_identity.cover_photo %}
+        <section class="hero"
+                 aria-label="{{ session.get('group_name') }} hero">
+          <img class="hero__img"
+               src="{{ _cover }}"
+               alt="">
+          <div class="wrap hero__inner">
+            <span class="hero__eyebrow">Conservation Group</span>
+            <div class="hero__row">
+              <h1 class="hero__title">{{ session.get('group_name') }}</h1>
+              <div class="hero__meta">
+                {% if nav_is_public is not none %}
+                  <span class="hero-chip hero-chip--{{ 'public' if nav_is_public else 'private' }}"
+                        aria-label="{{ 'Public group' if nav_is_public else 'Private group' }}">
+                    <i class="bi bi-{{ 'globe' if nav_is_public else 'lock-fill' }}" aria-hidden="true"></i>
+                    {{ 'Public' if nav_is_public else 'Private' }}
+                  </span>
+                {% endif %}
+                {% if nav_group_member_count %}
+                  <span class="hero-chip"
+                        aria-label="{{ nav_group_member_count }} members">
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    {{ nav_group_member_count }} member{{ '' if nav_group_member_count == 1 else 's' }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </section>
+      {% endif %}
+
+      {# 2026-05-15 secondary nav strip — primary tabs + overflow
+         hamburger. Like the sidebar above, rendered UNCONDITIONALLY
+         and hidden via CSS in sidebar layouts
+         (`body.layout-nav-sidebar .secondary-nav { display:none }`).
+         This is what lets the editor's live preview swap chrome
+         purely by flipping the body class on the running page. #}
+      <nav class="secondary-nav" aria-label="Primary">
+        <div class="wrap secondary-nav__inner">
+          {% include 'partials/_nav_topbar.html' %}
+        </div>
+      </nav>
+
+      {# 2026-05-12 page-head strip (from design). Renders only when a
+         page fills in `page_title`. Existing pages keep working —
+         `page_title` and `breadcrumb` are the same blocks they always
+         filled. New optional blocks:
+           - `page_head_icon`     — small icon on the left of the title
+           - `page_subtitle`      — descriptor under the title
+           - `header_actions`     — buttons on the right (existing)
+         Each renders its container only when the block has content. #}
       {% if self.page_title() | trim %}
-      <div class="content-header">
-        <div>
-          <div class="page-title">{% block page_title %}{% endblock %}</div>
-          {% block breadcrumb %}{% endblock %}
+      <section class="page-head">
+        <div class="wrap page-head__inner">
+          <div class="page-head__title">
+            {% if self.page_head_icon() | trim %}
+              <span class="page-head__icon" aria-hidden="true">
+                {% block page_head_icon %}{% endblock %}
+              </span>
+            {% endif %}
+            <div class="page-head__title-text">
+              <h1 class="page-head__h1">{% block page_title %}{% endblock %}</h1>
+              {% if self.page_subtitle() | trim %}
+                <p class="page-head__sub">{% block page_subtitle %}{% endblock %}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if self.breadcrumb() | trim or self.header_actions() | trim %}
+            <div class="page-head__aside">
+              {% if self.breadcrumb() | trim %}
+                {% block breadcrumb %}{% endblock %}
+              {% endif %}
+              {% if self.header_actions() | trim %}
+                <div class="page-head__actions">
+                  {% block header_actions %}{% endblock %}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
         </div>
-        <div class="d-flex gap-2 align-items-center">
-          {% block header_actions %}{% endblock %}
-        </div>
-      </div>
+      </section>
       {% endif %}
 
       {# Flash messages inside dashboard pages #}
@@ -405,6 +386,11 @@
 
   </div>
   {# End app-layout #}
+
+  {# 2026-05-12 in-app footer — sits inside .app-wrap, below
+     .app-layout, so it spans the full wrap width even in sidebar
+     mode (rather than being indented to the right of the sidebar). #}
+  {% include 'partials/_footer.html' %}
 
 {% else %}
 
@@ -515,9 +501,123 @@
     });
 
   })();
+
+  // ── Grid layout: bring the active tab into view on first paint ───
+  // No-op when the active tab isn't in the DOM (centred/sidebar
+  // layouts, or pages whose endpoint doesn't match any tab). 'instant'
+  // avoids a smooth-scroll animation that would compete with the page
+  // load; 'inline: center' keeps the active tab readable when there
+  // are 15+ links and the bar has scrolled the active one off-edge.
+  (function () {
+    const activeTab = document.querySelector('.navbar-tab.active');
+    if (!activeTab) return;
+    activeTab.scrollIntoView({
+      inline: 'center',
+      block: 'nearest',
+      behavior: 'instant',
+    });
+  })();
+
+  // ── Topbar hamburger overflow menu ──────────────────────────────
+  // No-op when the elements aren't present (sidebar layout). Uses the
+  // ARIA menu pattern: roving tabindex (-1 on inactive items, 0 on
+  // focused), ArrowUp/Down/Home/End navigation, ESC closes + returns
+  // focus to the button, outside-click closes without stealing focus.
+  // The dropdown links are <a> elements so Enter activates them via
+  // browser default (no special handler needed).
+  (function () {
+    const btn  = document.getElementById('topbarMenuBtn');
+    const menu = document.getElementById('topbarOverflowMenu');
+    if (!btn || !menu) return;
+
+    function items() {
+      return Array.from(menu.querySelectorAll('[role="menuitem"]'));
+    }
+
+    function focusItemAt(index) {
+      const list = items();
+      if (!list.length) return;
+      if (index < 0) index = list.length - 1;
+      if (index >= list.length) index = 0;
+      list.forEach(function (i) { i.setAttribute('tabindex', '-1'); });
+      list[index].setAttribute('tabindex', '0');
+      list[index].focus();
+    }
+
+    function moveFocus(delta) {
+      const list = items();
+      const current = list.findIndex(function (i) {
+        return i === document.activeElement;
+      });
+      focusItemAt(current + delta);
+    }
+
+    function openMenu() {
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      focusItemAt(0);  // also sets tabindex=0 on the first item
+    }
+
+    function closeMenu(returnFocus) {
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      // Reset roving tabindex so the next open starts fresh.
+      items().forEach(function (i) { i.setAttribute('tabindex', '-1'); });
+      if (returnFocus) btn.focus();
+    }
+
+    btn.addEventListener('click', function () {
+      if (menu.hidden) openMenu(); else closeMenu(true);
+    });
+
+    // Outside-click closes WITHOUT returning focus to the button —
+    // the user is reaching for something else on the page.
+    document.addEventListener('click', function (e) {
+      if (menu.hidden) return;
+      if (menu.contains(e.target) || btn.contains(e.target)) return;
+      closeMenu(false);
+    });
+
+    // Keyboard while menu is open.
+    document.addEventListener('keydown', function (e) {
+      if (menu.hidden) return;
+      switch (e.key) {
+        case 'Escape':
+          e.preventDefault();
+          closeMenu(true);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          moveFocus(1);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          moveFocus(-1);
+          break;
+        case 'Home':
+          e.preventDefault();
+          focusItemAt(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          focusItemAt(items().length - 1);
+          break;
+      }
+    });
+
+    // When a menuitem is activated, navigation proceeds via the <a>'s
+    // default. We also close the menu so that if the click is
+    // intercepted (e.g. middle-click for new tab), the menu doesn't
+    // stay open on the current page. Skip returnFocus — the page is
+    // about to change anyway.
+    items().forEach(function (item) {
+      item.addEventListener('click', function () { closeMenu(false); });
+    });
+  })();
 </script>
 
 {% block scripts %}{% endblock %}
 
+</div>{# end .app-wrap #}
 </body>
 </html>

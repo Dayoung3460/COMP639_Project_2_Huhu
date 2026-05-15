@@ -1,0 +1,228 @@
+{# coordinator/theme_history.html — Customise history page.
+   Route: GET /coordinator/themes/history (coordinator_theme_history)
+
+   Two sections, both backed by theme_history rows for the active group:
+
+     • Saved themes (is_pinned = TRUE, name set)
+         Coordinator-archived snapshots. Created via the "Save current
+         as…" form at the top of the page. Exempt from the auto-snapshot cap.
+         Each row exposes Restore + Delete.
+
+     • Recent customisations (is_pinned = FALSE, name IS NULL)
+         Auto-snapshots written by apply_preset / save_custom_theme
+         before any overwrite. Capped at the most recent N. Each row
+         exposes Restore only (delete is left to the cap so a freshly
+         deleted auto-snapshot can't desync the user's mental model).
+
+   Both sections render the same .theme-history-row block: a colour
+   swatch strip (primary / secondary / background), a one-line label
+   (name OR layout summary), the timestamp, and the row actions.
+#}
+{% extends 'base.html' %}
+{% from 'partials/_theme_tile_preview.html' import tile_preview %}
+
+{% block title %}Theme history{% endblock %}
+
+{% block head_extra %}
+  {# Each history row's mini-preview is typed in its own
+     font_heading + font_body, so load every distinct family once
+     (deduped via _seen_fonts, same pattern as themes.html). #}
+  {% set _seen_fonts = [] %}
+  {% for entry in (pinned or []) + (recent or []) %}
+    {% for f in [entry.font_heading, entry.font_body] %}
+      {% if f and f not in _seen_fonts %}
+        {% set _ = _seen_fonts.append(f) %}
+        <link rel="stylesheet"
+              href="https://fonts.googleapis.com/css2?family={{ f|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="theme-gallery-header">
+    <div>
+      <span class="theme-gallery-eyebrow">Appearance</span>
+      <h1 class="page-title mb-1">Customise history</h1>
+      <p class="text-muted mb-0">
+        Snapshot a look you want to keep, or roll back to a previous
+        customisation. The {{ history_cap }} most recent automatic snapshots
+        are kept; saved themes are kept indefinitely.
+      </p>
+      {% include 'partials/_theme_target_switcher.html' %}
+    </div>
+    <div class="theme-gallery-header__actions">
+      <a href="{{ url_for('coordinator_themes') }}"
+         class="btn-pf-outline btn-sm-pf-soft">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        Back to themes
+      </a>
+    </div>
+  </div>
+
+  {# ── Save current theme as a named, pinned snapshot ───────────── #}
+  <section class="theme-history-saveas" aria-labelledby="saveas-heading">
+    <h2 id="saveas-heading" class="theme-gallery-section-title">
+      Save the current theme
+    </h2>
+    <p class="text-muted mb-2">
+      Name this version so you can come back to it next month. Saved
+      themes don't count against the {{ history_cap }}-snapshot cap.
+    </p>
+    <form method="POST"
+          action="{{ url_for('coordinator_theme_history_save_as') }}"
+          class="theme-history-saveas-form">
+      <label for="history-name" class="visually-hidden">
+        Name for this saved theme
+      </label>
+      <input id="history-name"
+             name="name"
+             type="text"
+             maxlength="80"
+             required
+             class="form-control"
+             placeholder="e.g. May newsletter, Matariki refresh, Conference week">
+      <button type="submit" class="btn-pf">
+        <i class="bi bi-bookmark-plus" aria-hidden="true"></i>
+        Save current as…
+      </button>
+    </form>
+  </section>
+
+  {# ── Saved (pinned) themes ────────────────────────────────────── #}
+  <section class="theme-history-section" aria-labelledby="pinned-heading">
+    <h2 id="pinned-heading" class="theme-gallery-section-title">
+      Saved themes
+      <span class="theme-history-count">({{ pinned|length }})</span>
+    </h2>
+
+    {% if pinned %}
+      <ul class="theme-history-list" role="list">
+        {% for entry in pinned %}
+          {{ history_row(entry, can_delete=True) }}
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="panel text-center py-4">
+        <i class="bi bi-bookmark fs-3 text-muted" aria-hidden="true"></i>
+        <p class="text-muted mb-0 mt-2">
+          No saved themes yet. Use the form above to pin the current
+          look.
+        </p>
+      </div>
+    {% endif %}
+  </section>
+
+  {# ── Recent auto-snapshots ────────────────────────────────────── #}
+  <section class="theme-history-section" aria-labelledby="recent-heading">
+    <h2 id="recent-heading" class="theme-gallery-section-title">
+      Recent customisations
+      <span class="theme-history-count">({{ recent|length }})</span>
+    </h2>
+    <p class="text-muted mb-2">
+      Captured automatically each time you apply a preset or save a
+      customisation. Only the {{ history_cap }} most recent are kept.
+    </p>
+
+    {% if recent %}
+      <ul class="theme-history-list" role="list">
+        {% for entry in recent %}
+          {{ history_row(entry, can_delete=False) }}
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="panel text-center py-4">
+        <i class="bi bi-clock-history fs-3 text-muted" aria-hidden="true"></i>
+        <p class="text-muted mb-0 mt-2">
+          No automatic snapshots yet. They'll appear here the next
+          time you apply or customise a theme.
+        </p>
+      </div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/theme-preview.js') }}"></script>
+{% endblock %}
+
+{# ── Reusable row block — same shape for pinned + recent ─────────── #}
+{% macro history_row(entry, can_delete) %}
+  <li class="theme-history-row">
+    <div class="theme-history-row__preview">
+      {{ tile_preview(entry) }}
+    </div>
+
+    <div class="theme-history-row__body">
+      <div class="theme-history-row__title">
+        {% if entry.name %}
+          <strong>{{ entry.name }}</strong>
+        {% else %}
+          <strong>Snapshot</strong>
+          <span class="text-muted">
+            · {{ entry.nav_position|capitalize }}
+            · {{ entry.content_width|capitalize }}
+          </span>
+        {% endif %}
+      </div>
+      <div class="theme-history-row__meta text-muted">
+        <i class="bi bi-clock" aria-hidden="true"></i>
+        {{ entry.saved_at.strftime('%d %b %Y, %H:%M') }}
+        · {{ entry.font_heading }} / {{ entry.font_body }}
+        · {{ entry.button_style|capitalize }} buttons
+      </div>
+    </div>
+
+    <div class="theme-history-row__actions">
+      {# Live preview — applies the snapshot's CSS vars + body
+         layout classes to the running page without writing to the
+         DB. Reload or navigate away to revert. Same data contract
+         as the gallery's preview button; `static/js/theme-preview.js`
+         wires both. #}
+      <button type="button"
+              class="btn-pf-outline btn-sm-pf theme-tile-preview-btn"
+              aria-label="Preview this theme on the running page"
+              data-preview-primary="{{ entry.primary_color }}"
+              data-preview-secondary="{{ entry.secondary_color }}"
+              data-preview-background="{{ entry.background_color }}"
+              data-preview-font-heading="{{ entry.font_heading }}"
+              data-preview-font-body="{{ entry.font_body }}"
+              data-preview-button-radius="{% if entry.button_style == 'rounded' %}8px{% else %}0{% endif %}"
+              data-preview-nav="{{ entry.nav_position }}"
+              data-preview-width="{{ entry.content_width }}">
+        <i class="bi bi-eye" aria-hidden="true"></i>
+        Preview
+      </button>
+      <form method="POST"
+            action="{{ url_for('coordinator_theme_history_restore',
+                               history_id=entry.history_id) }}"
+            class="theme-history-action-form">
+        <button type="submit"
+                class="btn-pf btn-sm-pf"
+                aria-label="Restore this theme">
+          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+          Restore
+        </button>
+      </form>
+      {% if can_delete %}
+        <form method="POST"
+              action="{{ url_for('coordinator_theme_history_delete',
+                                 history_id=entry.history_id) }}"
+              class="theme-history-action-form"
+              onsubmit="return confirm('Delete this saved theme? This cannot be undone.');">
+          <button type="submit"
+                  class="btn-sm-danger"
+                  aria-label="Delete this saved theme">
+            <i class="bi bi-trash" aria-hidden="true"></i>
+            Delete
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </li>
+{% endmacro %}

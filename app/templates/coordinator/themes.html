@@ -1,0 +1,312 @@
+{# coordinator/themes.html — Theme gallery, WordPress-style.
+   Route: GET /coordinator/themes (route handler: coordinator_themes)
+
+   Layout:
+     - Header: Appearance eyebrow + "Themes" title + Export/Import +
+       Customise theme button.
+     - Featured section (only when a preset is active): large
+       side-by-side card with the active preset's preview on the left
+       and its meta + actions on the right. Mirrors WordPress's
+       "Active Theme" detail strip at the top of Appearance > Themes.
+     - Grid section: every other preset rendered as a smaller tile.
+
+   Active-state logic:
+     - `applied_preset_id` comes from group_themes.based_on_preset.
+       That stays set across customisations, so the active badge
+       persists even if the coordinator has tweaked colours/fonts.
+     - When the live theme has drifted from the preset's column values
+       (`is_customised`), we surface a SECOND "Customised" badge
+       alongside the "Active" one (rather than collapsing them into
+       one string).
+
+   The tile-preview mini-mockup uses inline `--tile-*` CSS vars to
+   scope colours/fonts to itself; CSS does the layout (sidebar /
+   topbar chrome, wrap / full inset, hero / content / footer bands).
+#}
+{% extends 'base.html' %}
+{% from 'partials/_theme_tile_preview.html' import tile_preview %}
+
+{% block title %}Themes{% endblock %}
+
+{% block head_extra %}
+  {# Load every preset's heading + body fonts so each thumbnail
+     renders correctly. Deduped via the _seen_fonts list. #}
+  {% set _seen_fonts = [] %}
+  {% set _all_presets = ([featured_preset] if featured_preset else []) + (other_presets or []) %}
+  {% for p in _all_presets %}
+    {% for f in [p.font_heading, p.font_body] %}
+      {% if f and f not in _seen_fonts %}
+        {% set _ = _seen_fonts.append(f) %}
+        <link rel="stylesheet"
+              href="https://fonts.googleapis.com/css2?family={{ f|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endblock %}
+
+{# The tile_preview macro lives in
+   `partials/_theme_tile_preview.html` so the customise history page
+   can reuse it. Imported above. #}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="theme-gallery-header">
+    <div>
+      <span class="theme-gallery-eyebrow">Appearance</span>
+      <h1 class="page-title mb-1">Themes</h1>
+      <p class="text-muted mb-0">
+        Choose a pre-made theme for
+        {{ target.name if target else (nav_group_name or 'this group') }},
+        or jump to <a href="{{ url_for('coordinator_theme_customise') }}">Customise theme</a>
+        to tweak the active one.
+      </p>
+      {% include 'partials/_theme_target_switcher.html' %}
+    </div>
+    <div class="theme-gallery-header__actions">
+      {# Export the current group theme as JSON. Acts as a manual
+         archive that survives the auto-snapshot history cap. #}
+      <a href="{{ url_for('coordinator_theme_export') }}"
+         class="btn-pf-outline btn-sm-pf-soft"
+         aria-label="Export current theme as JSON">
+        <i class="bi bi-box-arrow-up" aria-hidden="true"></i>
+        Export
+      </a>
+      {# Import a previously exported JSON file. Posts the file to
+         /coordinator/themes/import; on success the import handler
+         applies the values via save_custom_theme. #}
+      <form method="POST"
+            action="{{ url_for('coordinator_theme_import') }}"
+            enctype="multipart/form-data"
+            class="theme-gallery-import-form">
+        <label class="btn-pf-outline btn-sm-pf-soft theme-gallery-import-label"
+               aria-label="Import a theme JSON file">
+          <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>
+          Import
+          <input type="file" name="theme_file" accept=".json,application/json"
+                 onchange="this.form.submit()" hidden>
+        </label>
+      </form>
+      <a href="{{ url_for('coordinator_theme_customise') }}"
+         class="btn-pf-outline theme-gallery-customise-btn">
+        <i class="bi bi-sliders" aria-hidden="true"></i>
+        Customise theme
+      </a>
+    </div>
+  </div>
+
+  {% if is_custom_theme %}
+    <div class="theme-gallery-notice" role="status">
+      <i class="bi bi-info-circle" aria-hidden="true"></i>
+      <span>
+        <strong>Custom theme in use.</strong>
+        This group is on a from-scratch custom theme that doesn't
+        derive from a preset. Pick one below to switch.
+      </span>
+    </div>
+  {% endif %}
+
+  {# ── Featured (active) theme — WordPress-style detail strip ─── #}
+  {% if featured_preset %}
+    <section class="theme-gallery-featured" aria-labelledby="featured-heading">
+      <h2 id="featured-heading" class="theme-gallery-section-title">
+        Active theme
+      </h2>
+      <article class="theme-tile theme-tile--featured is-applied"
+               aria-label="{{ featured_preset.name }} theme (active)">
+        <div class="theme-tile--featured__preview-wrap">
+          {{ tile_preview(featured_preset, True, is_customised) }}
+        </div>
+        <div class="theme-tile--featured__body">
+          <div class="theme-tile-badges">
+            <span class="theme-tile-badge theme-tile-badge--active">
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+              Active
+            </span>
+            {% if is_customised %}
+              <span class="theme-tile-badge theme-tile-badge--customised">
+                <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                Customised
+              </span>
+            {% endif %}
+          </div>
+          <h3 class="theme-tile--featured__name">{{ featured_preset.name }}</h3>
+          <p class="theme-tile--featured__desc">{{ featured_preset.description }}</p>
+          <dl class="theme-tile--featured__meta">
+            <div><dt>Heading</dt><dd>{{ featured_preset.font_heading }}</dd></div>
+            <div><dt>Body</dt><dd>{{ featured_preset.font_body }}</dd></div>
+            <div><dt>Layout</dt>
+              <dd>{{ featured_preset.nav_position|capitalize }} ·
+                  {{ featured_preset.content_width|capitalize }}</dd></div>
+            <div><dt>Buttons</dt><dd>{{ featured_preset.button_style|capitalize }}</dd></div>
+          </dl>
+          <div class="theme-tile--featured__actions">
+            <a href="{{ url_for('coordinator_theme_customise', from_preset=featured_preset.preset_id) }}"
+               class="btn-pf">
+              <i class="bi bi-sliders" aria-hidden="true"></i>
+              Customise this theme
+            </a>
+            {% if is_customised %}
+              <form method="POST"
+                    action="{{ url_for('coordinator_apply_theme', preset_id=featured_preset.preset_id) }}"
+                    class="theme-tile-apply-form">
+                <button type="submit"
+                        class="btn-pf-outline"
+                        aria-label="Reset {{ featured_preset.name }} to its preset defaults">
+                  <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                  Reset to preset
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+    </section>
+  {% endif %}
+
+  {# ── Saved themes — pinned theme_history rows for this group ─ #}
+  {% if saved_themes %}
+    <section class="theme-gallery-saved" aria-labelledby="saved-heading">
+      <h2 id="saved-heading" class="theme-gallery-section-title">
+        Saved themes
+        <span class="theme-history-count">({{ saved_themes|length }})</span>
+      </h2>
+      <div class="row g-3">
+        {% for s in saved_themes %}
+          <div class="col-12 col-sm-6 col-lg-4">
+            <article class="theme-tile" aria-label="{{ s.name }} saved theme">
+              {{ tile_preview(s, False, False) }}
+
+              <div class="theme-tile-head">
+                <h2 class="theme-tile-name">
+                  <i class="bi bi-bookmark-fill" aria-hidden="true"></i>
+                  {{ s.name }}
+                </h2>
+              </div>
+              <p class="theme-tile-desc text-muted">
+                Saved {{ s.saved_at.strftime('%d %b %Y') }}
+              </p>
+
+              <div class="theme-tile-actions">
+                <button type="button"
+                        class="btn-pf-outline theme-tile-preview-btn"
+                        aria-label="Preview {{ s.name }} on this page"
+                        data-preview-primary="{{ s.primary_color }}"
+                        data-preview-secondary="{{ s.secondary_color }}"
+                        data-preview-background="{{ s.background_color }}"
+                        data-preview-font-heading="{{ s.font_heading }}"
+                        data-preview-font-body="{{ s.font_body }}"
+                        data-preview-button-radius="{% if s.button_style == 'rounded' %}8px{% else %}0{% endif %}"
+                        data-preview-nav="{{ s.nav_position }}"
+                        data-preview-width="{{ s.content_width }}">
+                  <i class="bi bi-eye" aria-hidden="true"></i>
+                  Preview
+                </button>
+                <form method="POST"
+                      action="{{ url_for('coordinator_apply_saved_theme', history_id=s.history_id) }}"
+                      class="theme-tile-apply-form">
+                  <button type="submit"
+                          class="btn-pf theme-tile-apply-btn"
+                          aria-label="Use saved theme {{ s.name }}">
+                    Use this theme
+                  </button>
+                </form>
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {# ── Other themes — grid ───────────────────────────────────── #}
+  {% if other_presets %}
+    <section class="theme-gallery-other" aria-labelledby="other-heading">
+      <h2 id="other-heading" class="theme-gallery-section-title">
+        {{ 'Other themes' if featured_preset else 'Choose a theme' }}
+      </h2>
+      <div class="row g-3">
+
+        {# Start-from-scratch tile leads the preset grid so coordinators
+           who want to skip pre-made themes can land on the editor
+           directly. ?blank=1 tells the editor to seed neutral values
+           rather than the active theme. #}
+        <div class="col-12 col-sm-6 col-lg-4">
+          <article class="theme-tile theme-tile--blank-canvas"
+                   aria-label="Start a new theme from scratch">
+            <a href="{{ url_for('coordinator_theme_customise', blank=1) }}"
+               class="theme-tile--blank-canvas__cta">
+              <span class="theme-tile--blank-canvas__plus" aria-hidden="true">+</span>
+              <span class="theme-tile--blank-canvas__label">Start from scratch</span>
+              <span class="theme-tile--blank-canvas__sub text-muted">
+                Open the editor with a blank canvas. Save it with a name
+                to add it to <strong>Saved themes</strong>.
+              </span>
+            </a>
+          </article>
+        </div>
+
+        {% for p in other_presets %}
+          <div class="col-12 col-sm-6 col-lg-4">
+            <article class="theme-tile" aria-label="{{ p.name }} theme">
+              {{ tile_preview(p, False, False) }}
+
+              <div class="theme-tile-head">
+                <h2 class="theme-tile-name">{{ p.name }}</h2>
+              </div>
+              <p class="theme-tile-desc">{{ p.description }}</p>
+
+              <div class="theme-tile-actions">
+                {# 2026-05-15: Preview button live-applies the preset's
+                   CSS vars + body classes to the running page so the
+                   coordinator can see the theme in situ. No DB write
+                   happens — navigating away or reloading reverts to
+                   the actually-saved theme. The data-preview-* attrs
+                   carry every column the JS needs to reproduce the
+                   look. "Use this theme" still POSTs the apply flow. #}
+                <button type="button"
+                        class="btn-pf-outline theme-tile-preview-btn"
+                        aria-label="Preview {{ p.name }} theme on this page"
+                        data-preview-primary="{{ p.primary_color }}"
+                        data-preview-secondary="{{ p.secondary_color }}"
+                        data-preview-background="{{ p.background_color }}"
+                        data-preview-font-heading="{{ p.font_heading }}"
+                        data-preview-font-body="{{ p.font_body }}"
+                        data-preview-button-radius="{% if p.button_style == 'rounded' %}8px{% else %}0{% endif %}"
+                        data-preview-nav="{{ p.nav_position }}"
+                        data-preview-width="{{ p.content_width }}">
+                  <i class="bi bi-eye" aria-hidden="true"></i>
+                  Preview
+                </button>
+                <form method="POST"
+                      action="{{ url_for('coordinator_apply_theme', preset_id=p.preset_id) }}"
+                      class="theme-tile-apply-form">
+                  <button type="submit"
+                          class="btn-pf theme-tile-apply-btn"
+                          aria-label="Use {{ p.name }} theme">
+                    Use this theme
+                  </button>
+                </form>
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% elif not featured_preset %}
+    <div class="panel text-center py-5">
+      <i class="bi bi-palette fs-1 text-muted" aria-hidden="true"></i>
+      <h2 class="h5 mt-3">No theme presets yet</h2>
+      <p class="text-muted mb-0">
+        An administrator hasn't seeded the theme library. Check back later.
+      </p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/theme-preview.js') }}"></script>
+{% endblock %}

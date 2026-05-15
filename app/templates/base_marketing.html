@@ -14,6 +14,37 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  {# Custom Themes — marketing surface is Tiaki's face. Defaults to
+     platform_theme so the public homepage, sign-in flow, and selector
+     never inherit a group's brand. A route that's *about* a specific
+     group (group_landing.html) can pass `override_theme` to preview
+     that group's brand without changing Tiaki's identity globally.
+     Must come BEFORE the CSS links so the `--theme-*` variables are
+     defined when app.css + template-default.css load. #}
+  {% set _t = override_theme|default(none) or platform_theme %}
+  <style>
+    :root {
+      --theme-primary:       {{ _t.primary_color }};
+      --theme-secondary:     {{ _t.secondary_color }};
+      --theme-background:    {{ _t.background_color }};
+      --theme-button-radius: {{ _t.button_radius }};
+      --theme-font-heading:  "{{ _t.font_heading }}";
+      --theme-font-body:     "{{ _t.font_body }}";
+    }
+  </style>
+  {# Load both heading + body fonts. Dedupe when they match so we don't
+     issue two identical Google Fonts requests. #}
+  {% set _heading_font = _t.font_heading %}
+  {% set _body_font = _t.font_body %}
+  {% if _heading_font %}
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family={{ _heading_font|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+  {% endif %}
+  {% if _body_font and _body_font != _heading_font %}
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family={{ _body_font|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+  {% endif %}
+
   {# Tiaki marketing-surface CSS #}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/template-default.css') }}">

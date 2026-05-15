@@ -108,6 +108,11 @@ def group_landing(group_id):
             ''', (user_id, group_id))
             has_pending_request = cursor.fetchone() is not None
 
+    # Foundation-fix: /groups/<id> is a marketing-surface page that's
+    # *about* this group, so it previews that group's brand. The override
+    # is consumed by base_marketing.html's <style> block; routes that
+    # don't pass an override (e.g. /, /select-group) fall through to
+    # platform_theme so Tiaki stays Tiaki.
     return render_template(
         'group_landing.html',
         group=group,
