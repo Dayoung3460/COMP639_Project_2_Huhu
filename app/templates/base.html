@@ -106,6 +106,56 @@
         {% endif %}
       </a>
 
+      {% if session.get('group_role') == 'Group Coordinator' %}
+        {# ── Notification bell (Coordinators only) ── #}
+        <div class="dropdown" style="position:relative;">
+          <button type="button"
+                  id="notifDropdown"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="position:relative; background:none; border:none; cursor:pointer;
+                         color:#c5ffda; padding:4px 6px; border-radius:6px;
+                         display:flex; align-items:center; transition:color 0.15s;"
+                  onmouseover="this.style.color='#fff'"
+                  onmouseout="this.style.color='#c5ffda'">
+            <i class="bi bi-bell-fill" style="font-size:18px;" aria-label="Notifications"></i>
+            {% if nav_notifications|length > 0 %}
+              <span style="position:absolute; top:0; right:0;
+                           background:#dc3545; color:#fff;
+                           font-size:10px; font-weight:700; line-height:1;
+                           padding:2px 5px; border-radius:10px; min-width:16px; text-align:center;">
+                {{ nav_notifications|length }}
+              </span>
+            {% endif %}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow"
+              aria-labelledby="notifDropdown"
+              style="min-width:300px; max-height:360px; overflow-y:auto;">
+            {% if nav_notifications %}
+              {% for n in nav_notifications %}
+                <li>
+                  <a class="dropdown-item py-2"
+                     href="{{ url_for('notification_click', notification_id=n.notification_id) }}"
+                     style="white-space:normal;">
+                    <div style="font-size:13px; font-weight:500;">{{ n.message }}</div>
+                    <div style="font-size:11px; color:#6c757d; margin-top:2px;">
+                      {{ n.created_at | nz_datetime }}
+                    </div>
+                  </a>
+                </li>
+                {% if not loop.last %}<li><hr class="dropdown-divider my-0"></li>{% endif %}
+              {% endfor %}
+            {% else %}
+              <li>
+                <span class="dropdown-item text-muted" style="font-size:13px;">
+                  No new notifications
+                </span>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      {% endif %}
+
       <a href="{{ url_for('logout') }}"
          style="display:flex; align-items:center; gap:5px; text-decoration:none;
                 color:#c5ffda; font-size:13px; padding:4px 8px;

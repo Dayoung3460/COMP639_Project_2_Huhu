@@ -109,10 +109,11 @@ from app import my_tiaki
 @app.context_processor
 def inject_globals():
     """Makes global variables available to all Jinja2 templates."""
-    profile_photo = None
-    first_name    = None
-    last_name     = None
-    nav_is_public = None
+    profile_photo    = None
+    first_name       = None
+    last_name        = None
+    nav_is_public    = None
+    nav_notifications = []
     if session.get('user_id'):
         try:
             with db.get_cursor() as cursor:
@@ -133,6 +134,18 @@ def inject_globals():
                     g = cursor.fetchone()
                     if g:
                         nav_is_public = g['is_public']
+                if (session.get('group_role') == 'Group Coordinator'
+                        and session.get('group_id')):
+                    cursor.execute(
+                        '''
+                        SELECT notification_id, message, created_at
+                        FROM user_notifications
+                        WHERE user_id = %s AND group_id = %s AND is_active = TRUE
+                        ORDER BY created_at DESC;
+                        ''',
+                        (session['user_id'], session['group_id'])
+                    )
+                    nav_notifications = cursor.fetchall()
         except Exception:
             pass
     return dict(
@@ -147,6 +160,7 @@ def inject_globals():
         nav_group_name=session.get('group_name', ''),
         nav_group_role=session.get('group_role', ''),
         nav_is_public=nav_is_public,
+        nav_notifications=nav_notifications,
     )
 
 # ── Template filters ──────────────────────────────────────────────────────────

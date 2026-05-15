@@ -262,7 +262,38 @@ def request_join_group():
             )
             flash('Request submitted successfully!', 'success')
 
+            # Notify all Group Coordinators of this group
+            cursor.execute('''
+                SELECT user_id FROM group_memberships
+                WHERE group_id = %s AND role = 'Group Coordinator'
+            ''', (group_id,))
+            coordinators = cursor.fetchall()
+            if coordinators:
+                notif_message = f"New join request for {group['name']}"
+                cursor.executemany(
+                    "INSERT INTO user_notifications (user_id, group_id, message, category) "
+                    "VALUES (%s, %s, %s, 'info')",
+                    [(c['user_id'], group_id, notif_message) for c in coordinators]
+                )
+
     return redirect(url_for('group_landing', group_id=group_id))
+
+
+@app.route('/notifications/<int:notification_id>/dismiss')
+def notification_click(notification_id):
+    """Mark a notification inactive and redirect to the membership requests page."""
+    user_id = session.get('user_id')
+    if not user_id:
+        abort(401)
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE user_notifications SET is_active = FALSE '
+            'WHERE notification_id = %s AND user_id = %s',
+            (notification_id, user_id)
+        )
+
+    return redirect(url_for('coordinator_requests'))
 
 
 @app.route('/groups/<int:group_id>/enter')

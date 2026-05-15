@@ -184,6 +184,7 @@ CREATE TABLE group_join_requests (
 CREATE TABLE user_notifications (
     notification_id SERIAL PRIMARY KEY,
     user_id         INTEGER     NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    group_id        INTEGER     DEFAULT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
     message         TEXT        NOT NULL,
     category        VARCHAR(20) NOT NULL DEFAULT 'info',
     is_active       BOOLEAN     NOT NULL DEFAULT TRUE,
