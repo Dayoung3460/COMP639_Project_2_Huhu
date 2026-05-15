@@ -1,0 +1,99 @@
+{#
+  _primary_nav_links.html — Jinja macro for the role-gated primary
+  nav list. Two consumers as of 2026-05-12:
+    - partials/_nav_topbar.html  → wrapper_class="navbar-tab"
+    - partials/_footer.html      → wrapper_class="footer-link"
+
+  The sidebar partial (_nav_sidebar.html) does NOT call this macro:
+  it renders a full list with section labels (Overview / Data /
+  Manage / Account / etc.) — genuinely different rendering shape.
+  Keeping that separate avoids forcing a shared abstraction across
+  different needs.
+
+  When adding a new PRIMARY nav link, update this macro and the
+  overflow partial only — the macro broadcasts to both topbar and
+  footer automatically.
+
+  Per-role primary lists (matches what topbar already shows):
+    Super Admin / Observer: Dashboard, Trap Lines, Catches,
+                            Observations, Reports (5)
+    Group Coordinator:      + Members (6)
+    Operator:               Dashboard, My Records, Add Catch,
+                            Add Observation, My Lines (5)
+
+  Active-state checks mirror the existing sidebar/topbar logic so
+  hitting a primary route highlights the link wherever it appears.
+#}
+
+{% macro primary_nav_links(wrapper_class='navbar-tab', show_icons=True) %}
+
+  {# Dashboard — one per role. #}
+  {% if session.get('group_role') == 'Super Admin' %}
+    <a href="{{ url_for('admin_dashboard') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'admin_dashboard' }}">
+      {% if show_icons %}<i class="bi bi-house" aria-hidden="true"></i> {% endif %}Dashboard
+    </a>
+  {% elif session.get('group_role') == 'Group Coordinator' %}
+    <a href="{{ url_for('coordinator_dashboard') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'coordinator_dashboard' }}">
+      {% if show_icons %}<i class="bi bi-house" aria-hidden="true"></i> {% endif %}Dashboard
+    </a>
+  {% elif session.get('group_role') == 'Operator' %}
+    <a href="{{ url_for('operator_dashboard') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'operator_dashboard' }}">
+      {% if show_icons %}<i class="bi bi-house" aria-hidden="true"></i> {% endif %}Dashboard
+    </a>
+  {% else %}
+    <a href="{{ url_for('observer_dashboard') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'observer_dashboard' }}">
+      {% if show_icons %}<i class="bi bi-house" aria-hidden="true"></i> {% endif %}Dashboard
+    </a>
+  {% endif %}
+
+  {# Operator's primary slots are "add" actions (daily work). #}
+  {% if session.get('group_role') == 'Operator' %}
+    <a href="{{ url_for('my_records') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'my_records' }}">
+      {% if show_icons %}<i class="bi bi-pencil-square" aria-hidden="true"></i> {% endif %}My Records
+    </a>
+    <a href="{{ url_for('add_catch') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'add_catch' }}">
+      {% if show_icons %}<i class="bi bi-plus-circle" aria-hidden="true"></i> {% endif %}Add Catch
+    </a>
+    <a href="{{ url_for('add_observation') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'add_observation' }}">
+      {% if show_icons %}<i class="bi bi-binoculars" aria-hidden="true"></i> {% endif %}Add Observation
+    </a>
+    <a href="{{ url_for('lines_index', operator=session.username) }}"
+       class="{{ wrapper_class }}">
+      {% if show_icons %}<i class="bi bi-person-lines-fill" aria-hidden="true"></i> {% endif %}My Lines
+    </a>
+  {% else %}
+    {# Non-operator roles share the data + reports primary slots. #}
+    <a href="{{ url_for('lines_index') }}"
+       class="{{ wrapper_class }} {% if request.endpoint == 'lines_index' %}active{% endif %}">
+      {% if show_icons %}<i class="bi bi-geo-alt" aria-hidden="true"></i> {% endif %}Trap Lines
+    </a>
+    <a href="{{ url_for('catch_records') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'catch_records' }}">
+      {% if show_icons %}<i class="bi bi-table" aria-hidden="true"></i> {% endif %}Catches
+    </a>
+    <a href="{{ url_for('observations') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'observations' }}">
+      {% if show_icons %}<i class="bi bi-binoculars" aria-hidden="true"></i> {% endif %}Observations
+    </a>
+    <a href="{{ url_for('reports') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'reports' }}">
+      {% if show_icons %}<i class="bi bi-graph-up" aria-hidden="true"></i> {% endif %}Reports
+    </a>
+  {% endif %}
+
+  {# Coordinator's 6th primary slot — Members. #}
+  {% if session.get('group_role') == 'Group Coordinator' %}
+    <a href="{{ url_for('coordinator_members') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint in ('coordinator_members', 'coordinator_member_change_role', 'coordinator_member_remove') }}">
+      {% if show_icons %}<i class="bi bi-people" aria-hidden="true"></i> {% endif %}Members
+    </a>
+  {% endif %}
+
+{% endmacro %}

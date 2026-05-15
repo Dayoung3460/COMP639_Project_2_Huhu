@@ -1,0 +1,109 @@
+{# cookies.html — Cookie policy.
+   Route: GET /cookies (app/home.py:cookies).
+   Drafted 2026-05-15. Working draft. #}
+{% extends 'base.html' %}
+
+{% block title %}Cookies · Tiaki{% endblock %}
+
+{% block page_title %}Cookie policy{% endblock %}
+{% block page_subtitle %}What we store in your browser and why.{% endblock %}
+
+{% block content %}
+<div class="container py-4 legal-page">
+
+  <p class="legal-meta">
+    <strong>Last updated:</strong> {{ current_year }}-05-15.
+    Working draft — Tiaki uses cookies only to keep you logged in
+    and to remember a couple of UI preferences. We do not use
+    advertising, analytics, or cross-site tracking cookies.
+  </p>
+
+  <section class="legal-section" aria-labelledby="cookies-short">
+    <h2 id="cookies-short">In short</h2>
+    <ul>
+      <li>One session cookie keeps you logged in.</li>
+      <li>A small number of UI-preference cookies remember things
+          like sidebar collapsed/expanded state.</li>
+      <li>No third-party cookies. No advertising cookies. No
+          cross-site tracking.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="cookies-what">
+    <h2 id="cookies-what">Cookies we set</h2>
+    <h3>Essential — strictly necessary</h3>
+    <ul>
+      <li><strong><code>session</code></strong> — Flask's signed
+          session cookie. Holds your <code>user_id</code>,
+          <code>group_id</code>, and role so the server can authorise
+          page requests. Expires when you close your browser unless
+          you tick "remember me" at login.</li>
+    </ul>
+    <h3>Functional — improve usability</h3>
+    <ul>
+      <li><strong><code>sidebar_collapsed</code></strong> — remembers
+          whether the sidebar was collapsed last time you used the
+          platform. Local to your browser; never sent to third
+          parties.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="cookies-we-dont">
+    <h2 id="cookies-we-dont">Cookies we do <em>not</em> set</h2>
+    <ul>
+      <li>Marketing or advertising cookies.</li>
+      <li>Cross-site tracking pixels.</li>
+      <li>Third-party analytics (Google Analytics, Meta Pixel, etc.).</li>
+      <li>Fingerprinting scripts.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="cookies-third-party">
+    <h2 id="cookies-third-party">Third-party resources</h2>
+    <p>
+      Tiaki loads a small set of resources from third-party CDNs
+      (Bootstrap, Google Fonts, Chart.js). These providers may log
+      a request from your browser when those files load, but the
+      platform does not set or read cookies via those providers.
+      You can self-host those assets if your deployment policy
+      requires it — that change lives in the platform configuration,
+      not the cookie policy.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="cookies-choices">
+    <h2 id="cookies-choices">Your choices</h2>
+    <ul>
+      <li>You can clear all Tiaki cookies through your browser's
+          privacy settings. The next time you visit the platform
+          you'll be asked to log in again.</li>
+      <li>You can block cookies for this site entirely; the platform
+          will not work without the session cookie, so this
+          effectively logs you out and prevents login.</li>
+      <li>Functional cookies (sidebar state) can be cleared without
+          affecting login.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="cookies-changes">
+    <h2 id="cookies-changes">Changes to this policy</h2>
+    <p>
+      If we add a cookie — for example, to remember a theme picker
+      preference or a layout choice — we'll update this page and
+      bump the "Last updated" date. We will not add advertising or
+      cross-site tracking cookies without changing the platform's
+      privacy posture in a visible way first.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="cookies-contact">
+    <h2 id="cookies-contact">Contact</h2>
+    <p>
+      For questions about cookies on Tiaki, contact a platform
+      administrator. A dedicated privacy contact channel will land
+      alongside the formal launch.
+    </p>
+  </section>
+
+</div>
+{% endblock %}

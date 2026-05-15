@@ -61,7 +61,7 @@ def index():
                     g.name,
                     g.description,
                     g.is_public,
-                    g.image,
+                    g.cover_photo,
                     g.color_theme,
                     g.created_at,
                     (SELECT COUNT(*) FROM group_memberships
@@ -106,3 +106,31 @@ def index():
 @app.route('/documentation')
 def documentation():
     return render_template('documentation.html')
+
+
+@app.route('/privacy')
+def privacy():
+    """Public privacy policy page. Reachable from both the in-app
+    site-footer (logged-in surface) and from deep links. Extends
+    base.html so logged-in users see the in-app chrome and logged-out
+    users get the public navbar — both surfaces should be able to
+    read the policy."""
+    return render_template('privacy.html')
+
+
+@app.route('/terms')
+def terms():
+    """Public terms of service page. Same access pattern as /privacy."""
+    return render_template('terms.html')
+
+
+@app.route('/accessibility')
+def accessibility():
+    """Public accessibility statement. Same access pattern as /privacy."""
+    return render_template('accessibility.html')
+
+
+@app.route('/cookies')
+def cookies():
+    """Public cookie policy. Same access pattern as /privacy."""
+    return render_template('cookies.html')

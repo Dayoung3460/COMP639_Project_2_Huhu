@@ -1,0 +1,167 @@
+{# coordinator/theme_select_target.html — Super Admin picker.
+   Route: GET /coordinator/themes/select-target (coordinator_theme_select_target)
+
+   Coordinators never land here (resolve_theme_target returns their session
+   group directly). A Super Admin without a `theme_target_*` choice yet hits
+   this page from any theme route's redirect, and from the gallery header's
+   "Switch target" pill once a choice exists.
+
+   Layout mirrors the gallery (themes.html):
+     • Featured "Platform default" tile at the top — the platform's current
+       effective theme rendered through the shared tile_preview macro.
+     • Grid of every active group as a tile, each with that group's
+       current effective theme (falls back to platform_theme when the
+       group has no group_themes row).
+
+   Each tile is a <form method="POST"> hitting
+   /coordinator/themes/select-target (coordinator_theme_select_target_set).
+   The setter validates and stashes target_type / target_group_id /
+   theme_target_name in session, then bounces to the gallery.
+#}
+{% extends 'base.html' %}
+{% from 'partials/_theme_tile_preview.html' import tile_preview %}
+
+{% block title %}Pick a theme target{% endblock %}
+
+{% block head_extra %}
+  {# Every tile renders its preview in its own heading + body font, so
+     load each distinct family once (deduped via _seen_fonts — same
+     pattern themes.html uses). #}
+  {% set _seen_fonts = [] %}
+  {% for src in [platform_theme] + (groups|map(attribute='theme')|list) %}
+    {% for f in [src.font_heading, src.font_body] %}
+      {% if f and f not in _seen_fonts %}
+        {% set _ = _seen_fonts.append(f) %}
+        <link rel="stylesheet"
+              href="https://fonts.googleapis.com/css2?family={{ f|replace(' ', '+') }}:wght@400;500;600;700&display=swap">
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="theme-gallery-header">
+    <div>
+      <span class="theme-gallery-eyebrow">Appearance</span>
+      <h1 class="page-title mb-1">Manage themes</h1>
+      <p class="text-muted mb-0">
+        Choose a target to administer: the platform default that ships
+        to every group without an override, or any individual group's
+        theme.
+      </p>
+    </div>
+  </div>
+
+  {# ── Platform default (featured) ──────────────────────────────── #}
+  <section class="theme-gallery-featured"
+           aria-labelledby="platform-target-heading">
+    <h2 id="platform-target-heading" class="theme-gallery-section-title">
+      Platform default
+    </h2>
+    <article class="theme-tile theme-tile--featured
+                    {% if active_target and active_target.type == 'platform' %}is-applied{% endif %}"
+             aria-label="Platform default theme target">
+      <div class="theme-tile--featured__preview-wrap">
+        {{ tile_preview(platform_theme,
+                        is_applied=(active_target and active_target.type == 'platform'),
+                        is_customised=False) }}
+      </div>
+      <div class="theme-tile--featured__body">
+        {% if active_target and active_target.type == 'platform' %}
+          <div class="theme-tile-badges">
+            <span class="theme-tile-badge theme-tile-badge--active">
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+              Currently managing
+            </span>
+          </div>
+        {% endif %}
+        <h3 class="theme-tile--featured__name">Platform default</h3>
+        <p class="theme-tile--featured__desc">
+          The fallback theme every group inherits when it has no per-group
+          override. Changes here are visible across the marketing surface
+          and inside any group that hasn't customised its own look.
+        </p>
+        <dl class="theme-tile--featured__meta">
+          <div><dt>Heading</dt><dd>{{ platform_theme.font_heading }}</dd></div>
+          <div><dt>Body</dt><dd>{{ platform_theme.font_body }}</dd></div>
+          <div><dt>Layout</dt>
+            <dd>{{ platform_theme.nav_position|capitalize }} ·
+                {{ platform_theme.content_width|capitalize }}</dd></div>
+          <div><dt>Buttons</dt><dd>{{ platform_theme.button_style|capitalize }}</dd></div>
+        </dl>
+        <div class="theme-tile--featured__actions">
+          <form method="POST"
+                action="{{ url_for('coordinator_theme_select_target_set') }}"
+                class="theme-target-pick-form">
+            <input type="hidden" name="target_type" value="platform">
+            <button type="submit" class="btn-pf">
+              <i class="bi bi-sliders" aria-hidden="true"></i>
+              Manage platform default
+            </button>
+          </form>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  {# ── Groups grid ──────────────────────────────────────────────── #}
+  <section class="theme-gallery-other" aria-labelledby="groups-target-heading">
+    <h2 id="groups-target-heading" class="theme-gallery-section-title">
+      Groups ({{ groups|length }})
+    </h2>
+
+    {% if groups %}
+      <div class="row g-3">
+        {% for g in groups %}
+          {% set is_active_target = (
+            active_target and active_target.type == 'group'
+            and active_target.group_id == g.group_id
+          ) %}
+          <div class="col-12 col-sm-6 col-lg-4">
+            <article class="theme-tile {% if is_active_target %}is-applied{% endif %}"
+                     aria-label="{{ g.name }} theme target">
+              {{ tile_preview(g.theme,
+                              is_applied=is_active_target,
+                              is_customised=False) }}
+
+              <div class="theme-tile-head">
+                <h2 class="theme-tile-name">{{ g.name }}</h2>
+                {% if is_active_target %}
+                  <span class="theme-tile-badge theme-tile-badge--active">
+                    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                    Managing
+                  </span>
+                {% endif %}
+              </div>
+
+              <div class="theme-tile-actions">
+                <form method="POST"
+                      action="{{ url_for('coordinator_theme_select_target_set') }}"
+                      class="theme-target-pick-form">
+                  <input type="hidden" name="target_type" value="group">
+                  <input type="hidden" name="target_group_id" value="{{ g.group_id }}">
+                  <button type="submit" class="btn-pf theme-tile-apply-btn">
+                    Manage
+                  </button>
+                </form>
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="panel text-center py-5">
+        <i class="bi bi-people fs-1 text-muted" aria-hidden="true"></i>
+        <h2 class="h5 mt-3">No active groups</h2>
+        <p class="text-muted mb-0">
+          Create a group from <a href="{{ url_for('admin_groups') }}">Admin → Groups</a>
+          to manage per-group themes.
+        </p>
+      </div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

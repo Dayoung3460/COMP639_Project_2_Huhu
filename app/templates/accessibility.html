@@ -1,0 +1,125 @@
+{# accessibility.html — Accessibility statement.
+   Route: GET /accessibility (app/home.py:accessibility).
+   Drafted 2026-05-15. Working draft. #}
+{% extends 'base.html' %}
+
+{% block title %}Accessibility · Tiaki{% endblock %}
+
+{% block page_title %}Accessibility{% endblock %}
+{% block page_subtitle %}How Tiaki tries to be usable by everyone, and what to do when it isn't.{% endblock %}
+
+{% block content %}
+<div class="container py-4 legal-page">
+
+  <p class="legal-meta">
+    <strong>Last updated:</strong> {{ current_year }}-05-15.
+    Working draft — we're committed to making Tiaki accessible and
+    this page lists what we've done so far, what we know is still
+    missing, and how to tell us about barriers you hit.
+  </p>
+
+  <section class="legal-section" aria-labelledby="a11y-commitment">
+    <h2 id="a11y-commitment">Our commitment</h2>
+    <p>
+      Conservation belongs to everyone who shows up to do the work.
+      Tiaki aims to meet
+      <a href="https://www.w3.org/WAI/WCAG21/quickref/" rel="noopener">
+      Web Content Accessibility Guidelines (WCAG) 2.1 Level AA</a>
+      across every interactive surface. Where we fall short today, it
+      is listed below — not hidden.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="a11y-features">
+    <h2 id="a11y-features">What we've built</h2>
+    <h3>Keyboard</h3>
+    <ul>
+      <li>Every primary action is reachable by Tab without a mouse,
+          including the topbar hamburger overflow drawer (ARIA menu
+          pattern with roving tab-index, ESC closes, outside-click
+          closes).</li>
+      <li>Form fields use native HTML controls so screen-reader
+          announcements match the visual control type.</li>
+      <li>Skip-to-content links exist on dashboards with heavy
+          chrome.</li>
+    </ul>
+    <h3>Screen readers</h3>
+    <ul>
+      <li>Hero banners, navigation regions, and the page-head strip
+          carry <code>aria-label</code> values describing their
+          purpose.</li>
+      <li>Icon-only buttons (hamburger, dismiss, social) include
+          <code>aria-label</code>; decorative icons are marked
+          <code>aria-hidden="true"</code> so they don't double up.</li>
+      <li>Form errors are wired with <code>aria-describedby</code>
+          pointing at the error message so the failure reads
+          inline with the field name.</li>
+      <li>Status-bearing chips (Public / Private, Currently applied)
+          pair an icon with text — never colour alone.</li>
+    </ul>
+    <h3>Visual</h3>
+    <ul>
+      <li>The default Tiaki palette is checked against WCAG AA
+          contrast minimums (sidebar text on
+          <code>--pf-800</code> ≈ 13.7:1).</li>
+      <li>Theme presets (Default Tiaki, Forest, Coastal, Tussock)
+          are tuned to similar contrast targets, but custom themes a
+          Coordinator picks are not automatically validated — see
+          the limitations section.</li>
+      <li>Focus rings are explicit and visible across both light
+          (light strips) and dark (navbar) chrome contexts.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="a11y-limitations">
+    <h2 id="a11y-limitations">Known limitations</h2>
+    <ul>
+      <li><strong>Custom theme contrast.</strong> Coordinators can
+          pick a heading/body colour pair that drops below WCAG AA
+          contrast. The theme editor doesn't yet warn when the chosen
+          pair fails. Tracked as a future improvement.</li>
+      <li><strong>Maps.</strong> Some map-based controls (trap-line
+          plotting on the dashboard map) are keyboard-reachable but
+          not yet fully labelled for screen readers. We are working
+          on alternative tabular views.</li>
+      <li><strong>Charts.</strong> Reports charts have title and
+          axis labels but do not yet expose a data-table fallback;
+          coming soon.</li>
+      <li><strong>Mobile.</strong> Tap targets meet WCAG 2.5.5
+          (44×44 px) across primary actions; we are still tightening
+          a small number of secondary controls.</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" aria-labelledby="a11y-compat">
+    <h2 id="a11y-compat">Browser and assistive-technology compatibility</h2>
+    <p>
+      We test against current versions of:
+    </p>
+    <ul>
+      <li>Chrome and Edge with built-in screen-reader support.</li>
+      <li>Firefox with NVDA on Windows.</li>
+      <li>Safari with VoiceOver on macOS and iOS.</li>
+    </ul>
+    <p>
+      Internet Explorer is not supported. Browsers older than
+      18 months may not render the platform's
+      <code>color-mix()</code>-derived palette correctly — chrome
+      will still work, but theme colours may degrade to the
+      hardcoded Tiaki defaults.
+    </p>
+  </section>
+
+  <section class="legal-section" aria-labelledby="a11y-feedback">
+    <h2 id="a11y-feedback">Tell us about a barrier</h2>
+    <p>
+      If you hit an accessibility issue on Tiaki — even a small one —
+      please report it. Include the page URL, the assistive technology
+      you were using (if any), and what you were trying to do. Reports
+      go to a platform administrator. A dedicated accessibility
+      contact channel will land alongside the formal launch.
+    </p>
+  </section>
+
+</div>
+{% endblock %}
