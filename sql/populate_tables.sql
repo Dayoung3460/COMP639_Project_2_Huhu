@@ -429,29 +429,40 @@ ON CONFLICT DO NOTHING;
 -- USER NOTIFICATIONS
 -- ══════════════════════════════════════════════════════
 
-INSERT INTO user_notifications (user_id, message, category, is_active, created_at) VALUES
+INSERT INTO user_notifications (user_id, group_id, message, category, is_active, created_at) VALUES
 (
     (SELECT user_id FROM users WHERE username = 'trequest1'),
+    (SELECT group_id FROM groups WHERE name = 'Banks Peninsula Restoration'),
     'Your request to join Banks Peninsula Restoration is pending review by the coordinator.',
     'info', true, NOW() - INTERVAL '4 days'
 ),
 (
     (SELECT user_id FROM users WHERE username = 'trequest2'),
+    (SELECT group_id FROM groups WHERE name = 'Banks Peninsula Restoration'),
     'Your request to join Banks Peninsula Restoration is pending review by the coordinator.',
     'info', true, NOW() - INTERVAL '1 day'
 ),
 (
     (SELECT user_id FROM users WHERE username = 'dlee'),
+    (SELECT group_id FROM groups WHERE name = 'Banks Peninsula Restoration'),
     'You have 2 pending join requests to review for Banks Peninsula Restoration.',
     'info', true, NOW() - INTERVAL '1 day'
 ),
 (
+    (SELECT user_id FROM users WHERE username = 'enyberg'),
+    (SELECT group_id FROM groups WHERE name = 'Banks Peninsula Restoration'),
+    'New join request for Banks Peninsula Restoration',
+    'info', true, NOW() - INTERVAL '1 day'
+),
+(
     (SELECT user_id FROM users WHERE username = 'smitchell'),
+    NULL,
     'Group application from Erik Nyberg (Selwyn District Trappers) is awaiting your review.',
     'info', true, NOW() - INTERVAL '5 days'
 ),
 (
     (SELECT user_id FROM users WHERE username = 'smitchell'),
+    NULL,
     'Group application from Hira Patel (Riccarton Bush Restoration) is awaiting your review.',
     'info', true, NOW() - INTERVAL '2 days'
 );
