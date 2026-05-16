@@ -1,18 +1,40 @@
 {% extends 'base.html' %}
-{% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel, pf_trap_status_badge %}
+{% from '_ui_macros.html' import pf_link_button %}
 {% block title %}Bait Station Records{% endblock %}
 {% block content %}
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">Bait Station Records</h2>
-    {% if role == 'Operator' %}
-      {{ pf_link_button(url_for('add_bait_record'), 'Add Record', variant='btn-sm-pf', icon='bi-plus-lg') }}
-    {% endif %}
+    <div class="d-flex gap-2 align-items-center">
+      {% if role == 'Operator' %}
+        {{ pf_link_button(url_for('add_bait_record'), 'Add Record', variant='btn-sm-pf', icon='bi-plus-lg') }}
+      {% endif %}
+      {% if records %}
+        <button id="downloadCsvBtn" class="btn-sm-pf">
+          <i class="bi bi-download me-1" aria-hidden="true"></i>Download CSV
+        </button>
+      {% else %}
+        <span class="d-inline-block" tabindex="0" title="There is no data to download">
+          <button class="btn-sm-outline" disabled style="pointer-events: none; opacity: 0.55;" aria-label="Download CSV (no data available)">
+            <i class="bi bi-download me-1" aria-hidden="true"></i>Download CSV
+          </button>
+        </span>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="panel mb-3">
+  {# ── Search & Filters ── #}
+  <div class="panel" style="margin-bottom: 5px;">
     <div class="panel-body py-2 px-3">
       <form method="GET" action="{{ url_for('bait_records') }}" class="row g-2 align-items-center flex-wrap">
+        <div class="col-auto d-flex align-items-center">
+          <label class="form-label mb-0 me-2" for="stationSearch" style="font-size: 0.875rem; white-space: nowrap;"><i class="bi bi-search me-1" aria-hidden="true"></i>Search</label>
+          <input type="text" id="stationSearch" class="form-control form-control-sm"
+                 placeholder="Search by station code..." autocomplete="off">
+        </div>
+
+        <div class="col-auto" style="border-left: 2px solid #e4ede8; height: 28px;"></div>
+
         <div class="col-auto">
           <select name="line_id" class="form-select form-select-sm" aria-label="Filter by line" onchange="this.form.submit()">
             <option value="">All Lines</option>
@@ -29,72 +51,132 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-auto d-flex align-items-center gap-1">
-          <label class="form-label mb-0 small" for="date_from">From</label>
-          <input type="date" id="date_from" name="date_from" class="form-control form-control-sm" value="{{ selected_filters.date_from or '' }}">
-        </div>
-        <div class="col-auto d-flex align-items-center gap-1">
-          <label class="form-label mb-0 small" for="date_to">To</label>
-          <input type="date" id="date_to" name="date_to" class="form-control form-control-sm" value="{{ selected_filters.date_to or '' }}">
+        <div class="col-auto">
+          <div class="d-flex align-items-center">
+            <label for="date_from" class="form-label mb-0 me-2" style="font-size: 0.875rem; white-space: nowrap;">Start Date</label>
+            <input type="date" id="date_from" name="date_from" class="form-control form-control-sm"
+                   value="{{ selected_filters.date_from or '' }}" onchange="this.form.submit()">
+          </div>
         </div>
         <div class="col-auto">
-          <button type="submit" class="btn btn-sm-pf">Filter</button>
-        </div>
-        {% if selected_filters.line_id or selected_filters.station_id or selected_filters.date_from or selected_filters.date_to %}
-          <div class="col-auto">
-            {{ pf_link_button(url_for('bait_records'), 'Clear', variant='btn-sm-outline') }}
+          <div class="d-flex align-items-center">
+            <label for="date_to" class="form-label mb-0 me-2" style="font-size: 0.875rem; white-space: nowrap;">End Date</label>
+            <input type="date" id="date_to" name="date_to" class="form-control form-control-sm"
+                   value="{{ selected_filters.date_to or '' }}" onchange="this.form.submit()">
           </div>
-        {% endif %}
+        </div>
+        <div class="col-auto">
+          <a href="{{ url_for('bait_records') }}" class="btn-sm-outline text-decoration-none">Clear Filters</a>
+        </div>
       </form>
     </div>
   </div>
 
-  {% call pf_panel(title='Records', meta='') %}
-    <div class="pf-table-responsive">
-    <table class="pf-table" aria-label="Bait station records">
-      <thead>
-        <tr>
-          <th scope="col">Date</th>
-          <th scope="col">Station</th>
-          <th scope="col" class="d-none d-md-table-cell">Line</th>
-          <th scope="col" class="d-none d-lg-table-cell">Ingredient</th>
-          <th scope="col" class="d-none d-lg-table-cell">Formulation</th>
-          <th scope="col" class="d-none d-md-table-cell">Conc. (%)</th>
-          <th scope="col">Remaining (kg)</th>
-          <th scope="col" class="d-none d-lg-table-cell">Recorded By</th>
-          <th scope="col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for rec in records %}
-          <tr>
-            <td>{{ rec.date.strftime('%d %b %Y %H:%M') if rec.date else '-' }}</td>
-            <td><strong>{{ rec.station_code }}</strong></td>
-            <td class="d-none d-md-table-cell">{{ rec.line_name }}</td>
-            <td class="d-none d-lg-table-cell">{{ rec.active_ingredient }}</td>
-            <td class="d-none d-lg-table-cell">{{ rec.formulation }}</td>
-            <td class="d-none d-md-table-cell">{{ rec.concentration }}</td>
-            <td>{{ rec.bait_remaining }}</td>
-            <td class="d-none d-lg-table-cell">
-              {{ '@' ~ rec.recorded_by_username if rec.recorded_by_username else '-' }}
-              {% if rec.edited_at %}
-                <small class="text-muted d-block">Edited {{ rec.edited_at.strftime('%d %b %Y') }}{% if rec.edited_by_username %} by @{{ rec.edited_by_username }}{% endif %}</small>
-              {% endif %}
-            </td>
-            <td>
-              {% if role in ('Group Coordinator', 'Super Admin') or (role == 'Operator' and rec.recorded_by_id == user_id) %}
-                {{ pf_link_button(url_for('edit_bait_record', record_id=rec.record_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit record ' ~ rec.record_id}) }}
-              {% endif %}
-            </td>
-          </tr>
-        {% else %}
-          <tr>
-            <td colspan="9" class="text-center text-muted py-3">No bait station records found.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title">All Bait Station Records</h3>
+      </div>
+      <span class="panel-meta"><i class="bi bi-arrow-down-up me-1" aria-hidden="true"></i>Click a column header to sort</span>
     </div>
-  {% endcall %}
+    <div class="pf-table-responsive" style="max-height: 60vh; overflow-y: auto;">
+      <table class="pf-table" id="recordsTable" aria-label="Bait station records">
+        <thead class="sticky-top bg-white">
+          <tr>
+            <th role="button" data-sort-col="0" class="sortable">Date <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+            <th role="button" data-sort-col="1" class="sortable">Station <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+            <th role="button" data-sort-col="2" class="sortable d-none d-md-table-cell">Line <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+            <th role="button" data-sort-col="3" class="sortable d-none d-lg-table-cell">Ingredient <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+            <th role="button" data-sort-col="4" class="sortable d-none d-lg-table-cell">Formulation <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+            <th role="button" data-sort-col="5" class="sortable d-none d-md-table-cell">Conc. (%) <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+            <th role="button" data-sort-col="6" class="sortable">Remaining (kg) <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+            <th scope="col">Notes</th>
+            <th role="button" data-sort-col="8" class="sortable d-none d-lg-table-cell">Recorded By <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in records %}
+            <tr>
+              <td data-sort-value="{{ rec.date.strftime('%Y%m%d%H%M') if rec.date else '' }}" style="font-size:12px; color:#6b7c72;">{{ rec.date.strftime('%d %b %Y %H:%M') if rec.date else '-' }}</td>
+              <td style="font-family:monospace; font-size:12px;"><strong>{{ rec.station_code }}</strong></td>
+              <td class="d-none d-md-table-cell">{{ rec.line_name }}</td>
+              <td class="d-none d-lg-table-cell">{{ rec.active_ingredient }}</td>
+              <td class="d-none d-lg-table-cell">{{ rec.formulation }}</td>
+              <td class="d-none d-md-table-cell">{{ rec.concentration }}</td>
+              <td>{{ rec.bait_remaining }}</td>
+              <td>
+                {% if rec.notes %}
+                  <a href="#" class="btn-sm-pf-soft" style="font-size:11px; padding:2px 8px;"
+                     data-bs-toggle="modal" data-bs-target="#textDetailModal"
+                     data-full-text="{{ rec.notes }}" title="Click to view notes"
+                     aria-label="View notes for {{ rec.station_code }}">View</a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="d-none d-lg-table-cell">
+                {{ '@' ~ rec.recorded_by_username if rec.recorded_by_username else '-' }}
+                {% if rec.edited_at %}
+                  <small class="text-muted d-block">Edited {{ rec.edited_at.strftime('%d %b %Y') }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {% if role in ('Group Coordinator', 'Super Admin') or (role == 'Operator' and rec.recorded_by_id == user_id) %}
+                  {{ pf_link_button(url_for('edit_bait_record', record_id=rec.record_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit record ' ~ rec.record_id}) }}
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="10" style="text-align:center; padding:30px; color:#6b7c72;">
+                No bait station records found.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
+
+{# ── Text detail modal ── #}
+<div class="modal fade" id="textDetailModal" tabindex="-1" aria-labelledby="textDetailModal-title" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="textDetailModal-title">Full Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="textDetailBody" style="white-space:pre-wrap;"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% set csv_list = [] %}
+{% for rec in records %}
+  {% set _ = csv_list.append({
+    'date': rec.date.strftime('%Y-%m-%d %H:%M') if rec.date else '',
+    'station': rec.station_code or '',
+    'line': rec.line_name or '',
+    'target species': rec.target_species or '',
+    'active ingredient': rec.active_ingredient or '',
+    'formulation': rec.formulation or '',
+    'concentration (%)': rec.concentration | string if rec.concentration is not none else '',
+    'bait remaining (kg)': rec.bait_remaining | string if rec.bait_remaining is not none else '',
+    'bait removed (kg)': rec.bait_removed | string if rec.bait_removed is not none else '',
+    'bait added (kg)': rec.bait_added | string if rec.bait_added is not none else '',
+    'notes': rec.notes or '',
+    'recorded by': rec.recorded_by_username or ''
+  }) %}
+{% endfor %}
+
+<script id="csv-data" type="application/json">{{ csv_list | tojson }}</script>
+<script>
+  const CSV_FILENAME = '{{ site_name | lower }}_bait_records.csv';
+</script>
+<script src="{{ url_for('static', filename='js/bait-records.js') }}"></script>
 {% endblock %}
