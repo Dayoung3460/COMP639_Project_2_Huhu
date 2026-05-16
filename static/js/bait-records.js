@@ -1,4 +1,3 @@
-// ── Cap date filters at today ─────────────────────────────────────────────
 (function () {
   const today = new Date().toISOString().split('T')[0];
   const dateFrom = document.getElementById('date_from');
@@ -7,7 +6,18 @@
   if (dateTo) dateTo.max = today;
 })();
 
-// ── Search by station code ────────────────────────────────────────────────
+const form = document.getElementById('baitRecordsFilterForm');
+
+['line_id', 'station_id'].forEach(name => {
+  const el = form && form.querySelector(`[name="${name}"]`);
+  if (el) el.addEventListener('change', () => form.submit());
+});
+
+['date_from', 'date_to'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', () => form.submit());
+});
+
 const stationSearch = document.getElementById('stationSearch');
 if (stationSearch) {
   stationSearch.addEventListener('input', function () {
@@ -23,7 +33,6 @@ if (stationSearch) {
   });
 }
 
-// ── Column sorting ────────────────────────────────────────────────────────
 (function () {
   const table = document.getElementById('recordsTable');
   if (!table) return;
@@ -59,7 +68,6 @@ if (stationSearch) {
   });
 })();
 
-// ── Text detail modal ─────────────────────────────────────────────────────
 const textDetailModal = document.getElementById('textDetailModal');
 if (textDetailModal) {
   textDetailModal.addEventListener('show.bs.modal', function (e) {
@@ -70,7 +78,6 @@ if (textDetailModal) {
   });
 }
 
-// ── CSV download ──────────────────────────────────────────────────────────
 function escapeCSV(val) {
   if (val == null) return '';
   const str = String(val);
@@ -81,8 +88,9 @@ function escapeCSV(val) {
 }
 
 function generateDownload() {
-  const dataNode = document.getElementById('csv-data');
-  const csvRecords = JSON.parse(dataNode.textContent);
+  const dlBtn = document.getElementById('downloadCsvBtn');
+  const filename = dlBtn ? dlBtn.dataset.csvFilename : 'bait_records.csv';
+  const csvRecords = JSON.parse(document.getElementById('csv-data').textContent);
   const headers = [
     'date', 'station', 'line', 'target species', 'active ingredient',
     'formulation', 'concentration (%)', 'bait remaining (kg)',
@@ -99,7 +107,7 @@ function generateDownload() {
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = typeof CSV_FILENAME !== 'undefined' ? CSV_FILENAME : 'bait_records.csv';
+  link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
 }
