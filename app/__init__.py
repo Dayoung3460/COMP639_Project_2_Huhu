@@ -157,6 +157,7 @@ def inject_globals():
     last_name     = None
     nav_is_public = None
     nav_group_member_count = 0
+    nav_notifications = []
     if session.get('user_id'):
         try:
             with db.get_cursor() as cursor:
@@ -187,6 +188,19 @@ def inject_globals():
                     mc = cursor.fetchone()
                     if mc:
                         nav_group_member_count = mc['n']
+                
+                if (session.get('group_role') == 'Group Coordinator'
+                        and session.get('group_id')):
+                    cursor.execute(
+                        '''
+                        SELECT notification_id, message, created_at
+                        FROM user_notifications
+                        WHERE user_id = %s AND group_id = %s AND is_active = TRUE
+                        ORDER BY created_at DESC;
+                        ''',
+                        (session['user_id'], session['group_id'])
+                    )
+                    nav_notifications = cursor.fetchall()
         except Exception:
             pass
 
@@ -220,6 +234,7 @@ def inject_globals():
         nav_group_name=session.get('group_name', ''),
         nav_group_role=session.get('group_role', ''),
         nav_is_public=nav_is_public,
+        nav_notifications=nav_notifications,
         nav_group_member_count=nav_group_member_count,
         nav_dashboard_url=nav_dashboard_url,
         current_year=datetime.now().year,

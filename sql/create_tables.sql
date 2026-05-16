@@ -246,6 +246,7 @@ CREATE SEQUENCE IF NOT EXISTS user_notifications_notification_id_seq;
 CREATE TABLE "public"."user_notifications" (
     "notification_id" int4 NOT NULL DEFAULT nextval('user_notifications_notification_id_seq'::regclass),
     "user_id" int4 NOT NULL,
+    "group_id" int4 DEFAULT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
     "message" text NOT NULL,
     "category" varchar(20) NOT NULL DEFAULT 'info'::character varying,
     "is_active" bool NOT NULL DEFAULT true,
