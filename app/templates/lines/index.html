@@ -47,9 +47,9 @@
         </select>
       </div>
       <div class="col-sm-8 col-lg-2">
-        <label for="lines-operator-filter" class="form-label mb-1">
-          Assigned operator
-          <span id="operator-me-badge" class="badge-role-operator ms-1 {% if not (operator_filter and session.username in operator_filter) %}d-none{% endif %}">Me</span>
+        <label for="lines-operator-filter" class="form-label mb-1 d-flex align-items-center gap-1">
+          <span>Assigned operator</span>
+          <span id="operator-me-badge" class="badge-role-operator {% if not (operator_filter and session.username in operator_filter) %}d-none{% endif %}">Me</span>
         </label>
         <select id="lines-operator-filter" class="form-select">
           <option value="">All operators</option>
@@ -92,7 +92,7 @@
                 }
               ) %}
                   <div class="lines-list-card__content">
-                    <div class="d-flex align-items-center gap-2 mb-1 lines-list-card__name-row">
+                    <div class="d-flex align-items-baseline gap-2 mb-1 lines-list-card__name-row">
                       <h5 class="mb-0 lines-list-card__title">{{ line.name }}</h5>
                       {{ pf_trap_status_badge(line.is_retired) }}
                       {% if line.type == 'Bait Station' %}
