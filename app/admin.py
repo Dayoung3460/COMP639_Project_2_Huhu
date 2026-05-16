@@ -627,41 +627,18 @@ def edit_trap(line_id, trap_id):
         latitude = request.form.get('trap_latitude', '').strip()
         longitude = request.form.get('trap_longitude', '').strip()
 
+        def _edit_trap_error_redirect(msg):
+            return redirect(url_for('line_detail', line_id=line_id,
+                edit_trap=trap_id, error=msg,
+                code=code, trap_type=trap_type, latitude=latitude, longitude=longitude))
+
         # Basic validation
         if not code or not trap_type or not latitude or not longitude:
-            flash('All fields are required.', 'danger')
-            trap.update({
-                'code': code,
-                'trap_type': trap_type,
-                'latitude': latitude,
-                'longitude': longitude
-            })
-            return render_template(
-                'lines/edit_trap.html',
-                trap=trap,
-                trap_types=trap_types,
-                line_id=line_id,
-                lat_range=LINCOLN_NZ_LAT_RANGE,
-                lon_range=LINCOLN_NZ_LON_RANGE,
-            )
+            return _edit_trap_error_redirect('All fields are required.')
 
         coordinates_error = validate_lincoln_nz_coordinates(latitude, longitude)
         if coordinates_error:
-            flash(coordinates_error, 'danger')
-            trap.update({
-                'code': code,
-                'trap_type': trap_type,
-                'latitude': latitude,
-                'longitude': longitude
-            })
-            return render_template(
-                'lines/edit_trap.html',
-                trap=trap,
-                trap_types=trap_types,
-                line_id=line_id,
-                lat_range=LINCOLN_NZ_LAT_RANGE,
-                lon_range=LINCOLN_NZ_LON_RANGE,
-            )
+            return _edit_trap_error_redirect(coordinates_error)
 
         # Check for unique trap code (excluding current trap)
         with db.get_cursor() as cursor:
@@ -675,20 +652,8 @@ def edit_trap(line_id, trap_id):
             )
             existing_trap = cursor.fetchone()
             if existing_trap:
-                flash(f'Trap Code "{code}" has already been taken. Please choose a different code.', 'danger')
-                trap.update({
-                    'code': code,
-                    'trap_type': trap_type,
-                    'latitude': latitude,
-                    'longitude': longitude
-                })
-                return render_template(
-                    'lines/edit_trap.html',
-                    trap=trap,
-                    trap_types=trap_types,
-                    line_id=line_id,
-                    lat_range=LINCOLN_NZ_LAT_RANGE,
-                    lon_range=LINCOLN_NZ_LON_RANGE,
+                return _edit_trap_error_redirect(
+                    f'Trap Code "{code}" has already been taken. Please choose a different code.'
                 )
             
         # Update trap in database
@@ -705,14 +670,7 @@ def edit_trap(line_id, trap_id):
         flash('Trap updated.', 'success')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    return render_template(
-        'lines/edit_trap.html',
-        trap=trap,
-        trap_types=trap_types,
-        line_id=line_id,
-        lat_range=LINCOLN_NZ_LAT_RANGE,
-        lon_range=LINCOLN_NZ_LON_RANGE,
-    )
+    return redirect(url_for('line_detail', line_id=line_id, edit_trap=trap_id))
 
 
 @app.route('/admin/traps/<int:line_id>/retire', methods=['POST'])
@@ -896,11 +854,10 @@ def edit_bait_station(line_id, station_id):
                     errors.append(f'Station code "{code}" already exists on this line. Please choose a different code.')
 
         if errors:
-            for e in errors:
-                flash(e, 'danger')
-            return render_template('lines/edit_bait_station.html', line_id=line_id,
-                                   station=station, bait_station_types=BAIT_STATION_TYPES,
-                                   data=request.form)
+            return redirect(url_for('line_detail', line_id=line_id,
+                edit_station=station_id, error='; '.join(errors),
+                code=code, station_type=station_type, other_type=other_type or '',
+                latitude=latitude, longitude=longitude))
 
         with db.get_cursor() as cursor:
             cursor.execute(
@@ -911,9 +868,7 @@ def edit_bait_station(line_id, station_id):
         flash('Bait station updated.', 'success')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    return render_template('lines/edit_bait_station.html', line_id=line_id,
-                           station=station, bait_station_types=BAIT_STATION_TYPES,
-                           data=station)
+    return redirect(url_for('line_detail', line_id=line_id, edit_station=station_id))
 
 
 @app.route('/admin/lines/<int:line_id>/bait-stations/deactivate', methods=['POST'])

@@ -7,9 +7,18 @@
 
   {% if line %}
     {% set current_filter = line_filter | default('all') %}
+    {% set ns = namespace(is_assigned_operator=false) %}
+    {% if session.get('group_role') == 'Operator' %}
+      {% for op in operators %}
+        {% if op.user_id == session.get('user_id') %}
+          {% set ns.is_assigned_operator = true %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% set is_assigned_operator = ns.is_assigned_operator %}
     <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
       <div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-baseline gap-2">
           <h2 class="mb-0">{{ line.name }}</h2>
           {{ pf_trap_status_badge(line.is_retired) }}
           <span class="{{ 'badge-line-bait' if line.type == 'Bait Station' else 'badge-line-trap' }}">{{ line.type }}</span>
@@ -158,11 +167,20 @@
                   <td class="d-none d-md-table-cell">{{ bs.retired_at.strftime('%d %b %Y %H:%M') if bs.retired_at else '-' }}</td>
                   <td class="d-none d-md-table-cell">{{ '@' ~ bs.retired_by_username if bs.retired_by_username else '-' }}</td>
                   <td class="lines-table-actions">
-                    {% if session.get('group_role') == 'Operator' and not bs.is_retired %}
-                      {{ pf_link_button(url_for('add_bait_record', station_id=bs.station_id), 'Add Record', variant='btn-sm-pf', icon='bi-plus-lg', attrs={'aria-label': 'Add bait record for ' ~ bs.code}) }}
+                    {% if is_assigned_operator and not bs.is_retired and not line.is_retired %}
+                      {{ pf_link_button(url_for('add_bait_record', station_id=bs.station_id, line_id=line.line_id), 'Add Record', variant='btn-sm-pf', icon='bi-plus-lg', attrs={'aria-label': 'Add bait record for ' ~ bs.code}) }}
                     {% elif session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
                       {% if not bs.is_retired %}
-                        {{ pf_link_button(url_for('edit_bait_station', line_id=line.line_id, station_id=bs.station_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit station ' ~ bs.code}) }}
+                        {{ pf_button('Edit', variant='btn-sm-outline', attrs={
+                          'aria-label': 'Edit station ' ~ bs.code,
+                          'data-edit-station': bs.station_id,
+                          'data-station-code': bs.code,
+                          'data-station-type': bs.station_type,
+                          'data-other-type': bs.other_type or '',
+                          'data-station-lat': bs.latitude,
+                          'data-station-lng': bs.longitude,
+                          'data-edit-url': url_for('edit_bait_station', line_id=line.line_id, station_id=bs.station_id),
+                        }) }}
                         {{ pf_button(
                           'Retire',
                           variant='btn-sm-danger',
@@ -235,7 +253,7 @@
                 <th scope="col">Status</th>
                 <th scope="col" class="d-none d-md-table-cell">Retired Date</th>
                 <th scope="col" class="d-none d-md-table-cell">Retired By</th>
-                {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+                {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') or is_assigned_operator %}
                   <th scope="col">Actions</th>
                 {% endif %}
               </tr>
@@ -250,32 +268,44 @@
                   <td>{{ pf_trap_status_badge(trap.is_retired) }}</td>
                   <td class="d-none d-md-table-cell">{{ trap.retired_at.strftime('%d %b %Y %H:%M') if trap.retired_at else '-' }}</td>
                   <td class="d-none d-md-table-cell">{{ '@' ~ trap.retired_by_username if trap.retired_by_username else '-' }}</td>
-                  {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+                  {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') or is_assigned_operator %}
                     <td class="lines-table-actions">
-                      {% if not trap.is_retired %}
-                        {{ pf_link_button(url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id), 'Edit', variant='btn-sm-outline', attrs={'aria-label': 'Edit trap ' ~ trap.code}) }}
-                        {{ pf_button(
-                          'Retire',
-                          variant='btn-sm-danger',
-                          attrs={
-                            'aria-label': 'Retire trap ' ~ trap.code,
-                            'data-bs-toggle': 'modal',
-                            'data-bs-target': '#retire-trap-modal',
-                            'data-trap-id': trap.trap_id,
+                      {% if is_assigned_operator and not trap.is_retired and not line.is_retired %}
+                        {{ pf_link_button(url_for('add_catch', line_id=line.line_id, trap_id=trap.trap_id), 'Add Catch', variant='btn-sm-pf', icon='bi-plus-lg', attrs={'aria-label': 'Add catch for ' ~ trap.code}) }}
+                      {% elif session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+                        {% if not trap.is_retired %}
+                          {{ pf_button('Edit', variant='btn-sm-outline', attrs={
+                            'aria-label': 'Edit trap ' ~ trap.code,
+                            'data-edit-trap': trap.trap_id,
                             'data-trap-code': trap.code,
-                          }
-                        ) }}
-                      {% else %}
-                        <form method="POST" action="{{ url_for('unretire_trap', line_id=line.line_id, trap_id=trap.trap_id) }}" class="d-inline">
-                          {{ pf_button('Unretire', variant='btn-sm-outline', type='submit', attrs={'aria-label': 'Unretire trap ' ~ trap.code}) }}
-                        </form>
+                            'data-trap-type': trap.trap_type,
+                            'data-trap-lat': trap.latitude,
+                            'data-trap-lng': trap.longitude,
+                            'data-edit-url': url_for('edit_trap', line_id=line.line_id, trap_id=trap.trap_id),
+                          }) }}
+                          {{ pf_button(
+                            'Retire',
+                            variant='btn-sm-danger',
+                            attrs={
+                              'aria-label': 'Retire trap ' ~ trap.code,
+                              'data-bs-toggle': 'modal',
+                              'data-bs-target': '#retire-trap-modal',
+                              'data-trap-id': trap.trap_id,
+                              'data-trap-code': trap.code,
+                            }
+                          ) }}
+                        {% else %}
+                          <form method="POST" action="{{ url_for('unretire_trap', line_id=line.line_id, trap_id=trap.trap_id) }}" class="d-inline">
+                            {{ pf_button('Unretire', variant='btn-sm-outline', type='submit', attrs={'aria-label': 'Unretire trap ' ~ trap.code}) }}
+                          </form>
+                        {% endif %}
                       {% endif %}
                     </td>
                   {% endif %}
                 </tr>
               {% else %}
                 <tr>
-                  <td colspan="{{ 8 if session.get('group_role') in ('Super Admin', 'Group Coordinator') else 7 }}" class="text-center text-muted py-3">
+                  <td colspan="{{ 8 if session.get('group_role') in ('Super Admin', 'Group Coordinator') or is_assigned_operator else 7 }}" class="text-center text-muted py-3">
                     No traps on this line yet.
                   </td>
                 </tr>
@@ -323,9 +353,6 @@
                 <small class="text-muted">(@{{ op.username }})</small>
                 {% if session.get('group_role') == 'Operator' and op.user_id == session.get('user_id') %}
                   <span class="badge-role-operator">Me</span>
-                  {% if not line.is_retired %}
-                    {{ pf_link_button(url_for('add_catch', line_id=line.line_id), 'Add Catch', variant='btn-sm-pf', icon='bi-plus-lg', extra_classes='operator-assignment-item__add-catch') }}
-                  {% endif %}
                 {% endif %}
               </div>
             </li>

@@ -355,9 +355,276 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // ── Inline Edit Trap / Station State ───────────────────────────────────────
+  let isEditingTrap = false;
+  let isEditingStation = false;
+  let editTempMarker = null;
+
+  function closeAnyOpenForms() {
+    ['cancel-add-trap', 'cancel-add-station', 'cancel-edit-trap', 'cancel-edit-station']
+      .forEach(function (id) { const btn = document.getElementById(id); if (btn) btn.click(); });
+  }
+
+  // ── Inline Edit Trap ────────────────────────────────────────────────────────
+  if (trapsListContainer) {
+    trapsListContainer.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-edit-trap]');
+      if (btn) openEditTrapForm(btn, null, null);
+    });
+  }
+
+  function openEditTrapForm(triggerBtn, errorMsg, prefill) {
+    closeAnyOpenForms();
+    isEditingTrap = true;
+
+    const trapId = triggerBtn.dataset.editTrap;
+    const code = (prefill && prefill.code) || triggerBtn.dataset.trapCode || '';
+    const trapType = (prefill && prefill.trapType) || triggerBtn.dataset.trapType || '';
+    const lat = (prefill && prefill.lat) || triggerBtn.dataset.trapLat || '';
+    const lng = (prefill && prefill.lng) || triggerBtn.dataset.trapLng || '';
+    const editUrl = triggerBtn.dataset.editUrl;
+
+    let trapTypes = ['A24', 'DOC 150', 'DOC 200', 'DOC 250', 'Flipping Timmy', 'Rat trap', 'T-Rex Rat Trap', 'Trapinator', 'Victor'];
+    if (addTrapBtn && addTrapBtn.dataset.trapTypes) {
+      try { trapTypes = JSON.parse(addTrapBtn.dataset.trapTypes); } catch (e) {}
+    }
+
+    const container = document.createElement('div');
+    container.id = 'edit-trap-form-container';
+    container.className = 'panel mb-3 lines-inline-form-panel lines-inline-form-flash';
+    container.setAttribute('role', 'region');
+    container.setAttribute('aria-labelledby', 'edit-trap-form-title');
+    container.innerHTML = `
+      <div class="panel-body lines-inline-form-body">
+        ${errorMsg ? `<div class="notice amber lines-inline-form-error" role="alert"><i class="bi bi-exclamation-triangle-fill"></i><span>${errorMsg}</span></div>` : ''}
+        <div class="lines-inline-form-title" id="edit-trap-form-title">Edit Trap</div>
+        <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Click on the map above to update coordinates, or type them below</div>
+        <div id="edit-trap-coord-announce" class="visually-hidden" aria-live="polite"></div>
+        <form id="edit-trap-inline-form" method="POST" action="${editUrl}" aria-label="Edit trap">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-2">
+              <label for="edit-trap-code" class="form-label small mb-1">Code</label>
+              <input type="text" name="trap_code" id="edit-trap-code" class="form-control form-control-sm" required value="${code}" aria-required="true">
+            </div>
+            <div class="col-12 col-md-2">
+              <label for="edit-trap-type" class="form-label small mb-1">Type</label>
+              <select name="trap_type" id="edit-trap-type" class="form-select form-select-sm" required aria-required="true">
+                <option value="">Select...</option>
+                ${trapTypes.map(t => `<option value="${t}"${t === trapType ? ' selected' : ''}>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div class="col-12 col-md-2">
+              <label for="edit-trap-lat" class="form-label small mb-1">Latitude</label>
+              <input type="text" name="trap_latitude" id="edit-trap-lat" class="form-control form-control-sm bg-light" inputmode="decimal" required value="${lat}" aria-required="true">
+            </div>
+            <div class="col-12 col-md-2">
+              <label for="edit-trap-lng" class="form-label small mb-1">Longitude</label>
+              <input type="text" name="trap_longitude" id="edit-trap-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required value="${lng}" aria-required="true">
+            </div>
+            <div class="col-6 col-md-auto ms-md-auto mt-3 mt-md-0">
+              <button type="button" class="btn btn-sm-outline w-100" id="cancel-edit-trap" aria-label="Cancel editing trap">Cancel</button>
+            </div>
+            <div class="col-6 col-md-auto mt-3 mt-md-0">
+              <button type="submit" class="btn btn-sm-pf w-100" aria-label="Save trap changes">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    `;
+
+    trapsListContainer.prepend(container);
+
+    if (coordinateInputUtils) {
+      coordinateInputUtils.attachCoordinateInputGuards([
+        document.getElementById('edit-trap-lat'),
+        document.getElementById('edit-trap-lng')
+      ]);
+    }
+
+    if (lat && lng) {
+      const latNum = parseFloat(lat);
+      const lngNum = parseFloat(lng);
+      if (!isNaN(latNum) && !isNaN(lngNum)) {
+        if (editTempMarker) map.removeLayer(editTempMarker);
+        editTempMarker = L.marker([latNum, lngNum]).addTo(map)
+          .bindPopup(`<strong>Editing: ${code}</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`)
+          .openPopup();
+      }
+    }
+
+    setTimeout(function () { container.classList.remove('lines-inline-form-flash'); }, 500);
+
+    const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
+    const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - 8;
+    window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+
+    const firstInput = container.querySelector('input, select, button, a[href]');
+    if (firstInput) firstInput.focus({ preventScroll: true });
+
+    const focusTrapHandler = function (e) {
+      const focusable = Array.from(container.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+      if (!focusable.length) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.key === 'Tab') {
+        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+        else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+      }
+      if (e.key === 'Escape') { doCancel(); }
+    };
+    document.addEventListener('keydown', focusTrapHandler);
+
+    function doCancel() {
+      document.removeEventListener('keydown', focusTrapHandler);
+      container.remove();
+      isEditingTrap = false;
+      if (editTempMarker) { map.removeLayer(editTempMarker); editTempMarker = null; }
+      triggerBtn.focus();
+    }
+
+    document.getElementById('cancel-edit-trap').addEventListener('click', doCancel);
+  }
+
+  // ── Inline Edit Station ─────────────────────────────────────────────────────
+  if (stationsListContainer) {
+    stationsListContainer.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-edit-station]');
+      if (btn) openEditStationForm(btn, null, null);
+    });
+  }
+
+  function openEditStationForm(triggerBtn, errorMsg, prefill) {
+    closeAnyOpenForms();
+    isEditingStation = true;
+
+    const stationId = triggerBtn.dataset.editStation;
+    const code = (prefill && prefill.code) || triggerBtn.dataset.stationCode || '';
+    const stationType = (prefill && prefill.stationType) || triggerBtn.dataset.stationType || '';
+    const otherType = (prefill && prefill.otherType) || triggerBtn.dataset.otherType || '';
+    const lat = (prefill && prefill.lat) || triggerBtn.dataset.stationLat || '';
+    const lng = (prefill && prefill.lng) || triggerBtn.dataset.stationLng || '';
+    const editUrl = triggerBtn.dataset.editUrl;
+
+    let stationTypes = [];
+    if (addStationBtn && addStationBtn.dataset.baitStationTypes) {
+      try { stationTypes = JSON.parse(addStationBtn.dataset.baitStationTypes); } catch (e) {}
+    }
+
+    const container = document.createElement('div');
+    container.id = 'edit-station-form-container';
+    container.className = 'panel mb-3 lines-inline-form-panel lines-inline-form-flash';
+    container.setAttribute('role', 'region');
+    container.setAttribute('aria-labelledby', 'edit-station-form-title');
+    container.innerHTML = `
+      <div class="panel-body lines-inline-form-body">
+        ${errorMsg ? `<div class="notice amber lines-inline-form-error" role="alert"><i class="bi bi-exclamation-triangle-fill"></i><span>${errorMsg}</span></div>` : ''}
+        <div class="lines-inline-form-title" id="edit-station-form-title">Edit Station</div>
+        <div class="lines-inline-form-hint"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Click on the map above to update coordinates, or type them below</div>
+        <div id="edit-station-coord-announce" class="visually-hidden" aria-live="polite"></div>
+        <form id="edit-station-inline-form" method="POST" action="${editUrl}" aria-label="Edit bait station">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-2">
+              <label for="edit-station-code" class="form-label small mb-1">Code</label>
+              <input type="text" name="code" id="edit-station-code" class="form-control form-control-sm" required value="${code}" aria-required="true">
+            </div>
+            <div class="col-12 col-md-2">
+              <label for="edit-station-type" class="form-label small mb-1">Type</label>
+              <select name="station_type" id="edit-station-type" class="form-select form-select-sm" required aria-required="true">
+                <option value="">Select...</option>
+                ${stationTypes.map(t => `<option value="${t}"${t === stationType ? ' selected' : ''}>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div class="col-12 col-md-2${stationType === 'Other' ? '' : ' d-none'}" id="edit-station-other-group">
+              <label for="edit-station-other-type" class="form-label small mb-1">Specify Type</label>
+              <input type="text" name="other_type" id="edit-station-other-type" class="form-control form-control-sm" value="${otherType}"${stationType === 'Other' ? ' required' : ''}>
+            </div>
+            <div class="col-12 col-md-2">
+              <label for="edit-station-lat" class="form-label small mb-1">Latitude</label>
+              <input type="text" name="latitude" id="edit-station-lat" class="form-control form-control-sm bg-light" inputmode="decimal" required value="${lat}" aria-required="true">
+            </div>
+            <div class="col-12 col-md-2">
+              <label for="edit-station-lng" class="form-label small mb-1">Longitude</label>
+              <input type="text" name="longitude" id="edit-station-lng" class="form-control form-control-sm bg-light" inputmode="decimal" required value="${lng}" aria-required="true">
+            </div>
+            <div class="col-6 col-md-auto ms-md-auto mt-3 mt-md-0">
+              <button type="button" class="btn btn-sm-outline w-100" id="cancel-edit-station" aria-label="Cancel editing station">Cancel</button>
+            </div>
+            <div class="col-6 col-md-auto mt-3 mt-md-0">
+              <button type="submit" class="btn btn-sm-pf w-100" aria-label="Save station changes">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    `;
+
+    stationsListContainer.prepend(container);
+
+    const typeSelect = document.getElementById('edit-station-type');
+    const otherGroup = document.getElementById('edit-station-other-group');
+    const otherInput = document.getElementById('edit-station-other-type');
+    function toggleOther() {
+      const isOther = typeSelect.value === 'Other';
+      otherGroup.classList.toggle('d-none', !isOther);
+      if (otherInput) otherInput.required = isOther;
+    }
+    typeSelect.addEventListener('change', toggleOther);
+
+    if (coordinateInputUtils) {
+      coordinateInputUtils.attachCoordinateInputGuards([
+        document.getElementById('edit-station-lat'),
+        document.getElementById('edit-station-lng')
+      ]);
+    }
+
+    if (lat && lng) {
+      const latNum = parseFloat(lat);
+      const lngNum = parseFloat(lng);
+      if (!isNaN(latNum) && !isNaN(lngNum)) {
+        if (editTempMarker) map.removeLayer(editTempMarker);
+        editTempMarker = L.marker([latNum, lngNum]).addTo(map)
+          .bindPopup(`<strong>Editing: ${code}</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`)
+          .openPopup();
+      }
+    }
+
+    setTimeout(function () { container.classList.remove('lines-inline-form-flash'); }, 500);
+
+    const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
+    const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - 8;
+    window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+
+    const firstInput = container.querySelector('input, select, button, a[href]');
+    if (firstInput) firstInput.focus({ preventScroll: true });
+
+    const focusTrapHandler = function (e) {
+      const focusable = Array.from(container.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+      if (!focusable.length) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.key === 'Tab') {
+        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+        else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+      }
+      if (e.key === 'Escape') { doCancel(); }
+    };
+    document.addEventListener('keydown', focusTrapHandler);
+
+    function doCancel() {
+      document.removeEventListener('keydown', focusTrapHandler);
+      container.remove();
+      isEditingStation = false;
+      if (editTempMarker) { map.removeLayer(editTempMarker); editTempMarker = null; }
+      triggerBtn.focus();
+    }
+
+    document.getElementById('cancel-edit-station').addEventListener('click', doCancel);
+  }
+
   // ── Map Click Handler for Coordinates ──────────────────────────────────────
   map.on('click', function (e) {
-    if (!isAddingTrap && !isAddingStation) return;
+    if (!isAddingTrap && !isAddingStation && !isEditingTrap && !isEditingStation) return;
 
     const lat = e.latlng.lat.toFixed(6);
     const lng = e.latlng.lng.toFixed(6);
@@ -375,7 +642,7 @@ document.addEventListener('DOMContentLoaded', function () {
       tempMarker = L.marker([lat, lng]).addTo(map)
         .bindPopup(`<strong>New Trap Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
         .openPopup();
-    } else {
+    } else if (isAddingStation) {
       const latInput = document.getElementById('inline-station-lat');
       const lngInput = document.getElementById('inline-station-lng');
       if (latInput) latInput.value = lat;
@@ -388,11 +655,83 @@ document.addEventListener('DOMContentLoaded', function () {
       tempStationMarker = L.marker([lat, lng]).addTo(map)
         .bindPopup(`<strong>New Station Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
         .openPopup();
+    } else if (isEditingTrap) {
+      const latInput = document.getElementById('edit-trap-lat');
+      const lngInput = document.getElementById('edit-trap-lng');
+      if (latInput) latInput.value = lat;
+      if (lngInput) lngInput.value = lng;
+
+      const announce = document.getElementById('edit-trap-coord-announce');
+      if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
+
+      if (editTempMarker) map.removeLayer(editTempMarker);
+      editTempMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<strong>Updated Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
+        .openPopup();
+    } else {
+      const latInput = document.getElementById('edit-station-lat');
+      const lngInput = document.getElementById('edit-station-lng');
+      if (latInput) latInput.value = lat;
+      if (lngInput) lngInput.value = lng;
+
+      const announce = document.getElementById('edit-station-coord-announce');
+      if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
+
+      if (editTempMarker) map.removeLayer(editTempMarker);
+      editTempMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<strong>Updated Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
+        .openPopup();
     }
   });
 
-  // ── Auto-open Add Station form if redirected back with errors ──────────────
+  // ── Auto-open forms if redirected back with errors ─────────────────────────
   const urlParams = new URLSearchParams(window.location.search);
+
+  if (urlParams.get('edit_trap') && trapsListContainer) {
+    const trapId = urlParams.get('edit_trap');
+    const triggerBtn = trapsListContainer.querySelector(`[data-edit-trap="${trapId}"]`);
+    if (triggerBtn) {
+      const errorMsg = urlParams.get('error') || null;
+      const prefill = {
+        code: urlParams.get('code') || triggerBtn.dataset.trapCode,
+        trapType: urlParams.get('trap_type') || triggerBtn.dataset.trapType,
+        lat: urlParams.get('latitude') || triggerBtn.dataset.trapLat,
+        lng: urlParams.get('longitude') || triggerBtn.dataset.trapLng,
+      };
+      openEditTrapForm(triggerBtn, errorMsg, prefill);
+
+      if (prefill.lat && prefill.lng && !isNaN(parseFloat(prefill.lat)) && !isNaN(parseFloat(prefill.lng))) {
+        if (editTempMarker) {
+          editTempMarker.setLatLng([parseFloat(prefill.lat), parseFloat(prefill.lng)]);
+        }
+      }
+    }
+  }
+
+  // ── Auto-open Edit Station form if redirected back with errors ──────────────
+  if (urlParams.get('edit_station') && stationsListContainer) {
+    const stationId = urlParams.get('edit_station');
+    const triggerBtn = stationsListContainer.querySelector(`[data-edit-station="${stationId}"]`);
+    if (triggerBtn) {
+      const errorMsg = urlParams.get('error') || null;
+      const prefill = {
+        code: urlParams.get('code') || triggerBtn.dataset.stationCode,
+        stationType: urlParams.get('station_type') || triggerBtn.dataset.stationType,
+        otherType: urlParams.get('other_type') || triggerBtn.dataset.otherType,
+        lat: urlParams.get('latitude') || triggerBtn.dataset.stationLat,
+        lng: urlParams.get('longitude') || triggerBtn.dataset.stationLng,
+      };
+      openEditStationForm(triggerBtn, errorMsg, prefill);
+
+      if (prefill.lat && prefill.lng && !isNaN(parseFloat(prefill.lat)) && !isNaN(parseFloat(prefill.lng))) {
+        if (editTempMarker) {
+          editTempMarker.setLatLng([parseFloat(prefill.lat), parseFloat(prefill.lng)]);
+        }
+      }
+    }
+  }
+
+  // ── Auto-open Add Station form if redirected back with errors ──────────────
   if (urlParams.get('add_station') === '1' && addStationBtn) {
     addStationBtn.click();
 

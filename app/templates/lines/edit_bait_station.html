@@ -31,10 +31,12 @@
       <div class="col-6">
         <label for="latitude" class="form-label">Latitude <span class="text-danger" aria-hidden="true">*</span></label>
         <input type="text" class="form-control" id="latitude" name="latitude" value="{{ data.get('latitude', station.latitude) }}" inputmode="decimal" required>
+        <div class="form-text">Allowed Lincoln boundary: {{ lat_range[0] }} to {{ lat_range[1] }}</div>
       </div>
       <div class="col-6">
         <label for="longitude" class="form-label">Longitude <span class="text-danger" aria-hidden="true">*</span></label>
         <input type="text" class="form-control" id="longitude" name="longitude" value="{{ data.get('longitude', station.longitude) }}" inputmode="decimal" required>
+        <div class="form-text">Allowed Lincoln boundary: {{ lon_range[0] }} to {{ lon_range[1] }}</div>
       </div>
     </div>
 

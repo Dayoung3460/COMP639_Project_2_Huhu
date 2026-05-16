@@ -129,8 +129,14 @@ def add_catch():
         valid_line_ids = [str(line['line_id']) for line in lines]
         if selected_line_id not in valid_line_ids:
             selected_line_id = ''
-        
-        return render_template('operator/add_catch.html', lines=lines, data={'line_id': selected_line_id}, lookup=lookup)
+
+        # Capture selected trap from URL param, validate it belongs to operator
+        selected_trap_id = request.args.get('trap_id', '')
+        valid_trap_ids = [str(trap['trap_id']) for ln in lines for trap in (ln.get('traps') or [])]
+        if selected_trap_id not in valid_trap_ids:
+            selected_trap_id = ''
+
+        return render_template('operator/add_catch.html', lines=lines, data={'line_id': selected_line_id, 'trap_id': selected_trap_id}, lookup=lookup)
 
 
 @app.route('/operator/edit-catch/<int:catch_id>', methods=['GET', 'POST'])
@@ -330,18 +336,21 @@ def add_bait_record():
                 flash(e, 'danger')
             return render_template('operator/add_bait_record.html',
                                    bait_lines=bait_lines, data=request.form,
+                                   show_back=bool(request.form.get('station_id')),
                                    species_list=species_list,
                                    active_ingredients=ACTIVE_INGREDIENTS,
                                    formulations=FORMULATIONS)
 
         insert_bait_station_record(db, request.form, user_id)
         flash('Bait station record added.', 'success')
-        return redirect(url_for('operator_dashboard'))
+        return redirect(url_for('bait_records'))
 
     selected_station_id = request.args.get('station_id', '')
+    selected_line_id = request.args.get('line_id', '')
     return render_template('operator/add_bait_record.html',
                            bait_lines=bait_lines,
-                           data={'station_id': selected_station_id},
+                           show_back=bool(selected_station_id),
+                           data={'station_id': selected_station_id, 'line_id': selected_line_id},
                            species_list=species_list,
                            active_ingredients=ACTIVE_INGREDIENTS,
                            formulations=FORMULATIONS)
