@@ -90,7 +90,7 @@
              {% if request.endpoint == 'my_tiaki' %}aria-current="page" class="is-active"{% endif %}>Feed</a>
           <a href="{{ url_for('profile') }}"
              {% if request.endpoint == 'profile' %}aria-current="page" class="is-active"{% endif %}>Profile</a>
-          <a href="#">My groups</a>
+          <a href="{{ url_for('select_group') }}">My groups</a>
           <a href="#">Requests</a>
           <a href="{{ url_for('logout') }}">Sign out</a>
           {% set _parts = (nav_full_name or session.username or '').split() %}

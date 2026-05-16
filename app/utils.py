@@ -13,7 +13,6 @@ import os
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads')
-CONSERVATION_GROUP_BG_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads', 'conservation-group-bg')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Group identity photos (P2-44) — narrower than ALLOWED_EXTENSIONS.
