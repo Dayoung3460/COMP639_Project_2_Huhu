@@ -135,7 +135,7 @@ CREATE TABLE "public"."bait_station_records" (
     "station_id" int4 NOT NULL,
     "date" timestamp NOT NULL,
     "recorded_by_id" int4,
-    "target_species" varchar(100) NOT NULL,
+    "target_species" varchar(100),
     "active_ingredient" varchar(100) NOT NULL,
     "formulation" varchar(100) NOT NULL,
     "concentration" numeric(5,2) NOT NULL,
