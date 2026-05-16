@@ -394,14 +394,6 @@ body {
   overflow: hidden;
 }
 
-.group-card-image::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 30%, var(--group-accent, var(--color-accent-soft)), transparent 70%);
-  opacity: 0.5;
-}
-
 .group-card-badge {
   position: absolute;
   top: 12px;
@@ -649,21 +641,9 @@ body {
   overflow: hidden;
 }
 
-.group-hero::before {
-  content: '';
-  position: absolute;
-  width: 700px;
-  height: 700px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--group-hero-tint, var(--color-primary)) 0%, transparent 60%);
-  opacity: 0.10;
-  top: -300px;
-  right: -250px;
-  pointer-events: none;
-}
-
 .group-hero-inner {
   position: relative;
+  z-index: 1;
 }
 
 .group-back-link {

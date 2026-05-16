@@ -123,8 +123,8 @@
                 {% if g.cover_photo %}
                   {# cover_photo paths are relative to /static/ per the
                      foundation convention (e.g. uploads/group_3/cover.jpg). #}
-                  <img src="{{ url_for('static', filename=g.cover_photo) }}"
-                       alt="" loading="lazy">
+                  <img src="{{ url_for('static', filename='images/uploads/' + g.cover_photo) }}"
+                       alt="{{ g.name }}" loading="lazy">
                 {% endif %}
                 {% if not g.is_public %}
                   <span class="group-card-lock">

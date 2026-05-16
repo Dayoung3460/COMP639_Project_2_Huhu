@@ -12,7 +12,7 @@ Visibility logic (per the brief):
 
 from flask import render_template, request, redirect, url_for, flash, session, abort, jsonify
 from app import app, db
-from app.utils import role_required, allowed_file, CONSERVATION_GROUP_BG_FOLDER, redirect_by_role
+from app.utils import role_required, allowed_file, UPLOAD_FOLDER, redirect_by_role
 import os
 import uuid
 
@@ -27,7 +27,7 @@ def group_landing(group_id):
         cursor.execute('''
             SELECT
                 g.group_id, g.name, g.description, g.is_public,
-                g.image, g.color_theme, g.created_at, g.is_active
+                g.cover_photo, g.color_theme, g.created_at, g.is_active
             FROM groups g
             WHERE g.group_id = %s
         ''', (group_id,))
@@ -178,9 +178,9 @@ def apply_for_group():
         if file and file.filename:
             if allowed_file(file.filename):
                 ext = file.filename.rsplit('.', 1)[1].lower()
-                filename = f"conservation_bg_{uuid.uuid4().hex[:10]}.{ext}"
-                os.makedirs(CONSERVATION_GROUP_BG_FOLDER, exist_ok=True)
-                file.save(os.path.join(CONSERVATION_GROUP_BG_FOLDER, filename))
+                filename = f"group_{uuid.uuid4().hex[:10]}.{ext}"
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                file.save(os.path.join(UPLOAD_FOLDER, filename))
                 profile_photo = filename
             else:
                 flash('Profile photo must be a PNG, JPG, JPEG, or GIF.', 'danger')
@@ -189,7 +189,7 @@ def apply_for_group():
         with db.get_cursor() as cursor:
             if profile_photo:
                 insert_query = """
-                INSERT INTO group_applications (user_id, proposed_name, description, location, justification, tile_image)
+                INSERT INTO group_applications (user_id, proposed_name, description, location, justification, image)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """
                 tuple_values = (user_id, proposed_name, description, location, justification, profile_photo)

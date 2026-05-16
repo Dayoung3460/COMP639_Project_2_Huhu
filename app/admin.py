@@ -948,7 +948,7 @@ def admin_groups():
 
     query = '''
         SELECT g.group_id, g.name, g.is_public, g.is_active, g.created_at,
-               g.image, g.color_theme,
+               g.cover_photo, g.color_theme,
                COUNT(DISTINCT gm.user_id) AS member_count,
                STRING_AGG(DISTINCT u.first_name || ' ' || u.last_name, ', '
                    ORDER BY u.first_name || ' ' || u.last_name)
@@ -1030,7 +1030,7 @@ def admin_group_create():
 
         with db.get_cursor() as cursor:
             cursor.execute('''
-                INSERT INTO groups (name, description, is_public, image)
+                INSERT INTO groups (name, description, is_public, cover_photo)
                 VALUES (%s, %s, %s, %s)
                 RETURNING group_id
             ''', (name, description, is_public, filename))
@@ -1067,7 +1067,7 @@ def admin_group_detail(group_id):
     with db.get_cursor() as cursor:
         cursor.execute('''
             SELECT g.group_id, g.name, g.description, g.is_public, g.is_active, g.created_at,
-                   g.image, g.color_theme,
+                   g.cover_photo, g.color_theme,
                    COUNT(DISTINCT gm.user_id) AS member_count
             FROM groups g
             LEFT JOIN group_memberships gm ON gm.group_id = g.group_id
