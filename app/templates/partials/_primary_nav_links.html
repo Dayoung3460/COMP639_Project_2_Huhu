@@ -60,6 +60,10 @@
        class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'add_catch' }}">
       {% if show_icons %}<i class="bi bi-plus-circle" aria-hidden="true"></i> {% endif %}Add Catch
     </a>
+    <a href="{{ url_for('add_bait_record') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'add_bait_record' }}">
+      {% if show_icons %}<i class="bi bi-plus-circle" aria-hidden="true"></i> {% endif %}Add Bait Record
+    </a>
     <a href="{{ url_for('add_observation') }}"
        class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'add_observation' }}">
       {% if show_icons %}<i class="bi bi-binoculars" aria-hidden="true"></i> {% endif %}Add Observation
@@ -77,6 +81,10 @@
     <a href="{{ url_for('catch_records') }}"
        class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'catch_records' }}">
       {% if show_icons %}<i class="bi bi-table" aria-hidden="true"></i> {% endif %}Catches
+    </a>
+    <a href="{{ url_for('bait_records') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'bait_records' }}">
+      {% if show_icons %}<i class="bi bi-basket" aria-hidden="true"></i> {% endif %}Bait Records
     </a>
     <a href="{{ url_for('observations') }}"
        class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'observations' }}">

@@ -85,6 +85,7 @@
 {% if session.get('group_role') == 'Operator' %}
   {% set overflow_endpoints = overflow_endpoints + [
     'lines_index', 'catch_records', 'observations', 'reports',
+    'add_catch', 'add_bait_record', 'add_observation', 'my_records',
   ] %}
 {% endif %}
 
