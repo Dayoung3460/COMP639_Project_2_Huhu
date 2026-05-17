@@ -38,6 +38,11 @@
       <i class="bi bi-collection" aria-hidden="true"></i> Manage Groups
     </a>
     <a role="menuitem" tabindex="-1"
+       href="{{ url_for('admin_group_applications') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'admin_group_applications' }}">
+      <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Group Applications
+    </a>
+    <a role="menuitem" tabindex="-1"
        href="{{ url_for('reference_data') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint in ['reference_data', 'manage_lookup'] }}">
       <i class="bi bi-database-gear" aria-hidden="true"></i> Reference Data

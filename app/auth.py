@@ -602,11 +602,13 @@ def my_requests():
         ''', (user_id,))
         join_requests = cursor.fetchall()
 
-        # Tab 2 — all group creation applications for this user
+        # Tab 2 — pending group creation applications only
+        # (Approved/rejected applications move to the History tab.)
         cursor.execute('''
-            SELECT application_id, proposed_name, status, applied_at
+            SELECT application_id, proposed_name, status, applied_at,
+                   decided_at, decision_reason
             FROM group_applications
-            WHERE user_id = %s
+            WHERE user_id = %s AND status = 'pending'
             ORDER BY applied_at DESC
         ''', (user_id,))
         applications = cursor.fetchall()
@@ -616,7 +618,8 @@ def my_requests():
             SELECT 'Join'        AS type,
                    g.name        AS subject,
                    gjr.status,
-                   gjr.requested_at AS date
+                   gjr.requested_at AS date,
+                   NULL          AS decision_reason
             FROM group_join_requests gjr
             JOIN groups g ON gjr.group_id = g.group_id
             WHERE gjr.user_id = %s AND gjr.status IN ('approved', 'rejected', 'cancelled')
@@ -626,7 +629,8 @@ def my_requests():
             SELECT 'Application'   AS type,
                    ga.proposed_name AS subject,
                    ga.status,
-                   ga.applied_at    AS date
+                   ga.applied_at    AS date,
+                   ga.decision_reason
             FROM group_applications ga
             WHERE ga.user_id = %s AND ga.status IN ('approved', 'rejected')
 

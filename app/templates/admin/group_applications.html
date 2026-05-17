@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block title %}Group Applications{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-file-earmark-text"></i>
+  </div>
+  Group Applications
+</div>
+{% endblock %}
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Group Applications</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2">
+
+  <!-- Status tabs -->
+  <ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if status_filter == 'pending' }}"
+         href="{{ url_for('admin_group_applications', status='pending') }}">
+        Pending
+        {% if counts.pending_count %}
+          <span class="badge bg-warning text-dark ms-1">{{ counts.pending_count }}</span>
+        {% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if status_filter == 'approved' }}"
+         href="{{ url_for('admin_group_applications', status='approved') }}">
+        Approved
+        {% if counts.approved_count %}
+          <span class="badge bg-success ms-1">{{ counts.approved_count }}</span>
+        {% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if status_filter == 'rejected' }}"
+         href="{{ url_for('admin_group_applications', status='rejected') }}">
+        Rejected
+        {% if counts.rejected_count %}
+          <span class="badge bg-secondary ms-1">{{ counts.rejected_count }}</span>
+        {% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if status_filter == 'all' }}"
+         href="{{ url_for('admin_group_applications', status='all') }}">
+        All
+      </a>
+    </li>
+  </ul>
+
+  {% if not applications %}
+    <div class="panel">
+      <div class="panel-body text-center text-muted py-5">
+        <i class="bi bi-inbox" style="font-size: 2rem;" aria-hidden="true"></i>
+        <p class="mt-2 mb-0">No {{ status_filter if status_filter != 'all' else '' }} applications found.</p>
+      </div>
+    </div>
+  {% else %}
+    <div class="row g-3">
+      {% for app in applications %}
+        <div class="col-12">
+          <div class="panel">
+            <div class="panel-body">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <!-- Application info -->
+                <div class="flex-grow-1" style="min-width: 0;">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <h5 class="mb-0">{{ app.proposed_name }}</h5>
+                    {% if app.status == 'pending' %}
+                      <span class="badge bg-warning text-dark">Pending</span>
+                    {% elif app.status == 'approved' %}
+                      <span class="badge-active">Approved</span>
+                    {% else %}
+                      <span class="badge-inactive">Rejected</span>
+                    {% endif %}
+                  </div>
+
+                  <div class="text-muted mb-2" style="font-size: 13px;">
+                    <strong>Applicant:</strong> {{ app.first_name }} {{ app.last_name }}
+                    (<a href="{{ url_for('admin_user_detail', user_id=app.user_id) }}">@{{ app.username }}</a>)
+                    &middot;
+                    <strong>Applied:</strong> {{ app.applied_at|nz_datetime }}
+                  </div>
+
+                  {% if app.location %}
+                    <div class="mb-2" style="font-size: 13px;">
+                      <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ app.location }}
+                    </div>
+                  {% endif %}
+
+                  <div class="mb-2">
+                    <strong style="font-size: 13px;">Description:</strong>
+                    <p class="mb-1" style="font-size: 13px;">{{ app.description }}</p>
+                  </div>
+
+                  <div class="mb-2">
+                    <strong style="font-size: 13px;">Justification:</strong>
+                    <p class="mb-0" style="font-size: 13px;">{{ app.justification }}</p>
+                  </div>
+
+                  {% if app.status != 'pending' and app.decided_at %}
+                    <div class="mt-2 pt-2 border-top" style="font-size: 12px; color: var(--pf-600);">
+                      <strong>Decided:</strong> {{ app.decided_at|nz_datetime }}
+                      by {{ app.decided_by_first }} {{ app.decided_by_last }}
+                      {% if app.decision_reason %}
+                        &middot; <strong>Reason:</strong> {{ app.decision_reason }}
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- Image preview -->
+                {% if app.image %}
+                  <div class="flex-shrink-0">
+                    <img src="{{ url_for('static', filename='images/uploads/' ~ app.image) }}"
+                         alt="Proposed group image"
+                         style="width: 120px; height: 80px; object-fit: cover; border-radius: 8px;">
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Actions for pending applications -->
+              {% if app.status == 'pending' %}
+                <div class="d-flex gap-2 mt-3 pt-3 border-top">
+                  <button type="button" class="btn-pf"
+                          data-bs-toggle="modal" data-bs-target="#approve-modal"
+                          data-id="{{ app.application_id }}"
+                          data-name="{{ app.proposed_name }}"
+                          data-applicant="{{ app.first_name }} {{ app.last_name }}">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Approve
+                  </button>
+                  <button type="button" class="btn-pf-outline"
+                          style="color: var(--pf-danger); border-color: var(--pf-danger);"
+                          data-bs-toggle="modal" data-bs-target="#reject-modal"
+                          data-id="{{ app.application_id }}"
+                          data-name="{{ app.proposed_name }}"
+                          data-applicant="{{ app.first_name }} {{ app.last_name }}">
+                    <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Reject
+                  </button>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- Approve modal -->
+<div class="modal fade pop-up-modal" id="approve-modal" tabindex="-1" role="dialog"
+     aria-labelledby="approve-modal-title" aria-modal="true">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="approve-form" autocomplete="off">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="approve-modal-title">Approve Application</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close dialog"></button>
+        </div>
+        <div class="modal-body">
+          <p>Approve the application from <strong id="approve-applicant"></strong> to create group
+             <strong id="approve-name"></strong>?</p>
+          <p class="text-muted mb-0" style="font-size: 13px;">
+            This will create the group (Private by default) and assign the applicant as Group Coordinator.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm-outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm-pf">Yes, approve</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reject modal -->
+<div class="modal fade pop-up-modal" id="reject-modal" tabindex="-1" role="dialog"
+     aria-labelledby="reject-modal-title" aria-modal="true">
+  <div class="modal-dialog lines-modal-dialog">
+    <form method="POST" id="reject-form" autocomplete="off">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reject-modal-title">Reject Application</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close dialog"></button>
+        </div>
+        <div class="modal-body">
+          <p>Reject the application from <strong id="reject-applicant"></strong> to create group
+             <strong id="reject-name"></strong>?</p>
+          <div class="mb-0">
+            <label for="reject-reason" class="form-label">Reason (optional)</label>
+            <textarea class="form-control" id="reject-reason" name="reason" rows="3"
+                      placeholder="Provide a reason for rejection (will be sent to the applicant)"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm-outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm-danger">Yes, reject</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var approveModal = document.getElementById('approve-modal');
+    if (approveModal) {
+      approveModal.addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        document.getElementById('approve-applicant').textContent = btn.dataset.applicant;
+        document.getElementById('approve-name').textContent = btn.dataset.name;
+        document.getElementById('approve-form').action =
+          '/admin/group-applications/' + btn.dataset.id + '/approve';
+      });
+    }
+
+    var rejectModal = document.getElementById('reject-modal');
+    if (rejectModal) {
+      rejectModal.addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        document.getElementById('reject-applicant').textContent = btn.dataset.applicant;
+        document.getElementById('reject-name').textContent = btn.dataset.name;
+        document.getElementById('reject-form').action =
+          '/admin/group-applications/' + btn.dataset.id + '/reject';
+        document.getElementById('reject-reason').value = '';
+      });
+    }
+  });
+</script>
+{% endblock %}
