@@ -2,37 +2,30 @@
 const editModal = document.getElementById('edit-modal');
 const deleteModal = document.getElementById('delete-modal');
 
-editModal.addEventListener('show.bs.modal', (event) => {
-  const button = event.relatedTarget;
 
-  const details = JSON.parse(button.getAttribute('data-details'));
+if (editModal) {
+  editModal.addEventListener('show.bs.modal', (event) => {
+    const button = event.relatedTarget;
+    const details = JSON.parse(button.getAttribute('data-details'));
 
-  const modalActionInput = editModal.querySelector('#modal-action');
-  const modalTitle = editModal.querySelector('.modal-title');
-  const currentItemNameInput = editModal.querySelector('#current-item-name');
-  const nameLabel = editModal.querySelector('#item-name-label');
-  const itemNameInput = editModal.querySelector('#item-name');
+    editModal.querySelector('#modal-action').value = details?.action;
+    editModal.querySelector('.modal-title').textContent = details?.title;
+    editModal.querySelector('#current-item-name').value = details?.name;
+    editModal.querySelector('#item-name-label').textContent = details?.nameLabel;
+    editModal.querySelector('#item-name').value = details?.name;
+  });
+}
 
-  modalActionInput.value =  details?.action;
-  modalTitle.textContent = details?.title;
-  currentItemNameInput.value = details?.name;
-  nameLabel.textContent = details?.nameLabel;
-  itemNameInput.value = details?.name;
-});
+if (deleteModal) {
+  deleteModal.addEventListener('show.bs.modal', (event) => {
+    const button = event.relatedTarget;
+    const details = JSON.parse(button.getAttribute('data-details'));
 
-deleteModal.addEventListener('show.bs.modal', (event) => {
-  const button = event.relatedTarget;
-
-  const details = JSON.parse(button.getAttribute('data-details'));
-
-  const modalActionInput = deleteModal.querySelector('#delete-modal-action');
-  const modalTitle = deleteModal.querySelector('.modal-title');
-  const currentItemNameInput = deleteModal.querySelector('#delete-current-item-name');
-
-  modalActionInput.value =  details?.action;
-  modalTitle.textContent = details?.title;
-  currentItemNameInput.value = details?.name;
-});
+    deleteModal.querySelector('#delete-modal-action').value = details?.action;
+    deleteModal.querySelector('.modal-title').textContent = details?.title;
+    deleteModal.querySelector('#delete-current-item-name').value = details?.name;
+  });
+}
 
 // Search function
 document.getElementById('search-input').addEventListener('input', (e) => {

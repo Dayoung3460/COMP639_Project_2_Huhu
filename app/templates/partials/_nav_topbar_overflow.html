@@ -38,19 +38,9 @@
       <i class="bi bi-collection" aria-hidden="true"></i> Manage Groups
     </a>
     <a role="menuitem" tabindex="-1"
-       href="{{ url_for('manage_species') }}"
-       class="topbar-overflow-item {{ 'active' if request.endpoint == 'manage_species' }}">
-      <i class="bi bi-bug" aria-hidden="true"></i> Species
-    </a>
-    <a role="menuitem" tabindex="-1"
-       href="{{ url_for('manage_statuses') }}"
-       class="topbar-overflow-item {{ 'active' if request.endpoint == 'manage_statuses' }}">
-      <i class="bi bi-tags" aria-hidden="true"></i> Statuses
-    </a>
-    <a role="menuitem" tabindex="-1"
-       href="{{ url_for('manage_bait_types') }}"
-       class="topbar-overflow-item {{ 'active' if request.endpoint == 'manage_bait_types' }}">
-      <i class="bi bi-basket" aria-hidden="true"></i> Bait Types
+       href="{{ url_for('reference_data') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint in ['reference_data', 'manage_lookup'] }}">
+      <i class="bi bi-database-gear" aria-hidden="true"></i> Reference Data
     </a>
   {% endif %}
 
