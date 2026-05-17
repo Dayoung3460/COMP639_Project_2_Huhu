@@ -1,21 +1,31 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_button %}
 {% block title %}{{ config.label_plural }}{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-database-gear"></i>
+  </div>
+  {{ config.label_plural }}
+</div>
+{% endblock %}
+{% block page_subtitle %}{{ config.description }}{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('reference_data') }}">Reference Data</a></li>
+    <li class="breadcrumb-item active">{{ config.label_plural }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4" style="max-width: 720px;">
 
-  <nav class="mb-3" aria-label="breadcrumb">
-    <ol class="breadcrumb" style="font-size: 13px;">
-      <li class="breadcrumb-item"><a href="{{ url_for('reference_data') }}">Reference Data</a></li>
-      <li class="breadcrumb-item active" aria-current="page">{{ config.label_plural }}</li>
-    </ol>
-  </nav>
-
-  <div class="d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center gap-3 mb-4">
-    <div>
-      <h2 class="mb-0">{{ config.label_plural }}</h2>
-      <p class="text-muted mb-0" style="font-size: 13px;">{{ config.description }}</p>
-    </div>
+  <div class="d-flex justify-content-end mb-4">
     {{ pf_button(
       'Add ' ~ config.label,
       icon='bi-plus-lg',
@@ -42,7 +52,6 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Status</th>
               <th class="text-end">Actions</th>
             </tr>
           </thead>
@@ -50,13 +59,6 @@
             {% for item in items %}
             <tr>
               <td class="name-column">{{ item.name }}</td>
-              <td>
-                {% if item.is_active %}
-                  <span class="badge-active">Active</span>
-                {% else %}
-                  <span class="badge-inactive">Inactive</span>
-                {% endif %}
-              </td>
               <td class="text-end">
                 {% if item.name not in config.reserved %}
                 <div class="d-flex gap-2 justify-content-end flex-wrap">
@@ -66,21 +68,6 @@
                     'aria-label': 'Edit ' ~ item.name,
                     'data-details': '{"action": "edit", "title": "Edit - ' ~ item.name ~ '", "name": "' ~ item.name ~ '", "nameLabel": "Enter a new ' ~ config.label|lower ~ ' name"}'
                   }) }}
-                  {% if item.is_active %}
-                    {{ pf_button('Deactivate', variant='btn-sm-outline', attrs={
-                      'data-bs-toggle': 'modal',
-                      'data-bs-target': '#toggle-modal',
-                      'aria-label': 'Deactivate ' ~ item.name,
-                      'data-details': '{"action": "toggle-active", "title": "Deactivate - ' ~ item.name ~ '", "name": "' ~ item.name ~ '", "is_active": true}'
-                    }) }}
-                  {% else %}
-                    {{ pf_button('Reactivate', variant='btn-sm-outline', attrs={
-                      'data-bs-toggle': 'modal',
-                      'data-bs-target': '#toggle-modal',
-                      'aria-label': 'Reactivate ' ~ item.name,
-                      'data-details': '{"action": "toggle-active", "title": "Reactivate - ' ~ item.name ~ '", "name": "' ~ item.name ~ '", "is_active": false}'
-                    }) }}
-                  {% endif %}
                   {{ pf_button('Delete', variant='btn-sm-danger', attrs={
                     'data-bs-toggle': 'modal',
                     'data-bs-target': '#delete-modal',
@@ -126,29 +113,6 @@
               <label for="item-name" class="form-label" id="item-name-label"></label>
               <input type="text" class="form-control" id="item-name" name="item-name" value="" autocomplete="off" required>
             </div>
-          </div>
-          <div class="modal-footer">
-            {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
-            {{ pf_button('Confirm', type='submit') }}
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- toggle active modal -->
-  <div class="modal fade pop-up-modal" id="toggle-modal" tabindex="-1" aria-labelledby="toggle-modal-title" aria-modal="true" role="dialog">
-    <div class="modal-dialog" style="margin-top: 10vh;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="toggle-modal-title"></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form method="POST" action="{{ url_for('manage_lookup', config_key=config_key) }}">
-          <input type="hidden" name="current-item-name" id="toggle-current-item-name" value="" />
-          <input type="hidden" name="modal-action" id="toggle-modal-action" value="toggle-active" />
-          <div class="modal-body">
-            <p id="toggle-modal-message"></p>
           </div>
           <div class="modal-footer">
             {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}

@@ -1,7 +1,7 @@
 // Edit modal
 const editModal = document.getElementById('edit-modal');
 const deleteModal = document.getElementById('delete-modal');
-const toggleModal = document.getElementById('toggle-modal');
+
 
 if (editModal) {
   editModal.addEventListener('show.bs.modal', (event) => {
@@ -24,24 +24,6 @@ if (deleteModal) {
     deleteModal.querySelector('#delete-modal-action').value = details?.action;
     deleteModal.querySelector('.modal-title').textContent = details?.title;
     deleteModal.querySelector('#delete-current-item-name').value = details?.name;
-  });
-}
-
-if (toggleModal) {
-  toggleModal.addEventListener('show.bs.modal', (event) => {
-    const button = event.relatedTarget;
-    const details = JSON.parse(button.getAttribute('data-details'));
-
-    toggleModal.querySelector('#toggle-modal-action').value = details?.action;
-    toggleModal.querySelector('.modal-title').textContent = details?.title;
-    toggleModal.querySelector('#toggle-current-item-name').value = details?.name;
-
-    const messageEl = toggleModal.querySelector('#toggle-modal-message');
-    if (details?.is_active) {
-      messageEl.textContent = 'Deactivating "' + details.name + '" will hide it from new record forms. Existing records will not be affected.';
-    } else {
-      messageEl.textContent = 'Reactivating "' + details.name + '" will make it available again in new record forms.';
-    }
   });
 }
 

@@ -20,11 +20,8 @@
         <div class="panel-body">
           <div style="font-weight: 600; color: var(--pf-900);">{{ table.label }}</div>
           <div class="text-muted" style="font-size: 12px;">{{ table.description }}</div>
-          <div class="mt-2" style="font-size: 13px;">
-            <span class="badge-active">{{ table.active }} active</span>
-            {% if table.total - table.active > 0 %}
-              <span class="badge-inactive ms-1">{{ table.total - table.active }} inactive</span>
-            {% endif %}
+          <div class="mt-2" style="font-size: 12px; color: #6b7c72;">
+            {{ table.count }} item{{ 's' if table.count != 1 }}
           </div>
         </div>
       </a>

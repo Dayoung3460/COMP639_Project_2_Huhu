@@ -1003,7 +1003,7 @@ LOOKUP_CONFIGS = {
             ("SELECT COUNT(*) AS cnt FROM trap_catches WHERE species_caught = %s", 'catch record'),
             ("SELECT COUNT(*) AS cnt FROM bait_station_records WHERE target_species = %s", 'bait station record'),
         ],
-        'reserved': ['None'],
+        'reserved': ['None', 'Other'],
     },
     'statuses': {
         'table': 'trap_statuses',
@@ -1076,15 +1076,14 @@ def reference_data():
     with db.get_cursor() as cursor:
         for key, config in LOOKUP_CONFIGS.items():
             cursor.execute(
-                f"SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE is_active) AS active FROM {config['table']}"
+                f"SELECT COUNT(*) AS cnt FROM {config['table']} WHERE is_active = TRUE"
             )
             row = cursor.fetchone()
             table_info.append({
                 'key': key,
                 'label': config['label_plural'],
                 'description': config['description'],
-                'total': row['total'],
-                'active': row['active'],
+                'count': row['cnt'],
             })
     return render_template('admin/reference_data.html', tables=table_info)
 
@@ -1107,16 +1106,6 @@ def manage_lookup(config_key):
         item_name = request.form.get('item-name', '').strip()
         modal_action = request.form.get('modal-action')
 
-        if modal_action == 'toggle-active':
-            with db.get_cursor() as cursor:
-                cursor.execute(f"UPDATE {table} SET is_active = NOT is_active WHERE name = %s", (current_item_name,))
-                cursor.execute(f"SELECT is_active FROM {table} WHERE name = %s", (current_item_name,))
-                row = cursor.fetchone()
-            if row:
-                status = 'activated' if row['is_active'] else 'deactivated'
-                flash(f'{label} "{current_item_name}" {status}.', 'success')
-            return redirect(url_for('manage_lookup', config_key=config_key))
-
         if modal_action == 'delete':
             if request.form.get('delete-confirm', '').strip().lower() != 'delete':
                 flash('Please type "delete" to confirm deletion.', 'danger')
@@ -1131,15 +1120,10 @@ def manage_lookup(config_key):
             if total_usage > 0:
                 with db.get_cursor() as cursor:
                     cursor.execute(f"UPDATE {table} SET is_active = FALSE WHERE name = %s", (current_item_name,))
-                flash(
-                    f'Cannot delete "{current_item_name}" — it is referenced by {total_usage} record(s). '
-                    'It has been deactivated instead.',
-                    'warning'
-                )
             else:
                 with db.get_cursor() as cursor:
                     cursor.execute(f"DELETE FROM {table} WHERE name = %s", (current_item_name,))
-                flash(f'{label} "{current_item_name}" deleted.', 'success')
+            flash(f'{label} "{current_item_name}" deleted.', 'success')
             return redirect(url_for('manage_lookup', config_key=config_key))
 
         if not item_name:
@@ -1166,7 +1150,7 @@ def manage_lookup(config_key):
         return redirect(url_for('manage_lookup', config_key=config_key))
 
     with db.get_cursor() as cursor:
-        cursor.execute(f"SELECT name, is_active FROM {table} ORDER BY is_active DESC, name ASC")
+        cursor.execute(f"SELECT name FROM {table} WHERE is_active = TRUE ORDER BY name ASC")
         items = cursor.fetchall()
 
     return render_template('admin/manage_lookup.html',
