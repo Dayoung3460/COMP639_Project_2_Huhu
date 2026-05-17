@@ -1023,7 +1023,7 @@ LOOKUP_CONFIGS = {
         'usage_checks': [
             ("SELECT COUNT(*) AS cnt FROM trap_catches WHERE bait_type = %s", 'catch record'),
         ],
-        'reserved': ['None'],
+        'reserved': ['None', 'Other'],
     },
     'trap-types': {
         'table': 'trap_types',
