@@ -29,14 +29,11 @@
 DROP TABLE IF EXISTS "public"."traps" CASCADE;
 -- Sequence and defined type
 CREATE SEQUENCE IF NOT EXISTS traps_trap_id_seq;
-DROP TYPE IF EXISTS "public"."trap_type_enum" CASCADE;
-CREATE TYPE "public"."trap_type_enum" AS ENUM ('A24', 'DOC 150', 'DOC 200', 'DOC 250', 'Flipping Timmy', 'Rat trap', 'T-Rex Rat Trap', 'Trapinator', 'Victor');
-
 -- Table Definition
 CREATE TABLE "public"."traps" (
     "trap_id" int4 NOT NULL DEFAULT nextval('traps_trap_id_seq'::regclass),
     "code" varchar(255) NOT NULL,
-    "trap_type" "public"."trap_type_enum" NOT NULL,
+    "trap_type" varchar(100) NOT NULL,
     "line_id" int4 NOT NULL,
     "latitude" numeric(9,6) NOT NULL,
     "longitude" numeric(9,6) NOT NULL,
@@ -108,6 +105,7 @@ DROP TABLE IF EXISTS "public"."species" CASCADE;
 -- Table Definition
 CREATE TABLE "public"."species" (
     "name" varchar(100) NOT NULL,
+    "is_active" bool NOT NULL DEFAULT true,
     PRIMARY KEY ("name")
 );
 
@@ -115,6 +113,7 @@ DROP TABLE IF EXISTS "public"."trap_statuses" CASCADE;
 -- Table Definition
 CREATE TABLE "public"."trap_statuses" (
     "name" varchar(100) NOT NULL,
+    "is_active" bool NOT NULL DEFAULT true,
     PRIMARY KEY ("name")
 );
 
@@ -122,6 +121,39 @@ DROP TABLE IF EXISTS "public"."bait_types" CASCADE;
 -- Table Definition
 CREATE TABLE "public"."bait_types" (
     "name" varchar(100) NOT NULL,
+    "is_active" bool NOT NULL DEFAULT true,
+    PRIMARY KEY ("name")
+);
+
+DROP TABLE IF EXISTS "public"."trap_types" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."trap_types" (
+    "name" varchar(100) NOT NULL,
+    "is_active" bool NOT NULL DEFAULT true,
+    PRIMARY KEY ("name")
+);
+
+DROP TABLE IF EXISTS "public"."bait_station_types" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."bait_station_types" (
+    "name" varchar(100) NOT NULL,
+    "is_active" bool NOT NULL DEFAULT true,
+    PRIMARY KEY ("name")
+);
+
+DROP TABLE IF EXISTS "public"."bait_formulations" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."bait_formulations" (
+    "name" varchar(100) NOT NULL,
+    "is_active" bool NOT NULL DEFAULT true,
+    PRIMARY KEY ("name")
+);
+
+DROP TABLE IF EXISTS "public"."active_ingredients" CASCADE;
+-- Table Definition
+CREATE TABLE "public"."active_ingredients" (
+    "name" varchar(100) NOT NULL,
+    "is_active" bool NOT NULL DEFAULT true,
     PRIMARY KEY ("name")
 );
 
@@ -439,6 +471,11 @@ ALTER TABLE "public"."trap_catches" ADD FOREIGN KEY ("species_caught") REFERENCE
 ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("station_id") REFERENCES "public"."bait_stations"("station_id");
 ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("recorded_by_id") REFERENCES "public"."users"("user_id");
 ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("edited_by_id") REFERENCES "public"."users"("user_id");
+ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("target_species") REFERENCES "public"."species"("name") ON UPDATE CASCADE;
+ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("active_ingredient") REFERENCES "public"."active_ingredients"("name") ON UPDATE CASCADE;
+ALTER TABLE "public"."bait_station_records" ADD FOREIGN KEY ("formulation") REFERENCES "public"."bait_formulations"("name") ON UPDATE CASCADE;
+ALTER TABLE "public"."traps" ADD FOREIGN KEY ("trap_type") REFERENCES "public"."trap_types"("name") ON UPDATE CASCADE;
+ALTER TABLE "public"."bait_stations" ADD FOREIGN KEY ("station_type") REFERENCES "public"."bait_station_types"("name") ON UPDATE CASCADE;
 ALTER TABLE "public"."incidental_observations" ADD FOREIGN KEY ("operator_id") REFERENCES "public"."users"("user_id");
 ALTER TABLE "public"."incidental_observations" ADD FOREIGN KEY ("trap_id") REFERENCES "public"."traps"("trap_id");
 ALTER TABLE "public"."incidental_observations" ADD FOREIGN KEY ("line_id") REFERENCES "public"."lines"("line_id");
