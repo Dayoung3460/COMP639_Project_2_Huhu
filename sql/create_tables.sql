@@ -341,12 +341,14 @@ CREATE TABLE "public"."groups" (
     "color_theme" varchar(7) NOT NULL DEFAULT '#198754'::character varying,
     "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "profile_photo" varchar(255),
+    "tile_image" varchar(255) DEFAULT NULL::character varying,
     PRIMARY KEY ("group_id")
 );
 
 -- Column Comment
-COMMENT ON COLUMN "public"."groups"."cover_photo" IS 'Large banner shown at top of group pages and on browse cards.';
-COMMENT ON COLUMN "public"."groups"."profile_photo" IS 'Group avatar shown in nav, member lists, and My Groups.';
+COMMENT ON COLUMN "public"."groups"."cover_photo" IS 'Large banner shown at top of group pages and on browse cards. Coordinator-controlled.';
+COMMENT ON COLUMN "public"."groups"."profile_photo" IS 'Group avatar shown in nav, member lists, and My Groups. Coordinator-controlled.';
+COMMENT ON COLUMN "public"."groups"."tile_image" IS 'Image shown on the public home browse grid and the Super Admin groups list. Super Admin controlled.';
 
 DROP TABLE IF EXISTS "public"."platform_settings" CASCADE;
 -- Table Definition

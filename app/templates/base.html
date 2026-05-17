@@ -455,6 +455,7 @@
   // ── Auto-dismiss toast flash messages after 4s ───────────
   document.querySelectorAll('.alert').forEach(function (el) {
     setTimeout(function () {
+      if (!el.isConnected) return;           // already dismissed by user
       const bsAlert = bootstrap.Alert.getOrCreateInstance(el);
       bsAlert.close();
     }, 4000);

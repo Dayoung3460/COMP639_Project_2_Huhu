@@ -120,10 +120,11 @@
                style="--group-accent: {% if g.color_theme %}{{ g.color_theme }}{% else %}var(--theme-secondary, #c65d3c){% endif %};"
                aria-label="{% if g.is_public %}View{% else %}Request access to{% endif %} {{ g.name }} — {% if g.is_public %}public{% else %}private{% endif %} group with {{ g.member_count }} member{% if g.member_count != 1 %}s{% endif %}">
               <div class="group-card-image" aria-hidden="true">
-                {% if g.cover_photo %}
-                  {# cover_photo paths are relative to /static/ per the
-                     foundation convention (e.g. uploads/group_3/cover.jpg). #}
-                  <img src="{{ url_for('static', filename='images/uploads/' + g.cover_photo) }}"
+                {% if g.tile_image %}
+                  {# Super Admin-controlled tile image (stored under
+                     static/images/uploads/). Separate from the coordinator-
+                     managed cover_photo / profile_photo. #}
+                  <img src="{{ url_for('static', filename='images/uploads/' + g.tile_image) }}"
                        alt="{{ g.name }}" loading="lazy">
                 {% endif %}
                 {% if not g.is_public %}
