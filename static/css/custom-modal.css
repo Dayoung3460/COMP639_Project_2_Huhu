@@ -1,0 +1,238 @@
+/*
+ * custom-modal.css — Tiaki modal visual theme
+ * Targets Bootstrap modal structure classes; no Bootstrap CSS is loaded.
+ * Shared by group_landing.html and my_requests.html.
+ */
+
+/* ── Bootstrap modal foundation (replaces bootstrap.css) ── */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1055;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: 0;
+}
+
+.modal.show { display: block; }
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1050;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(12, 22, 15, 0.52);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.modal-backdrop.fade { opacity: 0; }
+.modal-backdrop.show { opacity: 1; }
+
+/* ── Dialog sizing & entrance animation ─────────────────── */
+.modal-dialog {
+  position: relative;
+  max-width: 540px;
+  margin: 2.5rem auto;
+  pointer-events: none;
+}
+
+.modal-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  background: #ffffff;
+}
+
+.modal.fade .modal-dialog {
+  transform: translateY(24px) scale(0.97);
+  transition: transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1),
+              opacity 0.22s ease;
+}
+
+.modal.show .modal-dialog {
+  transform: translateY(0) scale(1);
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.modal-content {
+  border: none;
+  border-radius: 18px;
+  box-shadow:
+    0 2px 8px rgba(12, 25, 15, 0.07),
+    0 16px 56px rgba(12, 25, 15, 0.17);
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 26px 26px 20px;
+  border-bottom: 1px solid #eae5dc;
+}
+
+.modal-title {
+  font-family: var(--theme-font-heading, 'Fraunces', serif);
+  font-size: 21px;
+  font-weight: 700;
+  color: #1a2820;
+  line-height: 1.25;
+  margin: 0;
+}
+
+/* ── Close button ────────────────────────────────────────── */
+.btn-close {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  padding: 5px;
+  margin: 0;
+  cursor: pointer;
+  color: #a09080;
+  border-radius: 7px;
+  line-height: 0;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+  opacity: 1;
+}
+
+.btn-close:hover {
+  color: #1a2820;
+  background: #f0ece4;
+  opacity: 1;
+}
+
+/* ── Body ────────────────────────────────────────────────── */
+.modal-body {
+  padding: 22px 26px;
+}
+
+.modal-lead {
+  font-size: 14.5px;
+  color: #6b7a6e;
+  margin: 0 0 16px;
+  line-height: 1.65;
+}
+
+.modal-textarea {
+  display: block;
+  width: 100%;
+  min-height: 122px;
+  padding: 13px 15px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1a2820;
+  background: #fdfcfa;
+  border: 1.5px solid #d6cfc0;
+  border-radius: 10px;
+  box-sizing: border-box;
+  resize: vertical;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  line-height: 1.55;
+}
+
+.modal-textarea:focus {
+  outline: none;
+  border-color: #2d6a4f;
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.13);
+  background: #fff;
+}
+
+.modal-textarea::placeholder {
+  color: #b8afa4;
+}
+
+.modal-char-count {
+  text-align: right;
+  font-size: 12.5px;
+  color: #a09688;
+  margin: 8px 0 0;
+  letter-spacing: 0.01em;
+}
+
+/* ── Cancel confirmation text ────────────────────────────── */
+.modal-confirm-text {
+  font-size: 14.5px;
+  color: #4a4e48;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 26px 22px;
+  border-top: 1px solid #eae5dc;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.tiaki-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  text-decoration: none;
+}
+
+.tiaki-btn:active {
+  transform: scale(0.97);
+}
+
+/* Neutral */
+.tiaki-btn-cancel {
+  background: #e6e1d8;
+  color: #4a4236;
+}
+
+.tiaki-btn-cancel:hover {
+  background: #dad5cc;
+}
+
+/* Primary — forest green */
+.tiaki-btn-primary {
+  background: #1a3a2e;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(26, 58, 46, 0.22);
+}
+
+.tiaki-btn-primary:hover {
+  background: #152e24;
+  box-shadow: 0 4px 14px rgba(26, 58, 46, 0.30);
+  color: #ffffff;
+}
+
+/* Danger — muted red (for cancel-request confirmation) */
+.tiaki-btn-danger {
+  background: #b91c3c;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(185, 28, 60, 0.22);
+}
+
+.tiaki-btn-danger:hover {
+  background: #9f1239;
+  box-shadow: 0 4px 14px rgba(185, 28, 60, 0.30);
+  color: #ffffff;
+}

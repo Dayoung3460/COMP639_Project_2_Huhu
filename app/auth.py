@@ -581,3 +581,93 @@ def reset_password(token):
         return redirect(url_for('login'))
 
     return render_template('auth/reset_password.html', token=token)
+
+
+@app.route('/my-requests')
+def my_requests():
+    """Show the logged-in user's join requests, group applications, and combined history."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    with db.get_cursor() as cursor:
+        # Tab 1 — all join requests for this user
+        cursor.execute('''
+            SELECT gjr.request_id, g.name AS group_name, gjr.status, gjr.requested_at
+            FROM group_join_requests gjr
+            JOIN groups g ON gjr.group_id = g.group_id
+            WHERE gjr.user_id = %s
+            ORDER BY gjr.requested_at DESC
+        ''', (user_id,))
+        join_requests = cursor.fetchall()
+
+        # Tab 2 — all group creation applications for this user
+        cursor.execute('''
+            SELECT application_id, proposed_name, status, applied_at
+            FROM group_applications
+            WHERE user_id = %s
+            ORDER BY applied_at DESC
+        ''', (user_id,))
+        applications = cursor.fetchall()
+
+        # Tab 3 — approved/rejected entries from both tables, oldest first
+        cursor.execute('''
+            SELECT 'Join'        AS type,
+                   g.name        AS subject,
+                   gjr.status,
+                   gjr.requested_at AS date
+            FROM group_join_requests gjr
+            JOIN groups g ON gjr.group_id = g.group_id
+            WHERE gjr.user_id = %s AND gjr.status IN ('approved', 'rejected', 'cancelled')
+
+            UNION ALL
+
+            SELECT 'Application'   AS type,
+                   ga.proposed_name AS subject,
+                   ga.status,
+                   ga.applied_at    AS date
+            FROM group_applications ga
+            WHERE ga.user_id = %s AND ga.status IN ('approved', 'rejected')
+
+            ORDER BY date ASC
+        ''', (user_id, user_id))
+        history = cursor.fetchall()
+
+    return render_template('auth/my_requests.html',
+                           join_requests=join_requests,
+                           applications=applications,
+                           history=history)
+
+
+@app.route('/my-requests/cancel/<int:request_id>', methods=['POST'])
+def cancel_join_request(request_id):
+    """Cancel a pending join request — server-side ownership and status checks."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT status FROM group_join_requests WHERE request_id = %s AND user_id = %s',
+            (request_id, user_id)
+        )
+        req = cursor.fetchone()
+
+    if not req:
+        flash('Request not found.', 'warning')
+        return redirect(url_for('my_requests'))
+
+    if req['status'] != 'pending':
+        flash('Only pending requests can be cancelled.', 'warning')
+        return redirect(url_for('my_requests'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE group_join_requests SET status = %s WHERE request_id = %s AND user_id = %s AND status = %s',
+            ('cancelled', request_id, user_id, 'pending')
+        )
+
+    flash('Your join request has been cancelled.', 'success')
+    return redirect(url_for('my_requests'))

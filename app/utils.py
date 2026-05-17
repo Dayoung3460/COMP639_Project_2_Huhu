@@ -226,6 +226,7 @@ def check_user_status():
         'login', 'register', 'index', 'static',
         'select_group', 'logout', 'forgot_password', 'reset_password',
         'apply_for_group', 'group_landing', 'enter_group', 'request_join_group',
+        'my_requests', 'cancel_join_request',
         # my_tiaki is a cross-group personal surface — reachable without
         # an active group_role (e.g. straight after login when a user
         # has multiple memberships and hasn't picked yet).

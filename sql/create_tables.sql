@@ -225,7 +225,7 @@ DROP TABLE IF EXISTS "public"."group_join_requests" CASCADE;
 -- Sequence and defined type
 CREATE SEQUENCE IF NOT EXISTS group_join_requests_request_id_seq;
 DROP TYPE IF EXISTS "public"."request_status_enum" CASCADE;
-CREATE TYPE "public"."request_status_enum" AS ENUM ('pending', 'approved', 'rejected');
+CREATE TYPE "public"."request_status_enum" AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
 
 -- Table Definition
 CREATE TABLE "public"."group_join_requests" (
