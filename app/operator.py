@@ -5,14 +5,14 @@ from app import app, db
 import os
 from app.utils import (
     role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE,
-    LINCOLN_NZ_CENTER, ACTIVE_INGREDIENTS, FORMULATIONS,
+    LINCOLN_NZ_CENTER,
 )
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
 from app.helpers.dbHelper import (
     fetch_all_lines, fetch_operator_lines, insert_catch_record, fetch_lookup_data,
     insert_observation, validate_lookup_table_values, update_catch_record,
     fetch_operator_bait_lines, fetch_operator_bait_station_ids,
-    insert_bait_station_record, update_bait_station_record,
+    insert_bait_station_record, update_bait_station_record, fetch_active_lookup,
 )
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
@@ -175,24 +175,22 @@ def edit_catch(catch_id):
         return redirect(url_for('my_records') if session.get('group_role') == 'Operator' else url_for('catch_records'))
 
 
-    lookup = fetch_lookup_data(db)
     lines = fetch_operator_lines(db, session['user_id'])
-    record = None
 
     if session.get('group_role') in ('Super Admin', 'Group Coordinator'):
-        lines = fetch_all_lines(db)  # Admin can see all lines, not just assigned ones
+        lines = fetch_all_lines(db)
 
-    # Fetch the catch record and its associated line_id for pre-filling the form
     with db.get_cursor() as cursor:
-        cursor.execute("""
-            SELECT * FROM trap_catches WHERE catch_id = %s
-        """, (catch_id,))
+        cursor.execute("SELECT * FROM trap_catches WHERE catch_id = %s", (catch_id,))
         record = cursor.fetchone()
-
-        cursor.execute("""
-            SELECT line_id FROM traps WHERE trap_id = %s
-        """, (record['trap_id'],))
+        cursor.execute("SELECT line_id FROM traps WHERE trap_id = %s", (record['trap_id'],))
         line_id = cursor.fetchone()['line_id']
+
+    lookup = fetch_lookup_data(db, include_values={
+        'species_caught': record['species_caught'],
+        'status': record['status'],
+        'bait_type': record['bait_type'],
+    })
 
     return render_template(
         'operator/edit_catch.html',
@@ -321,8 +319,11 @@ def add_bait_record():
     valid_station_ids = fetch_operator_bait_station_ids(db, user_id, group_id)
 
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT name FROM species ORDER BY name')
+        cursor.execute('SELECT name FROM species WHERE is_active = TRUE ORDER BY name')
         species_list = [r['name'] for r in cursor.fetchall()]
+
+    active_ingredients = fetch_active_lookup(db, 'active_ingredients')
+    formulations = fetch_active_lookup(db, 'bait_formulations')
 
     if request.method == 'POST':
         errors = _validate_bait_record(request.form)
@@ -338,8 +339,8 @@ def add_bait_record():
                                    bait_lines=bait_lines, data=request.form,
                                    show_back=bool(request.form.get('station_id')),
                                    species_list=species_list,
-                                   active_ingredients=ACTIVE_INGREDIENTS,
-                                   formulations=FORMULATIONS)
+                                   active_ingredients=active_ingredients,
+                                   formulations=formulations)
 
         insert_bait_station_record(db, request.form, user_id)
         flash('Bait station record added.', 'success')
@@ -352,8 +353,8 @@ def add_bait_record():
                            show_back=bool(selected_station_id),
                            data={'station_id': selected_station_id, 'line_id': selected_line_id},
                            species_list=species_list,
-                           active_ingredients=ACTIVE_INGREDIENTS,
-                           formulations=FORMULATIONS)
+                           active_ingredients=active_ingredients,
+                           formulations=formulations)
 
 
 @app.route('/operator/edit-bait-record/<int:record_id>', methods=['GET', 'POST'])
@@ -384,8 +385,11 @@ def edit_bait_record(record_id):
         return redirect(url_for('bait_records'))
 
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT name FROM species ORDER BY name')
+        cursor.execute('SELECT name FROM species WHERE is_active = TRUE ORDER BY name')
         species_list = [r['name'] for r in cursor.fetchall()]
+
+    active_ingredients = fetch_active_lookup(db, 'active_ingredients', include_value=record['active_ingredient'])
+    formulations = fetch_active_lookup(db, 'bait_formulations', include_value=record['formulation'])
 
     if request.method == 'POST':
         errors = _validate_bait_record(request.form)
@@ -395,8 +399,8 @@ def edit_bait_record(record_id):
             return render_template('operator/edit_bait_record.html',
                                    record=record, data=request.form,
                                    species_list=species_list,
-                                   active_ingredients=ACTIVE_INGREDIENTS,
-                                   formulations=FORMULATIONS)
+                                   active_ingredients=active_ingredients,
+                                   formulations=formulations)
 
         update_bait_station_record(db, {**request.form, 'record_id': record_id}, user_id)
         flash('Record updated.', 'success')
@@ -420,5 +424,5 @@ def edit_bait_record(record_id):
                                'notes': record['notes'] or '',
                            },
                            species_list=species_list,
-                           active_ingredients=ACTIVE_INGREDIENTS,
-                           formulations=FORMULATIONS)
+                           active_ingredients=active_ingredients,
+                           formulations=formulations)

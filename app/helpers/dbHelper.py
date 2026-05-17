@@ -6,19 +6,54 @@ def fetch_enum_values(db, enum_type):
         cursor.execute(f"SELECT unnest(enum_range(NULL::{enum_type}))")
         return [row['unnest'] for row in cursor.fetchall()]
 
-def fetch_lookup_data(db):
-    """Fetch general lookup data (species, statuses, bait types, ENUMs). No user context needed."""
+
+def fetch_active_lookup(db, table, include_value=None):
+    """Fetch active entries from a lookup table as a flat list of names.
+    Optionally include a specific value even if inactive (for edit forms).
+    """
     with db.get_cursor() as cursor:
-        cursor.execute("SELECT name FROM species ORDER BY name")
+        if include_value:
+            cursor.execute(
+                f"SELECT name FROM {table} WHERE is_active = TRUE OR name = %s ORDER BY name",
+                (include_value,)
+            )
+        else:
+            cursor.execute(f"SELECT name FROM {table} WHERE is_active = TRUE ORDER BY name")
+        return [row['name'] for row in cursor.fetchall()]
+
+
+def fetch_lookup_data(db, include_values=None):
+    """Fetch general lookup data (species, statuses, bait types, ENUMs).
+    include_values: dict of field-name to current value, ensuring deactivated
+    entries still appear when editing existing records.
+    """
+    include_values = include_values or {}
+
+    with db.get_cursor() as cursor:
+        inc = include_values.get('species_caught')
+        if inc:
+            cursor.execute(
+                "SELECT name FROM species WHERE is_active = TRUE OR name = %s ORDER BY name", (inc,))
+        else:
+            cursor.execute("SELECT name FROM species WHERE is_active = TRUE ORDER BY name")
         species_list = cursor.fetchall()
-        
-        cursor.execute("SELECT name FROM trap_statuses ORDER BY name")
+
+        inc = include_values.get('status')
+        if inc:
+            cursor.execute(
+                "SELECT name FROM trap_statuses WHERE is_active = TRUE OR name = %s ORDER BY name", (inc,))
+        else:
+            cursor.execute("SELECT name FROM trap_statuses WHERE is_active = TRUE ORDER BY name")
         status_list = cursor.fetchall()
-        
-        cursor.execute("SELECT name FROM bait_types ORDER BY name")
+
+        inc = include_values.get('bait_type')
+        if inc:
+            cursor.execute(
+                "SELECT name FROM bait_types WHERE is_active = TRUE OR name = %s ORDER BY name", (inc,))
+        else:
+            cursor.execute("SELECT name FROM bait_types WHERE is_active = TRUE ORDER BY name")
         bait_list = cursor.fetchall()
-    
-    # Fetch ENUM values from database
+
     valid_conditions = fetch_enum_values(db, 'trap_condition_type')
     valid_rebaited = fetch_enum_values(db, 'rebaited_type')
     valid_sex = fetch_enum_values(db, 'sex_type')
@@ -26,8 +61,7 @@ def fetch_lookup_data(db):
     valid_account_status = fetch_enum_values(db, 'account_status_type')
     valid_roles = fetch_enum_values(db, 'role_type')
     valid_observation_types = fetch_enum_values(db, 'observation_type_enum')
-    valid_roles = fetch_enum_values(db, 'role_type')
-        
+
     return {
         'species_list': species_list,
         'status_list': status_list,
@@ -41,7 +75,6 @@ def fetch_lookup_data(db):
         'valid_maturity': valid_maturity,
         'valid_roles': valid_roles,
         'valid_account_status': valid_account_status,
-        'valid_roles': valid_roles,
         'valid_observation_types': valid_observation_types
     }
 

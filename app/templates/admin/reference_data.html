@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_link_button %}
+{% block title %}Reference Data{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+
+  <div class="mb-4">
+    <h2 class="mb-1">Reference Data</h2>
+    <p class="text-muted mb-0" style="font-size: 13px;">Manage lookup lists used across the platform. Changes apply to all groups.</p>
+  </div>
+
+  <div class="row g-3">
+    {% for table in tables %}
+    <div class="col-12 col-sm-6">
+      <a href="{{ url_for('manage_lookup', config_key=table.key) }}"
+         class="panel d-block text-decoration-none h-100"
+         style="transition: box-shadow 0.15s;"
+         onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'"
+         onmouseout="this.style.boxShadow=''">
+        <div class="panel-body">
+          <div style="font-weight: 600; color: var(--pf-900);">{{ table.label }}</div>
+          <div class="text-muted" style="font-size: 12px;">{{ table.description }}</div>
+          <div class="mt-2" style="font-size: 13px;">
+            <span class="badge-active">{{ table.active }} active</span>
+            {% if table.total - table.active > 0 %}
+              <span class="badge-inactive ms-1">{{ table.total - table.active }} inactive</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

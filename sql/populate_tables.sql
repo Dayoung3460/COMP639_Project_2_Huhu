@@ -12,7 +12,7 @@ BEGIN;
 
 INSERT INTO species (name) VALUES
     ('None'), ('Stoat'), ('Rat'), ('Mouse'), ('Possum'),
-    ('Weasel'), ('Hedgehog'), ('Rabbit'), ('Other')
+    ('Weasel'), ('Hedgehog'), ('Rabbit'), ('Ferret'), ('Cat (feral)'), ('Other')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO trap_statuses (name) VALUES
@@ -27,6 +27,34 @@ ON CONFLICT DO NOTHING;
 INSERT INTO bait_types (name) VALUES
     ('None'), ('Egg'), ('Peanut butter'), ('Chocolate'),
     ('Rabbit'), ('Chicken'), ('Lure'), ('Other')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO trap_types (name) VALUES
+    ('A24'), ('DOC 150'), ('DOC 200'), ('DOC 250'),
+    ('Flipping Timmy'), ('Rat trap'), ('Snap-E'), ('Steve Allan'),
+    ('T-Rex Rat Trap'), ('Timms'), ('Trapinator'), ('Victor')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO bait_station_types (name) VALUES
+    ('Bait Safe'), ('Bell Labs'), ('Chimney'), ('EnviroMate100'),
+    ('Flowerpot'), ('Goodnature'), ('Hockey stick'), ('KK'),
+    ('Kilmore'), ('Mini Philproof'), ('Nara'), ('Novacoil'),
+    ('PelGar Rat Station'), ('Philproof'), ('Pied Piper'),
+    ('Protecta Ambush'), ('Protecta EVO Edge'), ('Protecta LP'),
+    ('Protecta Sidekick'), ('Rodent Cafe'), ('Sentry'), ('Sentry Plus'),
+    ('Striker'), ('Trakka'), ('Tunnel'), ('Wasptek'), ('ZIP tunnel'),
+    ('Other')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO bait_formulations (name) VALUES
+    ('Block'), ('Cereal'), ('Gel'), ('Grain'), ('Liquid'),
+    ('Paste'), ('Pellets'), ('Powder'), ('Wax block')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO active_ingredients (name) VALUES
+    ('Brodifacoum'), ('Bromadiolone'), ('Cholecalciferol'),
+    ('Coumatetralyl'), ('Cyanide'), ('Diphacinone'), ('Flocoumafen'),
+    ('PAPP'), ('Pindone'), ('Sodium fluoroacetate (1080)'), ('Zinc phosphide')
 ON CONFLICT DO NOTHING;
 
 -- ══════════════════════════════════════════════════════

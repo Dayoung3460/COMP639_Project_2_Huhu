@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% from '_ui_macros.html' import pf_button %}
+{% block title %}{{ config.label_plural }}{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+
+  <nav class="mb-3" aria-label="breadcrumb">
+    <ol class="breadcrumb" style="font-size: 13px;">
+      <li class="breadcrumb-item"><a href="{{ url_for('reference_data') }}">Reference Data</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ config.label_plural }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center gap-3 mb-4">
+    <div>
+      <h2 class="mb-0">{{ config.label_plural }}</h2>
+      <p class="text-muted mb-0" style="font-size: 13px;">{{ config.description }}</p>
+    </div>
+    {{ pf_button(
+      'Add ' ~ config.label,
+      icon='bi-plus-lg',
+      attrs={
+        'data-bs-toggle': 'modal',
+        'data-bs-target': '#edit-modal',
+        'data-details': '{"action": "add", "title": "Add ' ~ config.label ~ '", "name": "", "nameLabel": "Enter a ' ~ config.label|lower ~ ' name"}'
+      }
+    ) }}
+  </div>
+
+  <div class="panel mb-4">
+    <div class="panel-header flex-column flex-sm-row align-items-start gap-2">
+      <div>
+        <div class="panel-title">{{ config.label_plural }}</div>
+        <div class="panel-meta">{{ items | length }} total</div>
+      </div>
+      <label for="search-input" class="visually-hidden">Search</label>
+      <input type="text" id="search-input" placeholder="Search..." class="form-control form-control-sm" style="width: 200px;" autocomplete="off">
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="pf-table-responsive">
+        <table class="pf-table table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td class="name-column">{{ item.name }}</td>
+              <td>
+                {% if item.is_active %}
+                  <span class="badge-active">Active</span>
+                {% else %}
+                  <span class="badge-inactive">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if item.name not in config.reserved %}
+                <div class="d-flex gap-2 justify-content-end flex-wrap">
+                  {{ pf_button('Edit', variant='btn-sm-outline', attrs={
+                    'data-bs-toggle': 'modal',
+                    'data-bs-target': '#edit-modal',
+                    'aria-label': 'Edit ' ~ item.name,
+                    'data-details': '{"action": "edit", "title": "Edit - ' ~ item.name ~ '", "name": "' ~ item.name ~ '", "nameLabel": "Enter a new ' ~ config.label|lower ~ ' name"}'
+                  }) }}
+                  {% if item.is_active %}
+                    {{ pf_button('Deactivate', variant='btn-sm-outline', attrs={
+                      'data-bs-toggle': 'modal',
+                      'data-bs-target': '#toggle-modal',
+                      'aria-label': 'Deactivate ' ~ item.name,
+                      'data-details': '{"action": "toggle-active", "title": "Deactivate - ' ~ item.name ~ '", "name": "' ~ item.name ~ '", "is_active": true}'
+                    }) }}
+                  {% else %}
+                    {{ pf_button('Reactivate', variant='btn-sm-outline', attrs={
+                      'data-bs-toggle': 'modal',
+                      'data-bs-target': '#toggle-modal',
+                      'aria-label': 'Reactivate ' ~ item.name,
+                      'data-details': '{"action": "toggle-active", "title": "Reactivate - ' ~ item.name ~ '", "name": "' ~ item.name ~ '", "is_active": false}'
+                    }) }}
+                  {% endif %}
+                  {{ pf_button('Delete', variant='btn-sm-danger', attrs={
+                    'data-bs-toggle': 'modal',
+                    'data-bs-target': '#delete-modal',
+                    'aria-label': 'Delete ' ~ item.name,
+                    'data-details': '{"action": "delete", "title": "Delete - ' ~ item.name ~ '", "name": "' ~ item.name ~ '"}'
+                  }) }}
+                </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if config.reserved %}
+  <div class="notice blue mb-4">
+    <i class="bi bi-info-circle" aria-hidden="true"></i>
+    <div>
+      {% for name in config.reserved %}
+        <strong>{{ name }}</strong>{{ ', ' if not loop.last }}
+      {% endfor %}
+      {{ 'is' if config.reserved|length == 1 else 'are' }} system-reserved and cannot be edited or deleted.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- edit / add modal -->
+  <div class="modal fade pop-up-modal" id="edit-modal" tabindex="-1" aria-labelledby="edit-modal-title" aria-modal="true" role="dialog">
+    <div class="modal-dialog" style="margin-top: 10vh;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="edit-modal-title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form method="POST" action="{{ url_for('manage_lookup', config_key=config_key) }}">
+          <input type="hidden" name="current-item-name" id="current-item-name" value="" />
+          <input type="hidden" name="modal-action" id="modal-action" value="" />
+          <div class="modal-body">
+            <div class="field-group">
+              <label for="item-name" class="form-label" id="item-name-label"></label>
+              <input type="text" class="form-control" id="item-name" name="item-name" value="" autocomplete="off" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+            {{ pf_button('Confirm', type='submit') }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- toggle active modal -->
+  <div class="modal fade pop-up-modal" id="toggle-modal" tabindex="-1" aria-labelledby="toggle-modal-title" aria-modal="true" role="dialog">
+    <div class="modal-dialog" style="margin-top: 10vh;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="toggle-modal-title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form method="POST" action="{{ url_for('manage_lookup', config_key=config_key) }}">
+          <input type="hidden" name="current-item-name" id="toggle-current-item-name" value="" />
+          <input type="hidden" name="modal-action" id="toggle-modal-action" value="toggle-active" />
+          <div class="modal-body">
+            <p id="toggle-modal-message"></p>
+          </div>
+          <div class="modal-footer">
+            {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+            {{ pf_button('Confirm', type='submit') }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- delete modal -->
+  <div class="modal fade pop-up-modal" id="delete-modal" tabindex="-1" aria-labelledby="delete-modal-title" aria-modal="true" role="dialog">
+    <div class="modal-dialog" style="margin-top: 10vh;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="delete-modal-title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form method="POST" action="{{ url_for('manage_lookup', config_key=config_key) }}" autocomplete="off">
+          <input type="hidden" name="current-item-name" id="delete-current-item-name" value="" />
+          <input type="hidden" name="modal-action" id="delete-modal-action" value="delete" />
+          <div class="modal-body">
+            <p>Are you sure you want to delete this item? Items referenced by existing records will be deactivated instead.</p>
+            <div class="field-group mt-3">
+              <label for="delete-confirm" class="mb-1 text-muted" style="font-size: 13px;">Type <strong class="text-danger">delete</strong> to continue</label>
+              <input type="text" id="delete-confirm" name="delete-confirm" class="form-control" autocomplete="off" required />
+            </div>
+          </div>
+          <div class="modal-footer">
+            {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+            {{ pf_button('Delete', variant='btn-sm-danger', type='submit') }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/manage-lists.js') }}"></script>
+{% endblock %}

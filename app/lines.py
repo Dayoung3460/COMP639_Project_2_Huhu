@@ -1,7 +1,7 @@
 from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
 from app.utils import role_required, LINE_COLOURS
-from app.helpers.dbHelper import fetch_enum_values
+from app.helpers.dbHelper import fetch_active_lookup
 import os
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
@@ -328,7 +328,6 @@ def lines_index():
 @role_required()
 def line_detail(line_id):
     """Display a single line and all its traps or bait stations."""
-    from app.utils import BAIT_STATION_TYPES
     line_filter = request.args.get('filter', 'all')
     if line_filter not in ('all', 'active', 'retired'):
         line_filter = 'all'
@@ -454,7 +453,8 @@ def line_detail(line_id):
             )
             operators = cursor.fetchall()
 
-    trap_types = fetch_enum_values(db, 'trap_type_enum')
+    trap_types = fetch_active_lookup(db, 'trap_types')
+    bait_station_types = fetch_active_lookup(db, 'bait_station_types')
 
     return render_template(
         'lines/detail.html',
@@ -467,6 +467,6 @@ def line_detail(line_id):
         station_markers=station_markers,
         linz_api_key=linz_api_key,
         trap_types=trap_types,
-        bait_station_types=BAIT_STATION_TYPES,
+        bait_station_types=bait_station_types,
         line_colours=LINE_COLOURS
     )

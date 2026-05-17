@@ -10,13 +10,10 @@ from app.utils import (
     LINCOLN_NZ_LAT_RANGE,
     LINCOLN_NZ_LON_RANGE,
     LINE_COLOURS,
-    BAIT_STATION_TYPES,
-    ACTIVE_INGREDIENTS,
-    FORMULATIONS,
     allowed_file,
     UPLOAD_FOLDER,
 )
-from app.helpers.dbHelper import fetch_enum_values, update_user_active, fetch_lookup_data, fetch_user_info, update_user_role, insert_notification
+from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, update_user_role, insert_notification, fetch_active_lookup
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -557,7 +554,7 @@ def new_trap(line_id):
     if not all([code, trap_type, latitude, longitude]):
         return redirect(url_for('line_detail', line_id=line_id, code=code, trap_type=trap_type, latitude=latitude, longitude=longitude, add_trap=1, error='All fields are required'))
 
-    allowed_trap_types = fetch_enum_values(db, 'trap_type_enum')
+    allowed_trap_types = fetch_active_lookup(db, 'trap_types')
     if trap_type not in allowed_trap_types:
         return redirect(
             url_for(
@@ -605,8 +602,7 @@ def new_trap(line_id):
 @role_required('Super Admin', 'Group Coordinator')
 def edit_trap(line_id, trap_id):
     """Edit an existing trap."""
-    # get trap types for dropdown
-    trap_types = fetch_enum_values(db, 'trap_type_enum')
+    trap_types = fetch_active_lookup(db, 'trap_types')
     with db.get_cursor() as cursor:
         cursor.execute(
             """
@@ -759,7 +755,8 @@ def new_bait_station(line_id):
         errors = []
         if not code:
             errors.append('Code is required.')
-        if station_type not in BAIT_STATION_TYPES:
+        valid_station_types = fetch_active_lookup(db, 'bait_station_types')
+        if station_type not in valid_station_types:
             errors.append('Please select a valid station type.')
         if station_type == 'Other' and not other_type:
             errors.append('Please specify the type when "Other" is selected.')
@@ -795,8 +792,9 @@ def new_bait_station(line_id):
         flash(f'Bait station "{code}" added.', 'success')
         return redirect(url_for('line_detail', line_id=line_id))
 
+    bait_station_types = fetch_active_lookup(db, 'bait_station_types')
     return render_template('lines/new_bait_station.html', line=line,
-                           bait_station_types=BAIT_STATION_TYPES, data={})
+                           bait_station_types=bait_station_types, data={})
 
 
 @app.route('/admin/lines/<int:line_id>/bait-stations/<int:station_id>/edit', methods=['GET', 'POST'])
@@ -835,7 +833,8 @@ def edit_bait_station(line_id, station_id):
         errors = []
         if not code:
             errors.append('Code is required.')
-        if station_type not in BAIT_STATION_TYPES:
+        valid_station_types = fetch_active_lookup(db, 'bait_station_types')
+        if station_type not in valid_station_types:
             errors.append('Please select a valid station type.')
         if station_type == 'Other' and not other_type:
             errors.append('Please specify the type when "Other" is selected.')
@@ -992,167 +991,202 @@ def assign_operators(line_id):
                            assigned_ids=assigned_ids)
 
 
-# ── Lookup data management ────────────────────────────────────────────────────
+# ── Reference data management ────────────────────────────────────────────────
 
-@app.route('/admin/species', methods=['GET', 'POST'])
+LOOKUP_CONFIGS = {
+    'species': {
+        'table': 'species',
+        'label': 'Species',
+        'label_plural': 'Species',
+        'description': 'Species recorded in trap catches and bait station records',
+        'usage_checks': [
+            ("SELECT COUNT(*) AS cnt FROM trap_catches WHERE species_caught = %s", 'catch record'),
+            ("SELECT COUNT(*) AS cnt FROM bait_station_records WHERE target_species = %s", 'bait station record'),
+        ],
+        'reserved': ['None'],
+    },
+    'statuses': {
+        'table': 'trap_statuses',
+        'label': 'Trap Status',
+        'label_plural': 'Trap Statuses',
+        'description': 'Statuses used in trap catch records',
+        'usage_checks': [
+            ("SELECT COUNT(*) AS cnt FROM trap_catches WHERE status = %s", 'catch record'),
+        ],
+        'reserved': [],
+    },
+    'bait-types': {
+        'table': 'bait_types',
+        'label': 'Bait Type',
+        'label_plural': 'Bait Types',
+        'description': 'Bait types used in trap catch records',
+        'usage_checks': [
+            ("SELECT COUNT(*) AS cnt FROM trap_catches WHERE bait_type = %s", 'catch record'),
+        ],
+        'reserved': ['None'],
+    },
+    'trap-types': {
+        'table': 'trap_types',
+        'label': 'Trap Type',
+        'label_plural': 'Trap Types',
+        'description': 'Types of traps available for installation',
+        'usage_checks': [
+            ("SELECT COUNT(*) AS cnt FROM traps WHERE trap_type = %s", 'trap'),
+        ],
+        'reserved': [],
+    },
+    'bait-station-types': {
+        'table': 'bait_station_types',
+        'label': 'Bait Station Type',
+        'label_plural': 'Bait Station Types',
+        'description': 'Types of bait stations available for installation',
+        'usage_checks': [
+            ("SELECT COUNT(*) AS cnt FROM bait_stations WHERE station_type = %s", 'bait station'),
+        ],
+        'reserved': ['Other'],
+    },
+    'bait-formulations': {
+        'table': 'bait_formulations',
+        'label': 'Bait Formulation',
+        'label_plural': 'Bait Formulations',
+        'description': 'Bait formulations used in bait station records',
+        'usage_checks': [
+            ("SELECT COUNT(*) AS cnt FROM bait_station_records WHERE formulation = %s", 'bait station record'),
+        ],
+        'reserved': [],
+    },
+    'active-ingredients': {
+        'table': 'active_ingredients',
+        'label': 'Active Ingredient',
+        'label_plural': 'Active Ingredients',
+        'description': 'Active ingredients used in bait station records',
+        'usage_checks': [
+            ("SELECT COUNT(*) AS cnt FROM bait_station_records WHERE active_ingredient = %s", 'bait station record'),
+        ],
+        'reserved': [],
+    },
+}
+
+
+@app.route('/admin/reference-data')
+@role_required('Super Admin')
+def reference_data():
+    """Landing page showing all reference data tables."""
+    table_info = []
+    with db.get_cursor() as cursor:
+        for key, config in LOOKUP_CONFIGS.items():
+            cursor.execute(
+                f"SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE is_active) AS active FROM {config['table']}"
+            )
+            row = cursor.fetchone()
+            table_info.append({
+                'key': key,
+                'label': config['label_plural'],
+                'description': config['description'],
+                'total': row['total'],
+                'active': row['active'],
+            })
+    return render_template('admin/reference_data.html', tables=table_info)
+
+
+@app.route('/admin/reference-data/<config_key>', methods=['GET', 'POST'])
+@role_required('Super Admin')
+def manage_lookup(config_key):
+    """Generic CRUD handler for any lookup table."""
+    if config_key not in LOOKUP_CONFIGS:
+        flash('Invalid reference data table.', 'danger')
+        return redirect(url_for('reference_data'))
+
+    config = LOOKUP_CONFIGS[config_key]
+    table = config['table']
+    label = config['label']
+    reserved = config['reserved']
+
+    if request.method == 'POST':
+        current_item_name = request.form.get('current-item-name', '').strip()
+        item_name = request.form.get('item-name', '').strip()
+        modal_action = request.form.get('modal-action')
+
+        if modal_action == 'toggle-active':
+            with db.get_cursor() as cursor:
+                cursor.execute(f"UPDATE {table} SET is_active = NOT is_active WHERE name = %s", (current_item_name,))
+                cursor.execute(f"SELECT is_active FROM {table} WHERE name = %s", (current_item_name,))
+                row = cursor.fetchone()
+            if row:
+                status = 'activated' if row['is_active'] else 'deactivated'
+                flash(f'{label} "{current_item_name}" {status}.', 'success')
+            return redirect(url_for('manage_lookup', config_key=config_key))
+
+        if modal_action == 'delete':
+            if request.form.get('delete-confirm', '').strip().lower() != 'delete':
+                flash('Please type "delete" to confirm deletion.', 'danger')
+                return redirect(url_for('manage_lookup', config_key=config_key))
+
+            total_usage = 0
+            with db.get_cursor() as cursor:
+                for check_query, _ in config['usage_checks']:
+                    cursor.execute(check_query, (current_item_name,))
+                    total_usage += cursor.fetchone()['cnt']
+
+            if total_usage > 0:
+                with db.get_cursor() as cursor:
+                    cursor.execute(f"UPDATE {table} SET is_active = FALSE WHERE name = %s", (current_item_name,))
+                flash(
+                    f'Cannot delete "{current_item_name}" — it is referenced by {total_usage} record(s). '
+                    'It has been deactivated instead.',
+                    'warning'
+                )
+            else:
+                with db.get_cursor() as cursor:
+                    cursor.execute(f"DELETE FROM {table} WHERE name = %s", (current_item_name,))
+                flash(f'{label} "{current_item_name}" deleted.', 'success')
+            return redirect(url_for('manage_lookup', config_key=config_key))
+
+        if not item_name:
+            flash(f'Please provide a {label.lower()} name.', 'danger')
+            return redirect(url_for('manage_lookup', config_key=config_key))
+
+        if item_name in reserved or item_name.lower() in [r.lower() for r in reserved]:
+            flash(f'"{item_name}" is a system-reserved value and cannot be modified.', 'danger')
+            return redirect(url_for('manage_lookup', config_key=config_key))
+
+        with db.get_cursor() as cursor:
+            cursor.execute(f"SELECT name FROM {table} WHERE name = %s", (item_name,))
+            if cursor.fetchone():
+                flash(f'A {label.lower()} named "{item_name}" already exists.', 'danger')
+                return redirect(url_for('manage_lookup', config_key=config_key))
+
+            if modal_action == 'add':
+                cursor.execute(f"INSERT INTO {table} (name) VALUES (%s)", (item_name,))
+                flash(f'{label} "{item_name}" added.', 'success')
+            elif modal_action == 'edit':
+                cursor.execute(f"UPDATE {table} SET name = %s WHERE name = %s", (item_name, current_item_name))
+                flash(f'{label} "{current_item_name}" renamed to "{item_name}".', 'success')
+
+        return redirect(url_for('manage_lookup', config_key=config_key))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(f"SELECT name, is_active FROM {table} ORDER BY is_active DESC, name ASC")
+        items = cursor.fetchall()
+
+    return render_template('admin/manage_lookup.html',
+                           config=config,
+                           config_key=config_key,
+                           items=items)
+
+
+@app.route('/admin/species')
 @role_required('Super Admin')
 def manage_species():
-    """View and manage the species lookup table."""
-    if request.method == 'POST':
-        current_item_name = request.form.get('current-item-name', '').strip()
-        item_name = request.form.get('item-name', '').strip()
-        modal_action = request.form.get('modal-action')
-
-        if modal_action == 'delete':
-            # check that user typed "delete" to confirm deletion
-            if request.form.get('delete-confirm', '').strip().lower() != 'delete':
-                flash('Please type "delete" to confirm deletion.', 'danger')
-                return redirect(url_for('manage_species'))
-            
-            # check if this species is used in any catch records
-            with db.get_cursor() as cursor:
-                cursor.execute(
-                    "SELECT COUNT(*) AS cnt FROM trap_catches WHERE species_caught = %s",
-                    (current_item_name,))
-                count = cursor.fetchone()['cnt']
-
-            # if it is used, prevent deletion and show error message with count of records using it
-            # if it is not used, proceed with deletion and show success message
-            if count > 0:
-                flash(f'Cannot delete "{current_item_name}" — it is used in {count} catch record(s).', 'danger')
-            else:
-                with db.get_cursor() as cursor:
-                    cursor.execute("DELETE FROM species WHERE name = %s", (current_item_name,))
-                flash(f'Species "{current_item_name}" deleted successfully.', 'success')
-            return redirect(url_for('manage_species'))
-
-        if not item_name:
-            flash('Please provide a species name.', 'danger')
-            return redirect(url_for('manage_species'))
-        
-        # Define reserved names that cannot be used for species
-        reserved = ['none', 'unspecified']
-
-        if item_name.lower() in reserved:
-            flash(f'"{item_name}" is a system-reserved value and cannot be added.', 'danger')
-            return redirect(url_for('manage_species'))
-
-        with db.get_cursor() as cursor:
-            # Check for existing species with the same name
-            cursor.execute(
-                """
-                SELECT name
-                FROM species
-                WHERE name = %s
-                """, (item_name,))
-            if cursor.fetchone():
-                flash(f'A species named "{item_name}" already exists.', 'danger')
-                return redirect(url_for('manage_species'))
-
-            if modal_action == 'add':
-                # Insert the new species
-                cursor.execute(
-                    """
-                    INSERT INTO species (name)
-                    VALUES (%s)
-                    """, (item_name,))
-                flash(f'Species "{item_name}" added successfully.', 'success')
-            elif modal_action == 'edit':
-                # Update the new species
-                cursor.execute(
-                    """
-                    UPDATE species
-                    SET name = %s
-                    WHERE name = %s
-                    """, (item_name, current_item_name))
-                flash(f'Species "{current_item_name}" updated to "{item_name}" successfully.', 'success')
-
-    # get list of species for display
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT name
-            FROM species
-            ORDER BY name ASC
-            """
-        )
-        species_list = cursor.fetchall()
-    
-    return render_template('admin/manage_species.html', species_list=species_list)
+    """Redirect to generic reference data handler."""
+    return redirect(url_for('manage_lookup', config_key='species'))
 
 
-@app.route('/admin/statuses', methods=['GET', 'POST'])
+@app.route('/admin/statuses')
 @role_required('Super Admin')
 def manage_statuses():
-    """View and manage the trap status lookup table."""
-    if request.method == 'POST':
-        current_item_name = request.form.get('current-item-name', '').strip()
-        item_name = request.form.get('item-name', '').strip()
-        modal_action = request.form.get('modal-action')
-
-        if modal_action == 'delete':
-            if request.form.get('delete-confirm', '').strip().lower() != 'delete':
-                flash('Please type "delete" to confirm deletion.', 'danger')
-                return redirect(url_for('manage_statuses'))
-            with db.get_cursor() as cursor:
-                cursor.execute(
-                    "SELECT COUNT(*) AS cnt FROM trap_catches WHERE status = %s",
-                    (current_item_name,))
-                count = cursor.fetchone()['cnt']
-            if count > 0:
-                flash(f'Cannot delete "{current_item_name}" — it is used in {count} catch record(s).', 'danger')
-            else:
-                with db.get_cursor() as cursor:
-                    cursor.execute("DELETE FROM trap_statuses WHERE name = %s", (current_item_name,))
-                flash(f'Trap status "{current_item_name}" deleted successfully.', 'success')
-            return redirect(url_for('manage_statuses'))
-
-        if not item_name:
-            flash('Please provide a trap status name.', 'danger')
-            return redirect(url_for('manage_statuses'))
-        
-        with db.get_cursor() as cursor:
-            # Check for existing status with the same name
-            cursor.execute(
-                """
-                SELECT name
-                FROM trap_statuses
-                WHERE name = %s
-                """, (item_name,))
-            if cursor.fetchone():
-                flash(f'A trap status named "{item_name}" already exists.', 'danger')
-                return redirect(url_for('manage_statuses'))
-            
-            if modal_action == 'add':
-                # Insert the new status
-                cursor.execute(
-                    """
-                    INSERT INTO trap_statuses (name)
-                    VALUES (%s)
-                    """, (item_name,))
-                flash(f'Trap status "{item_name}" added successfully.', 'success')
-            elif modal_action == 'edit':
-                # Update the new status
-                cursor.execute(
-                    """
-                    UPDATE trap_statuses
-                    SET name = %s
-                    WHERE name = %s
-                    """, (item_name, current_item_name))
-                flash(f'Trap status "{current_item_name}" updated to "{item_name}" successfully.', 'success')
-
-    # get list of statuses for display
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT name
-            FROM trap_statuses
-            ORDER BY name ASC
-            """
-        )
-        statuses_list = cursor.fetchall()
-        
-    return render_template('admin/manage_statuses.html', statuses_list=statuses_list)
+    """Redirect to generic reference data handler."""
+    return redirect(url_for('manage_lookup', config_key='statuses'))
 
 
 # ── Group management ─────────────────────────────────────────────────────────
@@ -1491,83 +1525,9 @@ def admin_group_remove_image(group_id):
     return redirect(url_for('admin_group_detail', group_id=group_id))
 
 
-@app.route('/admin/bait-types', methods=['GET', 'POST'])
+@app.route('/admin/bait-types')
 @role_required('Super Admin')
 def manage_bait_types():
-    """View and manage the bait type lookup table."""
-    if request.method == 'POST':
-        current_item_name = request.form.get('current-item-name', '').strip()
-        item_name = request.form.get('item-name', '').strip()
-        modal_action = request.form.get('modal-action')
-        
-        if modal_action == 'delete':
-            if request.form.get('delete-confirm', '').strip().lower() != 'delete':
-                flash('Please type "delete" to confirm deletion.', 'danger')
-                return redirect(url_for('manage_bait_types'))
-            with db.get_cursor() as cursor:
-                cursor.execute(
-                    "SELECT COUNT(*) AS cnt FROM trap_catches WHERE bait_type = %s",
-                    (current_item_name,))
-                count = cursor.fetchone()['cnt']
-            if count > 0:
-                flash(f'Cannot delete "{current_item_name}" — it is used in {count} catch record(s).', 'danger')
-            else:
-                with db.get_cursor() as cursor:
-                    cursor.execute("DELETE FROM bait_types WHERE name = %s", (current_item_name,))
-                flash(f'Bait type "{current_item_name}" deleted successfully.', 'success')
-            return redirect(url_for('manage_bait_types'))
-
-        if not item_name:
-            flash('Please provide a bait type name.', 'danger')
-            return redirect(url_for('manage_bait_types'))
-        
-        # Define reserved names that cannot be used for bait types
-        reserved = ['none', 'other']
-
-        if item_name.lower() in reserved:
-            flash(f'"{item_name}" is a system-reserved value and cannot be added.', 'danger')
-            return redirect(url_for('manage_bait_types'))
-        
-        with db.get_cursor() as cursor:
-            # Check for existing bait type with the same name
-            cursor.execute(
-                """
-                SELECT name
-                FROM bait_types
-                WHERE name = %s
-                """, (item_name,))
-            if cursor.fetchone():
-                flash(f'A bait type named "{item_name}" already exists.', 'danger')
-                return redirect(url_for('manage_bait_types'))
-            
-            if modal_action == 'add':
-                # Insert the new bait type
-                cursor.execute(
-                    """
-                    INSERT INTO bait_types (name)
-                    VALUES (%s)
-                    """, (item_name,))
-                flash(f'Bait type "{item_name}" added successfully.', 'success')
-            elif modal_action == 'edit':
-                # Update the new bait type
-                cursor.execute(
-                    """
-                    UPDATE bait_types
-                    SET name = %s
-                    WHERE name = %s
-                    """, (item_name, current_item_name))
-                flash(f'Bait type "{current_item_name}" updated to "{item_name}" successfully.', 'success')
-
-    # get list of bait types for display
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT name
-            FROM bait_types
-            ORDER BY name ASC
-            """
-        )
-        bait_types = cursor.fetchall()
-
-    return render_template('admin/manage_bait_types.html', bait_types=bait_types)
+    """Redirect to generic reference data handler."""
+    return redirect(url_for('manage_lookup', config_key='bait-types'))
 
