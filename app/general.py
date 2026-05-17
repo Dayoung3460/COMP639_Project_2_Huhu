@@ -2,7 +2,7 @@
 
 from flask import render_template, request, session
 from app import app, db
-from app.utils import role_required
+from app.utils import role_required, is_super_admin_mode
 
 def get_catch_records(recorded_by_id=None):
     """Query catch records with optional filter by recorded_by_id."""
@@ -211,8 +211,13 @@ def observations():
 @app.route('/bait-records')
 @role_required()
 def bait_records():
-    """Browse bait station records for the active group."""
-    group_id = session['group_id']
+    """Browse bait station records.
+
+    Normal users see records for their active group. Super Admin acting
+    platform-wide sees records from every group.
+    """
+    super_admin = is_super_admin_mode()
+    group_id = session.get('group_id')
     user_id = session['user_id']
     role = session.get('group_role')
 
@@ -223,8 +228,12 @@ def bait_records():
         'date_to': request.args.get('date_to'),
     }
 
-    where_clauses = ['l.group_id = %s']
-    params = [group_id]
+    where_clauses = []
+    params = []
+
+    if not super_admin:
+        where_clauses.append('l.group_id = %s')
+        params.append(group_id)
 
     if filters['line_id']:
         where_clauses.append('l.line_id = %s')
@@ -239,7 +248,7 @@ def bait_records():
         where_clauses.append('bsr.date <= %s')
         params.append(filters['date_to'])
 
-    where_sql = ' AND '.join(where_clauses)
+    where_sql = ('WHERE ' + ' AND '.join(where_clauses)) if where_clauses else ''
 
     with db.get_cursor() as cursor:
         cursor.execute(f"""
@@ -253,17 +262,25 @@ def bait_records():
             JOIN lines l ON l.line_id = bs.line_id
             LEFT JOIN users ru ON ru.user_id = bsr.recorded_by_id
             LEFT JOIN users eu ON eu.user_id = bsr.edited_by_id
-            WHERE {where_sql}
+            {where_sql}
             ORDER BY bsr.date DESC
         """, params)
         records = cursor.fetchall()
 
-        cursor.execute("""
-            SELECT l.line_id, l.name
-            FROM lines l
-            WHERE l.group_id = %s AND l.type = 'Bait Station' AND l.is_retired = FALSE
-            ORDER BY l.name
-        """, (group_id,))
+        if super_admin:
+            cursor.execute("""
+                SELECT l.line_id, l.name
+                FROM lines l
+                WHERE l.type = 'Bait Station' AND l.is_retired = FALSE
+                ORDER BY l.name
+            """)
+        else:
+            cursor.execute("""
+                SELECT l.line_id, l.name
+                FROM lines l
+                WHERE l.group_id = %s AND l.type = 'Bait Station' AND l.is_retired = FALSE
+                ORDER BY l.name
+            """, (group_id,))
         lines = cursor.fetchall()
 
         station_filter_line = filters['line_id'] or None
@@ -274,6 +291,12 @@ def bait_records():
                 WHERE bs.line_id = %s
                 ORDER BY bs.code
             """, (station_filter_line,))
+        elif super_admin:
+            cursor.execute("""
+                SELECT bs.station_id, bs.code
+                FROM bait_stations bs
+                ORDER BY bs.code
+            """)
         else:
             cursor.execute("""
                 SELECT bs.station_id, bs.code

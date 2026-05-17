@@ -12,6 +12,7 @@ from app.utils import (
     LINE_COLOURS,
     allowed_file,
     UPLOAD_FOLDER,
+    is_super_admin_mode,
 )
 from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, update_user_role, insert_notification, fetch_active_lookup
 
@@ -367,34 +368,63 @@ def update_user_notes(user_id):
 @app.route('/admin/lines/new', methods=['GET', 'POST'])
 @role_required('Super Admin', 'Group Coordinator')
 def new_line():
-    """Create a new line (Trap or Bait Station) in the currently selected group."""
+    """Create a new line (Trap or Bait Station).
+
+    Coordinators create within their selected group. A Super Admin in
+    platform-wide mode has no group context, so they pick the target
+    group via a dropdown on the form.
+    """
+    super_admin = is_super_admin_mode()
+    groups = []
+    if super_admin:
+        with db.get_cursor() as cursor:
+            cursor.execute('''
+                SELECT group_id, name FROM groups
+                WHERE is_active = TRUE
+                ORDER BY name
+            ''')
+            groups = cursor.fetchall()
+
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         line_type = request.form.get('type', '').strip()
+        if super_admin:
+            target_group_id = request.form.get('group_id', type=int)
+        else:
+            target_group_id = session.get('group_id')
+
+        def _render(error):
+            flash(error, 'danger')
+            return render_template('lines/new_line.html',
+                                   name=name, line_type=line_type,
+                                   super_admin=super_admin, groups=groups,
+                                   selected_group_id=target_group_id)
 
         if not name:
-            flash('Please provide a name', 'danger')
-            return render_template('lines/new_line.html', name=name, line_type=line_type)
-
+            return _render('Please provide a name')
         if line_type not in ('Trap', 'Bait Station'):
-            flash('Please select a line type', 'danger')
-            return render_template('lines/new_line.html', name=name, line_type=line_type)
+            return _render('Please select a line type')
+        if super_admin and not target_group_id:
+            return _render('Please select the group this line belongs to')
+        if super_admin and not any(g['group_id'] == target_group_id for g in groups):
+            return _render('Selected group is not valid')
 
         with db.get_cursor() as cursor:
             cursor.execute('SELECT line_id FROM lines WHERE name = %s', (name,))
             if cursor.fetchone():
-                flash(f'A line named "{name}" already exists', 'danger')
-                return render_template('lines/new_line.html', name=name, line_type=line_type)
+                return _render(f'A line named "{name}" already exists')
 
             cursor.execute(
                 'INSERT INTO lines (name, type, group_id) VALUES (%s, %s, %s)',
-                (name, line_type, session.get('group_id'))
+                (name, line_type, target_group_id)
             )
 
         flash(f'{line_type} line "{name}" created successfully', 'success')
         return redirect(url_for('lines_index'))
 
-    return render_template('lines/new_line.html', name='', line_type='Trap')
+    return render_template('lines/new_line.html', name='', line_type='Trap',
+                           super_admin=super_admin, groups=groups,
+                           selected_group_id=None)
 
 
 @app.route('/admin/lines/<int:line_id>/edit', methods=['GET', 'POST'])
@@ -514,7 +544,7 @@ def unretire_line(line_id):
         )
         line = cursor.fetchone()
 
-    if not line or line['group_id'] != session.get('group_id'):
+    if not line or (not is_super_admin_mode() and line['group_id'] != session.get('group_id')):
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))
 
@@ -700,14 +730,17 @@ def retire_trap(line_id):
 @role_required('Super Admin', 'Group Coordinator')
 def unretire_trap(line_id, trap_id):
     """Unretire an individual trap (set is_retired = FALSE)."""
+    super_admin = is_super_admin_mode()
+    group_clause = '' if super_admin else 'AND l.group_id = %s'
+    params = (trap_id,) if super_admin else (trap_id, session.get('group_id'))
     with db.get_cursor() as cursor:
         cursor.execute(
-            """
+            f"""
             SELECT t.trap_id FROM traps t
             JOIN lines l ON l.line_id = t.line_id
-            WHERE t.trap_id = %s AND l.group_id = %s
+            WHERE t.trap_id = %s {group_clause}
             """,
-            (trap_id, session.get('group_id'))
+            params
         )
         if not cursor.fetchone():
             flash('Trap not found.', 'danger')
@@ -735,7 +768,7 @@ def new_bait_station(line_id):
         )
         line = cursor.fetchone()
 
-    if not line or line['group_id'] != session.get('group_id'):
+    if not line or (not is_super_admin_mode() and line['group_id'] != session.get('group_id')):
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))
     if line['type'] != 'Bait Station':
@@ -808,7 +841,7 @@ def edit_bait_station(line_id, station_id):
         )
         line = cursor.fetchone()
 
-    if not line or line['group_id'] != session.get('group_id'):
+    if not line or (not is_super_admin_mode() and line['group_id'] != session.get('group_id')):
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))
 
@@ -881,10 +914,13 @@ def deactivate_bait_station(line_id):
         flash('You must type "delete" to confirm retirement.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
+    super_admin = is_super_admin_mode()
+    group_clause = '' if super_admin else 'AND l.group_id = %s'
+    params = (station_id,) if super_admin else (station_id, session.get('group_id'))
     with db.get_cursor() as cursor:
         cursor.execute(
-            'SELECT bs.station_id FROM bait_stations bs JOIN lines l ON l.line_id = bs.line_id WHERE bs.station_id = %s AND l.group_id = %s',
-            (station_id, session.get('group_id'))
+            f'SELECT bs.station_id FROM bait_stations bs JOIN lines l ON l.line_id = bs.line_id WHERE bs.station_id = %s {group_clause}',
+            params
         )
         if not cursor.fetchone():
             flash('Station not found.', 'danger')
@@ -903,10 +939,13 @@ def deactivate_bait_station(line_id):
 @role_required('Super Admin', 'Group Coordinator')
 def activate_bait_station(line_id, station_id):
     """Reactivate a deactivated bait station."""
+    super_admin = is_super_admin_mode()
+    group_clause = '' if super_admin else 'AND l.group_id = %s'
+    params = (station_id,) if super_admin else (station_id, session.get('group_id'))
     with db.get_cursor() as cursor:
         cursor.execute(
-            'SELECT bs.station_id FROM bait_stations bs JOIN lines l ON l.line_id = bs.line_id WHERE bs.station_id = %s AND l.group_id = %s',
-            (station_id, session.get('group_id'))
+            f'SELECT bs.station_id FROM bait_stations bs JOIN lines l ON l.line_id = bs.line_id WHERE bs.station_id = %s {group_clause}',
+            params
         )
         if not cursor.fetchone():
             flash('Station not found.', 'danger')

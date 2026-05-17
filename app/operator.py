@@ -5,7 +5,7 @@ from app import app, db
 import os
 from app.utils import (
     role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE,
-    LINCOLN_NZ_CENTER,
+    LINCOLN_NZ_CENTER, is_super_admin_mode,
 )
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
 from app.helpers.dbHelper import (
@@ -362,7 +362,8 @@ def add_bait_record():
 def edit_bait_record(record_id):
     """Edit a bait station check record."""
     user_id = session['user_id']
-    group_id = session['group_id']
+    super_admin = is_super_admin_mode()
+    group_id = session.get('group_id')
     role = session.get('group_role')
 
     with db.get_cursor() as cursor:
@@ -376,7 +377,7 @@ def edit_bait_record(record_id):
         """, (record_id,))
         record = cursor.fetchone()
 
-    if not record or record['group_id'] != group_id:
+    if not record or (not super_admin and record['group_id'] != group_id):
         flash('Record not found.', 'danger')
         return redirect(url_for('bait_records'))
 
