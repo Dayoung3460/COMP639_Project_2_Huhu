@@ -1,4 +1,4 @@
-﻿"""admin.py — Admin dashboard, user management, lines, traps, operator assignment, lookups."""
+"""admin.py — Admin dashboard, user management, lines, traps, operator assignment, lookups."""
 
 from flask import render_template, request, redirect, url_for, flash, session
 import os
@@ -1184,7 +1184,7 @@ def admin_groups():
 
     query = '''
         SELECT g.group_id, g.name, g.is_public, g.is_active, g.created_at,
-               g.cover_photo, g.color_theme,
+               g.tile_image, g.color_theme,
                COUNT(DISTINCT gm.user_id) AS member_count,
                STRING_AGG(DISTINCT u.first_name || ' ' || u.last_name, ', '
                    ORDER BY u.first_name || ' ' || u.last_name)
@@ -1266,7 +1266,7 @@ def admin_group_create():
 
         with db.get_cursor() as cursor:
             cursor.execute('''
-                INSERT INTO groups (name, description, is_public, cover_photo)
+                INSERT INTO groups (name, description, is_public, tile_image)
                 VALUES (%s, %s, %s, %s)
                 RETURNING group_id
             ''', (name, description, is_public, filename))
@@ -1303,7 +1303,7 @@ def admin_group_detail(group_id):
     with db.get_cursor() as cursor:
         cursor.execute('''
             SELECT g.group_id, g.name, g.description, g.is_public, g.is_active, g.created_at,
-                   g.cover_photo, g.color_theme,
+                   g.tile_image, g.color_theme,
                    COUNT(DISTINCT gm.user_id) AS member_count
             FROM groups g
             LEFT JOIN group_memberships gm ON gm.group_id = g.group_id
@@ -1448,9 +1448,13 @@ def admin_group_remove_coordinator(group_id, user_id):
 @app.route('/admin/groups/<int:group_id>/image', methods=['POST'])
 @role_required('Super Admin')
 def admin_group_update_image(group_id):
-    """Upload or replace the group's tile image."""
+    """Upload or replace the group's tile image (Super Admin controlled).
+
+    tile_image is independent of cover_photo / profile_photo, which are
+    coordinator-controlled via the group identity flow.
+    """
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT image FROM groups WHERE group_id = %s', (group_id,))
+        cursor.execute('SELECT tile_image FROM groups WHERE group_id = %s', (group_id,))
         group = cursor.fetchone()
 
     if not group:
@@ -1466,8 +1470,8 @@ def admin_group_update_image(group_id):
         flash('Image must be PNG, JPG, JPEG, or GIF.', 'danger')
         return redirect(url_for('admin_group_detail', group_id=group_id))
 
-    if group['image']:
-        old_path = os.path.join(UPLOAD_FOLDER, group['image'])
+    if group['tile_image']:
+        old_path = os.path.join(UPLOAD_FOLDER, group['tile_image'])
         if os.path.exists(old_path):
             os.remove(old_path)
 
@@ -1477,34 +1481,34 @@ def admin_group_update_image(group_id):
     file.save(os.path.join(UPLOAD_FOLDER, filename))
 
     with db.get_cursor() as cursor:
-        cursor.execute('UPDATE groups SET image = %s WHERE group_id = %s',
+        cursor.execute('UPDATE groups SET tile_image = %s WHERE group_id = %s',
                        (filename, group_id))
 
-    flash('Group image updated.', 'success')
+    flash('Group tile image updated.', 'success')
     return redirect(url_for('admin_group_detail', group_id=group_id))
 
 
 @app.route('/admin/groups/<int:group_id>/image/remove', methods=['POST'])
 @role_required('Super Admin')
 def admin_group_remove_image(group_id):
-    """Remove the group's tile image."""
+    """Remove the group's tile image (Super Admin controlled)."""
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT image FROM groups WHERE group_id = %s', (group_id,))
+        cursor.execute('SELECT tile_image FROM groups WHERE group_id = %s', (group_id,))
         group = cursor.fetchone()
 
     if not group:
         flash('Group not found.', 'danger')
         return redirect(url_for('admin_groups'))
 
-    if group['image']:
-        old_path = os.path.join(UPLOAD_FOLDER, group['image'])
+    if group['tile_image']:
+        old_path = os.path.join(UPLOAD_FOLDER, group['tile_image'])
         if os.path.exists(old_path):
             os.remove(old_path)
         with db.get_cursor() as cursor:
-            cursor.execute('UPDATE groups SET image = NULL WHERE group_id = %s', (group_id,))
-        flash('Group image removed.', 'success')
+            cursor.execute('UPDATE groups SET tile_image = NULL WHERE group_id = %s', (group_id,))
+        flash('Group tile image removed.', 'success')
     else:
-        flash('No image to remove.', 'info')
+        flash('No tile image to remove.', 'info')
 
     return redirect(url_for('admin_group_detail', group_id=group_id))
 
