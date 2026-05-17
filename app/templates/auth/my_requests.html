@@ -107,7 +107,8 @@
     {% endif %}
   </div>
 
-  {# ── Tab 2: Group Applications ──────────────────────────── #}
+  {# ── Tab 2: Group Applications (pending only) ──────────────
+       Approved/rejected applications move to the History tab. #}
   <div id="tab-applications" class="tab-panel" style="display:none;">
     {% if applications %}
       <div class="table-card">
@@ -123,15 +124,7 @@
             {% for a in applications %}
               <tr>
                 <td><strong>{{ a.proposed_name }}</strong></td>
-                <td>
-                  {% if a.status == 'pending' %}
-                    <span class="badge badge-pending">Pending review</span>
-                  {% elif a.status == 'approved' %}
-                    <span class="badge badge-approved">Approved</span>
-                  {% else %}
-                    <span class="badge badge-rejected">Rejected</span>
-                  {% endif %}
-                </td>
+                <td><span class="badge badge-pending">Pending review</span></td>
                 <td><span class="date-text">{{ a.applied_at.strftime('%Y-%m-%d') }}</span></td>
               </tr>
             {% endfor %}
@@ -160,6 +153,7 @@
               <th>Subject</th>
               <th>Status</th>
               <th>Date</th>
+              <th>Decision Reason</th>
             </tr>
           </thead>
           <tbody>
@@ -173,6 +167,13 @@
                   </span>
                 </td>
                 <td><span class="date-text">{{ h.date.strftime('%Y-%m-%d') }}</span></td>
+                <td>
+                  {% if h.status == 'rejected' and h.decision_reason %}
+                    <span class="reason-text">{{ h.decision_reason }}</span>
+                  {% else %}
+                    <span class="dash">—</span>
+                  {% endif %}
+                </td>
               </tr>
             {% endfor %}
           </tbody>

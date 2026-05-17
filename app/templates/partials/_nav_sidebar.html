@@ -118,6 +118,10 @@
          class="sidebar-link {{ 'active' if request.endpoint in ['admin_groups','admin_group_detail'] }}">
         <i class="bi bi-collection" aria-hidden="true"></i> <span class="link-text">Manage Groups</span>
       </a>
+      <a href="{{ url_for('admin_group_applications') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'admin_group_applications' }}">
+        <i class="bi bi-file-earmark-text" aria-hidden="true"></i> <span class="link-text">Group Applications</span>
+      </a>
       <a href="{{ url_for('reference_data') }}"
          class="sidebar-link {{ 'active' if request.endpoint in ['reference_data', 'manage_lookup'] }}">
         <i class="bi bi-database-gear" aria-hidden="true"></i> <span class="link-text">Reference Data</span>

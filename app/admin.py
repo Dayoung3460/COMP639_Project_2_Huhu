@@ -1513,6 +1513,156 @@ def admin_group_remove_image(group_id):
     return redirect(url_for('admin_group_detail', group_id=group_id))
 
 
+# ── Group applications ────────────────────────────────────────────────────────
+
+@app.route('/admin/group-applications')
+@role_required('Super Admin')
+def admin_group_applications():
+    """List all group creation applications, filterable by status."""
+    status_filter = request.args.get('status', 'pending').strip()
+    if status_filter not in ('pending', 'approved', 'rejected', 'all'):
+        status_filter = 'pending'
+
+    query = '''
+        SELECT ga.application_id, ga.proposed_name, ga.description, ga.location,
+               ga.justification, ga.image, ga.status, ga.applied_at,
+               ga.decided_at, ga.decision_reason,
+               u.user_id, u.first_name, u.last_name, u.username, u.email,
+               d.first_name AS decided_by_first, d.last_name AS decided_by_last
+        FROM group_applications ga
+        JOIN users u ON ga.user_id = u.user_id
+        LEFT JOIN users d ON ga.decided_by = d.user_id
+        WHERE 1=1
+    '''
+    params = []
+
+    if status_filter != 'all':
+        query += ' AND ga.status = %s'
+        params.append(status_filter)
+
+    query += ' ORDER BY ga.applied_at DESC'
+
+    with db.get_cursor() as cursor:
+        cursor.execute(query, tuple(params))
+        applications = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT
+                COUNT(*) FILTER (WHERE status = 'pending') AS pending_count,
+                COUNT(*) FILTER (WHERE status = 'approved') AS approved_count,
+                COUNT(*) FILTER (WHERE status = 'rejected') AS rejected_count,
+                COUNT(*) AS total_count
+            FROM group_applications
+        """)
+        counts = cursor.fetchone()
+
+    return render_template('admin/group_applications.html',
+                           applications=applications,
+                           status_filter=status_filter,
+                           counts=counts)
+
+
+@app.route('/admin/group-applications/<int:application_id>/approve', methods=['POST'])
+@role_required('Super Admin')
+def admin_group_application_approve(application_id):
+    """Approve a group application — creates the group and assigns the applicant as coordinator."""
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT ga.*, u.first_name, u.last_name
+            FROM group_applications ga
+            JOIN users u ON ga.user_id = u.user_id
+            WHERE ga.application_id = %s
+        ''', (application_id,))
+        application = cursor.fetchone()
+
+    if not application:
+        flash('Application not found.', 'danger')
+        return redirect(url_for('admin_group_applications'))
+
+    if application['status'] != 'pending':
+        flash('This application has already been decided.', 'warning')
+        return redirect(url_for('admin_group_applications'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT group_id FROM groups WHERE name = %s', (application['proposed_name'],))
+        if cursor.fetchone():
+            flash(f'A group named "{application["proposed_name"]}" already exists. Please reject this application or ask the applicant to choose a different name.', 'danger')
+            return redirect(url_for('admin_group_applications'))
+
+        cursor.execute('''
+            INSERT INTO groups (name, description, location, is_public)
+            VALUES (%s, %s, %s, FALSE)
+            RETURNING group_id
+        ''', (application['proposed_name'], application['description'], application['location']))
+        group_id = cursor.fetchone()['group_id']
+
+        if application['image']:
+            cursor.execute('UPDATE groups SET cover_photo = %s WHERE group_id = %s',
+                           (application['image'], group_id))
+
+        cursor.execute('''
+            INSERT INTO group_memberships (user_id, group_id, role)
+            VALUES (%s, %s, 'Group Coordinator')
+            ON CONFLICT (user_id, group_id) DO UPDATE SET role = 'Group Coordinator'
+        ''', (application['user_id'], group_id))
+
+        cursor.execute('''
+            UPDATE group_applications
+            SET status = 'approved', decided_by = %s, decided_at = CURRENT_TIMESTAMP
+            WHERE application_id = %s
+        ''', (session['user_id'], application_id))
+
+    insert_notification(
+        db, application['user_id'],
+        f'Your application to create group "{application["proposed_name"]}" has been approved! '
+        'You are now the Group Coordinator. Visit the group to get started.',
+        'success'
+    )
+
+    flash(f'Application approved. Group "{application["proposed_name"]}" created with {application["first_name"]} {application["last_name"]} as coordinator.', 'success')
+    return redirect(url_for('admin_group_applications'))
+
+
+@app.route('/admin/group-applications/<int:application_id>/reject', methods=['POST'])
+@role_required('Super Admin')
+def admin_group_application_reject(application_id):
+    """Reject a group application with an optional reason."""
+    reason = request.form.get('reason', '').strip()
+
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT ga.*, u.first_name, u.last_name
+            FROM group_applications ga
+            JOIN users u ON ga.user_id = u.user_id
+            WHERE ga.application_id = %s
+        ''', (application_id,))
+        application = cursor.fetchone()
+
+    if not application:
+        flash('Application not found.', 'danger')
+        return redirect(url_for('admin_group_applications'))
+
+    if application['status'] != 'pending':
+        flash('This application has already been decided.', 'warning')
+        return redirect(url_for('admin_group_applications'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            UPDATE group_applications
+            SET status = 'rejected', decided_by = %s, decided_at = CURRENT_TIMESTAMP,
+                decision_reason = %s
+            WHERE application_id = %s
+        ''', (session['user_id'], reason or None, application_id))
+
+    notification_msg = f'Your application to create group "{application["proposed_name"]}" has been declined.'
+    if reason:
+        notification_msg += f' Reason: {reason}'
+    insert_notification(db, application['user_id'], notification_msg, 'warning')
+
+    flash(f'Application from {application["first_name"]} {application["last_name"]} rejected.', 'success')
+    return redirect(url_for('admin_group_applications'))
+
+
 @app.route('/admin/bait-types')
 @role_required('Super Admin')
 def manage_bait_types():
