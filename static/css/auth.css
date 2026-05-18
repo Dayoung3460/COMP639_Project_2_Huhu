@@ -656,6 +656,36 @@
   flex-shrink: 0;
 }
 
+/* ── Section header (e.g. "Platform role", "Your groups") ─ */
+.picker-section {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.picker-section-title {
+  display: block;
+  max-width: 1100px;
+  margin: 0 auto 14px;
+  padding: 0 2px;
+}
+
+.picker-section .picker-grid {
+  margin-bottom: 36px;
+}
+
+/* ── Super Admin role card (distinct from group tiles) ── */
+.picker-card--admin {
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--color-primary) 6%, var(--color-card)),
+      var(--color-card));
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-line));
+}
+
+.picker-card--admin:hover {
+  border-color: var(--color-primary);
+}
+
 /* ── Empty state (user has no memberships yet) ────────── */
 .picker-empty {
   text-align: center;

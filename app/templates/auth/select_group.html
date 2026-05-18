@@ -33,8 +33,42 @@
     </a>
   </header>
 
+  {# ── Super Admin role card (shown only to Super Admins) ─
+       Distinct from the group cards below: this is a role, not a group.
+       Selecting it gives platform-wide visibility on list pages. #}
+  {% if is_super_admin %}
+    <section class="picker-section" aria-labelledby="picker-section-role">
+      <h2 id="picker-section-role" class="section-eyebrow picker-section-title">Platform role</h2>
+      <ul class="picker-grid" role="list">
+        <li>
+          <form method="POST" action="{{ url_for('select_group') }}" class="picker-form">
+            <input type="hidden" name="mode" value="super_admin">
+            <button type="submit"
+                    class="picker-card picker-card--admin"
+                    aria-label="Enter the platform as Super Admin — see data across every group">
+              <span class="section-eyebrow picker-role">Role</span>
+              <span class="picker-card-title">Super Admin</span>
+              <span class="picker-card-divider" aria-hidden="true"></span>
+              <span class="picker-card-meta">Platform-wide view — lines, traps and members across every group</span>
+              <span class="picker-card-cta">
+                Enter as Super Admin
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </span>
+            </button>
+          </form>
+        </li>
+      </ul>
+    </section>
+  {% endif %}
+
   {# ── Group cards (or empty state) ─────────────────────── #}
   {% if memberships %}
+    <h2 class="section-eyebrow picker-section-title">Your groups</h2>
     <ul class="picker-grid" role="list">
       {% for m in memberships %}
         <li>

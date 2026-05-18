@@ -34,20 +34,6 @@
           </div>
 
           <div class="col-sm-6 col-lg-3">
-            <label for="role" class="form-label mb-1">Role</label>
-            <div class="position-relative">
-              <select class="form-select" id="role" name="role" style="background-image: none;">
-                <option value="">All Roles</option>
-                <option value="Super Admin" {% if role_filter == 'Super Admin' %}selected{% endif %}>Super Admin</option>
-                <option value="Group Coordinator" {% if role_filter == 'Group Coordinator' %}selected{% endif %}>Group Coordinator</option>
-                <option value="Operator" {% if role_filter == 'Operator' %}selected{% endif %}>Operator</option>
-                <option value="Observer" {% if role_filter == 'Observer' %}selected{% endif %}>Observer</option>
-              </select>
-              <i class="bi bi-chevron-down position-absolute top-50 translate-middle-y" style="right: 12px; color: var(--pf-700); pointer-events: none; font-size: 12px;" aria-hidden="true"></i>
-            </div>
-          </div>
-          
-          <div class="col-sm-6 col-lg-3">
             <label for="status" class="form-label mb-1">Status</label>
             <div class="position-relative">
               <select class="form-select" id="status" name="status" style="background-image: none;">
@@ -74,7 +60,7 @@
         <table class="pf-table" aria-label="User management list">
       <thead>
         <tr>
-          {% for field, label in [('name', 'Name'), ('username', 'Username'), ('role', 'Role'), ('status', 'Status'), ('date_joined', 'Date Joined'), ('last_login', 'Last Login'), ('', 'Actions')] %}
+          {% for field, label in [('name', 'Name'), ('username', 'Username'), ('super_admin', 'Super Admin'), ('memberships', 'Memberships'), ('status', 'Status'), ('date_joined', 'Date Joined'), ('last_login', 'Last Login'), ('', 'Actions')] %}
             <th scope="col" class="{{ 'text-center' if field != 'name' else '' }} {{ 'sortable-header' if field else '' }}"
                 {% if field %}data-field="{{ field }}" aria-sort="{{ 'ascending' if field == 'name' else 'none' }}"{% endif %}>
               {% if field %}
@@ -91,12 +77,13 @@
       </thead>
       <tbody>
         {% for u in users %}
-          <tr class="user-row" 
-              data-search="{{ u.first_name }} {{ u.last_name }} @{{ u.username }}" 
-              data-role="{{ u.role }}" 
+          <tr class="user-row"
+              data-search="{{ u.first_name }} {{ u.last_name }} @{{ u.username }}"
               data-status="{{ u.account_status }}"
               data-sort-name="{{ u.first_name|lower }} {{ u.last_name|lower }}"
               data-sort-username="{{ u.username|lower }}"
+              data-sort-super_admin="{{ '1' if u.is_super_admin else '0' }}"
+              data-sort-memberships="{{ u.memberships }}"
               data-sort-date_joined="{{ u.date_joined.isoformat() if u.date_joined else '0000-00-00' }}"
               data-sort-last_login="{{ u.last_login.isoformat() if u.last_login else '0000-00-00' }}">
             <td>
@@ -106,9 +93,18 @@
             </td>
             <td class="text-center">@{{ u.username }}</td>
             <td class="text-center">
-              <span class="badge-role-{{ u.role|lower }}">
-                {{ u.role }}
-              </span>
+              {% if u.is_super_admin %}
+                <span class="badge-role-admin">Yes</span>
+              {% else %}
+                <span class="text-muted" style="font-size: 12px;">—</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if u.memberships %}
+                {{ u.memberships }} group{{ '' if u.memberships == 1 else 's' }}
+              {% else %}
+                <span class="text-muted" style="font-size: 12px;">None</span>
+              {% endif %}
             </td>
             <td class="text-center">
               <span class="badge-{{ u.account_status }}">
@@ -118,7 +114,7 @@
             <td class="text-center d-none d-md-table-cell">{{ u.date_joined.strftime('%d %b %Y') if u.date_joined else 'Unknown' }}</td>
             <td class="text-center d-none d-md-table-cell">{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
             <td class="text-center lines-table-actions">
-              {% if u.role != 'Super Admin' %}
+              {% if not u.is_super_admin and u.user_id != session.get('user_id') %}
               <a href="{{ url_for('edit_role', user_id=u.user_id) }}"
                  class="btn btn-sm-amber"
                  aria-label="Edit role for {{ u.first_name }} {{ u.last_name }}">Edit Role</a>
@@ -137,7 +133,7 @@
           </tr>
         {% else %}
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">No users found matching those criteria</td>
+            <td colspan="8" class="text-center text-muted py-4">No users found matching those criteria</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -170,7 +166,6 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const filterForm = document.getElementById('filter-form');
-    const roleFilter = document.getElementById('role');
     const statusFilter = document.getElementById('status');
     const searchInput = document.getElementById('search');
     const clearAllBtn = document.getElementById('clear-all-btn');
@@ -181,25 +176,22 @@
     const noResultsRow = document.createElement('tr');
     noResultsRow.id = 'no-results-row';
     noResultsRow.style.display = 'none';
-    noResultsRow.innerHTML = '<td colspan="7" class="text-center text-muted py-4">No users match the current search or filters.</td>';
+    noResultsRow.innerHTML = '<td colspan="8" class="text-center text-muted py-4">No users match the current search or filters.</td>';
     if(tbody) tbody.appendChild(noResultsRow);
 
     function filterUsers() {
       const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-      const role = roleFilter ? roleFilter.value : '';
       const status = statusFilter ? statusFilter.value : '';
       let visibleCount = 0;
 
       userRows.forEach(row => {
         const searchData = row.getAttribute('data-search').toLowerCase();
-        const roleData = row.getAttribute('data-role');
         const statusData = row.getAttribute('data-status');
 
         const matchesSearch = !query || searchData.includes(query);
-        const matchesRole = !role || roleData === role;
         const matchesStatus = !status || statusData === status;
 
-        if (matchesSearch && matchesRole && matchesStatus) {
+        if (matchesSearch && matchesStatus) {
           row.style.display = '';
           visibleCount++;
         } else {
@@ -212,7 +204,6 @@
       }
     }
 
-    if (roleFilter) roleFilter.addEventListener('change', filterUsers);
     if (statusFilter) statusFilter.addEventListener('change', filterUsers);
 
     if (searchInput) {
@@ -222,7 +213,6 @@
     if (clearAllBtn) {
       clearAllBtn.addEventListener('click', function() {
         if (searchInput) searchInput.value = '';
-        if (roleFilter) roleFilter.value = '';
         if (statusFilter) statusFilter.value = '';
         filterUsers();
         if (searchInput) searchInput.focus();
@@ -295,14 +285,21 @@
       
       rows.sort((a, b) => {
         let valA, valB;
-        if (currentSortField === 'role' || currentSortField === 'status') {
+        if (currentSortField === 'status') {
           valA = a.getAttribute('data-' + currentSortField).toLowerCase();
           valB = b.getAttribute('data-' + currentSortField).toLowerCase();
         } else {
           valA = a.getAttribute('data-sort-' + currentSortField) || '';
           valB = b.getAttribute('data-sort-' + currentSortField) || '';
         }
-        
+
+        // Numeric sort for memberships count + super-admin flag
+        if (currentSortField === 'memberships' || currentSortField === 'super_admin') {
+          return currentSortDir === 'asc'
+            ? Number(valA) - Number(valB)
+            : Number(valB) - Number(valA);
+        }
+
         if (valA < valB) return currentSortDir === 'asc' ? -1 : 1;
         if (valA > valB) return currentSortDir === 'asc' ? 1 : -1;
         return 0;

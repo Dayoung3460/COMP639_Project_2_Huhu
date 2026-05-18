@@ -5,6 +5,21 @@
   <h2 class="mb-4">New Line</h2>
 
   <form method="POST" action="{{ url_for('new_line') }}" aria-label="Create new line">
+    {% if super_admin %}
+      {# Super Admin has no group context, so the target group must
+         be picked explicitly. Coordinators don't see this — their line
+         always lands in their currently selected group. #}
+      <div class="mb-3">
+        <label for="group_id" class="form-label">Group <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">(required)</span></label>
+        <select class="form-select" id="group_id" name="group_id" required aria-required="true">
+          <option value="">Select a group…</option>
+          {% for g in groups %}
+            <option value="{{ g.group_id }}" {{ 'selected' if selected_group_id == g.group_id else '' }}>{{ g.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+
     <div class="mb-3">
       <label for="name" class="form-label">Line Name <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">(required)</span></label>
       <input type="text" class="form-control" id="name" name="name" value="{{ name | default('') }}" required pattern=".*\S+.*" autofocus aria-required="true">

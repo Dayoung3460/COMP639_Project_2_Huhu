@@ -37,7 +37,16 @@
                 </div>
                 <div style="min-width:0; word-break:break-word;">
                     <div class="profile-name">{{ user.first_name }} {{ user.last_name }}</div>
-                    <div class="profile-role">@{{ user.username }} &middot; {{ user.role }}</div>
+                    <div class="profile-role">
+                        @{{ user.username }}
+                        {% if user.is_super_admin %}
+                            &middot; <span class="badge-role-admin">Super Admin</span>
+                        {% elif memberships %}
+                            &middot; {{ memberships|length }} group membership{{ '' if memberships|length == 1 else 's' }}
+                        {% else %}
+                            &middot; <span class="text-muted">No group memberships</span>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
@@ -48,8 +57,14 @@
                 </div>
                 <div class="panel-body" style="font-size: 13px;">
                     <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;" class="mb-2">
-                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Role</div>
-                        <div style="text-align:right; min-width:0;"><span class="badge-role-{{ user.role | lower }}">{{ user.role }}</span></div>
+                        <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Super Admin</div>
+                        <div style="text-align:right; min-width:0;">
+                            {% if user.is_super_admin %}
+                                <span class="badge-role-admin">Yes</span>
+                            {% else %}
+                                <span class="text-muted">No</span>
+                            {% endif %}
+                        </div>
                     </div>
                     <div style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:0 16px;" class="mb-2">
                         <div style="color: #6b7c72; font-weight: 600; white-space: nowrap;">Account Status</div>
@@ -133,7 +148,42 @@
                 </div>
             </div>
 
-            {% if user.role == 'Operator' or user.role == 'Group Coordinator' %}
+            <!-- Memberships Card — per-group role detail, since a user can have
+                 a different role in each group they belong to. -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="bi bi-collection me-2" aria-hidden="true"></i>Group Memberships</div>
+                </div>
+                <div class="panel-body" style="font-size: 13px;">
+                    {% if memberships %}
+                        {% for m in memberships %}
+                            <div style="display:grid; grid-template-columns:1fr auto; align-items:center; gap:0 16px;" class="{{ 'mb-2' if not loop.last else 'mb-0' }}">
+                                <div style="min-width:0; overflow-wrap:anywhere;">
+                                    <a href="{{ url_for('admin_group_detail', group_id=m.group_id) }}" class="text-decoration-none" style="font-weight: 600;">
+                                        {{ m.group_name }}
+                                    </a>
+                                    {% if not m.is_active %}
+                                        <span class="badge-inactive ms-1" style="font-size: 10px;">Inactive</span>
+                                    {% endif %}
+                                </div>
+                                <div style="text-align:right;">
+                                    {% if m.role == 'Group Coordinator' %}
+                                        <span class="badge-active">{{ m.role }}</span>
+                                    {% elif m.role == 'Operator' %}
+                                        <span class="badge-role-operator">{{ m.role }}</span>
+                                    {% else %}
+                                        <span class="badge-role-observer">{{ m.role }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">This user is not a member of any group.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if 'Operator' in membership_roles or 'Group Coordinator' in membership_roles %}
             <!-- Assigned Lines Card -->
             <div class="panel">
                 <div class="panel-header">
@@ -157,7 +207,7 @@
         </div>
     </div>
 
-    {% if user.role in ('Operator', 'Group Coordinator') %}
+    {% if 'Operator' in membership_roles or 'Group Coordinator' in membership_roles %}
     <!-- Full-width Activity History Row -->
     <div class="row">
         <div class="col-12">

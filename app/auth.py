@@ -211,6 +211,10 @@ def select_group():
     user_id = session['user_id']
 
     with db.get_cursor() as cursor:
+        cursor.execute('SELECT is_super_admin FROM users WHERE user_id = %s', (user_id,))
+        row = cursor.fetchone()
+        is_super_admin = bool(row and row['is_super_admin'])
+
         cursor.execute('''
             SELECT gm.group_id, gm.role, g.name AS group_name, g.location
             FROM group_memberships gm
@@ -221,11 +225,23 @@ def select_group():
         memberships = cursor.fetchall()
 
     if request.method == 'POST':
+        # Super Admin "act platform-wide" path — no group context, but all
+        # group-scoped list pages will bypass their group_id filter via
+        # is_super_admin_mode().
+        if is_super_admin and request.form.get('mode') == 'super_admin':
+            session.pop('group_id', None)
+            session['group_role'] = 'Super Admin'
+            session['group_name'] = 'Super Admin'
+            _flash_pending_notifications(user_id)
+            return redirect_by_role()
+
         group_id = request.form.get('group_id', type=int)
         match = next((m for m in memberships if m['group_id'] == group_id), None)
         if not match:
             flash('Invalid selection.', 'danger')
-            return render_template('auth/select_group.html', memberships=memberships)
+            return render_template('auth/select_group.html',
+                                   memberships=memberships,
+                                   is_super_admin=is_super_admin)
 
         session['group_id']   = match['group_id']
         session['group_role'] = match['role']
@@ -233,7 +249,9 @@ def select_group():
         _flash_pending_notifications(user_id)
         return redirect_by_role()
 
-    return render_template('auth/select_group.html', memberships=memberships)
+    return render_template('auth/select_group.html',
+                           memberships=memberships,
+                           is_super_admin=is_super_admin)
 
 
 @app.route('/logout')

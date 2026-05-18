@@ -1,6 +1,6 @@
 from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
-from app.utils import role_required, LINE_COLOURS
+from app.utils import role_required, LINE_COLOURS, is_super_admin_mode
 from app.helpers.dbHelper import fetch_active_lookup
 import os
 
@@ -15,9 +15,17 @@ def lines_index():
     if line_filter not in ('all', 'active', 'retired'):
         line_filter = 'all'
 
+    # Super Admin mode: drop the WHERE l.group_id filter so the page
+    # renders every group's lines/traps/stations on the map and list.
+    # Regular users stay scoped to their selected group.
+    super_admin = is_super_admin_mode()
+    group_id = session.get('group_id')
+    group_clause = '' if super_admin else 'l.group_id = %s AND'
+    group_params = () if super_admin else (group_id,)
+
     with db.get_cursor() as cursor:
         cursor.execute(
-            """
+            f"""
             SELECT
                 l.line_id,
                 l.name,
@@ -120,11 +128,12 @@ def lines_index():
                         ) AS op
                     ),
                     ARRAY[]::int[]
-                ) AS assigned_operator_ids
+                ) AS assigned_operator_ids,
+                g.name AS group_name
             FROM lines l
             LEFT JOIN users u_ret ON u_ret.user_id = l.retired_by
-            WHERE l.group_id = %s
-              AND (
+            LEFT JOIN groups g ON g.group_id = l.group_id
+            WHERE {group_clause} (
                 CASE %s
                     WHEN 'all' THEN TRUE
                     WHEN 'retired' THEN l.is_retired = TRUE
@@ -133,19 +142,19 @@ def lines_index():
             )
             ORDER BY l.is_retired ASC, l.line_id DESC
             """,
-            (session.get('group_id'), line_filter,)
+            group_params + (line_filter,)
         )
         lines = cursor.fetchall()
 
         cursor.execute(
-            """
+            f"""
             SELECT l.line_id, COUNT(t.is_retired) as has_active_trap
             FROM lines AS l
             LEFT JOIN traps as t ON t.line_id = l.line_id
-            WHERE l.group_id = %s AND t.is_retired = FALSE
+            WHERE {group_clause} t.is_retired = FALSE
             GROUP BY l.line_id
             """,
-            (session.get('group_id'),)
+            group_params
         )
         line_has_active_traps = cursor.fetchall()
         active_trap_line_ids = set(
@@ -154,14 +163,14 @@ def lines_index():
         )
 
         cursor.execute(
-            """
+            f"""
             SELECT l.line_id, COUNT(bs.station_id) AS has_active_station
             FROM lines AS l
             LEFT JOIN bait_stations AS bs ON bs.line_id = l.line_id
-            WHERE l.group_id = %s AND bs.is_retired = FALSE
+            WHERE {group_clause} bs.is_retired = FALSE
             GROUP BY l.line_id
             """,
-            (session.get('group_id'),)
+            group_params
         )
         active_station_line_ids = set(
             row['line_id'] for row in cursor.fetchall()
@@ -169,7 +178,7 @@ def lines_index():
         )
 
         cursor.execute(
-            """
+            f"""
             SELECT
                 l.line_id,
                 l.name AS line_name,
@@ -182,8 +191,7 @@ def lines_index():
                 t.is_retired AS trap_is_retired
             FROM lines l
             LEFT JOIN traps t ON t.line_id = l.line_id
-            WHERE l.group_id = %s
-              AND (
+            WHERE {group_clause} (
                 CASE %s
                     WHEN 'all' THEN TRUE
                     WHEN 'retired' THEN l.is_retired = TRUE
@@ -202,12 +210,12 @@ def lines_index():
               )
             ORDER BY l.name ASC, t.code ASC
             """,
-            (session.get('group_id'), line_filter, line_filter)
+            group_params + (line_filter, line_filter)
         )
         trap_rows = cursor.fetchall()
 
         cursor.execute(
-            """
+            f"""
             SELECT
                 l.line_id,
                 l.name AS line_name,
@@ -220,8 +228,7 @@ def lines_index():
                 bs.is_retired AS station_is_retired
             FROM lines l
             JOIN bait_stations bs ON bs.line_id = l.line_id
-            WHERE l.group_id = %s
-              AND (
+            WHERE {group_clause} (
                 CASE %s
                     WHEN 'all' THEN TRUE
                     WHEN 'retired' THEN l.is_retired = TRUE
@@ -239,7 +246,7 @@ def lines_index():
               )
             ORDER BY l.name ASC, bs.code ASC
             """,
-            (session.get('group_id'), line_filter, line_filter)
+            group_params + (line_filter, line_filter)
         )
         station_rows = cursor.fetchall()
 
@@ -346,7 +353,7 @@ def line_detail(line_id):
         )
         line = cursor.fetchone()
 
-    if line and line['group_id'] != session.get('group_id'):
+    if line and not is_super_admin_mode() and line['group_id'] != session.get('group_id'):
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))
 

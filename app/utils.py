@@ -192,6 +192,16 @@ def get_current_group_role():
     return session.get('group_role')
 
 
+def is_super_admin_mode():
+    """True when the session is acting as Super Admin with no group context.
+
+    Used by group-scoped list pages (e.g. /lines) to bypass the
+    `WHERE group_id = session['group_id']` filter so a Super Admin sees
+    data across every group.
+    """
+    return session.get('group_role') == 'Super Admin' and not session.get('group_id')
+
+
 # ── Role-based redirect ───────────────────────────────────────────────────────
 
 def redirect_by_role():
