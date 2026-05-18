@@ -61,7 +61,6 @@
 {% set overflow_endpoints = ['profile', 'change_password'] %}
 {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
   {% set overflow_endpoints = overflow_endpoints + [
-    'new_line',
     'coordinator_themes', 'coordinator_theme_preview',
     'coordinator_theme_customise', 'coordinator_theme_customise_save',
     'coordinator_group_identity',

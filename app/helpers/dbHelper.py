@@ -78,16 +78,26 @@ def fetch_lookup_data(db, include_values=None):
         'valid_observation_types': valid_observation_types
     }
 
-def fetch_operator_trap_ids(db, operator_id):
-    """Fetch valid trap IDs for a specific operator (role-based access)."""
+def fetch_operator_trap_ids(db, operator_id, group_id=None):
+    """Fetch valid trap IDs for a specific operator (role-based access).
+
+    Pass `group_id` to restrict to the operator's lines within a specific
+    group — needed so an Operator who's an Operator in multiple groups
+    can only record against their active group's traps.
+    """
+    sql = """
+        SELECT t.trap_id::text
+        FROM operator_lines ol
+        JOIN lines l ON ol.line_id = l.line_id
+        JOIN traps t ON l.line_id = t.line_id
+        WHERE ol.operator_id = %s AND l.is_retired = FALSE AND t.is_retired = FALSE
+    """
+    params = [operator_id]
+    if group_id is not None:
+        sql += ' AND l.group_id = %s'
+        params.append(group_id)
     with db.get_cursor() as cursor:
-        cursor.execute("""
-            SELECT t.trap_id::text
-            FROM operator_lines ol
-            JOIN lines l ON ol.line_id = l.line_id
-            JOIN traps t ON l.line_id = t.line_id
-            WHERE ol.operator_id = %s AND l.is_retired = FALSE AND t.is_retired = FALSE
-        """, (operator_id,))
+        cursor.execute(sql, tuple(params))
         return [row['trap_id'] for row in cursor.fetchall()]
 
 def fetch_all_trap_ids(db):
@@ -101,42 +111,57 @@ def fetch_all_trap_ids(db):
         """)
         return [row['trap_id'] for row in cursor.fetchall()]
 
-def fetch_operator_line_ids(db, operator_id):
-    """Fetch valid line IDs for a specific operator (role-based access)."""
+def fetch_operator_line_ids(db, operator_id, group_id=None):
+    """Fetch valid line IDs for a specific operator (role-based access).
+
+    Pass `group_id` to restrict to the operator's currently active group.
+    """
+    sql = """
+        SELECT l.line_id::text
+        FROM operator_lines ol
+        JOIN lines l ON ol.line_id = l.line_id
+        WHERE ol.operator_id = %s AND l.is_retired = FALSE
+    """
+    params = [operator_id]
+    if group_id is not None:
+        sql += ' AND l.group_id = %s'
+        params.append(group_id)
+    sql += ' ORDER BY l.name'
     with db.get_cursor() as cursor:
-        cursor.execute("""
-            SELECT l.line_id::text
-            FROM operator_lines ol
-            JOIN lines l ON ol.line_id = l.line_id
-            WHERE ol.operator_id = %s AND l.is_retired = FALSE
-            ORDER BY l.name
-        """, (operator_id,))
+        cursor.execute(sql, tuple(params))
         return [row['line_id'] for row in cursor.fetchall()]
 
-def fetch_operator_lines(db, user_id):
-    """Fetch lines with traps for the operator's assigned lines."""
+def fetch_operator_lines(db, user_id, group_id=None):
+    """Fetch lines with traps for the operator's assigned lines.
+
+    Pass `group_id` to restrict to the operator's currently active group.
+    """
+    sql = """
+        SELECT
+            l.line_id,
+            l.name AS line_name,
+            l.type,
+            json_agg(
+                json_build_object(
+                    'trap_id', t.trap_id,
+                    'trap_code', t.code,
+                    'trap_type', t.trap_type,
+                    'latitude', t.latitude,
+                    'longitude', t.longitude
+                ) ORDER BY t.code
+            ) AS traps
+        FROM operator_lines ol
+        JOIN lines l ON ol.line_id = l.line_id
+        JOIN traps t ON l.line_id = t.line_id
+        WHERE ol.operator_id = %s AND l.is_retired = FALSE AND t.is_retired = FALSE
+    """
+    params = [user_id]
+    if group_id is not None:
+        sql += ' AND l.group_id = %s'
+        params.append(group_id)
+    sql += ' GROUP BY l.line_id, l.name, l.type ORDER BY l.name'
     with db.get_cursor() as cursor:
-        cursor.execute("""
-            SELECT 
-                l.line_id, 
-                l.name AS line_name, 
-                l.type,
-                json_agg(
-                    json_build_object(
-                        'trap_id', t.trap_id,
-                        'trap_code', t.code,
-                        'trap_type', t.trap_type,
-                        'latitude', t.latitude,
-                        'longitude', t.longitude
-                    ) ORDER BY t.code
-                ) AS traps
-            FROM operator_lines ol
-            JOIN lines l ON ol.line_id = l.line_id
-            JOIN traps t ON l.line_id = t.line_id
-            WHERE ol.operator_id = %s AND l.is_retired = FALSE AND t.is_retired = FALSE
-            GROUP BY l.line_id, l.name, l.type
-            ORDER BY l.name
-        """, (user_id,))
+        cursor.execute(sql, tuple(params))
         return cursor.fetchall()
     
 def fetch_all_lines(db):

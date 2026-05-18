@@ -144,14 +144,20 @@ def admin_dashboard():
 @app.route('/admin/users')
 @role_required('Super Admin')
 def admin_users():
-    """List all registered users with role and account status."""
+    """Platform-wide user list for Super Admin.
+
+    One row per user. Surfaces platform-level facts only — the
+    Super Admin flag and a count of group memberships — instead of
+    per-group role (which lives on the user detail page since each
+    user can have a different role in each group).
+    """
     search = request.args.get('search', '').strip()
-    role_filter = request.args.get('role', '').strip()
     status_filter = request.args.get('status', '').strip()
 
     query = '''
         SELECT u.user_id, u.username, u.first_name, u.last_name,
-               gm.role, u.account_status, u.date_joined, u.last_login
+               u.is_super_admin, u.account_status, u.date_joined, u.last_login,
+               COUNT(gm.group_id) AS memberships
         FROM users u
         LEFT JOIN group_memberships gm ON gm.user_id = u.user_id
         WHERE 1=1
@@ -165,37 +171,40 @@ def admin_users():
         search_term = f"%{clean_search}%"
         params.extend([search_term, search_term, search_term, search_term])
 
-    if role_filter:
-        query += " AND gm.role = %s"
-        params.append(role_filter)
-
     if status_filter:
         query += " AND u.account_status = %s"
         params.append(status_filter)
 
-    # Default sorting (subsequent sorting is handled client-side)
-    query += " ORDER BY u.first_name ASC, u.last_name ASC"
+    query += '''
+        GROUP BY u.user_id
+        ORDER BY u.first_name ASC, u.last_name ASC
+    '''
 
     with db.get_cursor() as cursor:
         cursor.execute(query, tuple(params))
         users = cursor.fetchall()
 
-    return render_template('admin/users.html', users=users, 
-                           search=search, role_filter=role_filter, 
+    return render_template('admin/users.html', users=users,
+                           search=search,
                            status_filter=status_filter)
 
 
 @app.route('/admin/users/<int:user_id>')
 @role_required('Super Admin')
 def admin_user_detail(user_id):
-    """View detailed profile for a single user."""
+    """View detailed profile for a single user.
+
+    Memberships are loaded as a list (one row per group) rather than
+    flattened into a single role field — a user can be an Observer
+    in one group and an Operator in another, and the detail page is
+    where Super Admin needs to see that breakdown.
+    """
     with db.get_cursor() as cursor:
         cursor.execute('''
             SELECT u.user_id, u.username, u.first_name, u.last_name, u.email, u.phone, u.address,
                    u.emergency_contact_name, u.emergency_contact_phone, u.profile_photo,
-                   u.notes, gm.role, u.account_status, u.date_joined, u.last_login
+                   u.notes, u.is_super_admin, u.account_status, u.date_joined, u.last_login
             FROM users u
-            LEFT JOIN group_memberships gm ON gm.user_id = u.user_id
             WHERE u.user_id = %s
         ''', (user_id,))
         user = cursor.fetchone()
@@ -210,8 +219,21 @@ def admin_user_detail(user_id):
         if not user.get(field) or not str(user.get(field)).strip():
             user[field] = 'None provided'
 
+    # Per-group memberships — drives the Memberships card on the detail page.
+    with db.get_cursor() as cursor:
+        cursor.execute('''
+            SELECT gm.group_id, gm.role, g.name AS group_name, g.is_active
+            FROM group_memberships gm
+            JOIN groups g ON g.group_id = gm.group_id
+            WHERE gm.user_id = %s
+            ORDER BY g.name ASC
+        ''', (user_id,))
+        memberships = cursor.fetchall()
+
+    membership_roles = {m['role'] for m in memberships}
+
     assigned_lines = []
-    if user['role'] == 'Operator':
+    if 'Operator' in membership_roles:
         with db.get_cursor() as cursor:
             cursor.execute('''
                 SELECT l.line_id, l.name
@@ -247,9 +269,11 @@ def admin_user_detail(user_id):
         ''', (user_id,))
         observations = cursor.fetchall()
 
-    return render_template('admin/user_detail.html', 
-                           user=user, 
-                           assigned_lines=assigned_lines, 
+    return render_template('admin/user_detail.html',
+                           user=user,
+                           memberships=memberships,
+                           membership_roles=membership_roles,
+                           assigned_lines=assigned_lines,
                            catches=catches,
                            observations=observations,
                            line_colours=LINE_COLOURS)
@@ -433,10 +457,19 @@ def edit_line(line_id):
     """Edit an existing trap line."""
     line = None
 
+    # Group ownership gate — Coordinators can only edit lines in their
+    # active group; Super Admin in platform-wide mode bypasses.
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT group_id FROM lines WHERE line_id = %s', (line_id,))
+        owner = cursor.fetchone()
+    if not owner or (not is_super_admin_mode() and owner['group_id'] != session.get('group_id')):
+        flash('Line not found in your group.', 'danger')
+        return redirect(url_for('lines_index'))
+
     if request.method == 'POST':
-        
+
         name = request.form.get('line_name').strip()
-        
+
         # Check for unique line name (excluding current line)
         with db.get_cursor() as cursor:
             cursor.execute(
@@ -497,6 +530,15 @@ def retire_line(line_id):
 
     if delete_confirm != 'delete':
         flash('You must type "delete" to confirm retiring line.', 'danger')
+        return redirect(url_for('lines_index'))
+
+    # Group ownership gate — Coordinators can only retire lines in their
+    # active group; Super Admin in platform-wide mode bypasses.
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT group_id FROM lines WHERE line_id = %s', (line_id,))
+        owner = cursor.fetchone()
+    if not owner or (not is_super_admin_mode() and owner['group_id'] != session.get('group_id')):
+        flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))
 
     retired_by = session['user_id']
@@ -565,13 +607,19 @@ def unretire_line(line_id):
 def new_trap(line_id):
     """Add a new trap to a line."""
     with db.get_cursor() as cursor:
-        cursor.execute("SELECT line_id, name, is_retired FROM lines WHERE line_id = %s", (line_id,))
+        cursor.execute("SELECT line_id, name, is_retired, group_id FROM lines WHERE line_id = %s", (line_id,))
         line = cursor.fetchone()
 
         if not line:
             flash('Trap line not found', 'danger')
             return redirect(url_for('lines_index'))
-            
+
+        # Group ownership gate — Coordinators can only add traps to lines
+        # in their active group; Super Admin in platform-wide mode bypasses.
+        if not is_super_admin_mode() and line['group_id'] != session.get('group_id'):
+            flash('Line not found in your group.', 'danger')
+            return redirect(url_for('lines_index'))
+
         if line['is_retired']:
             flash('Cannot add traps to a retired line', 'danger')
             return redirect(url_for('line_detail', line_id=line_id))
@@ -636,9 +684,11 @@ def edit_trap(line_id, trap_id):
     with db.get_cursor() as cursor:
         cursor.execute(
             """
-            SELECT trap_id, line_id, code, trap_type, latitude, longitude, is_retired
-            FROM traps
-            WHERE trap_id = %s
+            SELECT t.trap_id, t.line_id, t.code, t.trap_type, t.latitude, t.longitude, t.is_retired,
+                   l.group_id
+            FROM traps t
+            JOIN lines l ON l.line_id = t.line_id
+            WHERE t.trap_id = %s
             """,
             (trap_id,)
         )
@@ -646,6 +696,11 @@ def edit_trap(line_id, trap_id):
         if not trap:
             flash('Trap not found.', 'danger')
             return redirect(url_for('lines_index'))
+
+    # Group ownership gate.
+    if not is_super_admin_mode() and trap['group_id'] != session.get('group_id'):
+        flash('Trap not found in your group.', 'danger')
+        return redirect(url_for('lines_index'))
 
     if request.method == 'POST':
         code = request.form.get('trap_code', '').strip()
@@ -708,6 +763,23 @@ def retire_trap(line_id):
 
     if delete_confirm != 'delete':
         flash('You must type "delete" to confirm retiring the trap.', 'danger')
+        return redirect(url_for('line_detail', line_id=line_id))
+
+    # Group ownership gate — Coordinators can only retire traps in their
+    # active group; Super Admin in platform-wide mode bypasses.
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT l.group_id
+            FROM traps t
+            JOIN lines l ON l.line_id = t.line_id
+            WHERE t.trap_id = %s
+            """,
+            (trap_id,)
+        )
+        owner = cursor.fetchone()
+    if not owner or (not is_super_admin_mode() and owner['group_id'] != session.get('group_id')):
+        flash('Trap not found in your group.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
     retired_by = session['user_id']
@@ -966,8 +1038,36 @@ def activate_bait_station(line_id, station_id):
 @role_required('Super Admin', 'Group Coordinator')
 def assign_operators(line_id):
     """Assign or reassign operators to a trap line."""
+    # Group ownership gate — Coordinator can only assign on lines in their
+    # active group; Super Admin in platform-wide mode bypasses.
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT line_id, name, group_id FROM lines WHERE line_id = %s', (line_id,))
+        line_row = cursor.fetchone()
+    if not line_row or (not is_super_admin_mode() and line_row['group_id'] != session.get('group_id')):
+        flash('Line not found in your group.', 'danger')
+        return redirect(url_for('lines_index'))
+
+    line_group_id = line_row['group_id']
+
     if request.method == 'POST':
         operator_ids = request.form.getlist('operator_ids')
+
+        # Validate every submitted operator is an Operator in this line's
+        # group — protects against POSTing arbitrary user_ids.
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT user_id FROM group_memberships
+                WHERE group_id = %s AND role = 'Operator'
+                """,
+                (line_group_id,)
+            )
+            valid_operator_ids = {row['user_id'] for row in cursor.fetchall()}
+
+        clean_operator_ids = [
+            int(oid) for oid in operator_ids
+            if oid.isdigit() and int(oid) in valid_operator_ids
+        ]
 
         with db.get_cursor() as cursor:
             # Delete ALL current assignments for this line
@@ -977,7 +1077,7 @@ def assign_operators(line_id):
             """, (line_id,))
 
             # Re-insert only the checked ones
-            for operator_id in operator_ids:
+            for operator_id in clean_operator_ids:
                 cursor.execute("""
                     INSERT INTO operator_lines (operator_id, line_id)
                     VALUES (%s, %s)
@@ -985,7 +1085,7 @@ def assign_operators(line_id):
 
         flash('Operators updated.', 'success')
         return redirect(url_for('line_detail', line_id=line_id))
-    
+
     line = None
     all_operators = []
     assigned_ids = []
@@ -1001,14 +1101,17 @@ def assign_operators(line_id):
         )
         line = cursor.fetchone()
 
+        # Only list Operators who belong to the line's group — assigning
+        # an Operator from another group would never be valid.
         cursor.execute(
             """
             SELECT u.user_id, u.username, u.first_name, u.last_name
             FROM users u
             JOIN group_memberships gm ON gm.user_id = u.user_id
-            WHERE gm.role = 'Operator'
+            WHERE gm.role = 'Operator' AND gm.group_id = %s
             ORDER BY u.last_name ASC, u.first_name ASC
-            """
+            """,
+            (line_group_id,)
         )
         all_operators = cursor.fetchall()
 

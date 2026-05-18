@@ -5,7 +5,12 @@ from app import app, db
 from app.utils import role_required, is_super_admin_mode
 
 def get_catch_records(recorded_by_id=None):
-    """Query catch records with optional filter by recorded_by_id."""
+    """Query catch records with optional filter by recorded_by_id.
+
+    Scopes to the active group unless the caller is Super Admin acting
+    platform-wide. Without this every logged-in user could see every
+    group's catches.
+    """
     filters = {
         'trap_code': request.args.get('trap_code'),
         'line_id': request.args.get('line_id'),
@@ -20,6 +25,9 @@ def get_catch_records(recorded_by_id=None):
     where_clauses = []
     query_params = []
 
+    if not is_super_admin_mode():
+        where_clauses.append("l.group_id = %s")
+        query_params.append(session.get('group_id'))
     if recorded_by_id:
         where_clauses.append("tc.recorded_by_id = %s")
         query_params.append(recorded_by_id)
@@ -70,18 +78,39 @@ def get_catch_records(recorded_by_id=None):
         """, tuple(query_params))
         records = cursor.fetchall()
 
-        cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
-        trap_codes = [r['code'] for r in cursor.fetchall()]
-        
-        cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
-        lines = cursor.fetchall()
-        
+        # Scope filter dropdowns the same way as the record query.
+        if is_super_admin_mode():
+            cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
+            trap_codes = [r['code'] for r in cursor.fetchall()]
+
+            cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
+            lines = cursor.fetchall()
+        else:
+            active_group = session.get('group_id')
+            cursor.execute(
+                """
+                SELECT DISTINCT t.code
+                FROM traps t
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE l.group_id = %s
+                ORDER BY t.code
+                """,
+                (active_group,)
+            )
+            trap_codes = [r['code'] for r in cursor.fetchall()]
+
+            cursor.execute(
+                "SELECT line_id, name FROM lines WHERE group_id = %s ORDER BY name",
+                (active_group,)
+            )
+            lines = cursor.fetchall()
+
         cursor.execute("SELECT name FROM species ORDER BY name")
         species = [r['name'] for r in cursor.fetchall()]
-        
+
         cursor.execute("SELECT name FROM trap_statuses ORDER BY name")
         statuses = [r['name'] for r in cursor.fetchall()]
-        
+
         cursor.execute("SELECT unnest(enum_range(NULL::trap_condition_type)) AS condition")
         conditions = [r['condition'] for r in cursor.fetchall()]
 
@@ -102,25 +131,43 @@ def catch_records():
     """Browse and filter all trap catch records."""
     records, filters, filter_data = get_catch_records()
 
+    trap_map = None
     if session.get('group_role') in ('Super Admin', 'Group Coordinator'):
-        # Get trap_id to is_retired mapping for all traps to determine if edit action should be shown
+        # Trap state lookup for the inline edit-action gate. Scope to the
+        # active group unless Super Admin is in platform-wide mode.
         with db.get_cursor() as cursor:
-            cursor.execute("SELECT trap_id, is_retired FROM traps")
+            if is_super_admin_mode():
+                cursor.execute("SELECT trap_id, is_retired FROM traps")
+            else:
+                cursor.execute(
+                    """
+                    SELECT t.trap_id, t.is_retired
+                    FROM traps t
+                    JOIN lines l ON l.line_id = t.line_id
+                    WHERE l.group_id = %s
+                    """,
+                    (session.get('group_id'),)
+                )
             traps = cursor.fetchall()
 
         trap_map = {t["trap_id"]: t for t in traps}
 
     return render_template(
-        'observer/catch_records.html', 
-        records=records, 
-        selected_filters=filters, 
+        'observer/catch_records.html',
+        records=records,
+        selected_filters=filters,
         filter_data=filter_data,
-        trap_map=trap_map if session.get('group_role') in ('Super Admin', 'Group Coordinator') else None
+        trap_map=trap_map
     )
 
 
 def get_observations(operator_id=None):
-    """Query observations with optional filter by operator_id."""
+    """Query observations with optional filter by operator_id.
+
+    Scopes to the active group unless the caller is Super Admin acting
+    platform-wide. Without this every logged-in user could see every
+    group's observations.
+    """
     filters = {
         'observation_type': request.args.get('observation_type'),
         'line_id': request.args.get('line_id'),
@@ -133,6 +180,9 @@ def get_observations(operator_id=None):
     where_clauses = []
     query_params = []
 
+    if not is_super_admin_mode():
+        where_clauses.append("l.group_id = %s")
+        query_params.append(session.get('group_id'))
     if operator_id:
         where_clauses.append("o.operator_id = %s")
         query_params.append(operator_id)
@@ -177,12 +227,33 @@ def get_observations(operator_id=None):
         """, tuple(query_params))
         records = cursor.fetchall()
 
-        cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
-        trap_codes = [r['code'] for r in cursor.fetchall()]
-        
-        cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
-        lines = cursor.fetchall()
-        
+        # Scope filter dropdowns the same way as the record query.
+        if is_super_admin_mode():
+            cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
+            trap_codes = [r['code'] for r in cursor.fetchall()]
+
+            cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
+            lines = cursor.fetchall()
+        else:
+            active_group = session.get('group_id')
+            cursor.execute(
+                """
+                SELECT DISTINCT t.code
+                FROM traps t
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE l.group_id = %s
+                ORDER BY t.code
+                """,
+                (active_group,)
+            )
+            trap_codes = [r['code'] for r in cursor.fetchall()]
+
+            cursor.execute(
+                "SELECT line_id, name FROM lines WHERE group_id = %s ORDER BY name",
+                (active_group,)
+            )
+            lines = cursor.fetchall()
+
         cursor.execute("SELECT unnest(enum_range(NULL::observation_type_enum)) AS obs_type")
         observation_types = [r['obs_type'] for r in cursor.fetchall()]
 

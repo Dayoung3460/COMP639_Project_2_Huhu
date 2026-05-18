@@ -21,8 +21,14 @@ linz_api_key = os.getenv('LINZ_API_KEY', '')
 @app.route('/operator/dashboard')
 @role_required('Operator')
 def operator_dashboard():
-    """Operator dashboard — assigned lines, stats, and recent catches."""
+    """Operator dashboard — assigned lines, stats, and recent catches.
+
+    Scoped to the operator's active group so that an operator who
+    works in multiple groups doesn't see lines, traps, or catches
+    from the inactive group bleeding into the dashboard.
+    """
     user_id = session.get('user_id')
+    group_id = session.get('group_id')
     assigned_lines = []
     stats = {
         'total_catches': 0,
@@ -31,49 +37,61 @@ def operator_dashboard():
         'lines_count':   0,
     }
     recent_records = []
- 
+
     try:
         with db.get_cursor() as cursor:
- 
-            # Assigned lines with trap count
+
+            # Assigned lines with trap count — active group only
             cursor.execute('''
                 SELECT l.line_id, l.name, l.type,
                        COUNT(t.trap_id) FILTER (WHERE t.is_retired = FALSE) AS trap_count
                 FROM operator_lines ol
                 JOIN lines l ON ol.line_id = l.line_id
                 LEFT JOIN traps t ON t.line_id = l.line_id
-                WHERE ol.operator_id = %s AND l.is_retired = FALSE
+                WHERE ol.operator_id = %s AND l.is_retired = FALSE AND l.group_id = %s
                 GROUP BY l.line_id, l.name, l.type
                 ORDER BY l.name
-            ''', (user_id,))
+            ''', (user_id, group_id))
             assigned_lines = cursor.fetchall()
             stats['lines_count'] = len(assigned_lines)
- 
-            # Total catches by this operator
+
+            # Total catches by this operator (within active group)
             cursor.execute('''
-                SELECT COUNT(*) AS cnt FROM trap_catches
-                WHERE recorded_by_id = %s AND species_caught != 'None'
-            ''', (user_id,))
+                SELECT COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON t.trap_id = tc.trap_id
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE tc.recorded_by_id = %s AND tc.species_caught != 'None'
+                  AND l.group_id = %s
+            ''', (user_id, group_id))
             stats['total_catches'] = cursor.fetchone()['cnt']
- 
-            # Catches this month
+
+            # Catches this month (active group)
             cursor.execute('''
-                SELECT COUNT(*) AS cnt FROM trap_catches
-                WHERE recorded_by_id = %s
-                AND species_caught != 'None'
-                AND date >= NOW() - INTERVAL '30 days'
-            ''', (user_id,))
+                SELECT COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON t.trap_id = tc.trap_id
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE tc.recorded_by_id = %s
+                  AND tc.species_caught != 'None'
+                  AND tc.date >= NOW() - INTERVAL '30 days'
+                  AND l.group_id = %s
+            ''', (user_id, group_id))
             stats['catches_month'] = cursor.fetchone()['cnt']
- 
-            # Total records this month
+
+            # Total records this month (active group)
             cursor.execute('''
-                SELECT COUNT(*) AS cnt FROM trap_catches
-                WHERE recorded_by_id = %s
-                AND date >= NOW() - INTERVAL '30 days'
-            ''', (user_id,))
+                SELECT COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON t.trap_id = tc.trap_id
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE tc.recorded_by_id = %s
+                  AND tc.date >= NOW() - INTERVAL '30 days'
+                  AND l.group_id = %s
+            ''', (user_id, group_id))
             stats['total_records'] = cursor.fetchone()['cnt']
- 
-            # Recent records (last 5)
+
+            # Recent records (last 5) — active group
             cursor.execute('''
                 SELECT tc.catch_id, tc.date, tc.species_caught,
                        tc.status, tc.strikes,
@@ -81,10 +99,10 @@ def operator_dashboard():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE tc.recorded_by_id = %s
+                WHERE tc.recorded_by_id = %s AND l.group_id = %s
                 ORDER BY tc.date DESC
                 LIMIT 5
-            ''', (user_id,))
+            ''', (user_id, group_id))
             recent_records = cursor.fetchall()
  
     except Exception as e:
@@ -101,19 +119,19 @@ def operator_dashboard():
 def add_catch():
     """Add a new trap catch record for an assigned line."""
     if request.method == 'POST':
-        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'])
+        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'], group_id=session.get('group_id'))
 
         # Additional check for lookup tables, in case the data inconsistency of database values
         lookup_valid_msg = validate_lookup_table_values(db, request.form)
 
         if lookup_valid_msg:
             flash(lookup_valid_msg, 'error')
-            lines = fetch_operator_lines(db, session['user_id'])
+            lines = fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
             return render_template('operator/add_catch.html', data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
             flash('Please fix the errors below before submitting.', 'error')
-            lines = fetch_operator_lines(db, session['user_id'])
+            lines = fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
             return render_template('operator/add_catch.html', errors=errors, data=request.form, lines=lines, lookup=lookup)
         
         insert_catch_record(db, request.form, session['user_id'])
@@ -122,7 +140,7 @@ def add_catch():
 
     else:
         lookup = fetch_lookup_data(db)
-        lines = fetch_operator_lines(db, session['user_id'])
+        lines = fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
         
         # Capture selected line from URL param, validate it belongs to operator
         selected_line_id = request.args.get('line_id', '')
@@ -142,31 +160,57 @@ def add_catch():
 @app.route('/operator/edit-catch/<int:catch_id>', methods=['GET', 'POST'])
 @role_required('Operator', 'Super Admin', 'Group Coordinator')
 def edit_catch(catch_id):
-    """Edit an existing catch record (own records only)."""
+    """Edit an existing catch record (own records only for Operators)."""
+    # Fetch record + owning group/line so we can authorize before doing
+    # anything else. Trusting the form's recorded_by_id is NOT safe — a
+    # malicious operator could POST their own user_id and edit someone
+    # else's record. The DB row is the only source of truth here.
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT tc.catch_id, tc.recorded_by_id, tc.trap_id,
+                   t.line_id, l.group_id
+            FROM trap_catches tc
+            JOIN traps t ON t.trap_id = tc.trap_id
+            JOIN lines l ON l.line_id = t.line_id
+            WHERE tc.catch_id = %s
+            """,
+            (catch_id,)
+        )
+        record = cursor.fetchone()
+
+    if not record:
+        flash('Catch record not found.', 'danger')
+        return redirect(url_for('catch_records'))
+
+    role = session.get('group_role')
+    user_id = session['user_id']
+    super_admin = is_super_admin_mode()
+
+    # Cross-group gate. Coordinators must be in the catch's group;
+    # Operators must be in the catch's group AND have recorded it.
+    if not super_admin and record['group_id'] != session.get('group_id'):
+        flash('Catch record not found in your group.', 'danger')
+        return redirect(url_for('catch_records'))
+
+    if role == 'Operator' and record['recorded_by_id'] != user_id:
+        flash('You can only edit your own catch records.', 'danger')
+        return redirect(url_for('my_records'))
+
     if request.method == 'POST':
-        # Security check: ensure the recorded_by_id in form matches session user_id to prevent tampering
-        if session.get('group_role') == 'Operator' and str(request.form.get('recorded_by_id')) != str(session['user_id']):
-            flash("You can only edit your own catch records.", 'error')
-            return redirect(url_for('my_records'))
-
-        # Fetch record from DB early — needed for template re-renders on validation error
-        with db.get_cursor() as cursor:
-            cursor.execute("SELECT catch_id, recorded_by_id FROM trap_catches WHERE catch_id = %s", (catch_id,))
-            record = cursor.fetchone()
-
-        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'], role=session.get('group_role'))
+        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'], role=session.get('group_role'), group_id=session.get('group_id'))
 
         # Additional check for lookup tables, in case the data inconsistency of database values
         lookup_valid_msg = validate_lookup_table_values(db, request.form)
 
         if lookup_valid_msg:
             flash(lookup_valid_msg, 'error')
-            lines = fetch_all_lines(db) if session.get('group_role') in ('Super Admin', 'Group Coordinator') else fetch_operator_lines(db, session['user_id'])
+            lines = fetch_all_lines(db) if session.get('group_role') in ('Super Admin', 'Group Coordinator') else fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
             return render_template('operator/edit_catch.html', record=record, catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
             flash('Please fix the errors below before submitting.', 'error')
-            lines = fetch_all_lines(db) if session.get('group_role') in ('Super Admin', 'Group Coordinator') else fetch_operator_lines(db, session['user_id'])
+            lines = fetch_all_lines(db) if session.get('group_role') in ('Super Admin', 'Group Coordinator') else fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
             return render_template('operator/edit_catch.html', record=record, catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         # Update the catch record in the database
@@ -175,7 +219,7 @@ def edit_catch(catch_id):
         return redirect(url_for('my_records') if session.get('group_role') == 'Operator' else url_for('catch_records'))
 
 
-    lines = fetch_operator_lines(db, session['user_id'])
+    lines = fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
 
     if session.get('group_role') in ('Super Admin', 'Group Coordinator'):
         lines = fetch_all_lines(db)
@@ -219,19 +263,42 @@ def edit_catch(catch_id):
 @app.route('/operator/my-records')
 @role_required('Operator')
 def my_records():
-    """View all catch records created by the logged-in operator."""
+    """View all catch records created by the logged-in operator.
+
+    Scoped to the operator's active group — multi-group operators
+    see only the current group's records here, matching the rest
+    of the operator surface.
+    """
     from app.general import get_catch_records
     records, filters, filter_data = get_catch_records(recorded_by_id=session.get('user_id'))
 
-    # Get trap_id to is_retired mapping for all traps to determine if edit action should be shown
+    user_id = session.get('user_id')
+    group_id = session.get('group_id')
+
+    # Trap state lookup — scoped to the active group's traps.
     with db.get_cursor() as cursor:
-        cursor.execute("SELECT trap_id, is_retired FROM traps")
+        cursor.execute(
+            """
+            SELECT t.trap_id, t.is_retired
+            FROM traps t
+            JOIN lines l ON l.line_id = t.line_id
+            WHERE l.group_id = %s
+            """,
+            (group_id,)
+        )
         traps = cursor.fetchall()
 
-    # Get line_ids that belong to this operator to determine if they should be shown in line filter dropdown
-    user_id = session.get('user_id')
+    # Lines assigned to this operator WITHIN their active group.
     with db.get_cursor() as cursor:
-        cursor.execute("SELECT line_id FROM operator_lines WHERE operator_id = %s", (user_id,))
+        cursor.execute(
+            """
+            SELECT ol.line_id
+            FROM operator_lines ol
+            JOIN lines l ON l.line_id = ol.line_id
+            WHERE ol.operator_id = %s AND l.group_id = %s
+            """,
+            (user_id, group_id)
+        )
         line_ids_for_operator = [row['line_id'] for row in cursor.fetchall()]
 
     trap_map = {t["trap_id"]: t for t in traps}
@@ -252,10 +319,10 @@ def my_records():
 def add_observation():
     """Record an incidental observation."""
     if request.method == 'POST':
-        pass_check, errors, lookup = validate_all_observation_fields(request.form, db, session['user_id'])
+        pass_check, errors, lookup = validate_all_observation_fields(request.form, db, session['user_id'], group_id=session.get('group_id'))
         
         if not pass_check:
-            lines = fetch_operator_lines(db, session['user_id'])
+            lines = fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
             return render_template('operator/add_observation.html', errors=errors, data=request.form, lines=lines, lookup=lookup, linz_api_key=linz_api_key,
                                    lat_range=LINCOLN_NZ_LAT_RANGE, lon_range=LINCOLN_NZ_LON_RANGE, map_center=LINCOLN_NZ_CENTER)
         
@@ -264,7 +331,7 @@ def add_observation():
         return redirect(url_for('operator_dashboard'))
 
     else:
-        lines = fetch_operator_lines(db, session['user_id'])
+        lines = fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
         lookup = fetch_lookup_data(db)
         
         # Capture selected line from URL param, validate it belongs to operator
@@ -394,6 +461,30 @@ def edit_bait_record(record_id):
 
     if request.method == 'POST':
         errors = _validate_bait_record(request.form)
+
+        # Authorise the station_id the user is submitting. Without this
+        # an Operator could swap to a station on a line they don't
+        # operate, or a Coordinator could write into another group.
+        submitted_station_id = request.form.get('station_id', type=int)
+        if submitted_station_id:
+            if role == 'Operator':
+                allowed_station_ids = set(fetch_operator_bait_station_ids(db, user_id, group_id))
+                if submitted_station_id not in allowed_station_ids:
+                    errors.append('You are not assigned to that bait station.')
+            elif not super_admin:
+                with db.get_cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT 1
+                        FROM bait_stations bs
+                        JOIN lines l ON l.line_id = bs.line_id
+                        WHERE bs.station_id = %s AND l.group_id = %s
+                        """,
+                        (submitted_station_id, group_id)
+                    )
+                    if not cursor.fetchone():
+                        errors.append('That bait station is not in your group.')
+
         if errors:
             for e in errors:
                 flash(e, 'danger')

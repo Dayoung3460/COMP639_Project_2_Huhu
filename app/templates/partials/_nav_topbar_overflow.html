@@ -30,12 +30,12 @@
     <a role="menuitem" tabindex="-1"
        href="{{ url_for('admin_users') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
-      <i class="bi bi-people" aria-hidden="true"></i> User Management
+      <i class="bi bi-people" aria-hidden="true"></i> Users
     </a>
     <a role="menuitem" tabindex="-1"
        href="{{ url_for('admin_groups') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint in ['admin_groups','admin_group_detail'] }}">
-      <i class="bi bi-collection" aria-hidden="true"></i> Manage Groups
+      <i class="bi bi-collection" aria-hidden="true"></i> Groups
     </a>
     <a role="menuitem" tabindex="-1"
        href="{{ url_for('admin_group_applications') }}"
@@ -68,16 +68,7 @@
     </a>
   {% endif %}
 
-  {# New Line — Super Admin and Group Coordinator. Kept here above
-     the Appearance group because it's an "add" action, not chrome
-     configuration. #}
-  {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
-    <a role="menuitem" tabindex="-1"
-       href="{{ url_for('new_line') }}"
-       class="topbar-overflow-item {{ 'active' if request.endpoint == 'new_line' }}">
-      <i class="bi bi-plus-circle-dotted" aria-hidden="true"></i> New Line
-    </a>
-  {% endif %}
+  {# New Line lives on the Lines page itself — no separate menu entry. #}
 
   {# 2026-05-15 Appearance group — Themes (gallery), Customise
      (editor), and Group Identity (cover/profile assets). Same role

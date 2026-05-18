@@ -67,8 +67,13 @@ def validate_bait_details(bait_type, bait_details):
         return "Bait details are required when bait type is 'Other'."
     return ""
 
-def validate_all_catch_record_fields(data, db, operator_id, role='Operator'):
-    """Validate catch record fields. Fetches lookup data from database internally."""
+def validate_all_catch_record_fields(data, db, operator_id, role='Operator', group_id=None):
+    """Validate catch record fields. Fetches lookup data from database internally.
+
+    `group_id` scopes Operator validation to their currently active
+    group — so an Operator who's also an Operator in another group
+    can't record against traps from the inactive group.
+    """
     pass_check = True
 
     # Fetch general lookup data (no user context needed)
@@ -80,7 +85,10 @@ def validate_all_catch_record_fields(data, db, operator_id, role='Operator'):
         lookup['valid_species']
     )
 
-    valid_trap_ids = fetch_all_trap_ids(db) if role in ('Super Admin', 'Group Coordinator') else fetch_operator_trap_ids(db, operator_id)
+    if role in ('Super Admin', 'Group Coordinator'):
+        valid_trap_ids = fetch_all_trap_ids(db)
+    else:
+        valid_trap_ids = fetch_operator_trap_ids(db, operator_id, group_id=group_id)
     errors = {
         'trap_id': validate_trap_id(data.get('trap_id'), valid_trap_ids),
         'date': validate_date(data.get('date', '')),
@@ -161,23 +169,27 @@ def validate_optional_trap_id(trap_id, valid_trap_ids):
         return "Invalid trap selected or you do not have permission for this trap."
     return ""
 
-def validate_all_observation_fields(data, db, operator_id):
-    """Validate observation fields. Fetches lookup data from database internally."""
+def validate_all_observation_fields(data, db, operator_id, group_id=None):
+    """Validate observation fields. Fetches lookup data from database internally.
+
+    `group_id` scopes the operator's permitted line and trap ids to
+    their currently active group.
+    """
     pass_check = True
-    
+
     # Fetch lookup data for observation types
     lookup = fetch_lookup_data(db)
-    
+
     lat_error, lon_error = validate_coordinates(data.get('latitude'), data.get('longitude'))
-    
+
     errors = {
         'date': validate_date(data.get('date', '')),
         'observation_type': validate_observation_type(data.get('observation_type', ''), lookup['valid_observation_types']),
         'notes': "",  # Notes is optional, no validation needed
         'latitude': lat_error,
         'longitude': lon_error,
-        'line_id': validate_line_id(data.get('line_id'), fetch_operator_line_ids(db, operator_id)),
-        'trap_id': validate_optional_trap_id(data.get('trap_id'), fetch_operator_trap_ids(db, operator_id))
+        'line_id': validate_line_id(data.get('line_id'), fetch_operator_line_ids(db, operator_id, group_id=group_id)),
+        'trap_id': validate_optional_trap_id(data.get('trap_id'), fetch_operator_trap_ids(db, operator_id, group_id=group_id))
     }
 
     # Check if any errors exist
