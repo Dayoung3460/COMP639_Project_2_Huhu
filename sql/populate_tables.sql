@@ -437,7 +437,9 @@ VALUES
     'Keen to get involved with organised trapping on the peninsula.',
     NOW() - INTERVAL '1 day'
 )
-ON CONFLICT (user_id, group_id) DO NOTHING;
+-- The unique index is partial (WHERE status = 'pending'), so the
+-- ON CONFLICT target must repeat that predicate.
+ON CONFLICT (user_id, group_id) WHERE status = 'pending' DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
 -- GROUP APPLICATIONS
