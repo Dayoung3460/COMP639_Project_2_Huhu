@@ -498,7 +498,7 @@ ALTER TABLE "public"."group_join_requests" ADD FOREIGN KEY ("group_id") REFERENC
 
 
 -- Indices
-CREATE UNIQUE INDEX group_join_requests_user_id_group_id_key ON public.group_join_requests USING btree (user_id, group_id);
+CREATE UNIQUE INDEX group_join_requests_one_pending_per_user_group ON public.group_join_requests (user_id, group_id) WHERE status = 'pending';
 ALTER TABLE "public"."user_notifications" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
 ALTER TABLE "public"."group_applications" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
 ALTER TABLE "public"."group_applications" ADD FOREIGN KEY ("decided_by") REFERENCES "public"."users"("user_id");
