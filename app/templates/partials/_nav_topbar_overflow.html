@@ -141,7 +141,7 @@
     <i class="bi bi-inbox-fill" aria-hidden="true"></i> All Requests
   </a>
   {% endif %}
-  {% if session.get('group_role') != 'Support Technician' %}
+  {% if session.get('group_role') not in ('Support Technician', 'Super Admin') %}
   <a role="menuitem" tabindex="-1"
      href="{{ url_for('helpdesk_submit') }}"
      class="topbar-overflow-item {{ 'active' if request.endpoint == 'helpdesk_submit' }}">
