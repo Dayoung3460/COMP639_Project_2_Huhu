@@ -136,7 +136,7 @@
     </a>
   {% endif %}
 
-  {# Support — all roles; queue links shown only for staff. #}
+  {# Support — all roles; queue + user search shown only for staff. #}
   <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
   <div class="topbar-overflow-label" role="presentation">Support</div>
   {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
@@ -144,6 +144,11 @@
      href="{{ url_for('helpdesk_queue') }}"
      class="topbar-overflow-item {{ 'active' if request.endpoint in ('helpdesk_queue', 'helpdesk_ticket') }}">
     <i class="bi bi-inbox-fill" aria-hidden="true"></i> All Requests
+  </a>
+  <a role="menuitem" tabindex="-1"
+     href="{{ url_for('helpdesk_user_search') }}"
+     class="topbar-overflow-item {{ 'active' if request.endpoint in ('helpdesk_user_search', 'helpdesk_user_profile') }}">
+    <i class="bi bi-search" aria-hidden="true"></i> User Search
   </a>
   {% endif %}
   {% if session.get('group_role') not in ('Support Technician', 'Super Admin') %}

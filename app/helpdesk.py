@@ -706,3 +706,146 @@ def helpdesk_drop(ticket_id):
     logger.info('Staff %d dropped ticket %d back to queue', user_id, ticket_id)
     flash('Request returned to the queue.', 'success')
     return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+
+
+# ── User Search (P2-60) ──────────────────────────────────────────────────────
+
+@app.route('/support/user-search', methods=['GET', 'POST'])
+@role_required('Super Admin', 'Support Technician')
+def helpdesk_user_search():
+    """Search for users across all groups — Support Technicians and Super Admins only."""
+    user_id = session['user_id']
+    query   = request.form.get('q', request.args.get('q', '')).strip()
+    users   = []
+
+    if query:
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT u.user_id,
+                       u.username,
+                       u.first_name || ' ' || u.last_name AS full_name,
+                       u.email,
+                       u.account_status,
+                       u.date_joined,
+                       u.last_login,
+                       COALESCE(
+                           STRING_AGG(g.name || ' (' || gm.role || ')', ', ' ORDER BY g.name),
+                           '—'
+                       ) AS memberships
+                FROM   users u
+                LEFT JOIN group_memberships gm ON gm.user_id = u.user_id
+                LEFT JOIN groups g             ON g.group_id = gm.group_id
+                WHERE  (u.first_name || ' ' || u.last_name ILIKE %s
+                        OR u.email    ILIKE %s
+                        OR u.username ILIKE %s)
+                  AND  u.is_super_admin = FALSE
+                GROUP BY u.user_id, u.username, u.first_name, u.last_name,
+                         u.email, u.account_status, u.date_joined, u.last_login
+                ORDER BY u.last_name, u.first_name
+                LIMIT 50
+                """,
+                (f'%{query}%', f'%{query}%', f'%{query}%')
+            )
+            users = cursor.fetchall()
+
+        logger.info('User %d searched users with query=%r — %d results', user_id, query, len(users))
+
+    return render_template('helpdesk/user_search.html', query=query, users=users)
+
+
+@app.route('/support/user-search/<int:target_user_id>')
+@role_required('Super Admin', 'Support Technician')
+def helpdesk_user_profile(target_user_id):
+    """Read-only user profile view for support staff — no role-change actions."""
+    viewer_id = session['user_id']
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT user_id, username, first_name, last_name, email, phone,
+                   account_status, date_joined, last_login, notes
+            FROM   users
+            WHERE  user_id = %s AND is_super_admin = FALSE
+            """,
+            (target_user_id,)
+        )
+        user = cursor.fetchone()
+
+    if not user:
+        abort(404)
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT gm.role, g.name AS group_name, g.is_active AS group_active,
+                   gm.joined_at
+            FROM   group_memberships gm
+            JOIN   groups g ON g.group_id = gm.group_id
+            WHERE  gm.user_id = %s
+            ORDER BY g.name
+            """,
+            (target_user_id,)
+        )
+        memberships = cursor.fetchall()
+
+    # Recent catch records
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT tc.catch_id, tc.date, tc.species_caught,
+                   t.code AS trap_code, l.name AS line_name
+            FROM   trap_catches tc
+            JOIN   traps t ON t.trap_id = tc.trap_id
+            JOIN   lines l ON l.line_id = t.line_id
+            WHERE  tc.recorded_by_id = %s
+            ORDER BY tc.date DESC
+            LIMIT  10
+            """,
+            (target_user_id,)
+        )
+        recent_catches = cursor.fetchall()
+
+    # Recent bait station records
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT bsr.record_id, bsr.date, bsr.target_species,
+                   bs.code AS station_code, l.name AS line_name
+            FROM   bait_station_records bsr
+            JOIN   bait_stations bs ON bs.station_id = bsr.station_id
+            JOIN   lines l          ON l.line_id      = bs.line_id
+            WHERE  bsr.recorded_by_id = %s
+            ORDER BY bsr.date DESC
+            LIMIT  10
+            """,
+            (target_user_id,)
+        )
+        recent_bait = cursor.fetchall()
+
+    # Recent observations
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT o.observation_id, o.date, o.observation_type,
+                   l.name AS line_name
+            FROM   incidental_observations o
+            LEFT JOIN lines l ON l.line_id = o.line_id
+            WHERE  o.operator_id = %s
+            ORDER BY o.date DESC
+            LIMIT  10
+            """,
+            (target_user_id,)
+        )
+        recent_observations = cursor.fetchall()
+
+    logger.info('User %d viewed profile of user %d', viewer_id, target_user_id)
+
+    return render_template(
+        'helpdesk/user_profile.html',
+        user=user,
+        memberships=memberships,
+        recent_catches=recent_catches,
+        recent_bait=recent_bait,
+        recent_observations=recent_observations,
+    )
