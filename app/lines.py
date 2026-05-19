@@ -1,8 +1,12 @@
+import logging
+import os
+
 from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
-from app.utils import role_required, LINE_COLOURS, is_super_admin_mode
+from app.utils import role_required, LINE_COLOURS, is_super_admin_mode, is_support_tech_mode
 from app.helpers.dbHelper import fetch_active_lookup
-import os
+
+logger = logging.getLogger(__name__)
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
 
@@ -15,13 +19,12 @@ def lines_index():
     if line_filter not in ('all', 'active', 'retired'):
         line_filter = 'all'
 
-    # Super Admin mode: drop the WHERE l.group_id filter so the page
-    # renders every group's lines/traps/stations on the map and list.
-    # Regular users stay scoped to their selected group.
-    super_admin = is_super_admin_mode()
+    # Super Admins and Support Technicians operate without group context —
+    # drop the WHERE l.group_id filter so they see data across every group.
+    bypass_group = is_super_admin_mode() or is_support_tech_mode()
     group_id = session.get('group_id')
-    group_clause = '' if super_admin else 'l.group_id = %s AND'
-    group_params = () if super_admin else (group_id,)
+    group_clause = '' if bypass_group else 'l.group_id = %s AND'
+    group_params = () if bypass_group else (group_id,)
 
     with db.get_cursor() as cursor:
         cursor.execute(
@@ -353,9 +356,13 @@ def line_detail(line_id):
         )
         line = cursor.fetchone()
 
-    if line and not is_super_admin_mode() and line['group_id'] != session.get('group_id'):
+    if line and not is_super_admin_mode() and not is_support_tech_mode() \
+            and line['group_id'] != session.get('group_id'):
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))
+
+    if line and is_support_tech_mode():
+        logger.info('Support Technician %d viewed line %d', session['user_id'], line_id)
 
     traps = []
     bait_stations = []
