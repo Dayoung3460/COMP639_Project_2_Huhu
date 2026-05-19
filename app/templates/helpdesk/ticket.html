@@ -138,34 +138,6 @@
     </div>
   </div>
 
-  {# ── Add reply form ────────────────────────────────────────── #}
-  {% if ticket.status != 'Resolved' %}
-  <div class="card mb-3">
-    <div class="card-header fw-semibold">
-      <i class="bi bi-reply me-2" aria-hidden="true"></i>Add a Comment
-    </div>
-    <div class="card-body">
-      <form method="POST" action="{{ url_for('helpdesk_ticket', ticket_id=ticket.ticket_id) }}" novalidate>
-        <div class="mb-3">
-          <label class="visually-hidden" for="replyBody">Your comment</label>
-          <textarea name="body" id="replyBody" rows="4"
-                    class="form-control"
-                    placeholder="Add an update, ask for more info, or note next steps…"
-                    required></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary btn-sm">
-          <i class="bi bi-send me-1" aria-hidden="true"></i>Send
-        </button>
-      </form>
-    </div>
-  </div>
-  {% else %}
-  <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
-    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-    This ticket is resolved.
-  </div>
-  {% endif %}
-
   {# ── Status history ────────────────────────────────────────── #}
   {% if status_history %}
   <div class="card mb-4">
