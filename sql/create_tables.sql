@@ -603,5 +603,6 @@ CREATE TABLE ticket_status_history (
     changed_by   INTEGER            REFERENCES users(user_id) ON DELETE SET NULL,
     old_status   ticket_status_enum NOT NULL,
     new_status   ticket_status_enum NOT NULL,
+    note         TEXT               DEFAULT NULL,
     changed_at   TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

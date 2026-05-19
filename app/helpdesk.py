@@ -16,6 +16,27 @@ SCREENSHOT_MAX_BYTES   = 5 * 1024 * 1024  # 5 MB
 TICKET_TYPES      = ('Help', 'Bug Report')
 TICKET_PRIORITIES = ('Low', 'Medium', 'High')
 TICKET_STATUSES   = ('New', 'Open', 'Stalled', 'Resolved')
+# Statuses the ticket owner can set — 'New' is auto-only, never manually re-set
+OWNER_STATUSES    = ('Open', 'Stalled', 'Resolved')
+
+
+def _change_status(ticket_id, old_status, new_status, changed_by, note=None):
+    """Update ticket status, log to history, return True if changed."""
+    if old_status == new_status:
+        return False
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE support_tickets SET status = %s, updated_at = CURRENT_TIMESTAMP '
+            'WHERE ticket_id = %s',
+            (new_status, ticket_id)
+        )
+        cursor.execute(
+            'INSERT INTO ticket_status_history '
+            '(ticket_id, old_status, new_status, changed_by, note) '
+            'VALUES (%s, %s, %s, %s, %s)',
+            (ticket_id, old_status, new_status, changed_by, note or None)
+        )
+    return True
 
 
 def _screenshot_dir(ticket_id):
@@ -428,7 +449,7 @@ def helpdesk_ticket(ticket_id):
     with db.get_cursor() as cursor:
         cursor.execute(
             """
-            SELECT tsh.old_status, tsh.new_status, tsh.changed_at,
+            SELECT tsh.old_status, tsh.new_status, tsh.changed_at, tsh.note,
                    u.first_name || ' ' || u.last_name AS changed_by_name
             FROM   ticket_status_history tsh
             LEFT JOIN users u ON u.user_id = tsh.changed_by
@@ -481,6 +502,9 @@ def helpdesk_ticket(ticket_id):
                     'UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE ticket_id = %s',
                     (ticket_id,)
                 )
+            # Auto-transition New → Open on first reply
+            if ticket['status'] == 'New':
+                _change_status(ticket_id, 'New', 'Open', user_id, note='Auto-opened on first staff reply')
             insert_notification(
                 db, ticket['submitted_by'],
                 f'Support staff replied to your request #{ticket_id}: "{ticket["title"]}"',
@@ -495,23 +519,13 @@ def helpdesk_ticket(ticket_id):
             if not can_act:
                 abort(403)
             new_status = request.form.get('new_status', '').strip()
-            if new_status not in TICKET_STATUSES:
+            note       = request.form.get('note', '').strip() or None
+            if new_status not in OWNER_STATUSES:
                 flash('Invalid status.', 'danger')
                 return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
-            if new_status == ticket['status']:
+            if not _change_status(ticket_id, ticket['status'], new_status, user_id, note=note):
                 flash('Status unchanged.', 'info')
                 return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
-            with db.get_cursor() as cursor:
-                cursor.execute(
-                    'UPDATE support_tickets SET status = %s, updated_at = CURRENT_TIMESTAMP '
-                    'WHERE ticket_id = %s',
-                    (new_status, ticket_id)
-                )
-                cursor.execute(
-                    'INSERT INTO ticket_status_history (ticket_id, old_status, new_status, changed_by) '
-                    'VALUES (%s, %s, %s, %s)',
-                    (ticket_id, ticket['status'], new_status, user_id)
-                )
             insert_notification(
                 db, ticket['submitted_by'],
                 f'Your request #{ticket_id} "{ticket["title"]}" status changed to {new_status}.',
@@ -534,7 +548,7 @@ def helpdesk_ticket(ticket_id):
                            can_reassign=can_reassign,
                            can_take=can_take,
                            can_act=can_act,
-                           statuses=TICKET_STATUSES)
+                           owner_statuses=OWNER_STATUSES)
 
 
 # ── Take ownership of an unassigned ticket ───────────────────────────────────
@@ -551,7 +565,7 @@ def helpdesk_take(ticket_id):
             UPDATE support_tickets
             SET    assigned_to = %s, updated_at = CURRENT_TIMESTAMP
             WHERE  ticket_id = %s AND assigned_to IS NULL
-            RETURNING submitted_by, title, group_id
+            RETURNING submitted_by, title, group_id, status
             """,
             (user_id, ticket_id)
         )
@@ -560,6 +574,10 @@ def helpdesk_take(ticket_id):
     if not row:
         flash('This request already has an owner.', 'warning')
         return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+
+    # Auto-transition New → Open when taken
+    if row['status'] == 'New':
+        _change_status(ticket_id, 'New', 'Open', user_id, note='Auto-opened when taken by staff')
 
     with db.get_cursor() as cursor:
         cursor.execute(

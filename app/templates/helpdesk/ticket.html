@@ -27,22 +27,23 @@
         <div class="col-sm-3">
           <div class="small text-muted mb-1">Status</div>
           {% set s_class = {'New': 'primary', 'Open': 'info', 'Stalled': 'warning', 'Resolved': 'success'} %}
+          <span class="badge fs-6 bg-{{ s_class.get(ticket.status, 'secondary') }}-subtle
+                                    text-{{ s_class.get(ticket.status, 'secondary') }}-emphasis px-3 py-2 mb-2 d-inline-block">
+            {{ ticket.status }}
+          </span>
           {% if can_act %}
             <form method="POST" action="{{ url_for('helpdesk_ticket', ticket_id=ticket.ticket_id) }}"
                   class="d-flex flex-column gap-1">
               <input type="hidden" name="action" value="status">
               <select name="new_status" class="form-select form-select-sm" aria-label="Change status">
-                {% for s in statuses %}
+                {% for s in owner_statuses %}
                   <option value="{{ s }}" {% if s == ticket.status %}selected{% endif %}>{{ s }}</option>
                 {% endfor %}
               </select>
-              <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+              <textarea name="note" class="form-control form-control-sm" rows="2"
+                        placeholder="Note (recommended for Stalled / Resolved)"></textarea>
+              <button type="submit" class="btn btn-outline-secondary btn-sm">Update status</button>
             </form>
-          {% else %}
-            <span class="badge fs-6 bg-{{ s_class.get(ticket.status, 'secondary') }}-subtle
-                                      text-{{ s_class.get(ticket.status, 'secondary') }}-emphasis px-3 py-2">
-              {{ ticket.status }}
-            </span>
           {% endif %}
         </div>
 
@@ -227,6 +228,9 @@
         <span class="badge bg-primary-subtle text-primary-emphasis">{{ h.new_status }}</span>
         {% if h.changed_by_name %}
           <span class="text-muted ms-2">by {{ h.changed_by_name }}</span>
+        {% endif %}
+        {% if h.note %}
+          <div class="text-muted fst-italic mt-1">{{ h.note }}</div>
         {% endif %}
       </li>
       {% endfor %}
