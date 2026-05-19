@@ -245,7 +245,8 @@ def helpdesk_view(ticket_id):
                     db,
                     row['assigned_to'],
                     f'New comment on support request #{ticket_id}: "{row["title"]}"',
-                    'info'
+                    'info',
+                    url=url_for('helpdesk_ticket', ticket_id=ticket_id)
                 )
 
             logger.info('User %d added reply to ticket %d', user_id, ticket_id)
@@ -503,7 +504,8 @@ def helpdesk_take(ticket_id):
     staff_name = staff['full_name'] if staff else 'Support staff'
 
     insert_notification(db, row['submitted_by'],
-        f'Your request #{ticket_id} "{row["title"]}" has been picked up by {staff_name}.', 'info')
+        f'Your request #{ticket_id} "{row["title"]}" has been picked up by {staff_name}.', 'info',
+        url=url_for('helpdesk_view', ticket_id=ticket_id))
 
     logger.info('Staff %d took ownership of ticket %d', user_id, ticket_id)
     flash('You are now the owner of this request.', 'success')
@@ -560,12 +562,13 @@ def helpdesk_assign(ticket_id):
 
     # Notify the new owner
     insert_notification(db, new_assignee_id,
-        f'You have been assigned support request #{ticket_id}: "{ticket["title"]}"', 'info')
+        f'You have been assigned support request #{ticket_id}: "{ticket["title"]}"', 'info',
+        url=url_for('helpdesk_ticket', ticket_id=ticket_id))
 
     # Notify submitter — no staff names exposed per AC
     insert_notification(db, ticket['submitted_by'],
         f'Your request #{ticket_id} "{ticket["title"]}" has been reassigned to another member of our support team.',
-        'info')
+        'info', url=url_for('helpdesk_view', ticket_id=ticket_id))
 
     logger.info('Staff %d reassigned ticket %d to user %d', user_id, ticket_id, new_assignee_id)
     flash(f'Request reassigned to {new_owner["full_name"]}.', 'success')
@@ -611,7 +614,7 @@ def helpdesk_drop(ticket_id):
 
     insert_notification(db, ticket['submitted_by'],
         f'Your request #{ticket_id} "{ticket["title"]}" is awaiting reassignment by our support team.',
-        'info')
+        'info', url=url_for('helpdesk_view', ticket_id=ticket_id))
 
     logger.info('Staff %d dropped ticket %d back to queue', user_id, ticket_id)
     flash('Request returned to the queue.', 'success')

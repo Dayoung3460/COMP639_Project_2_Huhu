@@ -8,30 +8,8 @@ import uuid
 
 
 def _flash_pending_notifications(user_id):
-    """Flash every active notification for the user then mark them inactive."""
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT notification_id, message, category FROM user_notifications '
-            'WHERE user_id = %s AND is_active = TRUE ORDER BY created_at',
-            (user_id,)
-        )
-        notifications = cursor.fetchall()
-    if notifications:
-        ids = [n['notification_id'] for n in notifications]
-
-        # This makes the Notification bell only work for Group Coordinators.
-        # So, the Group Coordinators can see the notifications only when they click the bell icon.
-        # Once they click, the notifications will be marked as inactive and won't show up again.
-        if session.get('group_role') != 'Group Coordinator':
-            with db.get_cursor() as cursor:
-                cursor.execute(
-                    'UPDATE user_notifications SET is_active = FALSE '
-                    'WHERE notification_id = ANY(%s) '
-                    'AND (group_id = %s OR group_id IS NULL)',
-                    (ids, session.get('group_id'))
-                )
-        for n in notifications:
-            flash(n['message'], n['category'])
+    """Replaced by the bell notification system — no longer flashes on login."""
+    pass
 
 
 def _is_quick_login_enabled():

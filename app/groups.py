@@ -286,7 +286,7 @@ def request_join_group():
 
 @app.route('/notifications/<int:notification_id>/dismiss')
 def notification_click(notification_id):
-    """Mark a notification inactive and redirect to the membership requests page."""
+    """Mark a notification inactive and redirect to its stored url."""
     user_id = session.get('user_id')
     if not user_id:
         abort(401)
@@ -294,11 +294,13 @@ def notification_click(notification_id):
     with db.get_cursor() as cursor:
         cursor.execute(
             'UPDATE user_notifications SET is_active = FALSE '
-            'WHERE notification_id = %s AND user_id = %s',
+            'WHERE notification_id = %s AND user_id = %s RETURNING url',
             (notification_id, user_id)
         )
+        row = cursor.fetchone()
 
-    return redirect(url_for('coordinator_requests'))
+    dest = row['url'] if row and row['url'] else url_for('index')
+    return redirect(dest)
 
 
 @app.route('/groups/<int:group_id>/enter')
