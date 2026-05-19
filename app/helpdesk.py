@@ -6,6 +6,7 @@ import os
 from flask import flash, redirect, render_template, request, session, url_for, abort
 from app import app, db
 from app.utils import role_required, sniff_image_kind
+from app.helpers.dbHelper import insert_notification
 
 logger = logging.getLogger(__name__)
 
@@ -232,6 +233,10 @@ def helpdesk_view(ticket_id):
                     'UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE ticket_id = %s',
                     (ticket_id,)
                 )
+            # Notify the assigned technician (AC: notifies request owner if assigned)
+            if ticket['assigned_to'] and ticket['assigned_to'] != user_id:
+                insert_notification(db, ticket['assigned_to'],
+                    f'New comment on ticket #{ticket_id}: "{ticket["title"]}"', 'info')
             logger.info('User %d added reply to ticket %d', user_id, ticket_id)
             flash('Reply added.', 'success')
         return redirect(url_for('helpdesk_view', ticket_id=ticket_id))
@@ -367,10 +372,10 @@ def helpdesk_queue():
 
 # ── Staff ticket detail (Super Admin + Support Technician) ───────────────────
 
-@app.route('/support/ticket/<int:ticket_id>', methods=['GET', 'POST'])
+@app.route('/support/ticket/<int:ticket_id>')
 @role_required('Super Admin', 'Support Technician')
 def helpdesk_ticket(ticket_id):
-    """Staff view for a support ticket — read + reply, no ownership restriction."""
+    """Staff read-only view for a support ticket."""
     user_id = session['user_id']
 
     with db.get_cursor() as cursor:
@@ -392,24 +397,6 @@ def helpdesk_ticket(ticket_id):
 
     if not ticket:
         abort(404)
-
-    if request.method == 'POST':
-        body = request.form.get('body', '').strip()
-        if not body:
-            flash('Reply cannot be empty.', 'danger')
-        else:
-            with db.get_cursor() as cursor:
-                cursor.execute(
-                    'INSERT INTO ticket_replies (ticket_id, author_id, body) VALUES (%s, %s, %s)',
-                    (ticket_id, user_id, body)
-                )
-                cursor.execute(
-                    'UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE ticket_id = %s',
-                    (ticket_id,)
-                )
-            logger.info('Staff %d added reply to ticket %d', user_id, ticket_id)
-            flash('Reply added.', 'success')
-        return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
 
     with db.get_cursor() as cursor:
         cursor.execute(
