@@ -201,10 +201,18 @@ document.addEventListener('DOMContentLoaded', function () {
   if (mapElement && typeof L !== 'undefined') {
     const markersElement = document.getElementById('lines-overview-traps-data');
     const traps = markersElement ? JSON.parse(markersElement.textContent) : [];
+    const areaElement = document.getElementById('area-geojson-data');
+    const areaGeoJSON = areaElement ? JSON.parse(areaElement.textContent) : null;
     const linzApiKey = mapElement.dataset.linzApiKey;
     const lineFilter = new URLSearchParams(window.location.search).get('filter') || 'all';
 
     map = createLincolnMap('lines-overview-map', linzApiKey);
+
+    let areaLayer = null;
+    if (areaGeoJSON) {
+      areaLayer = L.geoJSON(areaGeoJSON, { style: { className: 'area-polygon' } });
+      areaLayer.addTo(map);
+    }
 
     traps.forEach(function (trap) {
       const lineId = String(trap.line_id);
@@ -258,6 +266,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (allLatLngs.length > 0) {
       map.fitBounds(allLatLngs, { padding: [30, 30] });
+    } else if (areaLayer) {
+      try {
+        map.fitBounds(areaLayer.getBounds(), { padding: [30, 30] });
+      } catch (e) {
+        map.setView(MAP_DEFAULT_CENTER, 13);
+      }
     } else {
       map.setView(MAP_DEFAULT_CENTER, 13);
     }

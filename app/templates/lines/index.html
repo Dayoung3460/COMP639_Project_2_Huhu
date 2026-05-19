@@ -179,6 +179,12 @@
         panel_class='mb-0 lines-map-panel-shell',
         header_class='lines-map-header'
       ) %}
+          {% if session.get('group_role') == 'Group Coordinator' %}
+            <div class="d-flex justify-content-end mb-2">
+              {{ pf_link_button(url_for('coordinator_operational_area'), 'Edit Area', variant='btn-sm-outline', icon='bi-pencil-square') }}
+            </div>
+          {% endif %}
+          <script id="area-geojson-data" type="application/json">{{ area_geojson | tojson }}</script>
           <div class="lines-map-wrapper">
             <div id="lines-map-no-location-notice" class="lines-map-notice" role="status" aria-live="polite">
               <i class="bi bi-info-circle" aria-hidden="true"></i>
