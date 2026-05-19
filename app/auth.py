@@ -131,7 +131,7 @@ def login():
 
         with db.get_cursor() as cursor:
             cursor.execute('''
-                SELECT user_id, username, password_hash, account_status, is_super_admin
+                SELECT user_id, username, password_hash, account_status, is_super_admin, is_support_tech
                 FROM users
                 WHERE username = %s
             ''', (username,))
@@ -168,12 +168,17 @@ def login():
             ''', (user['user_id'],))
             memberships = cursor.fetchall()
 
-        # Super Admin with no group context → admin dashboard. The
-        # picker has nothing to offer here.
+        # Super Admin with no group context → admin dashboard.
         if user['is_super_admin'] and len(memberships) == 0:
             session['group_role'] = 'Super Admin'
             _flash_pending_notifications(user['user_id'])
             return redirect(url_for('admin_dashboard'))
+
+        # Support Technician with no group memberships → support queue.
+        if user['is_support_tech'] and not user['is_super_admin'] and len(memberships) == 0:
+            session['group_role'] = 'Support Technician'
+            _flash_pending_notifications(user['user_id'])
+            return redirect(url_for('helpdesk_queue'))
 
         # Regular user with exactly one membership → auto-select that
         # group and go straight to the role dashboard. Skips the picker

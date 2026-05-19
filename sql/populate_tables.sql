@@ -123,11 +123,19 @@ INSERT INTO users (username, email, password_hash, first_name, last_name, is_sup
 ('jmoss',     'j.moss@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Jake',  'Moss',     FALSE, 'active',   '027 666 7788', '67 Selwyn Road, Lincoln 7608',         'Kate Moss',     '027 098 7654', '2024-04-01 09:00:00', '2026-04-08 14:20:00'),
 ('ktaylor',   'k.taylor@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Kai',   'Taylor',   FALSE, 'inactive', '021 777 8899', '90 Lincoln Road, Lincoln 7608',        'Lena Taylor',   '021 987 6543', '2024-05-01 09:00:00', '2025-11-20 09:00:00'),
 
+-- Support Technicians (site-wide, no group memberships)
+('lchen',     'l.chen@support.tiaki.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Lily',  'Chen',     FALSE, 'active',   '021 888 9900', NULL, NULL, NULL, '2025-06-01 09:00:00', '2026-05-10 08:30:00'),
+('mreid',     'm.reid@support.tiaki.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Mark',  'Reid',     FALSE, 'active',   '021 777 0011', NULL, NULL, NULL, '2025-06-01 09:00:00', '2026-05-12 09:15:00'),
+
 -- No-membership users for join request testing
 ('trequest1', 'tom.request@example.com',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Tom',   'Request',  FALSE, 'active',   NULL, NULL, NULL, NULL, NOW() - INTERVAL '3 days', NULL),
 ('trequest2', 'sara.request@example.com',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sara',  'Request',  FALSE, 'active',   NULL, NULL, NULL, NULL, NOW() - INTERVAL '1 day',  NULL)
 
 ON CONFLICT (username) DO NOTHING;
+
+-- Flag support technicians (done after INSERT to avoid column-list issues)
+UPDATE users SET is_support_tech = TRUE
+WHERE username IN ('lchen', 'mreid');
 
 -- ══════════════════════════════════════════════════════
 -- GROUP MEMBERSHIPS
@@ -580,8 +588,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ══════════════════════════════════════════════════════
 -- SUPPORT TICKETS — bkim test data
 -- Log in as bkim / Password1! to see these in My Requests
--- smitchell is used as assigned_to (Super Admin standing in for
--- a future Support Technician role — not yet implemented).
+-- lchen and mreid are the assigned Support Technicians.
 -- ══════════════════════════════════════════════════════
 
 INSERT INTO support_tickets
@@ -595,7 +602,7 @@ VALUES
     'When I click the CSV export button on the Reports page nothing happens. I have tried Chrome and Firefox. No error message appears — the button just does nothing.',
     'Medium',
     'Open',
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
     NOW() - INTERVAL '6 days',
     NOW() - INTERVAL '1 day'
 ),
@@ -619,7 +626,7 @@ VALUES
     'I have a new volunteer who wants to join as an Operator. I can see the Members page but cannot find an invite or add button. Do they need to register themselves first and then request to join, or can I add them directly?',
     'Low',
     'Resolved',
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     NOW() - INTERVAL '14 days',
     NOW() - INTERVAL '10 days'
 ),
@@ -631,7 +638,7 @@ VALUES
     'On the Assign Operators page, the operator count badge next to each line shows a number that does not match the actual assigned operators list below. For example North Campus Trap Line shows 3 but only 2 operators are listed.',
     'Medium',
     'Stalled',
-    (SELECT user_id FROM users WHERE username = 'jparata'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     NOW() - INTERVAL '20 days',
     NOW() - INTERVAL '8 days'
 )
@@ -642,7 +649,7 @@ INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
 VALUES
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'Cannot export catch records to CSV' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
     'Thanks for the report, Bo. Can you let me know which browser version you are using? Also, does the issue occur on all groups or just Predator Free Lincoln University?',
     NOW() - INTERVAL '4 days'
 ),
@@ -654,7 +661,7 @@ VALUES
 ),
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'Cannot export catch records to CSV' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
     'Confirmed — looks like a JavaScript error is being thrown when the date range has no catches. Working on a fix now.',
     NOW() - INTERVAL '1 day'
 )
@@ -665,7 +672,7 @@ INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
 VALUES
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'Hi Bo — new users need to register an account themselves first at /register. Once they have an account they can either request to join your group (if it is private) or be added directly by you on the Members page using the role change option. Let me know if you need more help.',
     NOW() - INTERVAL '13 days'
 ),
@@ -682,13 +689,13 @@ INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status
 VALUES
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'New', 'Open',
     NOW() - INTERVAL '13 days'
 ),
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'Open', 'Resolved',
     NOW() - INTERVAL '10 days'
 )
@@ -699,15 +706,125 @@ INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status
 VALUES
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'Line assignment page shows wrong operator count' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'jparata'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'New', 'Open',
     NOW() - INTERVAL '18 days'
 ),
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'Line assignment page shows wrong operator count' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'jparata'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'Open', 'Stalled',
     NOW() - INTERVAL '8 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Additional support tickets from other users
+INSERT INTO support_tickets
+    (submitted_by, group_id, request_type, title, description, priority, status, assigned_to, created_at, updated_at)
+VALUES
+(
+    (SELECT user_id FROM users WHERE username = 'enyberg'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'Bug Report',
+    'Add catch form crashes when no traps on assigned line',
+    'When I try to add a catch record and select a line that has no traps, the form throws a 500 error. This only happens on lines with zero traps — lines with at least one trap work fine.',
+    'High',
+    'New',
+    NULL,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'enyberg'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'Help',
+    'How do I see a history of all my past catch records?',
+    'I can see my recent records on the My Records page but I cannot find a way to view records from previous months. Is there a way to filter or export everything I have submitted?',
+    'Low',
+    'Resolved',
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    NOW() - INTERVAL '30 days',
+    NOW() - INTERVAL '25 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'iford'),
+    (SELECT group_id FROM groups WHERE name = 'Banks Peninsula Restoration'),
+    'Bug Report',
+    'Map does not load on the Lines page — blank tile area',
+    'The map area on the Lines page shows as a blank grey box. No tiles load at all. Checked on two different browsers (Chrome and Edge) and the same issue occurs. Other pages load fine.',
+    'High',
+    'Open',
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    NOW() - INTERVAL '4 days',
+    NOW() - INTERVAL '2 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'iford'),
+    (SELECT group_id FROM groups WHERE name = 'Selwyn District Trappers'),
+    'Help',
+    'Can I be a member of more than one group at the same time?',
+    'I have been asked to join a second conservation group but I am already a member of Banks Peninsula Restoration. Is it possible to belong to two groups? If so, how do I request to join the second group?',
+    'Low',
+    'New',
+    NULL,
+    NOW() - INTERVAL '3 hours',
+    NOW() - INTERVAL '3 hours'
+)
+ON CONFLICT DO NOTHING;
+
+-- Reply for enyberg resolved ticket (catch history help)
+INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I see a history of all my past catch records?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'enyberg')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'Hi Erik — on the My Records page use the date range filter at the top to expand the window. You can also download a CSV of all your records from the Reports page. Let me know if that helps.',
+    NOW() - INTERVAL '28 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I see a history of all my past catch records?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'enyberg')),
+    (SELECT user_id FROM users WHERE username = 'enyberg'),
+    'Perfect, the CSV export worked great. Thanks Lily!',
+    NOW() - INTERVAL '26 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Reply for iford map bug
+INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Map does not load on the Lines page — blank tile area' AND submitted_by = (SELECT user_id FROM users WHERE username = 'iford')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'Thanks for the report. Could you check your browser console (F12 → Console) and let me know if there are any errors when the page loads? Also, does the map work if you try on a mobile device?',
+    NOW() - INTERVAL '3 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Status history for enyberg resolved ticket
+INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status, changed_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I see a history of all my past catch records?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'enyberg')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'New', 'Open',
+    NOW() - INTERVAL '29 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I see a history of all my past catch records?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'enyberg')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'Open', 'Resolved',
+    NOW() - INTERVAL '25 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Status history for iford map bug (New → Open)
+INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status, changed_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Map does not load on the Lines page — blank tile area' AND submitted_by = (SELECT user_id FROM users WHERE username = 'iford')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'New', 'Open',
+    NOW() - INTERVAL '4 days'
 )
 ON CONFLICT DO NOTHING;
 

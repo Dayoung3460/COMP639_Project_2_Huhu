@@ -215,6 +215,8 @@ def redirect_by_role():
     role = session.get('group_role')
     if role == 'Super Admin':
         return redirect(url_for('admin_dashboard'))
+    elif role == 'Support Technician':
+        return redirect(url_for('helpdesk_queue'))
     elif role == 'Group Coordinator':
         return redirect(url_for('coordinator_dashboard'))
     elif role == 'Operator':
