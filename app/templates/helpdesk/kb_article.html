@@ -65,9 +65,11 @@
     <a href="{{ url_for('kb_index') }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to Knowledge Base
     </a>
+    {% if session.get('group_role') not in ('Super Admin', 'Support Technician') %}
     <a href="{{ url_for('helpdesk_submit') }}" class="btn btn-outline-primary">
       <i class="bi bi-headset me-1" aria-hidden="true"></i>Submit a Request
     </a>
+    {% endif %}
   </div>
 
 </div>
