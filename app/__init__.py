@@ -137,6 +137,7 @@ from app import general
 from app import my_tiaki
 from app import themes
 from app import identity_defaults  # noqa: F401 — registers /identity/default/* routes
+from app import helpdesk
 
 # ── Template globals ──────────────────────────────────────────────────────────
 

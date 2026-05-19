@@ -553,3 +553,32 @@ ALTER TABLE "public"."trap_catches"
 ALTER TABLE "public"."theme_history"
     ADD CONSTRAINT th_pinned_requires_name
     CHECK (is_pinned = FALSE OR name IS NOT NULL);
+
+-- ==============================================================
+-- Support Tickets (Helpdesk Epic — P2-49)
+-- ==============================================================
+
+DROP TYPE IF EXISTS ticket_type_enum     CASCADE;
+DROP TYPE IF EXISTS ticket_priority_enum CASCADE;
+DROP TYPE IF EXISTS ticket_status_enum   CASCADE;
+
+CREATE TYPE ticket_type_enum     AS ENUM ('Help', 'Bug Report');
+CREATE TYPE ticket_priority_enum AS ENUM ('Low', 'Medium', 'High');
+CREATE TYPE ticket_status_enum   AS ENUM ('New', 'Open', 'Stalled', 'Resolved');
+
+DROP TABLE IF EXISTS support_tickets CASCADE;
+
+CREATE TABLE support_tickets (
+    ticket_id    SERIAL               PRIMARY KEY,
+    submitted_by INTEGER              NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    group_id     INTEGER              REFERENCES groups(group_id) ON DELETE SET NULL,
+    request_type ticket_type_enum     NOT NULL,
+    title        VARCHAR(255)         NOT NULL,
+    description  TEXT                 NOT NULL,
+    priority     ticket_priority_enum NOT NULL,
+    screenshot   VARCHAR(500)         DEFAULT NULL,
+    status       ticket_status_enum   NOT NULL DEFAULT 'New',
+    assigned_to  INTEGER              REFERENCES users(user_id) ON DELETE SET NULL DEFAULT NULL,
+    created_at   TIMESTAMP            NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP            NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

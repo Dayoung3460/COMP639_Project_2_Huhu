@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}Submit Support Request{% endblock %}
+
+{% block page_head_icon %}<i class="bi bi-headset"></i>{% endblock %}
+{% block page_title %}Submit a Request{% endblock %}
+{% block page_subtitle %}Get help or report a bug — we'll get back to you as soon as possible.{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:720px;">
+  <p class="small text-muted mb-3">
+    <span class="text-danger" aria-hidden="true">*</span> Required fields
+  </p>
+
+  <form method="POST" action="{{ url_for('helpdesk_submit') }}"
+        enctype="multipart/form-data" novalidate>
+
+    {# ── Request details card ──────────────────────────── #}
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-info-circle me-2" aria-hidden="true"></i>Request Details
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          {# Type #}
+          <div class="col-sm-6">
+            <label class="form-label" for="requestType">
+              Request Type <span class="text-danger" aria-hidden="true">*</span>
+            </label>
+            <select name="request_type" id="requestType"
+                    class="form-select {% if errors.get('request_type') %}is-invalid{% endif %}"
+                    required>
+              <option value="">— select —</option>
+              {% for t in ticket_types %}
+                <option value="{{ t }}" {% if data.get('request_type') == t %}selected{% endif %}>{{ t }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('request_type') %}
+              <div class="invalid-feedback">{{ errors.request_type }}</div>
+            {% endif %}
+          </div>
+
+          {# Priority #}
+          <div class="col-sm-6">
+            <label class="form-label" for="priority">
+              Priority <span class="text-danger" aria-hidden="true">*</span>
+            </label>
+            <select name="priority" id="priority"
+                    class="form-select {% if errors.get('priority') %}is-invalid{% endif %}"
+                    required>
+              <option value="">— select —</option>
+              {% for p in priorities %}
+                <option value="{{ p }}" {% if data.get('priority') == p %}selected{% endif %}>{{ p }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('priority') %}
+              <div class="invalid-feedback">{{ errors.priority }}</div>
+            {% endif %}
+          </div>
+
+          {# Title #}
+          <div class="col-12">
+            <label class="form-label" for="title">
+              Title <span class="text-danger" aria-hidden="true">*</span>
+            </label>
+            <input type="text" name="title" id="title"
+                   class="form-control {% if errors.get('title') %}is-invalid{% endif %}"
+                   maxlength="255"
+                   value="{{ data.get('title', '') }}"
+                   placeholder="Brief summary of your issue"
+                   required>
+            {% if errors.get('title') %}
+              <div class="invalid-feedback">{{ errors.title }}</div>
+            {% endif %}
+          </div>
+
+          {# Description #}
+          <div class="col-12">
+            <label class="form-label" for="description">
+              Description <span class="text-danger" aria-hidden="true">*</span>
+            </label>
+            <textarea name="description" id="description" rows="6"
+                      class="form-control {% if errors.get('description') %}is-invalid{% endif %}"
+                      placeholder="Describe the issue in detail — include steps to reproduce if it's a bug"
+                      required>{{ data.get('description', '') }}</textarea>
+            {% if errors.get('description') %}
+              <div class="invalid-feedback">{{ errors.description }}</div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ── Screenshot card ──────────────────────────────────── #}
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-image me-2" aria-hidden="true"></i>Screenshot
+        <span class="text-muted fw-normal ms-1" style="font-size:.85em;">(optional)</span>
+      </div>
+      <div class="card-body">
+        <label class="form-label" for="screenshot">Attach a screenshot</label>
+        <input type="file" name="screenshot" id="screenshot"
+               class="form-control {% if errors.get('screenshot') %}is-invalid{% endif %}"
+               accept=".jpg,.jpeg,.png,.webp"
+               aria-describedby="screenshotHelp">
+        <div id="screenshotHelp" class="form-text">
+          JPG, PNG, or WEBP — max 5 MB
+        </div>
+        {% if errors.get('screenshot') %}
+          <div class="invalid-feedback">{{ errors.screenshot }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ── Actions ──────────────────────────────────────────── #}
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-send me-1" aria-hidden="true"></i>Submit Request
+      </button>
+      <a href="{{ url_for('helpdesk_my_requests') }}" class="btn btn-outline-secondary">
+        My Requests
+      </a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
