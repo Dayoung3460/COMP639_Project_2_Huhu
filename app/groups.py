@@ -13,6 +13,7 @@ Visibility logic (per the brief):
 from flask import render_template, request, redirect, url_for, flash, session, abort, jsonify
 from app import app, db
 from app.utils import role_required, allowed_file, UPLOAD_FOLDER, redirect_by_role
+from app.helpers.dbHelper import insert_notification
 import os
 import uuid
 
@@ -204,9 +205,21 @@ def apply_for_group():
                 insert_query,
                 tuple_values
             )
-            flash('Your conservation application has been submitted successfully!', 'success')
-            
-            return redirect(url_for('apply_for_group'))
+
+            # Notify all Super Admins so they don't have to poll the page
+            cursor.execute('SELECT user_id FROM users WHERE is_super_admin = TRUE')
+            admin_ids = [r['user_id'] for r in cursor.fetchall()]
+
+        for admin_id in admin_ids:
+            insert_notification(
+                db, admin_id,
+                f'New group application: "{proposed_name}" — review it in Group Applications.',
+                'info',
+                url=url_for('admin_group_applications')
+            )
+
+        flash('Your conservation application has been submitted successfully!', 'success')
+        return redirect(url_for('apply_for_group'))
 
     return render_template('groups/apply_group.html')
 
