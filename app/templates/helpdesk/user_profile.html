@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}{{ user.first_name }} {{ user.last_name }}{% endblock %}
+
+{% block page_head_icon %}<i class="bi bi-person-circle"></i>{% endblock %}
+{% block page_title %}{{ user.first_name }} {{ user.last_name }}{% endblock %}
+{% block page_subtitle %}{{ user.email }}{% endblock %}
+
+{% block breadcrumb %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('helpdesk_user_search') }}">User Search</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">{{ user.first_name }} {{ user.last_name }}</li>
+    </ol>
+  </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px;">
+
+  {# ── Account summary ─────────────────────────────────────────── #}
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-person me-2" aria-hidden="true"></i>Account
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-sm-4">
+          <div class="small text-muted mb-1">Username</div>
+          <div>{{ user.username }}</div>
+        </div>
+        <div class="col-sm-4">
+          <div class="small text-muted mb-1">Status</div>
+          {% if user.account_status == 'active' %}
+            <span class="badge bg-success-subtle text-success-emphasis">Active</span>
+          {% else %}
+            <span class="badge bg-danger-subtle text-danger-emphasis">Inactive</span>
+          {% endif %}
+        </div>
+        <div class="col-sm-4">
+          <div class="small text-muted mb-1">Phone</div>
+          <div>{{ user.phone or '—' }}</div>
+        </div>
+        <div class="col-sm-4">
+          <div class="small text-muted mb-1">Date joined</div>
+          <div>{{ user.date_joined | nz_datetime }}</div>
+        </div>
+        <div class="col-sm-4">
+          <div class="small text-muted mb-1">Last login</div>
+          <div>{{ user.last_login | nz_datetime if user.last_login else '—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Group memberships ───────────────────────────────────────── #}
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-collection me-2" aria-hidden="true"></i>Group Memberships
+    </div>
+    <div class="card-body p-0">
+      {% if not memberships %}
+        <p class="text-muted small p-3 mb-0">No group memberships.</p>
+      {% else %}
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Group</th>
+              <th>Role</th>
+              <th>Joined</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in memberships %}
+            <tr>
+              <td>
+                {{ m.group_name }}
+                {% if not m.group_active %}
+                  <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">Inactive</span>
+                {% endif %}
+              </td>
+              <td>{{ m.role }}</td>
+              <td class="text-muted small">{{ m.joined_at | nz_datetime }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Audit notes ─────────────────────────────────────────────── #}
+  {% if user.notes %}
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-sticky me-2" aria-hidden="true"></i>Admin Notes
+    </div>
+    <div class="card-body">
+      <p class="mb-0 small" style="white-space:pre-wrap;">{{ user.notes }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Recent catches ──────────────────────────────────────────── #}
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-table me-2" aria-hidden="true"></i>Recent Catch Records
+      {% if recent_catches %}
+        <span class="badge bg-secondary ms-1">{{ recent_catches | length }}</span>
+      {% endif %}
+    </div>
+    <div class="card-body p-0">
+      {% if not recent_catches %}
+        <p class="text-muted small p-3 mb-0">No catch records.</p>
+      {% else %}
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Date</th><th>Species</th><th>Trap</th><th>Line</th></tr>
+          </thead>
+          <tbody>
+            {% for c in recent_catches %}
+            <tr>
+              <td class="text-nowrap small">{{ c.date | nz_datetime }}</td>
+              <td>{{ c.species_caught }}</td>
+              <td class="text-muted">{{ c.trap_code }}</td>
+              <td class="text-muted">{{ c.line_name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Recent bait records ─────────────────────────────────────── #}
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-basket me-2" aria-hidden="true"></i>Recent Bait Records
+      {% if recent_bait %}
+        <span class="badge bg-secondary ms-1">{{ recent_bait | length }}</span>
+      {% endif %}
+    </div>
+    <div class="card-body p-0">
+      {% if not recent_bait %}
+        <p class="text-muted small p-3 mb-0">No bait records.</p>
+      {% else %}
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Date</th><th>Target species</th><th>Station</th><th>Line</th></tr>
+          </thead>
+          <tbody>
+            {% for b in recent_bait %}
+            <tr>
+              <td class="text-nowrap small">{{ b.date | nz_datetime }}</td>
+              <td>{{ b.target_species }}</td>
+              <td class="text-muted">{{ b.station_code }}</td>
+              <td class="text-muted">{{ b.line_name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Recent observations ─────────────────────────────────────── #}
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-binoculars me-2" aria-hidden="true"></i>Recent Observations
+      {% if recent_observations %}
+        <span class="badge bg-secondary ms-1">{{ recent_observations | length }}</span>
+      {% endif %}
+    </div>
+    <div class="card-body p-0">
+      {% if not recent_observations %}
+        <p class="text-muted small p-3 mb-0">No observations.</p>
+      {% else %}
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Date</th><th>Type</th><th>Line</th></tr>
+          </thead>
+          <tbody>
+            {% for o in recent_observations %}
+            <tr>
+              <td class="text-nowrap small">{{ o.date | nz_datetime }}</td>
+              <td>{{ o.observation_type }}</td>
+              <td class="text-muted">{{ o.line_name or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+
+  <a href="{{ url_for('helpdesk_user_search') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to search
+  </a>
+
+</div>
+{% endblock %}
