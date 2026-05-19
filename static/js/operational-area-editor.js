@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const existingGeoJSON = dataEl ? dataEl.textContent.trim() : '';
 
   const map = createLincolnMap('area-editor-map', linzApiKey);
+  map.setView(MAP_DEFAULT_CENTER, 13);
 
   const drawnItems = new L.FeatureGroup();
   map.addLayer(drawnItems);
