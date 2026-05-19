@@ -21,8 +21,21 @@
 
   {# ── Account summary ─────────────────────────────────────────── #}
   <div class="card mb-3">
-    <div class="card-header fw-semibold">
-      <i class="bi bi-person me-2" aria-hidden="true"></i>Account
+    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-person me-2" aria-hidden="true"></i>Account</span>
+      <div class="d-flex gap-2">
+        {% if user.account_status == 'active' %}
+          <button type="button" class="btn btn-danger btn-sm"
+                  data-bs-toggle="modal" data-bs-target="#suspendModal">
+            <i class="bi bi-slash-circle me-1" aria-hidden="true"></i>Suspend
+          </button>
+        {% elif user.account_status == 'suspended' %}
+          <button type="button" class="btn btn-success btn-sm"
+                  data-bs-toggle="modal" data-bs-target="#reinstateModal">
+            <i class="bi bi-check-circle me-1" aria-hidden="true"></i>Reinstate
+          </button>
+        {% endif %}
+      </div>
     </div>
     <div class="card-body">
       <div class="row g-3">
@@ -34,8 +47,10 @@
           <div class="small text-muted mb-1">Status</div>
           {% if user.account_status == 'active' %}
             <span class="badge bg-success-subtle text-success-emphasis">Active</span>
+          {% elif user.account_status == 'suspended' %}
+            <span class="badge bg-danger-subtle text-danger-emphasis">Suspended</span>
           {% else %}
-            <span class="badge bg-danger-subtle text-danger-emphasis">Inactive</span>
+            <span class="badge bg-secondary-subtle text-secondary-emphasis">Inactive</span>
           {% endif %}
         </div>
         <div class="col-sm-4">
@@ -90,7 +105,7 @@
     </div>
   </div>
 
-  {# ── Audit notes ─────────────────────────────────────────────── #}
+  {# ── Admin notes ─────────────────────────────────────────────── #}
   {% if user.notes %}
   <div class="card mb-3">
     <div class="card-header fw-semibold">
@@ -101,6 +116,40 @@
     </div>
   </div>
   {% endif %}
+
+  {# ── Suspension audit log ─────────────────────────────────────── #}
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-shield-exclamation me-2" aria-hidden="true"></i>Suspension History
+      {% if suspension_log %}
+        <span class="badge bg-secondary ms-1">{{ suspension_log | length }}</span>
+      {% endif %}
+    </div>
+    <div class="card-body p-0">
+      {% if not suspension_log %}
+        <p class="text-muted small p-3 mb-0">No suspension history.</p>
+      {% else %}
+        <ul class="list-group list-group-flush">
+          {% for entry in suspension_log %}
+          <li class="list-group-item px-3 py-2 small">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                {% if entry.action == 'suspended' %}
+                  <span class="badge bg-danger-subtle text-danger-emphasis me-2">Suspended</span>
+                {% else %}
+                  <span class="badge bg-success-subtle text-success-emphasis me-2">Reinstated</span>
+                {% endif %}
+                by {{ entry.actor_name or 'Unknown' }}
+              </div>
+              <span class="text-muted text-nowrap ms-3">{{ entry.created_at | nz_datetime }}</span>
+            </div>
+            <div class="text-muted mt-1 fst-italic">{{ entry.reason }}</div>
+          </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
 
   {# ── Recent catches ──────────────────────────────────────────── #}
   <div class="card mb-3">
@@ -199,4 +248,69 @@
   </a>
 
 </div>
+
+{# ── Suspend modal ───────────────────────────────────────────────── #}
+{% if user.account_status == 'active' %}
+<div class="modal fade pop-up-modal" id="suspendModal" tabindex="-1" role="dialog"
+     aria-modal="true" aria-labelledby="suspendModalTitle">
+  <div class="modal-dialog">
+    <form method="POST"
+          action="{{ url_for('helpdesk_user_suspend', target_user_id=user.user_id) }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="suspendModalTitle">Suspend account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Suspend <strong>{{ user.first_name }} {{ user.last_name }}</strong>?
+             They will not be able to log in until reinstated.</p>
+          <div class="mb-0">
+            <label for="suspendReason" class="form-label fw-medium">Reason <span class="text-danger">*</span></label>
+            <textarea id="suspendReason" name="reason" class="form-control" rows="3"
+                      placeholder="Describe the policy violation or security concern…"
+                      required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Suspend account</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{# ── Reinstate modal ─────────────────────────────────────────────── #}
+{% if user.account_status == 'suspended' %}
+<div class="modal fade pop-up-modal" id="reinstateModal" tabindex="-1" role="dialog"
+     aria-modal="true" aria-labelledby="reinstateModalTitle">
+  <div class="modal-dialog">
+    <form method="POST"
+          action="{{ url_for('helpdesk_user_reinstate', target_user_id=user.user_id) }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reinstateModalTitle">Reinstate account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Reinstate <strong>{{ user.first_name }} {{ user.last_name }}</strong>?
+             They will be able to log in again.</p>
+          <div class="mb-0">
+            <label for="reinstateReason" class="form-label fw-medium">Reason <span class="text-danger">*</span></label>
+            <textarea id="reinstateReason" name="reason" class="form-control" rows="3"
+                      placeholder="Describe why the suspension is being lifted…"
+                      required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Reinstate account</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

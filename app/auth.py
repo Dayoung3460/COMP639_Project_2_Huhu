@@ -124,6 +124,18 @@ def login():
                 quick_login_enabled=quick_login_enabled
             )
 
+        if user['account_status'] == 'suspended':
+            flash(
+                'Your account has been suspended. Please contact support at support@tiaki.nz '
+                'or submit a request from a different account.',
+                'danger'
+            )
+            return render_template(
+                'auth/login.html',
+                username=username,
+                quick_login_enabled=quick_login_enabled
+            )
+
         if user['account_status'] != 'active':
             flash('Your account has been deactivated. Please contact an administrator.', 'danger')
             return render_template(
