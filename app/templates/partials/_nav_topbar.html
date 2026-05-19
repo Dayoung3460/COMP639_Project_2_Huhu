@@ -59,7 +59,8 @@
    role lands).
 #}
 {% set overflow_endpoints = ['profile', 'change_password',
-                              'helpdesk_submit', 'helpdesk_my_requests', 'helpdesk_view'] %}
+                              'helpdesk_submit', 'helpdesk_my_requests', 'helpdesk_view',
+                              'helpdesk_queue'] %}
 {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
   {% set overflow_endpoints = overflow_endpoints + [
     'coordinator_themes', 'coordinator_theme_preview',

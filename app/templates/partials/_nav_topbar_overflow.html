@@ -131,6 +131,17 @@
     </a>
   {% endif %}
 
+  {# Support Queue — Super Admin + Support Technician only. #}
+  {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
+  <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
+  <div class="topbar-overflow-label" role="presentation">Support Queue</div>
+  <a role="menuitem" tabindex="-1"
+     href="{{ url_for('helpdesk_queue') }}"
+     class="topbar-overflow-item {{ 'active' if request.endpoint == 'helpdesk_queue' }}">
+    <i class="bi bi-inbox-fill" aria-hidden="true"></i> All Requests
+  </a>
+  {% endif %}
+
   {# Support — all roles. #}
   <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
   <div class="topbar-overflow-label" role="presentation">Support</div>

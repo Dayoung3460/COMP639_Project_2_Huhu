@@ -123,11 +123,19 @@ INSERT INTO users (username, email, password_hash, first_name, last_name, is_sup
 ('jmoss',     'j.moss@lincoln.ac.nz',      '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Jake',  'Moss',     FALSE, 'active',   '027 666 7788', '67 Selwyn Road, Lincoln 7608',         'Kate Moss',     '027 098 7654', '2024-04-01 09:00:00', '2026-04-08 14:20:00'),
 ('ktaylor',   'k.taylor@lincoln.ac.nz',    '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Kai',   'Taylor',   FALSE, 'inactive', '021 777 8899', '90 Lincoln Road, Lincoln 7608',        'Lena Taylor',   '021 987 6543', '2024-05-01 09:00:00', '2025-11-20 09:00:00'),
 
+-- Support Technicians (site-wide, no group memberships)
+('lchen',     'l.chen@support.tiaki.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Lily',  'Chen',     FALSE, 'active',   '021 888 9900', NULL, NULL, NULL, '2025-06-01 09:00:00', '2026-05-10 08:30:00'),
+('mreid',     'm.reid@support.tiaki.nz',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Mark',  'Reid',     FALSE, 'active',   '021 777 0011', NULL, NULL, NULL, '2025-06-01 09:00:00', '2026-05-12 09:15:00'),
+
 -- No-membership users for join request testing
 ('trequest1', 'tom.request@example.com',   '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Tom',   'Request',  FALSE, 'active',   NULL, NULL, NULL, NULL, NOW() - INTERVAL '3 days', NULL),
 ('trequest2', 'sara.request@example.com',  '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Sara',  'Request',  FALSE, 'active',   NULL, NULL, NULL, NULL, NOW() - INTERVAL '1 day',  NULL)
 
 ON CONFLICT (username) DO NOTHING;
+
+-- Flag support technicians (done after INSERT to avoid column-list issues)
+UPDATE users SET is_support_tech = TRUE
+WHERE username IN ('lchen', 'mreid');
 
 -- ══════════════════════════════════════════════════════
 -- GROUP MEMBERSHIPS

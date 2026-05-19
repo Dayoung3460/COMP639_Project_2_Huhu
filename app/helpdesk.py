@@ -269,3 +269,88 @@ def helpdesk_view(ticket_id):
                            replies=replies,
                            status_history=status_history,
                            current_user_id=user_id)
+
+
+# ── Support Queue (Super Admin + Support Technician) ─────────────────────────
+
+@app.route('/support/queue')
+@role_required('Super Admin', 'Support Technician')
+def helpdesk_queue():
+    """Centralised support queue — all tickets across the platform."""
+    status_filter   = request.args.get('status', '').strip()
+    priority_filter = request.args.get('priority', '').strip()
+    type_filter     = request.args.get('request_type', '').strip()
+    assigned_filter = request.args.get('assigned', '').strip()   # 'me', 'unassigned', or ''
+    sort            = request.args.get('sort', 'priority').strip()
+
+    # Build WHERE conditions
+    conditions = []
+    params     = []
+
+    if status_filter in TICKET_STATUSES:
+        conditions.append('st.status = %s')
+        params.append(status_filter)
+    if priority_filter in TICKET_PRIORITIES:
+        conditions.append('st.priority = %s')
+        params.append(priority_filter)
+    if type_filter in TICKET_TYPES:
+        conditions.append('st.request_type = %s')
+        params.append(type_filter)
+    if assigned_filter == 'me':
+        conditions.append('st.assigned_to = %s')
+        params.append(session['user_id'])
+    elif assigned_filter == 'unassigned':
+        conditions.append('st.assigned_to IS NULL')
+
+    where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
+
+    # Priority sort: High → Medium → Low then by date
+    priority_order = "CASE st.priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 ELSE 3 END"
+    order_map = {
+        'priority':   f'{priority_order}, st.created_at ASC',
+        'date_asc':   'st.created_at ASC',
+        'date_desc':  'st.created_at DESC',
+        'updated':    'st.updated_at DESC',
+    }
+    order_clause = order_map.get(sort, order_map['priority'])
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            f"""
+            SELECT st.ticket_id,
+                   st.request_type,
+                   st.title,
+                   st.priority,
+                   st.status,
+                   st.created_at,
+                   st.updated_at,
+                   submitter.first_name || ' ' || submitter.last_name AS submitter_name,
+                   tech.first_name     || ' ' || tech.last_name     AS assigned_owner,
+                   g.name AS group_name
+            FROM   support_tickets st
+            JOIN   users submitter ON submitter.user_id = st.submitted_by
+            LEFT JOIN users tech   ON tech.user_id      = st.assigned_to
+            LEFT JOIN groups g     ON g.group_id         = st.group_id
+            {where}
+            ORDER BY {order_clause}
+            """,
+            params
+        )
+        tickets = cursor.fetchall()
+
+    # Counts for the filter badge
+    total      = len(tickets)
+    unassigned = sum(1 for t in tickets if not t['assigned_owner'])
+
+    return render_template('helpdesk/queue.html',
+                           tickets=tickets,
+                           total=total,
+                           unassigned=unassigned,
+                           statuses=TICKET_STATUSES,
+                           priorities=TICKET_PRIORITIES,
+                           ticket_types=TICKET_TYPES,
+                           status_filter=status_filter,
+                           priority_filter=priority_filter,
+                           type_filter=type_filter,
+                           assigned_filter=assigned_filter,
+                           sort=sort)

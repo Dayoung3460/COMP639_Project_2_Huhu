@@ -183,6 +183,15 @@
       </a>
     {% endif %}
 
+    {# Support queue — Super Admin + Support Technician only #}
+    {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
+      <div class="sidebar-section-label">Support Queue</div>
+      <a href="{{ url_for('helpdesk_queue') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'helpdesk_queue' }}">
+        <i class="bi bi-inbox-fill" aria-hidden="true"></i> <span class="link-text">All Requests</span>
+      </a>
+    {% endif %}
+
     {# Support — all roles #}
     <div class="sidebar-section-label">Support</div>
     <a href="{{ url_for('helpdesk_submit') }}"
