@@ -282,6 +282,7 @@ CREATE TABLE "public"."user_notifications" (
     "group_id" int4 DEFAULT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
     "message" text NOT NULL,
     "category" varchar(20) NOT NULL DEFAULT 'info'::character varying,
+    "url" varchar(500) DEFAULT NULL,
     "is_active" bool NOT NULL DEFAULT true,
     "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY ("notification_id")

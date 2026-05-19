@@ -190,18 +190,18 @@ def inject_globals():
                     if mc:
                         nav_group_member_count = mc['n']
                 
-                if (session.get('group_role') == 'Group Coordinator'
-                        and session.get('group_id')):
-                    cursor.execute(
-                        '''
-                        SELECT notification_id, message, created_at
-                        FROM user_notifications
-                        WHERE user_id = %s AND group_id = %s AND is_active = TRUE
-                        ORDER BY created_at DESC;
-                        ''',
-                        (session['user_id'], session['group_id'])
-                    )
-                    nav_notifications = cursor.fetchall()
+                cursor.execute(
+                    '''
+                    SELECT notification_id, message, created_at, url
+                    FROM user_notifications
+                    WHERE user_id = %s AND is_active = TRUE
+                      AND (group_id IS NULL OR group_id = %s)
+                    ORDER BY created_at DESC
+                    LIMIT 20
+                    ''',
+                    (session['user_id'], session.get('group_id', 0))
+                )
+                nav_notifications = cursor.fetchall()
         except Exception:
             pass
 

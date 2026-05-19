@@ -427,10 +427,14 @@ def update_bait_station_record(db, data, editor_id):
         ))
 
 
-def insert_notification(db, user_id, message, category='info'):
-    """Insert a notification that will be flashed to the user on next login."""
+def insert_notification(db, user_id, message, category='info', url=None, group_id=None):
+    """Insert a bell notification for the user.
+
+    Pass group_id to scope to a specific group context; leave None for
+    platform-wide notifications (helpdesk staff alerts, admin events).
+    """
     with db.get_cursor() as cursor:
         cursor.execute("""
-            INSERT INTO user_notifications (user_id, message, category)
-            VALUES (%s, %s, %s)
-        """, (user_id, message, category))
+            INSERT INTO user_notifications (user_id, message, category, url, group_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (user_id, message, category, url, group_id))
