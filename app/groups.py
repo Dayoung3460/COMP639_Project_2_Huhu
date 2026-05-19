@@ -266,6 +266,7 @@ def request_join_group():
             return jsonify({'error': 'You already have a pending request for this group'}), 400
 
         # 6. Public → join immediately as Observer; Private → create pending request
+        coord_ids = []
         if group['is_public']:
             cursor.execute(
                 "INSERT INTO group_memberships (user_id, group_id, role) VALUES (%s, %s, 'Observer')",
@@ -285,14 +286,16 @@ def request_join_group():
                 SELECT user_id FROM group_memberships
                 WHERE group_id = %s AND role = 'Group Coordinator'
             ''', (group_id,))
-            coordinators = cursor.fetchall()
-            if coordinators:
-                notif_message = f"New join request for {group['name']}"
-                cursor.executemany(
-                    "INSERT INTO user_notifications (user_id, group_id, message, category) "
-                    "VALUES (%s, %s, %s, 'info')",
-                    [(c['user_id'], group_id, notif_message) for c in coordinators]
-                )
+            coord_ids = [r['user_id'] for r in cursor.fetchall()]
+
+        for coord_id in coord_ids:
+            insert_notification(
+                db, coord_id,
+                f'New join request for {group["name"]} — review it in Join Requests.',
+                'info',
+                url=url_for('coordinator_requests'),
+                group_id=group_id,
+            )
 
     return redirect(url_for('group_landing', group_id=group_id))
 
