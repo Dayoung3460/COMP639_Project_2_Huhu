@@ -13,6 +13,7 @@ Visibility logic (per the brief):
 from flask import render_template, request, redirect, url_for, flash, session, abort, jsonify
 from app import app, db
 from app.utils import role_required, allowed_file, UPLOAD_FOLDER, redirect_by_role
+from app.helpers.dbHelper import insert_notification
 import os
 import uuid
 
