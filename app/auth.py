@@ -26,7 +26,8 @@ def _flash_pending_notifications(user_id):
             with db.get_cursor() as cursor:
                 cursor.execute(
                     'UPDATE user_notifications SET is_active = FALSE '
-                    'WHERE notification_id = ANY(%s) AND group_id = %s',
+                    'WHERE notification_id = ANY(%s) '
+                    'AND (group_id = %s OR group_id IS NULL)',
                     (ids, session.get('group_id'))
                 )
         for n in notifications:
