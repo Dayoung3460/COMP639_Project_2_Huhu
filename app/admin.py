@@ -1857,10 +1857,26 @@ def admin_support_technicians():
             )
             search_results = cursor.fetchall()
 
+        cursor.execute(
+            """
+            SELECT
+                sal.action, sal.created_at,
+                target.first_name || ' ' || target.last_name AS target_name,
+                actor.first_name  || ' ' || actor.last_name  AS actor_name
+            FROM support_tech_audit_log sal
+            JOIN users target ON target.user_id = sal.target_user_id
+            LEFT JOIN users actor  ON actor.user_id  = sal.actor_user_id
+            ORDER BY sal.created_at DESC
+            LIMIT 50
+            """
+        )
+        audit_log = cursor.fetchall()
+
     return render_template('admin/support_technicians.html',
                            technicians=technicians,
                            search=search,
-                           search_results=search_results)
+                           search_results=search_results,
+                           audit_log=audit_log)
 
 
 @app.route('/admin/support-technicians/<int:user_id>/grant', methods=['POST'])
@@ -1886,6 +1902,10 @@ def admin_support_tech_grant(user_id):
         cursor.execute(
             'UPDATE users SET is_support_tech = TRUE WHERE user_id = %s',
             (user_id,)
+        )
+        cursor.execute(
+            'INSERT INTO support_tech_audit_log (target_user_id, actor_user_id, action) VALUES (%s, %s, %s)',
+            (user_id, session['user_id'], 'granted')
         )
 
     full_name = f"{user['first_name']} {user['last_name']}"
@@ -1914,6 +1934,10 @@ def admin_support_tech_revoke(user_id):
         cursor.execute(
             'UPDATE users SET is_support_tech = FALSE WHERE user_id = %s',
             (user_id,)
+        )
+        cursor.execute(
+            'INSERT INTO support_tech_audit_log (target_user_id, actor_user_id, action) VALUES (%s, %s, %s)',
+            (user_id, session['user_id'], 'revoked')
         )
 
     full_name = f"{user['first_name']} {user['last_name']}"
