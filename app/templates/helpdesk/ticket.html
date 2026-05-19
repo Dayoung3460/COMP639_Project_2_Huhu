@@ -70,12 +70,14 @@
               </button>
             </form>
             {% endif %}
-          {% else %}
+          {% elif can_take %}
             <form method="POST" action="{{ url_for('helpdesk_take', ticket_id=ticket.ticket_id) }}">
               <button type="submit" class="btn btn-warning btn-sm">
                 <i class="bi bi-person-check me-1" aria-hidden="true"></i>Take
               </button>
             </form>
+          {% else %}
+            <div class="fw-medium text-warning">Unassigned</div>
           {% endif %}
         </div>
 

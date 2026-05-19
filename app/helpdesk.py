@@ -66,7 +66,7 @@ def _save_screenshot(ticket_id, file, ext):
 @role_required()
 def helpdesk_submit():
     """Submit a support request or bug report."""
-    if session.get('group_role') == 'Support Technician':
+    if session.get('group_role') in ('Support Technician', 'Super Admin'):
         abort(403)
 
     if request.method == 'GET':
@@ -143,7 +143,7 @@ def helpdesk_submit():
 @role_required()
 def helpdesk_my_requests():
     """List all support tickets submitted by the current user."""
-    if session.get('group_role') == 'Support Technician':
+    if session.get('group_role') in ('Support Technician', 'Super Admin'):
         abort(403)
 
     user_id     = session['user_id']
@@ -444,6 +444,10 @@ def helpdesk_ticket(ticket_id):
         session.get('group_role') == 'Super Admin'
         or (ticket['assigned_to'] and ticket['assigned_to'] == user_id)
     )
+    can_take = (
+        session.get('group_role') == 'Support Technician'
+        and not ticket['assigned_to']
+    )
 
     return render_template('helpdesk/ticket.html',
                            ticket=ticket,
@@ -451,13 +455,14 @@ def helpdesk_ticket(ticket_id):
                            status_history=status_history,
                            current_user_id=user_id,
                            technicians=technicians,
-                           can_reassign=can_reassign)
+                           can_reassign=can_reassign,
+                           can_take=can_take)
 
 
 # ── Take ownership of an unassigned ticket ───────────────────────────────────
 
 @app.route('/support/ticket/<int:ticket_id>/take', methods=['POST'])
-@role_required('Super Admin', 'Support Technician')
+@role_required('Support Technician')
 def helpdesk_take(ticket_id):
     """Assign the current staff member as owner of an unassigned ticket."""
     user_id = session['user_id']

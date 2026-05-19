@@ -144,12 +144,14 @@
             <td class="small text-nowrap {% if not t.assigned_owner %}text-warning fw-semibold{% else %}text-muted{% endif %}">
               {% if t.assigned_owner %}
                 {{ t.assigned_owner }}
-              {% else %}
+              {% elif session.get('group_role') == 'Support Technician' %}
                 <form method="POST"
                       action="{{ url_for('helpdesk_take', ticket_id=t.ticket_id) }}"
                       onclick="event.stopPropagation()">
                   <button type="submit" class="btn btn-warning btn-sm py-0">Take</button>
                 </form>
+              {% else %}
+                <span class="text-warning fw-semibold">Unassigned</span>
               {% endif %}
             </td>
 
