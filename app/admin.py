@@ -1813,3 +1813,108 @@ def manage_bait_types():
     """Redirect to generic reference data handler."""
     return redirect(url_for('manage_lookup', config_key='bait-types'))
 
+
+# ── Support Technician role management ───────────────────────────────────────
+
+import logging as _logging
+_admin_logger = _logging.getLogger(__name__)
+
+@app.route('/admin/support-technicians')
+@role_required('Super Admin')
+def admin_support_technicians():
+    """List current technicians; search for users to grant/revoke the role."""
+    search = request.args.get('search', '').strip()
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT user_id, username, first_name, last_name, account_status
+            FROM users
+            WHERE is_support_tech = TRUE
+            ORDER BY last_name, first_name
+            """
+        )
+        technicians = cursor.fetchall()
+
+        search_results = []
+        if search:
+            cursor.execute(
+                """
+                SELECT user_id, username, first_name, last_name,
+                       account_status, is_support_tech, is_super_admin
+                FROM users
+                WHERE (username ILIKE %s OR first_name ILIKE %s OR last_name ILIKE %s
+                       OR (first_name || ' ' || last_name) ILIKE %s)
+                  AND is_super_admin = FALSE
+                ORDER BY last_name, first_name
+                LIMIT 20
+                """,
+                (f'%{search}%', f'%{search}%', f'%{search}%', f'%{search}%')
+            )
+            search_results = cursor.fetchall()
+
+    return render_template('admin/support_technicians.html',
+                           technicians=technicians,
+                           search=search,
+                           search_results=search_results)
+
+
+@app.route('/admin/support-technicians/<int:user_id>/grant', methods=['POST'])
+@role_required('Super Admin')
+def admin_support_tech_grant(user_id):
+    """Grant the Support Technician role to a user."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT username, first_name, last_name, is_super_admin FROM users WHERE user_id = %s',
+            (user_id,)
+        )
+        user = cursor.fetchone()
+
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin_support_technicians'))
+
+    if user['is_super_admin']:
+        flash('Super Admins already have elevated access.', 'warning')
+        return redirect(url_for('admin_support_technicians'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE users SET is_support_tech = TRUE WHERE user_id = %s',
+            (user_id,)
+        )
+
+    full_name = f"{user['first_name']} {user['last_name']}"
+    _admin_logger.info('Super Admin %s granted Support Technician role to user %d (%s)',
+                       session['user_id'], user_id, full_name)
+    flash(f'{full_name} granted Support Technician role.', 'success')
+    return redirect(url_for('admin_support_technicians'))
+
+
+@app.route('/admin/support-technicians/<int:user_id>/revoke', methods=['POST'])
+@role_required('Super Admin')
+def admin_support_tech_revoke(user_id):
+    """Revoke the Support Technician role from a user."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT username, first_name, last_name FROM users WHERE user_id = %s',
+            (user_id,)
+        )
+        user = cursor.fetchone()
+
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin_support_technicians'))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE users SET is_support_tech = FALSE WHERE user_id = %s',
+            (user_id,)
+        )
+
+    full_name = f"{user['first_name']} {user['last_name']}"
+    _admin_logger.info('Super Admin %s revoked Support Technician role from user %d (%s)',
+                       session['user_id'], user_id, full_name)
+    flash(f'{full_name} Support Technician role revoked.', 'success')
+    return redirect(url_for('admin_support_technicians'))
+

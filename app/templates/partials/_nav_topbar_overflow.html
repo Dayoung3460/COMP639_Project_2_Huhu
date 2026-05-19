@@ -47,6 +47,11 @@
        class="topbar-overflow-item {{ 'active' if request.endpoint in ['reference_data', 'manage_lookup'] }}">
       <i class="bi bi-database-gear" aria-hidden="true"></i> Reference Data
     </a>
+    <a role="menuitem" tabindex="-1"
+       href="{{ url_for('admin_support_technicians') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint in ['admin_support_technicians', 'admin_support_tech_grant', 'admin_support_tech_revoke'] }}">
+      <i class="bi bi-headset" aria-hidden="true"></i> Support Technicians
+    </a>
   {% endif %}
 
   {# Coordinator-only overflow. #}
