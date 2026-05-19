@@ -299,7 +299,7 @@ def notification_click(notification_id):
         )
         row = cursor.fetchone()
 
-    dest = row['url'] if row and row['url'] else url_for('index')
+    dest = row['url'] if row and row['url'] else request.referrer or url_for('index')
     return redirect(dest)
 
 
