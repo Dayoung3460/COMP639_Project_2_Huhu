@@ -607,6 +607,33 @@ CREATE TABLE ticket_status_history (
     changed_at   TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS kb_articles CASCADE;
+DROP TABLE IF EXISTS kb_categories CASCADE;
+
+CREATE TABLE kb_categories (
+    category_id SERIAL      PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    sort_order  INT          NOT NULL DEFAULT 0
+);
+
+INSERT INTO kb_categories (name, sort_order) VALUES
+    ('Account & Login', 1),
+    ('Lines & Traps',   2),
+    ('Bait Stations',   3),
+    ('Records',         4);
+
+CREATE TABLE kb_articles (
+    article_id  SERIAL       PRIMARY KEY,
+    category_id INT          NOT NULL REFERENCES kb_categories(category_id),
+    title       VARCHAR(255) NOT NULL,
+    body        TEXT         NOT NULL,
+    is_published BOOL        NOT NULL DEFAULT FALSE,
+    created_by  INT          REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by  INT          REFERENCES users(user_id) ON DELETE SET NULL,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 DROP TABLE IF EXISTS user_suspension_log CASCADE;
 
 CREATE TABLE user_suspension_log (

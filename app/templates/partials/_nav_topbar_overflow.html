@@ -139,6 +139,11 @@
   {# Support — all roles; queue + user search shown only for staff. #}
   <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
   <div class="topbar-overflow-label" role="presentation">Support</div>
+  <a role="menuitem" tabindex="-1"
+     href="{{ url_for('kb_index') }}"
+     class="topbar-overflow-item {{ 'active' if request.endpoint in ('kb_index', 'kb_article', 'kb_new', 'kb_edit') }}">
+    <i class="bi bi-book" aria-hidden="true"></i> Knowledge Base
+  </a>
   {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
   <a role="menuitem" tabindex="-1"
      href="{{ url_for('helpdesk_queue') }}"

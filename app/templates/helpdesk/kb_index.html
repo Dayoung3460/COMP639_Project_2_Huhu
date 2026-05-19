@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Knowledge Base{% endblock %}
+
+{% block page_head_icon %}<i class="bi bi-book"></i>{% endblock %}
+{% block page_title %}Knowledge Base{% endblock %}
+{% block page_subtitle %}Browse common questions and guides before submitting a request{% endblock %}
+
+{% block breadcrumb %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item active" aria-current="page">Knowledge Base</li>
+    </ol>
+  </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px;">
+
+  {# ── Search ──────────────────────────────────────────────────── #}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="GET" action="{{ url_for('kb_index') }}" role="search">
+        <div class="input-group">
+          <span class="input-group-text" aria-hidden="true"><i class="bi bi-search"></i></span>
+          <input type="search" name="q" class="form-control"
+                 placeholder="Search articles…"
+                 value="{{ q }}" autofocus aria-label="Search knowledge base">
+          <button type="submit" class="btn btn-primary">Search</button>
+          {% if q %}
+            <a href="{{ url_for('kb_index') }}" class="btn btn-outline-secondary">Clear</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── Author actions ──────────────────────────────────────────── #}
+  {% if can_author %}
+  <div class="d-flex justify-content-end mb-3">
+    <a href="{{ url_for('kb_new') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New Article
+    </a>
+  </div>
+  {% endif %}
+
+  {# ── Search results ──────────────────────────────────────────── #}
+  {% if q %}
+    {% if not articles %}
+      <p class="text-muted">No articles found for <strong>{{ q }}</strong>.</p>
+    {% else %}
+      <p class="text-muted small mb-3">{{ articles | length }} result(s) for <strong>{{ q }}</strong></p>
+      <div class="list-group mb-4">
+        {% for a in articles %}
+        <a href="{{ url_for('kb_article', article_id=a.article_id) }}"
+           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-medium">{{ a.title }}</div>
+            <div class="small text-muted">{{ a.category_name }}</div>
+          </div>
+          {% if not a.is_published %}
+            <span class="badge bg-warning-subtle text-warning-emphasis ms-2">Draft</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+  {# ── Grouped by category ─────────────────────────────────────── #}
+  {% else %}
+    {% if not categories %}
+      <p class="text-muted">No articles yet.</p>
+    {% else %}
+      {% for cat in categories %}
+        {% if cat.articles %}
+        <div class="card mb-3">
+          <div class="card-header fw-semibold">
+            <i class="bi bi-folder me-2" aria-hidden="true"></i>{{ cat.name }}
+          </div>
+          <div class="list-group list-group-flush">
+            {% for a in cat.articles %}
+            <a href="{{ url_for('kb_article', article_id=a.article_id) }}"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+              <span>{{ a.title }}</span>
+              <div class="d-flex align-items-center gap-2">
+                {% if not a.is_published %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis">Draft</span>
+                {% endif %}
+                <span class="text-muted small text-nowrap">{{ a.updated_at | nz_datetime }}</span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+
+  {% if session.get('group_role') not in ('Super Admin', 'Support Technician') %}
+  <div class="mt-3">
+    <a href="{{ url_for('helpdesk_submit') }}" class="btn btn-outline-primary">
+      <i class="bi bi-headset me-1" aria-hidden="true"></i>Can't find an answer? Submit a request
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'New Article' if is_new else 'Edit Article' }}{% endblock %}
+
+{% block page_head_icon %}<i class="bi bi-pencil-square"></i>{% endblock %}
+{% block page_title %}{{ 'New Article' if is_new else 'Edit Article' }}{% endblock %}
+{% block page_subtitle %}Saved as draft — Super Admin can publish{% endblock %}
+
+{% block breadcrumb %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('kb_index') }}">Knowledge Base</a>
+      </li>
+      {% if not is_new %}
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('kb_article', article_id=article.article_id) }}">{{ article.title }}</a>
+      </li>
+      {% endif %}
+      <li class="breadcrumb-item active" aria-current="page">{{ 'New' if is_new else 'Edit' }}</li>
+    </ol>
+  </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:760px;">
+  <form method="POST"
+        action="{{ url_for('kb_new') if is_new else url_for('kb_edit', article_id=article.article_id) }}">
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Article Details</div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label fw-medium" for="category_id">
+            Category <span class="text-danger">*</span>
+          </label>
+          <select name="category_id" id="category_id"
+                  class="form-select {% if errors.get('category_id') %}is-invalid{% endif %}"
+                  required>
+            <option value="">— select —</option>
+            {% for cat in categories %}
+              <option value="{{ cat.category_id }}"
+                      {% if data.get('category_id')|string == cat.category_id|string %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if errors.get('category_id') %}
+            <div class="invalid-feedback">{{ errors.category_id }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-medium" for="title">
+            Title <span class="text-danger">*</span>
+          </label>
+          <input type="text" name="title" id="title"
+                 class="form-control {% if errors.get('title') %}is-invalid{% endif %}"
+                 maxlength="255"
+                 value="{{ data.get('title', '') }}"
+                 placeholder="e.g. How do I reset my password?" required>
+          {% if errors.get('title') %}
+            <div class="invalid-feedback">{{ errors.title }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-medium" for="body">
+            Body <span class="text-danger">*</span>
+          </label>
+          <textarea name="body" id="body" rows="14"
+                    class="form-control {% if errors.get('body') %}is-invalid{% endif %}"
+                    placeholder="Write the article content here…"
+                    required>{{ data.get('body', '') }}</textarea>
+          {% if errors.get('body') %}
+            <div class="invalid-feedback">{{ errors.body }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-floppy me-1" aria-hidden="true"></i>Save Draft
+      </button>
+      {% if not is_new %}
+        <a href="{{ url_for('kb_article', article_id=article.article_id) }}"
+           class="btn btn-outline-secondary">Cancel</a>
+      {% else %}
+        <a href="{{ url_for('kb_index') }}" class="btn btn-outline-secondary">Cancel</a>
+      {% endif %}
+    </div>
+
+  </form>
+</div>
+{% endblock %}

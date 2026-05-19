@@ -973,3 +973,240 @@ def helpdesk_user_reinstate(target_user_id):
         'success'
     )
     return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))
+
+
+# ── Knowledge Base (P2-63) ───────────────────────────────────────────────────
+
+def _kb_can_author():
+    """True for roles that can create/edit KB articles (as drafts)."""
+    return session.get('group_role') in ('Super Admin', 'Support Technician')
+
+
+def _kb_can_publish():
+    """True for roles that can publish/unpublish KB articles."""
+    return session.get('group_role') == 'Super Admin'
+
+
+def _fetch_categories():
+    with db.get_cursor() as cursor:
+        cursor.execute('SELECT category_id, name FROM kb_categories ORDER BY sort_order, name')
+        return cursor.fetchall()
+
+
+@app.route('/helpdesk/kb')
+@role_required()
+def kb_index():
+    """Knowledge Base — searchable, grouped by category."""
+    q = request.args.get('q', '').strip()
+    can_author  = _kb_can_author()
+    can_publish = _kb_can_publish()
+
+    with db.get_cursor() as cursor:
+        if q:
+            cursor.execute(
+                """
+                SELECT a.article_id, a.title, a.is_published, a.updated_at,
+                       c.name AS category_name
+                FROM   kb_articles a
+                JOIN   kb_categories c ON c.category_id = a.category_id
+                WHERE  (a.title ILIKE %s OR a.body ILIKE %s)
+                  AND  (a.is_published = TRUE OR %s)
+                ORDER BY c.sort_order, c.name, a.title
+                """,
+                (f'%{q}%', f'%{q}%', can_author)
+            )
+            articles = cursor.fetchall()
+            categories = []
+        else:
+            cursor.execute(
+                """
+                SELECT a.article_id, a.title, a.is_published, a.updated_at,
+                       c.category_id, c.name AS category_name, c.sort_order
+                FROM   kb_articles a
+                JOIN   kb_categories c ON c.category_id = a.category_id
+                WHERE  a.is_published = TRUE OR %s
+                ORDER BY c.sort_order, c.name, a.title
+                """,
+                (can_author,)
+            )
+            rows = cursor.fetchall()
+            # Group by category preserving sort order
+            seen = {}
+            categories = []
+            for row in rows:
+                cid = row['category_id']
+                if cid not in seen:
+                    seen[cid] = {'name': row['category_name'], 'articles': []}
+                    categories.append(seen[cid])
+                seen[cid]['articles'].append(row)
+            articles = []
+
+    return render_template(
+        'helpdesk/kb_index.html',
+        categories=categories,
+        articles=articles,
+        q=q,
+        can_author=can_author,
+        can_publish=can_publish,
+    )
+
+
+@app.route('/helpdesk/kb/<int:article_id>')
+@role_required()
+def kb_article(article_id):
+    """View a single KB article."""
+    can_author  = _kb_can_author()
+    can_publish = _kb_can_publish()
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT a.article_id, a.title, a.body, a.is_published, a.updated_at,
+                   c.name AS category_name,
+                   creator.first_name || ' ' || creator.last_name AS created_by_name,
+                   editor.first_name  || ' ' || editor.last_name  AS updated_by_name
+            FROM   kb_articles a
+            JOIN   kb_categories c ON c.category_id = a.category_id
+            LEFT JOIN users creator ON creator.user_id = a.created_by
+            LEFT JOIN users editor  ON editor.user_id  = a.updated_by
+            WHERE  a.article_id = %s
+              AND  (a.is_published = TRUE OR %s)
+            """,
+            (article_id, can_author)
+        )
+        article = cursor.fetchone()
+
+    if not article:
+        abort(404)
+
+    return render_template(
+        'helpdesk/kb_article.html',
+        article=article,
+        can_author=can_author,
+        can_publish=can_publish,
+    )
+
+
+@app.route('/helpdesk/kb/new', methods=['GET', 'POST'])
+@role_required('Super Admin', 'Support Technician')
+def kb_new():
+    """Create a new KB article (saved as draft)."""
+    categories = _fetch_categories()
+
+    if request.method == 'POST':
+        title       = request.form.get('title', '').strip()
+        body        = request.form.get('body', '').strip()
+        category_id = request.form.get('category_id', type=int)
+
+        errors = {}
+        if not title:
+            errors['title'] = 'Title is required.'
+        if not body:
+            errors['body'] = 'Body is required.'
+        if not category_id:
+            errors['category_id'] = 'Category is required.'
+
+        if not errors:
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO kb_articles (category_id, title, body, is_published, created_by, updated_by)
+                    VALUES (%s, %s, %s, FALSE, %s, %s)
+                    RETURNING article_id
+                    """,
+                    (category_id, title, body, session['user_id'], session['user_id'])
+                )
+                article_id = cursor.fetchone()['article_id']
+            logger.info('User %d created KB article %d', session['user_id'], article_id)
+            flash('Article saved as draft.', 'success')
+            return redirect(url_for('kb_article', article_id=article_id))
+
+        return render_template('helpdesk/kb_edit.html',
+                               categories=categories, errors=errors,
+                               data=request.form, is_new=True)
+
+    return render_template('helpdesk/kb_edit.html',
+                           categories=categories, errors={}, data={}, is_new=True)
+
+
+@app.route('/helpdesk/kb/<int:article_id>/edit', methods=['GET', 'POST'])
+@role_required('Super Admin', 'Support Technician')
+def kb_edit(article_id):
+    """Edit an existing KB article."""
+    categories = _fetch_categories()
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT article_id, category_id, title, body, is_published FROM kb_articles WHERE article_id = %s',
+            (article_id,)
+        )
+        article = cursor.fetchone()
+
+    if not article:
+        abort(404)
+
+    if request.method == 'POST':
+        title       = request.form.get('title', '').strip()
+        body        = request.form.get('body', '').strip()
+        category_id = request.form.get('category_id', type=int)
+
+        errors = {}
+        if not title:
+            errors['title'] = 'Title is required.'
+        if not body:
+            errors['body'] = 'Body is required.'
+        if not category_id:
+            errors['category_id'] = 'Category is required.'
+
+        if not errors:
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE kb_articles
+                    SET    category_id = %s, title = %s, body = %s,
+                           updated_by = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE  article_id = %s
+                    """,
+                    (category_id, title, body, session['user_id'], article_id)
+                )
+            logger.info('User %d edited KB article %d', session['user_id'], article_id)
+            flash('Article updated.', 'success')
+            return redirect(url_for('kb_article', article_id=article_id))
+
+        return render_template('helpdesk/kb_edit.html',
+                               categories=categories, errors=errors,
+                               data=request.form, is_new=False, article=article)
+
+    return render_template('helpdesk/kb_edit.html',
+                           categories=categories, errors={},
+                           data=article, is_new=False, article=article)
+
+
+@app.route('/helpdesk/kb/<int:article_id>/publish', methods=['POST'])
+@role_required('Super Admin')
+def kb_publish(article_id):
+    """Publish a draft KB article."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE kb_articles SET is_published = TRUE, updated_at = CURRENT_TIMESTAMP '
+            'WHERE article_id = %s',
+            (article_id,)
+        )
+    logger.info('User %d published KB article %d', session['user_id'], article_id)
+    flash('Article published.', 'success')
+    return redirect(url_for('kb_article', article_id=article_id))
+
+
+@app.route('/helpdesk/kb/<int:article_id>/unpublish', methods=['POST'])
+@role_required('Super Admin')
+def kb_unpublish(article_id):
+    """Unpublish a KB article (returns it to draft)."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE kb_articles SET is_published = FALSE, updated_at = CURRENT_TIMESTAMP '
+            'WHERE article_id = %s',
+            (article_id,)
+        )
+    logger.info('User %d unpublished KB article %d', session['user_id'], article_id)
+    flash('Article unpublished.', 'success')
+    return redirect(url_for('kb_article', article_id=article_id))
