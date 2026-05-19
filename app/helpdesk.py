@@ -554,3 +554,45 @@ def helpdesk_assign(ticket_id):
     logger.info('Staff %d reassigned ticket %d to user %d', user_id, ticket_id, new_assignee_id)
     flash(f'Request reassigned to {new_owner["full_name"]}.', 'success')
     return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+
+
+# ── Drop ticket back to unassigned queue ─────────────────────────────────────
+
+@app.route('/support/ticket/<int:ticket_id>/drop', methods=['POST'])
+@role_required('Super Admin', 'Support Technician')
+def helpdesk_drop(ticket_id):
+    """Clear the owner of a ticket, returning it to the unassigned queue."""
+    user_id = session['user_id']
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT assigned_to, submitted_by, title, status FROM support_tickets WHERE ticket_id = %s',
+            (ticket_id,)
+        )
+        ticket = cursor.fetchone()
+
+    if not ticket:
+        abort(404)
+
+    if ticket['status'] == 'Resolved':
+        flash('Resolved requests cannot be dropped.', 'warning')
+        return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+
+    is_super_admin = session.get('group_role') == 'Super Admin'
+    if not is_super_admin and ticket['assigned_to'] != user_id:
+        abort(403)
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE support_tickets SET assigned_to = NULL, updated_at = CURRENT_TIMESTAMP '
+            'WHERE ticket_id = %s',
+            (ticket_id,)
+        )
+
+    insert_notification(db, ticket['submitted_by'],
+        f'Your request #{ticket_id} "{ticket["title"]}" is awaiting reassignment by our support team.',
+        'info')
+
+    logger.info('Staff %d dropped ticket %d back to queue', user_id, ticket_id)
+    flash('Request returned to the queue.', 'success')
+    return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))

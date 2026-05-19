@@ -183,9 +183,19 @@
   </div>
   {% endif %}
 
-  <a href="{{ url_for('helpdesk_queue') }}" class="btn btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to queue
-  </a>
+  <div class="d-flex gap-2 align-items-center">
+    <a href="{{ url_for('helpdesk_queue') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to queue
+    </a>
+    {% if can_reassign and ticket.status != 'Resolved' %}
+    <form method="POST" action="{{ url_for('helpdesk_drop', ticket_id=ticket.ticket_id) }}"
+          onsubmit="return confirm('Drop this request back to the unassigned queue?')">
+      <button type="submit" class="btn btn-outline-danger">
+        <i class="bi bi-box-arrow-left me-1" aria-hidden="true"></i>Drop to queue
+      </button>
+    </form>
+    {% endif %}
+  </div>
 
 </div>
 {% endblock %}
