@@ -485,7 +485,7 @@ def helpdesk_take(ticket_id):
             UPDATE support_tickets
             SET    assigned_to = %s, updated_at = CURRENT_TIMESTAMP
             WHERE  ticket_id = %s AND assigned_to IS NULL
-            RETURNING submitted_by, title
+            RETURNING submitted_by, title, group_id
             """,
             (user_id, ticket_id)
         )
@@ -505,7 +505,8 @@ def helpdesk_take(ticket_id):
 
     insert_notification(db, row['submitted_by'],
         f'Your request #{ticket_id} "{row["title"]}" has been picked up by {staff_name}.', 'info',
-        url=url_for('helpdesk_view', ticket_id=ticket_id))
+        url=url_for('helpdesk_view', ticket_id=ticket_id),
+        group_id=row['group_id'])
 
     logger.info('Staff %d took ownership of ticket %d', user_id, ticket_id)
     flash('You are now the owner of this request.', 'success')
@@ -522,7 +523,7 @@ def helpdesk_assign(ticket_id):
 
     with db.get_cursor() as cursor:
         cursor.execute(
-            'SELECT assigned_to, submitted_by, title FROM support_tickets WHERE ticket_id = %s',
+            'SELECT assigned_to, submitted_by, title, group_id FROM support_tickets WHERE ticket_id = %s',
             (ticket_id,)
         )
         ticket = cursor.fetchone()
@@ -568,7 +569,8 @@ def helpdesk_assign(ticket_id):
     # Notify submitter — no staff names exposed per AC
     insert_notification(db, ticket['submitted_by'],
         f'Your request #{ticket_id} "{ticket["title"]}" has been reassigned to another member of our support team.',
-        'info', url=url_for('helpdesk_view', ticket_id=ticket_id))
+        'info', url=url_for('helpdesk_view', ticket_id=ticket_id),
+        group_id=ticket['group_id'])
 
     logger.info('Staff %d reassigned ticket %d to user %d', user_id, ticket_id, new_assignee_id)
     flash(f'Request reassigned to {new_owner["full_name"]}.', 'success')
@@ -585,7 +587,7 @@ def helpdesk_drop(ticket_id):
 
     with db.get_cursor() as cursor:
         cursor.execute(
-            'SELECT assigned_to, submitted_by, title, status FROM support_tickets WHERE ticket_id = %s',
+            'SELECT assigned_to, submitted_by, title, status, group_id FROM support_tickets WHERE ticket_id = %s',
             (ticket_id,)
         )
         ticket = cursor.fetchone()
@@ -614,7 +616,8 @@ def helpdesk_drop(ticket_id):
 
     insert_notification(db, ticket['submitted_by'],
         f'Your request #{ticket_id} "{ticket["title"]}" is awaiting reassignment by our support team.',
-        'info', url=url_for('helpdesk_view', ticket_id=ticket_id))
+        'info', url=url_for('helpdesk_view', ticket_id=ticket_id),
+        group_id=ticket['group_id'])
 
     logger.info('Staff %d dropped ticket %d back to queue', user_id, ticket_id)
     flash('Request returned to the queue.', 'success')

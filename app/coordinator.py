@@ -370,7 +370,8 @@ def coordinator_decide_request(request_id):
         insert_notification(db, applicant_id,
                             f'Your request to join {group_name} has been approved. You have been added as an Observer.',
                             'success',
-                            url=url_for('group_landing', group_id=group_id))
+                            url=url_for('group_landing', group_id=group_id),
+                            group_id=group_id)
         logger.info('Coordinator %s approved join request %d (user %d)',
                     session['user_id'], request_id, applicant_id)
         flash('Request approved — user added as Observer.', 'success')
@@ -379,7 +380,7 @@ def coordinator_decide_request(request_id):
         message = f'Your request to join {group_name} was not approved.'
         if reason:
             message += f' Reason: {reason}'
-        insert_notification(db, applicant_id, message, 'warning')
+        insert_notification(db, applicant_id, message, 'warning', group_id=group_id)
         logger.info('Coordinator %s rejected join request %d (user %d)',
                     session['user_id'], request_id, applicant_id)
         flash('Request rejected.', 'info')
