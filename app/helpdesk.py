@@ -797,7 +797,7 @@ def helpdesk_user_profile(target_user_id):
             FROM   bait_station_records bsr
             JOIN   bait_stations bs ON bs.station_id = bsr.station_id
             JOIN   lines l          ON l.line_id      = bs.line_id
-            WHERE  bsr.recorded_by = %s
+            WHERE  bsr.recorded_by_id = %s
             ORDER BY bsr.date DESC
             LIMIT  10
             """,
