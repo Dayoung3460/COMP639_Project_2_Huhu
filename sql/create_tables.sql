@@ -582,3 +582,14 @@ CREATE TABLE support_tickets (
     created_at   TIMESTAMP            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP            NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+DROP TABLE IF EXISTS "public"."group_operational_areas" CASCADE;
+CREATE TABLE "public"."group_operational_areas" (
+    "group_id"   int4      NOT NULL,
+    "geojson"    text      NOT NULL,
+    "updated_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_by" int4,
+    PRIMARY KEY ("group_id"),
+    FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id") ON DELETE CASCADE,
+    FOREIGN KEY ("updated_by") REFERENCES "public"."users"("user_id")
+);
