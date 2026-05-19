@@ -294,8 +294,12 @@ def toggle_active(user_id):
         if not user:
             flash('User not found.', 'danger')
             return redirect(url_for('admin_users'))
-        
-            # Toggle between 'active' and 'inactive'
+
+        if user['account_status'] == 'suspended':
+            flash('This account is suspended by Support. Use the User Search to reinstate it.', 'warning')
+            return redirect(url_for('admin_users'))
+
+        # Toggle between 'active' and 'inactive'
         new_status = 'inactive' if user['account_status'] == 'active' else 'active'
 
         # Guard: prevent deactivating an account that is the sole active coordinator of any group

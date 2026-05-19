@@ -839,6 +839,21 @@ def helpdesk_user_profile(target_user_id):
         )
         recent_observations = cursor.fetchall()
 
+    # Suspension audit log
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT usl.action, usl.reason, usl.created_at,
+                   actor.first_name || ' ' || actor.last_name AS actor_name
+            FROM   user_suspension_log usl
+            LEFT JOIN users actor ON actor.user_id = usl.actor_user_id
+            WHERE  usl.target_user_id = %s
+            ORDER BY usl.created_at DESC
+            """,
+            (target_user_id,)
+        )
+        suspension_log = cursor.fetchall()
+
     logger.info('User %d viewed profile of user %d', viewer_id, target_user_id)
 
     return render_template(
@@ -848,4 +863,113 @@ def helpdesk_user_profile(target_user_id):
         recent_catches=recent_catches,
         recent_bait=recent_bait,
         recent_observations=recent_observations,
+        suspension_log=suspension_log,
     )
+
+
+# ── Suspend a user account ───────────────────────────────────────────────────
+
+@app.route('/support/user-search/<int:target_user_id>/suspend', methods=['POST'])
+@role_required('Super Admin', 'Support Technician')
+def helpdesk_user_suspend(target_user_id):
+    """Suspend a user account with a required reason."""
+    actor_id = session['user_id']
+
+    if actor_id == target_user_id:
+        flash('You cannot suspend your own account.', 'danger')
+        return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))
+
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash('A reason is required to suspend an account.', 'danger')
+        return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT user_id, account_status, is_super_admin, first_name, last_name '
+            'FROM users WHERE user_id = %s',
+            (target_user_id,)
+        )
+        target = cursor.fetchone()
+
+    if not target or target['is_super_admin']:
+        abort(404)
+
+    if target['account_status'] == 'suspended':
+        flash('This account is already suspended.', 'warning')
+        return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))
+
+    if target['account_status'] != 'active':
+        flash('Only active accounts can be suspended.', 'warning')
+        return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE users SET account_status = %s WHERE user_id = %s',
+            ('suspended', target_user_id)
+        )
+        cursor.execute(
+            'INSERT INTO user_suspension_log (target_user_id, actor_user_id, action, reason) '
+            'VALUES (%s, %s, %s, %s)',
+            (target_user_id, actor_id, 'suspended', reason)
+        )
+
+    logger.info(
+        'User %d suspended account %d — reason: %s',
+        actor_id, target_user_id, reason
+    )
+    flash(
+        f'{target["first_name"]} {target["last_name"]}\'s account has been suspended.',
+        'success'
+    )
+    return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))
+
+
+# ── Reinstate a suspended user account ──────────────────────────────────────
+
+@app.route('/support/user-search/<int:target_user_id>/reinstate', methods=['POST'])
+@role_required('Super Admin', 'Support Technician')
+def helpdesk_user_reinstate(target_user_id):
+    """Reinstate a suspended user account with a required reason."""
+    actor_id = session['user_id']
+
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash('A reason is required to reinstate an account.', 'danger')
+        return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT user_id, account_status, is_super_admin, first_name, last_name '
+            'FROM users WHERE user_id = %s',
+            (target_user_id,)
+        )
+        target = cursor.fetchone()
+
+    if not target or target['is_super_admin']:
+        abort(404)
+
+    if target['account_status'] != 'suspended':
+        flash('This account is not suspended.', 'warning')
+        return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE users SET account_status = %s WHERE user_id = %s',
+            ('active', target_user_id)
+        )
+        cursor.execute(
+            'INSERT INTO user_suspension_log (target_user_id, actor_user_id, action, reason) '
+            'VALUES (%s, %s, %s, %s)',
+            (target_user_id, actor_id, 'reinstated', reason)
+        )
+
+    logger.info(
+        'User %d reinstated account %d — reason: %s',
+        actor_id, target_user_id, reason
+    )
+    flash(
+        f'{target["first_name"]} {target["last_name"]}\'s account has been reinstated.',
+        'success'
+    )
+    return redirect(url_for('helpdesk_user_profile', target_user_id=target_user_id))

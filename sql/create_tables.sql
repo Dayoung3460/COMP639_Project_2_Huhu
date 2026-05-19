@@ -214,7 +214,7 @@ DROP TABLE IF EXISTS "public"."users" CASCADE;
 -- Sequence and defined type
 CREATE SEQUENCE IF NOT EXISTS users_user_id_seq;
 DROP TYPE IF EXISTS "public"."account_status_type" CASCADE;
-CREATE TYPE "public"."account_status_type" AS ENUM ('active', 'inactive');
+CREATE TYPE "public"."account_status_type" AS ENUM ('active', 'inactive', 'suspended');
 
 -- Table Definition
 CREATE TABLE "public"."users" (
@@ -605,4 +605,15 @@ CREATE TABLE ticket_status_history (
     new_status   ticket_status_enum NOT NULL,
     note         TEXT               DEFAULT NULL,
     changed_at   TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS user_suspension_log CASCADE;
+
+CREATE TABLE user_suspension_log (
+    log_id         SERIAL    PRIMARY KEY,
+    target_user_id INTEGER   NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    actor_user_id  INTEGER   REFERENCES users(user_id) ON DELETE SET NULL,
+    action         VARCHAR(20) NOT NULL CHECK (action IN ('suspended', 'reinstated')),
+    reason         TEXT      NOT NULL,
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
