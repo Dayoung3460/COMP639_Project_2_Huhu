@@ -578,6 +578,140 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ══════════════════════════════════════════════════════
+-- SUPPORT TICKETS — bkim test data
+-- Log in as bkim / Password1! to see these in My Requests
+-- smitchell is used as assigned_to (Super Admin standing in for
+-- a future Support Technician role — not yet implemented).
+-- ══════════════════════════════════════════════════════
+
+INSERT INTO support_tickets
+    (submitted_by, group_id, request_type, title, description, priority, status, assigned_to, created_at, updated_at)
+VALUES
+(
+    (SELECT user_id FROM users WHERE username = 'bkim'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'Help',
+    'Cannot export catch records to CSV',
+    'When I click the CSV export button on the Reports page nothing happens. I have tried Chrome and Firefox. No error message appears — the button just does nothing.',
+    'Medium',
+    'Open',
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    NOW() - INTERVAL '6 days',
+    NOW() - INTERVAL '1 day'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'bkim'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'Bug Report',
+    'Bait station map pins disappear after page refresh',
+    'After adding a new bait station and saving, the map pin appears correctly. But if I refresh the page the pin is gone, even though the station shows in the list. This only happens for bait stations — trap pins are fine.',
+    'High',
+    'New',
+    NULL,
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '2 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'bkim'),
+    (SELECT group_id FROM groups WHERE name = 'Banks Peninsula Restoration'),
+    'Help',
+    'How do I invite a new operator to my group?',
+    'I have a new volunteer who wants to join as an Operator. I can see the Members page but cannot find an invite or add button. Do they need to register themselves first and then request to join, or can I add them directly?',
+    'Low',
+    'Resolved',
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    NOW() - INTERVAL '14 days',
+    NOW() - INTERVAL '10 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'bkim'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'Bug Report',
+    'Line assignment page shows wrong operator count',
+    'On the Assign Operators page, the operator count badge next to each line shows a number that does not match the actual assigned operators list below. For example North Campus Trap Line shows 3 but only 2 operators are listed.',
+    'Medium',
+    'Stalled',
+    (SELECT user_id FROM users WHERE username = 'jparata'),
+    NOW() - INTERVAL '20 days',
+    NOW() - INTERVAL '8 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Replies for ticket 1 (CSV export — Open)
+INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Cannot export catch records to CSV' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    'Thanks for the report, Bo. Can you let me know which browser version you are using? Also, does the issue occur on all groups or just Predator Free Lincoln University?',
+    NOW() - INTERVAL '4 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Cannot export catch records to CSV' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'bkim'),
+    'Chrome 124.0.6367.82 and Firefox 125.0.1. I only have coordinator access on PFLU so I cannot test other groups. I also tried on my laptop and the same thing happens.',
+    NOW() - INTERVAL '3 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Cannot export catch records to CSV' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    'Confirmed — looks like a JavaScript error is being thrown when the date range has no catches. Working on a fix now.',
+    NOW() - INTERVAL '1 day'
+)
+ON CONFLICT DO NOTHING;
+
+-- Replies for ticket 3 (invite operator — Resolved)
+INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    'Hi Bo — new users need to register an account themselves first at /register. Once they have an account they can either request to join your group (if it is private) or be added directly by you on the Members page using the role change option. Let me know if you need more help.',
+    NOW() - INTERVAL '13 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'bkim'),
+    'Perfect, that worked. They registered and I approved their join request. Thanks!',
+    NOW() - INTERVAL '11 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Status history for ticket 3 (New → Open → Resolved)
+INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status, changed_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    'New', 'Open',
+    NOW() - INTERVAL '13 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    'Open', 'Resolved',
+    NOW() - INTERVAL '10 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Status history for ticket 4 (New → Open → Stalled)
+INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status, changed_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Line assignment page shows wrong operator count' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'jparata'),
+    'New', 'Open',
+    NOW() - INTERVAL '18 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Line assignment page shows wrong operator count' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
+    (SELECT user_id FROM users WHERE username = 'jparata'),
+    'Open', 'Stalled',
+    NOW() - INTERVAL '8 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- ══════════════════════════════════════════════════════
 -- RESET SEQUENCES
 -- ══════════════════════════════════════════════════════
 
@@ -593,5 +727,8 @@ SELECT setval('incidental_observations_observation_id_seq', (SELECT MAX(observat
 SELECT setval('group_join_requests_request_id_seq',         (SELECT MAX(request_id)       FROM group_join_requests));
 SELECT setval('group_applications_application_id_seq',      (SELECT MAX(application_id)   FROM group_applications));
 SELECT setval('user_notifications_notification_id_seq',     (SELECT MAX(notification_id)  FROM user_notifications));
+SELECT setval('support_tickets_ticket_id_seq',              (SELECT MAX(ticket_id)         FROM support_tickets));
+SELECT setval('ticket_replies_reply_id_seq',                (SELECT MAX(reply_id)          FROM ticket_replies));
+SELECT setval('ticket_status_history_history_id_seq',       (SELECT MAX(history_id)        FROM ticket_status_history));
 
 COMMIT;
