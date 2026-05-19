@@ -53,7 +53,15 @@
 
         <div class="col-sm-3">
           <div class="small text-muted mb-1">Assigned to</div>
-          <div class="fw-medium">{{ ticket.assigned_owner or '—' }}</div>
+          {% if ticket.assigned_owner %}
+            <div class="fw-medium">{{ ticket.assigned_owner }}</div>
+          {% else %}
+            <form method="POST" action="{{ url_for('helpdesk_take', ticket_id=ticket.ticket_id) }}">
+              <button type="submit" class="btn btn-warning btn-sm">
+                <i class="bi bi-person-check me-1" aria-hidden="true"></i>Take
+              </button>
+            </form>
+          {% endif %}
         </div>
 
         <div class="col-sm-6">

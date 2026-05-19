@@ -443,3 +443,43 @@ def helpdesk_ticket(ticket_id):
                            replies=replies,
                            status_history=status_history,
                            current_user_id=user_id)
+
+
+# ── Take ownership of an unassigned ticket ───────────────────────────────────
+
+@app.route('/support/ticket/<int:ticket_id>/take', methods=['POST'])
+@role_required('Super Admin', 'Support Technician')
+def helpdesk_take(ticket_id):
+    """Assign the current staff member as owner of an unassigned ticket."""
+    user_id = session['user_id']
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE support_tickets
+            SET    assigned_to = %s, updated_at = CURRENT_TIMESTAMP
+            WHERE  ticket_id = %s AND assigned_to IS NULL
+            RETURNING submitted_by, title
+            """,
+            (user_id, ticket_id)
+        )
+        row = cursor.fetchone()
+
+    if not row:
+        flash('This request already has an owner.', 'warning')
+        return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT first_name || \' \' || last_name AS full_name FROM users WHERE user_id = %s',
+            (user_id,)
+        )
+        staff = cursor.fetchone()
+    staff_name = staff['full_name'] if staff else 'Support staff'
+
+    insert_notification(db, row['submitted_by'],
+        f'Your request #{ticket_id} "{row["title"]}" has been picked up by {staff_name}.', 'info')
+
+    logger.info('Staff %d took ownership of ticket %d', user_id, ticket_id)
+    flash('You are now the owner of this request.', 'success')
+    return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
