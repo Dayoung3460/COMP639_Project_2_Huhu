@@ -579,6 +579,10 @@ def helpdesk_drop(ticket_id):
     if not ticket:
         abort(404)
 
+    if not ticket['assigned_to']:
+        flash('This request is already in the queue.', 'warning')
+        return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+
     if ticket['status'] == 'Resolved':
         flash('Resolved requests cannot be dropped.', 'warning')
         return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
