@@ -384,10 +384,10 @@ def helpdesk_queue():
 
 # ── Staff ticket detail (Super Admin + Support Technician) ───────────────────
 
-@app.route('/support/ticket/<int:ticket_id>')
+@app.route('/support/ticket/<int:ticket_id>', methods=['GET', 'POST'])
 @role_required('Super Admin', 'Support Technician')
 def helpdesk_ticket(ticket_id):
-    """Staff read-only view for a support ticket."""
+    """Staff ticket detail — reply and status change via POST."""
     user_id = session['user_id']
 
     with db.get_cursor() as cursor:
@@ -460,6 +460,70 @@ def helpdesk_ticket(ticket_id):
         session.get('group_role') == 'Support Technician'
         and not ticket['assigned_to']
     )
+    can_act = session.get('group_role') == 'Super Admin' or ticket['assigned_to'] == user_id
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'reply':
+            if not can_act:
+                abort(403)
+            body = request.form.get('body', '').strip()
+            if not body:
+                flash('Reply cannot be empty.', 'danger')
+                return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'INSERT INTO ticket_replies (ticket_id, author_id, body) VALUES (%s, %s, %s)',
+                    (ticket_id, user_id, body)
+                )
+                cursor.execute(
+                    'UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE ticket_id = %s',
+                    (ticket_id,)
+                )
+            insert_notification(
+                db, ticket['submitted_by'],
+                f'Support staff replied to your request #{ticket_id}: "{ticket["title"]}"',
+                'info',
+                url=url_for('helpdesk_view', ticket_id=ticket_id),
+                group_id=ticket['group_id']
+            )
+            logger.info('Staff %d replied to ticket %d', user_id, ticket_id)
+            flash('Reply posted.', 'success')
+
+        elif action == 'status':
+            if not can_act:
+                abort(403)
+            new_status = request.form.get('new_status', '').strip()
+            if new_status not in TICKET_STATUSES:
+                flash('Invalid status.', 'danger')
+                return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+            if new_status == ticket['status']:
+                flash('Status unchanged.', 'info')
+                return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'UPDATE support_tickets SET status = %s, updated_at = CURRENT_TIMESTAMP '
+                    'WHERE ticket_id = %s',
+                    (new_status, ticket_id)
+                )
+                cursor.execute(
+                    'INSERT INTO ticket_status_history (ticket_id, old_status, new_status, changed_by) '
+                    'VALUES (%s, %s, %s, %s)',
+                    (ticket_id, ticket['status'], new_status, user_id)
+                )
+            insert_notification(
+                db, ticket['submitted_by'],
+                f'Your request #{ticket_id} "{ticket["title"]}" status changed to {new_status}.',
+                'info',
+                url=url_for('helpdesk_view', ticket_id=ticket_id),
+                group_id=ticket['group_id']
+            )
+            logger.info('Staff %d changed ticket %d status %s → %s',
+                        user_id, ticket_id, ticket['status'], new_status)
+            flash(f'Status updated to {new_status}.', 'success')
+
+        return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
 
     return render_template('helpdesk/ticket.html',
                            ticket=ticket,
@@ -468,7 +532,9 @@ def helpdesk_ticket(ticket_id):
                            current_user_id=user_id,
                            technicians=technicians,
                            can_reassign=can_reassign,
-                           can_take=can_take)
+                           can_take=can_take,
+                           can_act=can_act,
+                           statuses=TICKET_STATUSES)
 
 
 # ── Take ownership of an unassigned ticket ───────────────────────────────────
