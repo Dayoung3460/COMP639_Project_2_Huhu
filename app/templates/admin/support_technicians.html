@@ -131,6 +131,43 @@
     </div>
   </div>
 
+  {# ── Audit log ─────────────────────────────────────────────── #}
+  {% if audit_log %}
+  <div class="card mt-4">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-clock-history me-2" aria-hidden="true"></i>Role Change History
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>When</th>
+            <th>Action</th>
+            <th>User</th>
+            <th>By</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in audit_log %}
+          <tr>
+            <td class="small text-muted text-nowrap">{{ entry.created_at | nz_datetime }}</td>
+            <td>
+              {% if entry.action == 'granted' %}
+                <span class="badge bg-success-subtle text-success-emphasis">Granted</span>
+              {% else %}
+                <span class="badge bg-danger-subtle text-danger-emphasis">Revoked</span>
+              {% endif %}
+            </td>
+            <td class="small">{{ entry.target_name }}</td>
+            <td class="small text-muted">{{ entry.actor_name or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 
 {# ── Revoke confirmation modals ────────────────────────────────── #}

@@ -644,3 +644,13 @@ CREATE TABLE user_suspension_log (
     reason         TEXT      NOT NULL,
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+DROP TABLE IF EXISTS support_tech_audit_log CASCADE;
+
+CREATE TABLE support_tech_audit_log (
+    log_id        SERIAL    PRIMARY KEY,
+    target_user_id INTEGER  NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    actor_user_id  INTEGER  REFERENCES users(user_id) ON DELETE SET NULL,
+    action         VARCHAR(10) NOT NULL CHECK (action IN ('granted', 'revoked')),
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
