@@ -588,8 +588,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ══════════════════════════════════════════════════════
 -- SUPPORT TICKETS — bkim test data
 -- Log in as bkim / Password1! to see these in My Requests
--- smitchell is used as assigned_to (Super Admin standing in for
--- a future Support Technician role — not yet implemented).
+-- lchen and mreid are the assigned Support Technicians.
 -- ══════════════════════════════════════════════════════
 
 INSERT INTO support_tickets
@@ -603,7 +602,7 @@ VALUES
     'When I click the CSV export button on the Reports page nothing happens. I have tried Chrome and Firefox. No error message appears — the button just does nothing.',
     'Medium',
     'Open',
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
     NOW() - INTERVAL '6 days',
     NOW() - INTERVAL '1 day'
 ),
@@ -627,7 +626,7 @@ VALUES
     'I have a new volunteer who wants to join as an Operator. I can see the Members page but cannot find an invite or add button. Do they need to register themselves first and then request to join, or can I add them directly?',
     'Low',
     'Resolved',
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     NOW() - INTERVAL '14 days',
     NOW() - INTERVAL '10 days'
 ),
@@ -639,7 +638,7 @@ VALUES
     'On the Assign Operators page, the operator count badge next to each line shows a number that does not match the actual assigned operators list below. For example North Campus Trap Line shows 3 but only 2 operators are listed.',
     'Medium',
     'Stalled',
-    (SELECT user_id FROM users WHERE username = 'jparata'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     NOW() - INTERVAL '20 days',
     NOW() - INTERVAL '8 days'
 )
@@ -650,7 +649,7 @@ INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
 VALUES
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'Cannot export catch records to CSV' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
     'Thanks for the report, Bo. Can you let me know which browser version you are using? Also, does the issue occur on all groups or just Predator Free Lincoln University?',
     NOW() - INTERVAL '4 days'
 ),
@@ -662,7 +661,7 @@ VALUES
 ),
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'Cannot export catch records to CSV' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
     'Confirmed — looks like a JavaScript error is being thrown when the date range has no catches. Working on a fix now.',
     NOW() - INTERVAL '1 day'
 )
@@ -673,7 +672,7 @@ INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
 VALUES
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'Hi Bo — new users need to register an account themselves first at /register. Once they have an account they can either request to join your group (if it is private) or be added directly by you on the Members page using the role change option. Let me know if you need more help.',
     NOW() - INTERVAL '13 days'
 ),
@@ -690,13 +689,13 @@ INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status
 VALUES
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'New', 'Open',
     NOW() - INTERVAL '13 days'
 ),
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'How do I invite a new operator to my group?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'smitchell'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'Open', 'Resolved',
     NOW() - INTERVAL '10 days'
 )
@@ -707,13 +706,13 @@ INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status
 VALUES
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'Line assignment page shows wrong operator count' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'jparata'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'New', 'Open',
     NOW() - INTERVAL '18 days'
 ),
 (
     (SELECT ticket_id FROM support_tickets WHERE title = 'Line assignment page shows wrong operator count' AND submitted_by = (SELECT user_id FROM users WHERE username = 'bkim')),
-    (SELECT user_id FROM users WHERE username = 'jparata'),
+    (SELECT user_id FROM users WHERE username = 'mreid'),
     'Open', 'Stalled',
     NOW() - INTERVAL '8 days'
 )
