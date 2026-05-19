@@ -7,6 +7,16 @@
 
 {% block content %}
 <div class="container py-4" style="max-width:720px;">
+
+  {# ── KB callout ───────────────────────────────────────────────── #}
+  <div class="alert alert-info d-flex align-items-start gap-3 mb-4" role="note">
+    <i class="bi bi-book-half fs-4 mt-1 flex-shrink-0" aria-hidden="true"></i>
+    <div>
+      <strong>Check the Knowledge Base first</strong> — your question may already be answered.
+      <a href="{{ url_for('kb_index') }}" class="alert-link ms-1">Browse articles &rarr;</a>
+    </div>
+  </div>
+
   <p class="small text-muted mb-3">
     <span class="text-danger" aria-hidden="true">*</span> Required fields
   </p>
