@@ -582,3 +582,24 @@ CREATE TABLE support_tickets (
     created_at   TIMESTAMP            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP            NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+DROP TABLE IF EXISTS ticket_replies CASCADE;
+
+CREATE TABLE ticket_replies (
+    reply_id     SERIAL    PRIMARY KEY,
+    ticket_id    INTEGER   NOT NULL REFERENCES support_tickets(ticket_id) ON DELETE CASCADE,
+    author_id    INTEGER   NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    body         TEXT      NOT NULL,
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS ticket_status_history CASCADE;
+
+CREATE TABLE ticket_status_history (
+    history_id   SERIAL             PRIMARY KEY,
+    ticket_id    INTEGER            NOT NULL REFERENCES support_tickets(ticket_id) ON DELETE CASCADE,
+    changed_by   INTEGER            REFERENCES users(user_id) ON DELETE SET NULL,
+    old_status   ticket_status_enum NOT NULL,
+    new_status   ticket_status_enum NOT NULL,
+    changed_at   TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
