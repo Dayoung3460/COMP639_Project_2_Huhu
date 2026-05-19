@@ -1429,7 +1429,8 @@ def admin_group_create():
                 db, uid,
                 f'You have been appointed as Group Coordinator for "{name}". '
                 'Visit your dashboard to get started.',
-                'success'
+                'success',
+                url=url_for('group_landing', group_id=group_id)
             )
 
         flash(f'Group "{name}" created successfully.', 'success')
@@ -1758,7 +1759,8 @@ def admin_group_application_approve(application_id):
         db, application['user_id'],
         f'Your application to create group "{application["proposed_name"]}" has been approved! '
         'You are now the Group Coordinator. Visit the group to get started.',
-        'success'
+        'success',
+        url=url_for('group_landing', group_id=group_id)
     )
 
     flash(f'Application approved. Group "{application["proposed_name"]}" created with {application["first_name"]} {application["last_name"]} as coordinator.', 'success')

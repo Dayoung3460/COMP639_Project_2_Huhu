@@ -369,7 +369,8 @@ def coordinator_decide_request(request_id):
         insert_user_role(db, applicant_id, group_id, 'Observer')
         insert_notification(db, applicant_id,
                             f'Your request to join {group_name} has been approved. You have been added as an Observer.',
-                            'success')
+                            'success',
+                            url=url_for('group_landing', group_id=group_id))
         logger.info('Coordinator %s approved join request %d (user %d)',
                     session['user_id'], request_id, applicant_id)
         flash('Request approved — user added as Observer.', 'success')
