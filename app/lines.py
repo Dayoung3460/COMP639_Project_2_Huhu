@@ -1,7 +1,7 @@
 from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
 from app.utils import role_required, LINE_COLOURS, is_super_admin_mode
-from app.helpers.dbHelper import fetch_active_lookup
+from app.helpers.dbHelper import fetch_active_lookup, fetch_operational_area
 import os
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
@@ -316,6 +316,10 @@ def lines_index():
         for operator_label in line['assigned_operator_labels']
     })
 
+    area_geojson = None
+    if not super_admin and group_id:
+        area_geojson = fetch_operational_area(db, group_id)
+
     return render_template(
         'lines/index.html',
         lines=lines,
@@ -327,7 +331,8 @@ def lines_index():
         active_station_line_ids=active_station_line_ids,
         available_types=available_types,
         available_operators=available_operators,
-        line_colours=LINE_COLOURS
+        line_colours=LINE_COLOURS,
+        area_geojson=area_geojson,
     )
 
 
