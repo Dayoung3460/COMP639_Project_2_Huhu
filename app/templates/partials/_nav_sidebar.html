@@ -127,6 +127,10 @@
          class="sidebar-link {{ 'active' if request.endpoint in ['reference_data', 'manage_lookup'] }}">
         <i class="bi bi-database-gear" aria-hidden="true"></i> <span class="link-text">Reference Data</span>
       </a>
+      <a href="{{ url_for('admin_support_technicians') }}"
+         class="sidebar-link {{ 'active' if request.endpoint in ['admin_support_technicians', 'admin_support_tech_grant', 'admin_support_tech_revoke'] }}">
+        <i class="bi bi-headset" aria-hidden="true"></i> <span class="link-text">Support Technicians</span>
+      </a>
     {% endif %}
 
     {# Group Coordinator management — scoped to the active group. #}

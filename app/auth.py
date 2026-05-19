@@ -162,9 +162,9 @@ def login():
         # Regular user with exactly one membership → auto-select that
         # group and go straight to the role dashboard. Skips the picker
         # so single-group members don't pay an extra click per login.
-        # Super Admins are deliberately excluded so they always land on
-        # the picker when they have any group context.
-        if not user['is_super_admin'] and len(memberships) == 1:
+        # Super Admins and Support Technicians are excluded so they always
+        # land on the picker and can choose their identity.
+        if not user['is_super_admin'] and not user['is_support_tech'] and len(memberships) == 1:
             m = memberships[0]
             session['group_id']   = m['group_id']
             session['group_role'] = m['role']
@@ -195,9 +195,13 @@ def select_group():
     user_id = session['user_id']
 
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT is_super_admin FROM users WHERE user_id = %s', (user_id,))
+        cursor.execute(
+            'SELECT is_super_admin, is_support_tech FROM users WHERE user_id = %s',
+            (user_id,)
+        )
         row = cursor.fetchone()
-        is_super_admin = bool(row and row['is_super_admin'])
+        is_super_admin  = bool(row and row['is_super_admin'])
+        is_support_tech = bool(row and row['is_support_tech'])
 
         cursor.execute('''
             SELECT gm.group_id, gm.role, g.name AS group_name, g.location
@@ -209,15 +213,21 @@ def select_group():
         memberships = cursor.fetchall()
 
     if request.method == 'POST':
-        # Super Admin "act platform-wide" path — no group context, but all
-        # group-scoped list pages will bypass their group_id filter via
-        # is_super_admin_mode().
-        if is_super_admin and request.form.get('mode') == 'super_admin':
+        mode = request.form.get('mode')
+
+        if is_super_admin and mode == 'super_admin':
             session.pop('group_id', None)
             session['group_role'] = 'Super Admin'
             session['group_name'] = 'Super Admin'
             _flash_pending_notifications(user_id)
             return redirect_by_role()
+
+        if is_support_tech and mode == 'support_tech':
+            session.pop('group_id', None)
+            session['group_role'] = 'Support Technician'
+            session.pop('group_name', None)
+            _flash_pending_notifications(user_id)
+            return redirect(url_for('helpdesk_queue'))
 
         group_id = request.form.get('group_id', type=int)
         match = next((m for m in memberships if m['group_id'] == group_id), None)
@@ -225,7 +235,8 @@ def select_group():
             flash('Invalid selection.', 'danger')
             return render_template('auth/select_group.html',
                                    memberships=memberships,
-                                   is_super_admin=is_super_admin)
+                                   is_super_admin=is_super_admin,
+                                   is_support_tech=is_support_tech)
 
         session['group_id']   = match['group_id']
         session['group_role'] = match['role']
@@ -235,7 +246,8 @@ def select_group():
 
     return render_template('auth/select_group.html',
                            memberships=memberships,
-                           is_super_admin=is_super_admin)
+                           is_super_admin=is_super_admin,
+                           is_support_tech=is_support_tech)
 
 
 @app.route('/logout')

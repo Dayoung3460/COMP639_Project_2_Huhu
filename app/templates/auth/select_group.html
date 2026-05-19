@@ -36,10 +36,11 @@
   {# ── Super Admin role card (shown only to Super Admins) ─
        Distinct from the group cards below: this is a role, not a group.
        Selecting it gives platform-wide visibility on list pages. #}
-  {% if is_super_admin %}
+  {% if is_super_admin or is_support_tech %}
     <section class="picker-section" aria-labelledby="picker-section-role">
       <h2 id="picker-section-role" class="section-eyebrow picker-section-title">Platform role</h2>
       <ul class="picker-grid" role="list">
+        {% if is_super_admin %}
         <li>
           <form method="POST" action="{{ url_for('select_group') }}" class="picker-form">
             <input type="hidden" name="mode" value="super_admin">
@@ -62,6 +63,31 @@
             </button>
           </form>
         </li>
+        {% endif %}
+        {% if is_support_tech %}
+        <li>
+          <form method="POST" action="{{ url_for('select_group') }}" class="picker-form">
+            <input type="hidden" name="mode" value="support_tech">
+            <button type="submit"
+                    class="picker-card picker-card--admin"
+                    aria-label="Enter the support queue as Support Technician">
+              <span class="section-eyebrow picker-role">Role</span>
+              <span class="picker-card-title">Support Technician</span>
+              <span class="picker-card-divider" aria-hidden="true"></span>
+              <span class="picker-card-meta">Access the support queue and manage help requests</span>
+              <span class="picker-card-cta">
+                Enter support queue
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </span>
+            </button>
+          </form>
+        </li>
+        {% endif %}
       </ul>
     </section>
   {% endif %}
