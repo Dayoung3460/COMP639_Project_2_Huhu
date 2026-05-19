@@ -183,25 +183,24 @@
       </a>
     {% endif %}
 
-    {# Support queue — Super Admin + Support Technician only #}
+    {# Support — all roles; queue links shown only for staff #}
+    <div class="sidebar-section-label">Support</div>
     {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
-      <div class="sidebar-section-label">Support Queue</div>
       <a href="{{ url_for('helpdesk_queue') }}"
-         class="sidebar-link {{ 'active' if request.endpoint == 'helpdesk_queue' }}">
+         class="sidebar-link {{ 'active' if request.endpoint in ('helpdesk_queue', 'helpdesk_ticket') }}">
         <i class="bi bi-inbox-fill" aria-hidden="true"></i> <span class="link-text">All Requests</span>
       </a>
     {% endif %}
-
-    {# Support — all roles #}
-    <div class="sidebar-section-label">Support</div>
-    <a href="{{ url_for('helpdesk_submit') }}"
-       class="sidebar-link {{ 'active' if request.endpoint == 'helpdesk_submit' }}">
-      <i class="bi bi-headset" aria-hidden="true"></i> <span class="link-text">Submit Request</span>
-    </a>
-    <a href="{{ url_for('helpdesk_my_requests') }}"
-       class="sidebar-link {{ 'active' if request.endpoint in ('helpdesk_my_requests', 'helpdesk_view') }}">
-      <i class="bi bi-ticket" aria-hidden="true"></i> <span class="link-text">My Requests</span>
-    </a>
+    {% if session.get('group_role') != 'Support Technician' %}
+      <a href="{{ url_for('helpdesk_submit') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'helpdesk_submit' }}">
+        <i class="bi bi-headset" aria-hidden="true"></i> <span class="link-text">Submit Request</span>
+      </a>
+      <a href="{{ url_for('helpdesk_my_requests') }}"
+         class="sidebar-link {{ 'active' if request.endpoint in ('helpdesk_my_requests', 'helpdesk_view') }}">
+        <i class="bi bi-ticket" aria-hidden="true"></i> <span class="link-text">My Requests</span>
+      </a>
+    {% endif %}
 
     {# Account — all roles #}
     <div class="sidebar-section-label">Account</div>

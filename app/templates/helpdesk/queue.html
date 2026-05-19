@@ -47,10 +47,15 @@
       <option value="unassigned" {% if assigned_filter == 'unassigned' %}selected{% endif %}>
         Unassigned
       </option>
-      <option value="me" {% if assigned_filter == 'me' %}selected{% endif %}>
-        Assigned to me
-      </option>
     </select>
+
+    <div class="form-check form-check-inline mb-0 ms-1">
+      <input class="form-check-input" type="checkbox"
+             id="mineCheck" name="mine" value="1"
+             {% if mine_filter %}checked{% endif %}
+             onchange="this.form.submit()">
+      <label class="form-check-label small" for="mineCheck">Only mine</label>
+    </div>
 
     <select name="sort" class="form-select form-select-sm" style="width:auto;"
             aria-label="Sort by">
@@ -62,7 +67,7 @@
 
     <button type="submit" class="btn btn-outline-secondary btn-sm">Apply</button>
 
-    {% if status_filter or priority_filter or type_filter or assigned_filter or sort != 'priority' %}
+    {% if status_filter or priority_filter or type_filter or assigned_filter or mine_filter or sort != 'priority' %}
       <a href="{{ url_for('helpdesk_queue') }}" class="btn btn-link btn-sm text-muted p-0 ms-1">
         Clear
       </a>
@@ -102,7 +107,7 @@
 
           <tr class="{{ 'table-warning' if is_urgent else '' }}"
               style="cursor:pointer;"
-              onclick="window.location='{{ url_for('helpdesk_view', ticket_id=t.ticket_id) }}'">
+              onclick="window.location='{{ url_for('helpdesk_ticket', ticket_id=t.ticket_id) }}'">
 
             <td class="text-muted small">
               {{ t.ticket_id }}
@@ -136,7 +141,7 @@
               </span>
             </td>
 
-            <td class="small {% if not t.assigned_owner %}text-warning fw-semibold{% else %}text-muted{% endif %}">
+            <td class="small text-nowrap {% if not t.assigned_owner %}text-warning fw-semibold{% else %}text-muted{% endif %}">
               {{ t.assigned_owner or 'Unassigned' }}
             </td>
 

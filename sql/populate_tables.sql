@@ -718,6 +718,116 @@ VALUES
 )
 ON CONFLICT DO NOTHING;
 
+-- Additional support tickets from other users
+INSERT INTO support_tickets
+    (submitted_by, group_id, request_type, title, description, priority, status, assigned_to, created_at, updated_at)
+VALUES
+(
+    (SELECT user_id FROM users WHERE username = 'enyberg'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'Bug Report',
+    'Add catch form crashes when no traps on assigned line',
+    'When I try to add a catch record and select a line that has no traps, the form throws a 500 error. This only happens on lines with zero traps — lines with at least one trap work fine.',
+    'High',
+    'New',
+    NULL,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'enyberg'),
+    (SELECT group_id FROM groups WHERE name = 'Predator Free Lincoln University'),
+    'Help',
+    'How do I see a history of all my past catch records?',
+    'I can see my recent records on the My Records page but I cannot find a way to view records from previous months. Is there a way to filter or export everything I have submitted?',
+    'Low',
+    'Resolved',
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    NOW() - INTERVAL '30 days',
+    NOW() - INTERVAL '25 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'iford'),
+    (SELECT group_id FROM groups WHERE name = 'Banks Peninsula Restoration'),
+    'Bug Report',
+    'Map does not load on the Lines page — blank tile area',
+    'The map area on the Lines page shows as a blank grey box. No tiles load at all. Checked on two different browsers (Chrome and Edge) and the same issue occurs. Other pages load fine.',
+    'High',
+    'Open',
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    NOW() - INTERVAL '4 days',
+    NOW() - INTERVAL '2 days'
+),
+(
+    (SELECT user_id FROM users WHERE username = 'iford'),
+    (SELECT group_id FROM groups WHERE name = 'Selwyn District Trappers'),
+    'Help',
+    'Can I be a member of more than one group at the same time?',
+    'I have been asked to join a second conservation group but I am already a member of Banks Peninsula Restoration. Is it possible to belong to two groups? If so, how do I request to join the second group?',
+    'Low',
+    'New',
+    NULL,
+    NOW() - INTERVAL '3 hours',
+    NOW() - INTERVAL '3 hours'
+)
+ON CONFLICT DO NOTHING;
+
+-- Reply for enyberg resolved ticket (catch history help)
+INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I see a history of all my past catch records?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'enyberg')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'Hi Erik — on the My Records page use the date range filter at the top to expand the window. You can also download a CSV of all your records from the Reports page. Let me know if that helps.',
+    NOW() - INTERVAL '28 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I see a history of all my past catch records?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'enyberg')),
+    (SELECT user_id FROM users WHERE username = 'enyberg'),
+    'Perfect, the CSV export worked great. Thanks Lily!',
+    NOW() - INTERVAL '26 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Reply for iford map bug
+INSERT INTO ticket_replies (ticket_id, author_id, body, created_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Map does not load on the Lines page — blank tile area' AND submitted_by = (SELECT user_id FROM users WHERE username = 'iford')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'Thanks for the report. Could you check your browser console (F12 → Console) and let me know if there are any errors when the page loads? Also, does the map work if you try on a mobile device?',
+    NOW() - INTERVAL '3 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Status history for enyberg resolved ticket
+INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status, changed_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I see a history of all my past catch records?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'enyberg')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'New', 'Open',
+    NOW() - INTERVAL '29 days'
+),
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'How do I see a history of all my past catch records?' AND submitted_by = (SELECT user_id FROM users WHERE username = 'enyberg')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'Open', 'Resolved',
+    NOW() - INTERVAL '25 days'
+)
+ON CONFLICT DO NOTHING;
+
+-- Status history for iford map bug (New → Open)
+INSERT INTO ticket_status_history (ticket_id, changed_by, old_status, new_status, changed_at)
+VALUES
+(
+    (SELECT ticket_id FROM support_tickets WHERE title = 'Map does not load on the Lines page — blank tile area' AND submitted_by = (SELECT user_id FROM users WHERE username = 'iford')),
+    (SELECT user_id FROM users WHERE username = 'lchen'),
+    'New', 'Open',
+    NOW() - INTERVAL '4 days'
+)
+ON CONFLICT DO NOTHING;
+
 -- ══════════════════════════════════════════════════════
 -- RESET SEQUENCES
 -- ══════════════════════════════════════════════════════

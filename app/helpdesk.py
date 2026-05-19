@@ -65,6 +65,9 @@ def _save_screenshot(ticket_id, file, ext):
 @role_required()
 def helpdesk_submit():
     """Submit a support request or bug report."""
+    if session.get('group_role') == 'Support Technician':
+        abort(403)
+
     if request.method == 'GET':
         return render_template('helpdesk/submit.html',
                                ticket_types=TICKET_TYPES,
@@ -138,10 +141,10 @@ def helpdesk_submit():
 @app.route('/support/my-requests')
 @role_required()
 def helpdesk_my_requests():
-    """List all support tickets submitted by the current user.
+    """List all support tickets submitted by the current user."""
+    if session.get('group_role') == 'Support Technician':
+        abort(403)
 
-    Supports ?status= filter and ?sort= (date_asc / date_desc).
-    """
     user_id     = session['user_id']
     status_filter = request.args.get('status', '').strip()
     sort          = request.args.get('sort', 'date_desc').strip()
@@ -206,6 +209,10 @@ def helpdesk_view(ticket_id):
 
     if not ticket:
         abort(404)
+
+    # Staff should use the dedicated staff view
+    if session.get('group_role') in ('Support Technician',):
+        return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
 
     if ticket['submitted_by'] != user_id and session.get('group_role') != 'Super Admin':
         abort(403)
@@ -280,7 +287,8 @@ def helpdesk_queue():
     status_filter   = request.args.get('status', '').strip()
     priority_filter = request.args.get('priority', '').strip()
     type_filter     = request.args.get('request_type', '').strip()
-    assigned_filter = request.args.get('assigned', '').strip()   # 'me', 'unassigned', or ''
+    assigned_filter = request.args.get('assigned', '').strip()   # 'unassigned' or ''
+    mine_filter     = bool(request.args.get('mine', '').strip())  # checkbox
     sort            = request.args.get('sort', 'priority').strip()
 
     # Build WHERE conditions
@@ -296,7 +304,7 @@ def helpdesk_queue():
     if type_filter in TICKET_TYPES:
         conditions.append('st.request_type = %s')
         params.append(type_filter)
-    if assigned_filter == 'me':
+    if mine_filter:
         conditions.append('st.assigned_to = %s')
         params.append(session['user_id'])
     elif assigned_filter == 'unassigned':
@@ -353,4 +361,87 @@ def helpdesk_queue():
                            priority_filter=priority_filter,
                            type_filter=type_filter,
                            assigned_filter=assigned_filter,
+                           mine_filter=mine_filter,
                            sort=sort)
+
+
+# ── Staff ticket detail (Super Admin + Support Technician) ───────────────────
+
+@app.route('/support/ticket/<int:ticket_id>', methods=['GET', 'POST'])
+@role_required('Super Admin', 'Support Technician')
+def helpdesk_ticket(ticket_id):
+    """Staff view for a support ticket — read + reply, no ownership restriction."""
+    user_id = session['user_id']
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT st.*,
+                   g.name AS group_name,
+                   submitter.first_name || ' ' || submitter.last_name AS submitter_name,
+                   tech.first_name      || ' ' || tech.last_name      AS assigned_owner
+            FROM   support_tickets st
+            JOIN   users submitter ON submitter.user_id = st.submitted_by
+            LEFT JOIN groups g     ON g.group_id        = st.group_id
+            LEFT JOIN users tech   ON tech.user_id      = st.assigned_to
+            WHERE  st.ticket_id = %s
+            """,
+            (ticket_id,)
+        )
+        ticket = cursor.fetchone()
+
+    if not ticket:
+        abort(404)
+
+    if request.method == 'POST':
+        body = request.form.get('body', '').strip()
+        if not body:
+            flash('Reply cannot be empty.', 'danger')
+        else:
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'INSERT INTO ticket_replies (ticket_id, author_id, body) VALUES (%s, %s, %s)',
+                    (ticket_id, user_id, body)
+                )
+                cursor.execute(
+                    'UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE ticket_id = %s',
+                    (ticket_id,)
+                )
+            logger.info('Staff %d added reply to ticket %d', user_id, ticket_id)
+            flash('Reply added.', 'success')
+        return redirect(url_for('helpdesk_ticket', ticket_id=ticket_id))
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT tr.reply_id, tr.body, tr.created_at,
+                   u.first_name || ' ' || u.last_name AS author_name,
+                   u.user_id AS author_id
+            FROM   ticket_replies tr
+            JOIN   users u ON u.user_id = tr.author_id
+            WHERE  tr.ticket_id = %s
+            ORDER BY tr.created_at ASC
+            """,
+            (ticket_id,)
+        )
+        replies = cursor.fetchall()
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT tsh.old_status, tsh.new_status, tsh.changed_at,
+                   u.first_name || ' ' || u.last_name AS changed_by_name
+            FROM   ticket_status_history tsh
+            LEFT JOIN users u ON u.user_id = tsh.changed_by
+            WHERE  tsh.ticket_id = %s
+            ORDER BY tsh.changed_at ASC
+            """,
+            (ticket_id,)
+        )
+        status_history = cursor.fetchall()
+
+    return render_template('helpdesk/ticket.html',
+                           ticket=ticket,
+                           replies=replies,
+                           status_history=status_history,
+                           current_user_id=user_id)
