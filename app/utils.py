@@ -202,6 +202,15 @@ def is_super_admin_mode():
     return session.get('group_role') == 'Super Admin' and not session.get('group_id')
 
 
+def is_support_tech_mode():
+    """True when the active session role is Support Technician.
+
+    Support Technicians operate outside any group context and need
+    read-only cross-group access to operational data for troubleshooting.
+    """
+    return session.get('group_role') == 'Support Technician'
+
+
 # ── Role-based redirect ───────────────────────────────────────────────────────
 
 def redirect_by_role():
