@@ -131,6 +131,20 @@
     </a>
   {% endif %}
 
+  {# Support — all roles. #}
+  <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
+  <div class="topbar-overflow-label" role="presentation">Support</div>
+  <a role="menuitem" tabindex="-1"
+     href="{{ url_for('helpdesk_submit') }}"
+     class="topbar-overflow-item {{ 'active' if request.endpoint == 'helpdesk_submit' }}">
+    <i class="bi bi-headset" aria-hidden="true"></i> Submit Request
+  </a>
+  <a role="menuitem" tabindex="-1"
+     href="{{ url_for('helpdesk_my_requests') }}"
+     class="topbar-overflow-item {{ 'active' if request.endpoint in ('helpdesk_my_requests', 'helpdesk_view') }}">
+    <i class="bi bi-ticket" aria-hidden="true"></i> My Requests
+  </a>
+
   {# Account — all roles. Divider above signals a section change. #}
   <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
   <a role="menuitem" tabindex="-1"

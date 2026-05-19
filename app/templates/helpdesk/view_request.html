@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Request #{{ ticket.ticket_id }}{% endblock %}
+
+{% block page_head_icon %}<i class="bi bi-headset"></i>{% endblock %}
+{% block page_title %}Request #{{ ticket.ticket_id }}{% endblock %}
+{% block page_subtitle %}{{ ticket.title }}{% endblock %}
+
+{% block breadcrumb %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('helpdesk_my_requests') }}">My Requests</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">#{{ ticket.ticket_id }}</li>
+    </ol>
+  </nav>
+{% endblock %}
+
+{% block header_actions %}
+  <a href="{{ url_for('helpdesk_submit') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>New Request
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:760px;">
+
+  {# ── Status + meta strip ───────────────────────────────── #}
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="row g-3 align-items-center">
+
+        <div class="col-sm-4">
+          <div class="small text-muted mb-1">Status</div>
+          {% set s_class = {'New': 'primary', 'Open': 'info', 'Stalled': 'warning', 'Resolved': 'success'} %}
+          <span class="badge fs-6 bg-{{ s_class.get(ticket.status, 'secondary') }}-subtle
+                                    text-{{ s_class.get(ticket.status, 'secondary') }}-emphasis px-3 py-2">
+            {{ ticket.status }}
+          </span>
+        </div>
+
+        <div class="col-sm-4">
+          <div class="small text-muted mb-1">Type</div>
+          {% if ticket.request_type == 'Bug Report' %}
+            <span class="badge fs-6 bg-danger-subtle text-danger-emphasis px-3 py-2">Bug Report</span>
+          {% else %}
+            <span class="badge fs-6 bg-info-subtle text-info-emphasis px-3 py-2">Help</span>
+          {% endif %}
+        </div>
+
+        <div class="col-sm-4">
+          <div class="small text-muted mb-1">Priority</div>
+          {% set p_class = {'Low': 'success', 'Medium': 'warning', 'High': 'danger'} %}
+          <span class="badge fs-6 bg-{{ p_class.get(ticket.priority, 'secondary') }}-subtle
+                                    text-{{ p_class.get(ticket.priority, 'secondary') }}-emphasis px-3 py-2">
+            {{ ticket.priority }}
+          </span>
+        </div>
+
+        <div class="col-sm-6">
+          <div class="small text-muted mb-1">Submitted</div>
+          <div>{{ ticket.created_at | nz_datetime }}</div>
+        </div>
+
+        {% if ticket.group_name %}
+        <div class="col-sm-6">
+          <div class="small text-muted mb-1">Group at submission</div>
+          <div>{{ ticket.group_name }}</div>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  {# ── Description card ──────────────────────────────────── #}
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-chat-left-text me-2" aria-hidden="true"></i>Description
+    </div>
+    <div class="card-body">
+      <p class="mb-0" style="white-space:pre-wrap;">{{ ticket.description }}</p>
+    </div>
+  </div>
+
+  {# ── Screenshot (if any) ───────────────────────────────── #}
+  {% if ticket.screenshot %}
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">
+      <i class="bi bi-image me-2" aria-hidden="true"></i>Screenshot
+    </div>
+    <div class="card-body text-center">
+      <img src="{{ url_for('static', filename=ticket.screenshot) }}"
+           alt="Screenshot for request #{{ ticket.ticket_id }}"
+           class="img-fluid rounded"
+           style="max-height:480px; border:1px solid #dee2e6;">
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Back link ─────────────────────────────────────────── #}
+  <a href="{{ url_for('helpdesk_my_requests') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to my requests
+  </a>
+
+</div>
+{% endblock %}
