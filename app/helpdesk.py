@@ -1,4 +1,4 @@
-"""helpdesk.py — Support ticket submission for all logged-in users (P2-49)."""
+"""helpdesk.py — Support ticket submission and tracking (P2-49, P2-50)."""
 
 import logging
 import os
@@ -12,8 +12,9 @@ logger = logging.getLogger(__name__)
 SCREENSHOT_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
 SCREENSHOT_MAX_BYTES   = 5 * 1024 * 1024  # 5 MB
 
-TICKET_TYPES     = ('Help', 'Bug Report')
+TICKET_TYPES      = ('Help', 'Bug Report')
 TICKET_PRIORITIES = ('Low', 'Medium', 'High')
+TICKET_STATUSES   = ('New', 'Open', 'Stalled', 'Resolved')
 
 
 def _screenshot_dir(ticket_id):
@@ -38,7 +39,6 @@ def _validate_screenshot(file):
     head = file.stream.read(1024)
     file.stream.seek(0)
     sniffed = sniff_image_kind(head)
-    # Normalise jpeg/jpg
     ext_norm     = 'jpg' if ext == 'jpeg' else ext
     sniffed_norm = 'jpg' if sniffed == 'jpeg' else (sniffed or '')
     if not sniffed_norm or sniffed_norm not in ('jpg', 'png', 'webp'):
@@ -71,7 +71,6 @@ def helpdesk_submit():
                                priorities=TICKET_PRIORITIES,
                                data={}, errors={})
 
-    # ── Collect + validate ───────────────────────────────────────
     data = {
         'request_type': request.form.get('request_type', '').strip(),
         'title':        request.form.get('title', '').strip(),
@@ -100,7 +99,6 @@ def helpdesk_submit():
                                priorities=TICKET_PRIORITIES,
                                data=data, errors=errors)
 
-    # ── Insert ticket (no screenshot yet) ────────────────────────
     user_id  = session['user_id']
     group_id = session.get('group_id')
 
@@ -117,7 +115,6 @@ def helpdesk_submit():
         )
         ticket_id = cursor.fetchone()['ticket_id']
 
-    # ── Optional screenshot upload ───────────────────────────────
     if ext and screenshot_file:
         try:
             rel_path = _save_screenshot(ticket_id, screenshot_file, ext)
@@ -132,11 +129,7 @@ def helpdesk_submit():
 
     logger.info('User %d submitted support ticket %d (%s)',
                 user_id, ticket_id, data['request_type'])
-
-    flash(
-        f'Request #{ticket_id} submitted. We\'ll get back to you as soon as possible.',
-        'success'
-    )
+    flash(f'Request #{ticket_id} submitted. We\'ll get back to you as soon as possible.', 'success')
     return redirect(url_for('helpdesk_view', ticket_id=ticket_id))
 
 
@@ -145,36 +138,66 @@ def helpdesk_submit():
 @app.route('/support/my-requests')
 @role_required()
 def helpdesk_my_requests():
-    """List all support tickets submitted by the current user."""
-    user_id = session['user_id']
+    """List all support tickets submitted by the current user.
+
+    Supports ?status= filter and ?sort= (date_asc / date_desc).
+    """
+    user_id     = session['user_id']
+    status_filter = request.args.get('status', '').strip()
+    sort          = request.args.get('sort', 'date_desc').strip()
+
+    order_clause = 'st.created_at ASC' if sort == 'date_asc' else 'st.created_at DESC'
+
+    params = [user_id]
+    where  = 'WHERE st.submitted_by = %s'
+    if status_filter in TICKET_STATUSES:
+        where  += ' AND st.status = %s'
+        params.append(status_filter)
+
     with db.get_cursor() as cursor:
         cursor.execute(
-            """
-            SELECT ticket_id, request_type, title, priority, status, created_at
-            FROM support_tickets
-            WHERE submitted_by = %s
-            ORDER BY created_at DESC
+            f"""
+            SELECT st.ticket_id,
+                   st.request_type,
+                   st.title,
+                   st.priority,
+                   st.status,
+                   st.created_at,
+                   st.updated_at,
+                   u.first_name || ' ' || u.last_name AS assigned_owner
+            FROM   support_tickets st
+            LEFT JOIN users u ON u.user_id = st.assigned_to
+            {where}
+            ORDER BY {order_clause}
             """,
-            (user_id,)
+            params
         )
         tickets = cursor.fetchall()
-    return render_template('helpdesk/my_requests.html', tickets=tickets)
+
+    return render_template('helpdesk/my_requests.html',
+                           tickets=tickets,
+                           statuses=TICKET_STATUSES,
+                           status_filter=status_filter,
+                           sort=sort)
 
 
-# ── View single ticket ────────────────────────────────────────────────────────
+# ── View single ticket + post reply ──────────────────────────────────────────
 
-@app.route('/support/my-requests/<int:ticket_id>')
+@app.route('/support/my-requests/<int:ticket_id>', methods=['GET', 'POST'])
 @role_required()
 def helpdesk_view(ticket_id):
-    """Read-only detail view for a ticket — only the submitter can see it."""
+    """Detail view for a ticket — submitter sees full history and can add replies."""
     user_id = session['user_id']
+
     with db.get_cursor() as cursor:
         cursor.execute(
             """
             SELECT st.*,
-                   g.name AS group_name
+                   g.name AS group_name,
+                   u.first_name || ' ' || u.last_name AS assigned_owner
             FROM   support_tickets st
             LEFT JOIN groups g ON g.group_id = st.group_id
+            LEFT JOIN users  u ON u.user_id  = st.assigned_to
             WHERE  st.ticket_id = %s
             """,
             (ticket_id,)
@@ -184,8 +207,65 @@ def helpdesk_view(ticket_id):
     if not ticket:
         abort(404)
 
-    # Only the submitter (or Super Admin) may view
     if ticket['submitted_by'] != user_id and session.get('group_role') != 'Super Admin':
         abort(403)
 
-    return render_template('helpdesk/view_request.html', ticket=ticket)
+    # Handle reply POST
+    if request.method == 'POST':
+        body = request.form.get('body', '').strip()
+        if not body:
+            flash('Reply cannot be empty.', 'danger')
+        else:
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'INSERT INTO ticket_replies (ticket_id, author_id, body) VALUES (%s, %s, %s)',
+                    (ticket_id, user_id, body)
+                )
+                cursor.execute(
+                    'UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE ticket_id = %s',
+                    (ticket_id,)
+                )
+            logger.info('User %d added reply to ticket %d', user_id, ticket_id)
+            flash('Reply added.', 'success')
+        return redirect(url_for('helpdesk_view', ticket_id=ticket_id))
+
+    # Fetch replies
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT tr.reply_id,
+                   tr.body,
+                   tr.created_at,
+                   u.first_name || ' ' || u.last_name AS author_name,
+                   u.user_id AS author_id
+            FROM   ticket_replies tr
+            JOIN   users u ON u.user_id = tr.author_id
+            WHERE  tr.ticket_id = %s
+            ORDER BY tr.created_at ASC
+            """,
+            (ticket_id,)
+        )
+        replies = cursor.fetchall()
+
+    # Fetch status history
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT tsh.old_status,
+                   tsh.new_status,
+                   tsh.changed_at,
+                   u.first_name || ' ' || u.last_name AS changed_by_name
+            FROM   ticket_status_history tsh
+            LEFT JOIN users u ON u.user_id = tsh.changed_by
+            WHERE  tsh.ticket_id = %s
+            ORDER BY tsh.changed_at ASC
+            """,
+            (ticket_id,)
+        )
+        status_history = cursor.fetchall()
+
+    return render_template('helpdesk/view_request.html',
+                           ticket=ticket,
+                           replies=replies,
+                           status_history=status_history,
+                           current_user_id=user_id)
