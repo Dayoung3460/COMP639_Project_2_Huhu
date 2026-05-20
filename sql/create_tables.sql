@@ -214,7 +214,7 @@ DROP TABLE IF EXISTS "public"."users" CASCADE;
 -- Sequence and defined type
 CREATE SEQUENCE IF NOT EXISTS users_user_id_seq;
 DROP TYPE IF EXISTS "public"."account_status_type" CASCADE;
-CREATE TYPE "public"."account_status_type" AS ENUM ('active', 'inactive');
+CREATE TYPE "public"."account_status_type" AS ENUM ('active', 'inactive', 'suspended');
 
 -- Table Definition
 CREATE TABLE "public"."users" (
@@ -230,7 +230,8 @@ CREATE TABLE "public"."users" (
     "emergency_contact_phone" varchar(20) DEFAULT NULL::character varying,
     "profile_photo" varchar(255) DEFAULT NULL::character varying,
     "notes" text,
-    "is_super_admin" bool NOT NULL DEFAULT false,
+    "is_super_admin"    bool NOT NULL DEFAULT false,
+    "is_support_tech"   bool NOT NULL DEFAULT false,
     "account_status" "public"."account_status_type" NOT NULL DEFAULT 'active'::account_status_type,
     "date_joined" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "last_login" timestamp,
@@ -281,6 +282,7 @@ CREATE TABLE "public"."user_notifications" (
     "group_id" int4 DEFAULT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
     "message" text NOT NULL,
     "category" varchar(20) NOT NULL DEFAULT 'info'::character varying,
+    "url" varchar(500) DEFAULT NULL,
     "is_active" bool NOT NULL DEFAULT true,
     "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY ("notification_id")
@@ -581,6 +583,76 @@ CREATE TABLE support_tickets (
     assigned_to  INTEGER              REFERENCES users(user_id) ON DELETE SET NULL DEFAULT NULL,
     created_at   TIMESTAMP            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP            NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS ticket_replies CASCADE;
+
+CREATE TABLE ticket_replies (
+    reply_id     SERIAL    PRIMARY KEY,
+    ticket_id    INTEGER   NOT NULL REFERENCES support_tickets(ticket_id) ON DELETE CASCADE,
+    author_id    INTEGER   NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    body         TEXT      NOT NULL,
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS ticket_status_history CASCADE;
+
+CREATE TABLE ticket_status_history (
+    history_id   SERIAL             PRIMARY KEY,
+    ticket_id    INTEGER            NOT NULL REFERENCES support_tickets(ticket_id) ON DELETE CASCADE,
+    changed_by   INTEGER            REFERENCES users(user_id) ON DELETE SET NULL,
+    old_status   ticket_status_enum NOT NULL,
+    new_status   ticket_status_enum NOT NULL,
+    note         TEXT               DEFAULT NULL,
+    changed_at   TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS kb_articles CASCADE;
+DROP TABLE IF EXISTS kb_categories CASCADE;
+
+CREATE TABLE kb_categories (
+    category_id SERIAL      PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    sort_order  INT          NOT NULL DEFAULT 0
+);
+
+INSERT INTO kb_categories (name, sort_order) VALUES
+    ('Account & Login', 1),
+    ('Lines & Traps',   2),
+    ('Bait Stations',   3),
+    ('Records',         4);
+
+CREATE TABLE kb_articles (
+    article_id  SERIAL       PRIMARY KEY,
+    category_id INT          NOT NULL REFERENCES kb_categories(category_id),
+    title       VARCHAR(255) NOT NULL,
+    body        TEXT         NOT NULL,
+    is_published BOOL        NOT NULL DEFAULT FALSE,
+    created_by  INT          REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by  INT          REFERENCES users(user_id) ON DELETE SET NULL,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS user_suspension_log CASCADE;
+
+CREATE TABLE user_suspension_log (
+    log_id         SERIAL    PRIMARY KEY,
+    target_user_id INTEGER   NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    actor_user_id  INTEGER   REFERENCES users(user_id) ON DELETE SET NULL,
+    action         VARCHAR(20) NOT NULL CHECK (action IN ('suspended', 'reinstated')),
+    reason         TEXT      NOT NULL,
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS support_tech_audit_log CASCADE;
+
+CREATE TABLE support_tech_audit_log (
+    log_id        SERIAL    PRIMARY KEY,
+    target_user_id INTEGER  NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    actor_user_id  INTEGER  REFERENCES users(user_id) ON DELETE SET NULL,
+    action         VARCHAR(10) NOT NULL CHECK (action IN ('granted', 'revoked')),
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 DROP TABLE IF EXISTS "public"."group_operational_areas" CASCADE;

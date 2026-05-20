@@ -59,7 +59,11 @@
    role lands).
 #}
 {% set overflow_endpoints = ['profile', 'change_password',
-                              'helpdesk_submit', 'helpdesk_my_requests', 'helpdesk_view'] %}
+                              'helpdesk_submit', 'helpdesk_my_requests', 'helpdesk_view',
+                              'helpdesk_queue', 'helpdesk_ticket', 'helpdesk_take', 'helpdesk_assign',
+                              'helpdesk_user_search', 'helpdesk_user_profile',
+                              'kb_index', 'kb_article', 'kb_new', 'kb_edit',
+                              'kb_publish', 'kb_unpublish'] %}
 {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
   {% set overflow_endpoints = overflow_endpoints + [
     'coordinator_themes', 'coordinator_theme_preview',
@@ -73,6 +77,7 @@
     'admin_groups', 'admin_group_detail',
     'admin_group_applications',
     'reference_data', 'manage_lookup',
+    'admin_support_technicians', 'admin_support_tech_grant', 'admin_support_tech_revoke',
   ] %}
 {% endif %}
 {% if session.get('group_role') == 'Group Coordinator' %}

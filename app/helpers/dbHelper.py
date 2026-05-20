@@ -427,7 +427,6 @@ def update_bait_station_record(db, data, editor_id):
             data['record_id'],
         ))
 
-
 def fetch_operational_area(db, group_id):
     """Return the parsed GeoJSON polygon dict for a group, or None if unset."""
     with db.get_cursor() as cursor:
@@ -442,7 +441,6 @@ def fetch_operational_area(db, group_id):
         return json.loads(row['geojson'])
     except (json.JSONDecodeError, TypeError):
         return None
-
 
 def save_operational_area(db, group_id, geojson_str, user_id):
     """Upsert the group's operational area polygon."""
@@ -459,7 +457,6 @@ def save_operational_area(db, group_id, geojson_str, user_id):
             (group_id, geojson_str, user_id)
         )
 
-
 def delete_operational_area(db, group_id):
     """Remove the group's operational area polygon."""
     with db.get_cursor() as cursor:
@@ -468,11 +465,14 @@ def delete_operational_area(db, group_id):
             (group_id,)
         )
 
+def insert_notification(db, user_id, message, category='info', url=None, group_id=None):
+    """Insert a bell notification for the user.
 
-def insert_notification(db, user_id, message, category='info'):
-    """Insert a notification that will be flashed to the user on next login."""
+    Pass group_id to scope to a specific group context; leave None for
+    platform-wide notifications (helpdesk staff alerts, admin events).
+    """
     with db.get_cursor() as cursor:
         cursor.execute("""
-            INSERT INTO user_notifications (user_id, message, category)
-            VALUES (%s, %s, %s)
-        """, (user_id, message, category))
+            INSERT INTO user_notifications (user_id, message, category, url, group_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (user_id, message, category, url, group_id))

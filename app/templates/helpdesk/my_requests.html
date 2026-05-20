@@ -3,7 +3,7 @@
 
 {% block page_head_icon %}<i class="bi bi-headset"></i>{% endblock %}
 {% block page_title %}My Support Requests{% endblock %}
-{% block page_subtitle %}All requests you have submitted.{% endblock %}
+{% block page_subtitle %}Track your open and closed requests.{% endblock %}
 
 {% block header_actions %}
   <a href="{{ url_for('helpdesk_submit') }}" class="btn btn-primary btn-sm">
@@ -14,13 +14,48 @@
 {% block content %}
 <div class="container py-4">
 
+  {# ── Filter + sort bar ────────────────────────────────────── #}
+  <form method="GET" action="{{ url_for('helpdesk_my_requests') }}"
+        class="d-flex flex-wrap gap-2 align-items-center mb-4">
+
+    <label class="visually-hidden" for="statusFilter">Filter by status</label>
+    <select name="status" id="statusFilter" class="form-select form-select-sm" style="width:auto;">
+      <option value="">All statuses</option>
+      {% for s in statuses %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="visually-hidden" for="sortSelect">Sort by</label>
+    <select name="sort" id="sortSelect" class="form-select form-select-sm" style="width:auto;">
+      <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Newest first</option>
+      <option value="date_asc"  {% if sort == 'date_asc'  %}selected{% endif %}>Oldest first</option>
+    </select>
+
+    <button type="submit" class="btn btn-outline-secondary btn-sm">Apply</button>
+
+    {% if status_filter or sort != 'date_desc' %}
+      <a href="{{ url_for('helpdesk_my_requests') }}" class="btn btn-link btn-sm text-muted p-0 ms-1">
+        Clear
+      </a>
+    {% endif %}
+  </form>
+
+  {# ── Table ────────────────────────────────────────────────── #}
   {% if not tickets %}
     <div class="text-center py-5 text-muted">
       <i class="bi bi-inbox" style="font-size:2.5rem;" aria-hidden="true"></i>
-      <p class="mt-3 mb-1">No requests yet.</p>
-      <a href="{{ url_for('helpdesk_submit') }}" class="btn btn-primary btn-sm mt-2">
-        Submit your first request
-      </a>
+      {% if status_filter %}
+        <p class="mt-3 mb-1">No <strong>{{ status_filter }}</strong> requests found.</p>
+        <a href="{{ url_for('helpdesk_my_requests') }}" class="btn btn-outline-secondary btn-sm mt-2">
+          Show all requests
+        </a>
+      {% else %}
+        <p class="mt-3 mb-1">No requests yet.</p>
+        <a href="{{ url_for('helpdesk_submit') }}" class="btn btn-primary btn-sm mt-2">
+          Submit your first request
+        </a>
+      {% endif %}
     </div>
   {% else %}
     <div class="table-responsive">
@@ -32,12 +67,16 @@
             <th scope="col">Title</th>
             <th scope="col">Priority</th>
             <th scope="col">Status</th>
+            <th scope="col">Assigned to</th>
             <th scope="col">Submitted</th>
+            <th scope="col">Last updated</th>
             <th scope="col" class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for t in tickets %}
+          {% set p_class = {'Low': 'success', 'Medium': 'warning', 'High': 'danger'} %}
+          {% set s_class = {'New': 'primary', 'Open': 'info', 'Stalled': 'warning', 'Resolved': 'success'} %}
           <tr>
             <td class="text-muted small">{{ t.ticket_id }}</td>
             <td>
@@ -49,20 +88,22 @@
             </td>
             <td>{{ t.title }}</td>
             <td>
-              {% set p_class = {'Low': 'success', 'Medium': 'warning', 'High': 'danger'} %}
               <span class="badge bg-{{ p_class.get(t.priority, 'secondary') }}-subtle
                                  text-{{ p_class.get(t.priority, 'secondary') }}-emphasis">
                 {{ t.priority }}
               </span>
             </td>
             <td>
-              {% set s_class = {'New': 'primary', 'Open': 'info', 'Stalled': 'warning', 'Resolved': 'success'} %}
               <span class="badge bg-{{ s_class.get(t.status, 'secondary') }}-subtle
                                  text-{{ s_class.get(t.status, 'secondary') }}-emphasis">
                 {{ t.status }}
               </span>
             </td>
+            <td class="small text-muted">
+              {{ t.assigned_owner or '—' }}
+            </td>
             <td class="small text-muted text-nowrap">{{ t.created_at | nz_datetime }}</td>
+            <td class="small text-muted text-nowrap">{{ t.updated_at | nz_datetime }}</td>
             <td class="text-end">
               <a href="{{ url_for('helpdesk_view', ticket_id=t.ticket_id) }}"
                  class="btn btn-sm btn-outline-secondary">

@@ -13,6 +13,7 @@ Visibility logic (per the brief):
 from flask import render_template, request, redirect, url_for, flash, session, abort, jsonify
 from app import app, db
 from app.utils import role_required, allowed_file, UPLOAD_FOLDER, redirect_by_role
+from app.helpers.dbHelper import insert_notification
 import os
 import uuid
 
@@ -204,9 +205,21 @@ def apply_for_group():
                 insert_query,
                 tuple_values
             )
-            flash('Your conservation application has been submitted successfully!', 'success')
-            
-            return redirect(url_for('apply_for_group'))
+
+            # Notify all Super Admins so they don't have to poll the page
+            cursor.execute('SELECT user_id FROM users WHERE is_super_admin = TRUE')
+            admin_ids = [r['user_id'] for r in cursor.fetchall()]
+
+        for admin_id in admin_ids:
+            insert_notification(
+                db, admin_id,
+                f'New group application: "{proposed_name}" — review it in Group Applications.',
+                'info',
+                url=url_for('admin_group_applications')
+            )
+
+        flash('Your conservation application has been submitted successfully!', 'success')
+        return redirect(url_for('apply_for_group'))
 
     return render_template('groups/apply_group.html')
 
@@ -253,6 +266,7 @@ def request_join_group():
             return jsonify({'error': 'You already have a pending request for this group'}), 400
 
         # 6. Public → join immediately as Observer; Private → create pending request
+        coord_ids = []
         if group['is_public']:
             cursor.execute(
                 "INSERT INTO group_memberships (user_id, group_id, role) VALUES (%s, %s, 'Observer')",
@@ -272,21 +286,23 @@ def request_join_group():
                 SELECT user_id FROM group_memberships
                 WHERE group_id = %s AND role = 'Group Coordinator'
             ''', (group_id,))
-            coordinators = cursor.fetchall()
-            if coordinators:
-                notif_message = f"New join request for {group['name']}"
-                cursor.executemany(
-                    "INSERT INTO user_notifications (user_id, group_id, message, category) "
-                    "VALUES (%s, %s, %s, 'info')",
-                    [(c['user_id'], group_id, notif_message) for c in coordinators]
-                )
+            coord_ids = [r['user_id'] for r in cursor.fetchall()]
+
+        for coord_id in coord_ids:
+            insert_notification(
+                db, coord_id,
+                f'New join request for {group["name"]} — review it in Join Requests.',
+                'info',
+                url=url_for('coordinator_requests'),
+                group_id=group_id,
+            )
 
     return redirect(url_for('group_landing', group_id=group_id))
 
 
 @app.route('/notifications/<int:notification_id>/dismiss')
 def notification_click(notification_id):
-    """Mark a notification inactive and redirect to the membership requests page."""
+    """Mark a notification inactive and redirect to its stored url."""
     user_id = session.get('user_id')
     if not user_id:
         abort(401)
@@ -294,11 +310,13 @@ def notification_click(notification_id):
     with db.get_cursor() as cursor:
         cursor.execute(
             'UPDATE user_notifications SET is_active = FALSE '
-            'WHERE notification_id = %s AND user_id = %s',
+            'WHERE notification_id = %s AND user_id = %s RETURNING url',
             (notification_id, user_id)
         )
+        row = cursor.fetchone()
 
-    return redirect(url_for('coordinator_requests'))
+    dest = row['url'] if row and row['url'] else request.referrer or url_for('index')
+    return redirect(dest)
 
 
 @app.route('/groups/<int:group_id>/enter')

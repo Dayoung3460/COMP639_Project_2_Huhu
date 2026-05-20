@@ -8,29 +8,8 @@ import uuid
 
 
 def _flash_pending_notifications(user_id):
-    """Flash every active notification for the user then mark them inactive."""
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT notification_id, message, category FROM user_notifications '
-            'WHERE user_id = %s AND is_active = TRUE ORDER BY created_at',
-            (user_id,)
-        )
-        notifications = cursor.fetchall()
-    if notifications:
-        ids = [n['notification_id'] for n in notifications]
-
-        # This makes the Notification bell only work for Group Coordinators.
-        # So, the Group Coordinators can see the notifications only when they click the bell icon.
-        # Once they click, the notifications will be marked as inactive and won't show up again.
-        if session.get('group_role') != 'Group Coordinator':
-            with db.get_cursor() as cursor:
-                cursor.execute(
-                    'UPDATE user_notifications SET is_active = FALSE '
-                    'WHERE notification_id = ANY(%s) AND group_id = %s',
-                    (ids, session.get('group_id'))
-                )
-        for n in notifications:
-            flash(n['message'], n['category'])
+    """Replaced by the bell notification system — no longer flashes on login."""
+    pass
 
 
 def _is_quick_login_enabled():
@@ -131,7 +110,7 @@ def login():
 
         with db.get_cursor() as cursor:
             cursor.execute('''
-                SELECT user_id, username, password_hash, account_status, is_super_admin
+                SELECT user_id, username, password_hash, account_status, is_super_admin, is_support_tech
                 FROM users
                 WHERE username = %s
             ''', (username,))
@@ -139,6 +118,18 @@ def login():
 
         if not user or not bcrypt.check_password_hash(user['password_hash'], password):
             flash('Incorrect username or password.', 'danger')
+            return render_template(
+                'auth/login.html',
+                username=username,
+                quick_login_enabled=quick_login_enabled
+            )
+
+        if user['account_status'] == 'suspended':
+            flash(
+                'Your account has been suspended. Please contact support at support@tiaki.nz '
+                'or submit a request from a different account.',
+                'danger'
+            )
             return render_template(
                 'auth/login.html',
                 username=username,
@@ -168,19 +159,24 @@ def login():
             ''', (user['user_id'],))
             memberships = cursor.fetchall()
 
-        # Super Admin with no group context → admin dashboard. The
-        # picker has nothing to offer here.
+        # Super Admin with no group context → admin dashboard.
         if user['is_super_admin'] and len(memberships) == 0:
             session['group_role'] = 'Super Admin'
             _flash_pending_notifications(user['user_id'])
             return redirect(url_for('admin_dashboard'))
 
+        # Support Technician with no group memberships → support queue.
+        if user['is_support_tech'] and not user['is_super_admin'] and len(memberships) == 0:
+            session['group_role'] = 'Support Technician'
+            _flash_pending_notifications(user['user_id'])
+            return redirect(url_for('helpdesk_queue'))
+
         # Regular user with exactly one membership → auto-select that
         # group and go straight to the role dashboard. Skips the picker
         # so single-group members don't pay an extra click per login.
-        # Super Admins are deliberately excluded so they always land on
-        # the picker when they have any group context.
-        if not user['is_super_admin'] and len(memberships) == 1:
+        # Super Admins and Support Technicians are excluded so they always
+        # land on the picker and can choose their identity.
+        if not user['is_super_admin'] and not user['is_support_tech'] and len(memberships) == 1:
             m = memberships[0]
             session['group_id']   = m['group_id']
             session['group_role'] = m['role']
@@ -211,9 +207,13 @@ def select_group():
     user_id = session['user_id']
 
     with db.get_cursor() as cursor:
-        cursor.execute('SELECT is_super_admin FROM users WHERE user_id = %s', (user_id,))
+        cursor.execute(
+            'SELECT is_super_admin, is_support_tech FROM users WHERE user_id = %s',
+            (user_id,)
+        )
         row = cursor.fetchone()
-        is_super_admin = bool(row and row['is_super_admin'])
+        is_super_admin  = bool(row and row['is_super_admin'])
+        is_support_tech = bool(row and row['is_support_tech'])
 
         cursor.execute('''
             SELECT gm.group_id, gm.role, g.name AS group_name, g.location
@@ -225,15 +225,21 @@ def select_group():
         memberships = cursor.fetchall()
 
     if request.method == 'POST':
-        # Super Admin "act platform-wide" path — no group context, but all
-        # group-scoped list pages will bypass their group_id filter via
-        # is_super_admin_mode().
-        if is_super_admin and request.form.get('mode') == 'super_admin':
+        mode = request.form.get('mode')
+
+        if is_super_admin and mode == 'super_admin':
             session.pop('group_id', None)
             session['group_role'] = 'Super Admin'
             session['group_name'] = 'Super Admin'
             _flash_pending_notifications(user_id)
             return redirect_by_role()
+
+        if is_support_tech and mode == 'support_tech':
+            session.pop('group_id', None)
+            session['group_role'] = 'Support Technician'
+            session.pop('group_name', None)
+            _flash_pending_notifications(user_id)
+            return redirect(url_for('helpdesk_queue'))
 
         group_id = request.form.get('group_id', type=int)
         match = next((m for m in memberships if m['group_id'] == group_id), None)
@@ -241,7 +247,8 @@ def select_group():
             flash('Invalid selection.', 'danger')
             return render_template('auth/select_group.html',
                                    memberships=memberships,
-                                   is_super_admin=is_super_admin)
+                                   is_super_admin=is_super_admin,
+                                   is_support_tech=is_support_tech)
 
         session['group_id']   = match['group_id']
         session['group_role'] = match['role']
@@ -251,7 +258,8 @@ def select_group():
 
     return render_template('auth/select_group.html',
                            memberships=memberships,
-                           is_super_admin=is_super_admin)
+                           is_super_admin=is_super_admin,
+                           is_support_tech=is_support_tech)
 
 
 @app.route('/logout')
