@@ -5,28 +5,27 @@
 
 /* ── Map constants ────────────────────────────────────────────────────────── */
 
-var MAP_MIN_ZOOM = 13;
+var MAP_MIN_ZOOM = 5;
 var MAP_MAX_ZOOM = 19;
-var MAP_DEFAULT_CENTER = [-43.6409, 172.4678];
+var MAP_DEFAULT_CENTER = [-41.2865, 174.7762];
 var MAP_RETIRED_COLOR = '#343a40';
-var MAP_RETIRED_FILL = '#adb5bd';
 
 /**
- * Create a Leaflet map with the LINZ aerial tile layer, bounded to Lincoln.
+ * Create a Leaflet map with the LINZ aerial tile layer, bounded to New Zealand.
  * @param {string} elementId  – DOM id of the map container
  * @param {string} linzApiKey – LINZ basemap API key
  * @returns {L.Map}
  */
-function createLincolnMap(elementId, linzApiKey) {
-  var lincolnBounds = L.latLngBounds(
-    L.latLng(-43.70, 172.40),
-    L.latLng(-43.58, 172.55)
+function createNzMap(elementId, linzApiKey) {
+  var nzBounds = L.latLngBounds(
+    L.latLng(-47.5, 165.5),
+    L.latLng(-33.5, 178.5)
   );
 
   var map = L.map(elementId, {
     minZoom: MAP_MIN_ZOOM,
     maxZoom: MAP_MAX_ZOOM,
-    maxBounds: lincolnBounds,
+    maxBounds: nzBounds,
     maxBoundsViscosity: 1.0
   });
 

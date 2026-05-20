@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const linzApiKey = mapElement.dataset.linzApiKey;
   const lineIsRetired = mapElement.dataset.lineIsRetired === 'true';
 
-  const map = createLincolnMap('line-map', linzApiKey);
+  const map = createNzMap('line-map', linzApiKey);
 
   const lineColor = '#0d6efd';
 

@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (visibleLatLngs.length > 0) {
       map.fitBounds(visibleLatLngs, { padding: [30, 30] });
     } else {
-      map.setView(MAP_DEFAULT_CENTER, 13);
+      map.setView(MAP_DEFAULT_CENTER, 6);
     }
   }
 
@@ -206,12 +206,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const linzApiKey = mapElement.dataset.linzApiKey;
     const lineFilter = new URLSearchParams(window.location.search).get('filter') || 'all';
 
-    map = createLincolnMap('lines-overview-map', linzApiKey);
+    map = createNzMap('lines-overview-map', linzApiKey);
+    // Initialise the view before adding any Path layers. Otherwise Leaflet
+    // defers each addLayer via whenReady, and when 'load' fires the nested
+    // renderer init can leave _renderer._bounds undefined, crashing
+    // Polygon._clipPoints with "Cannot read properties of undefined (reading 'min')".
+    map.setView(MAP_DEFAULT_CENTER, MAP_MIN_ZOOM);
 
     let areaLayer = null;
     if (areaGeoJSON) {
-      areaLayer = L.geoJSON(areaGeoJSON, { style: { className: 'area-polygon' } });
-      areaLayer.addTo(map);
+      try {
+        areaLayer = L.geoJSON(areaGeoJSON, { style: { className: 'area-polygon' } });
+        areaLayer.addTo(map);
+      } catch (e) {
+        areaLayer = null;
+      }
     }
 
     traps.forEach(function (trap) {
@@ -270,10 +279,10 @@ document.addEventListener('DOMContentLoaded', function () {
       try {
         map.fitBounds(areaLayer.getBounds(), { padding: [30, 30] });
       } catch (e) {
-        map.setView(MAP_DEFAULT_CENTER, 13);
+        map.setView(MAP_DEFAULT_CENTER, 6);
       }
     } else {
-      map.setView(MAP_DEFAULT_CENTER, 13);
+      map.setView(MAP_DEFAULT_CENTER, 6);
     }
 
     // Leaflet reads container dimensions at init time, before CSS layout is
