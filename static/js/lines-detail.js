@@ -80,27 +80,43 @@ document.addEventListener('DOMContentLoaded', function () {
 
     map.fitBounds(latlngs, { padding: [30, 30] });
   } else {
-    // Fallback: Lincoln University area
-    map.setView(MAP_DEFAULT_CENTER, 13);
+    map.setView(MAP_DEFAULT_CENTER, 6);
   }
 
   setTimeout(function () { map.invalidateSize(); }, 0);
 
-  // ── Inline Add Trap Functionality ──────────────────────────────────────────
-  let isAddingTrap = false;
+  // ── Inline Form State ──────────────────────────────────────────────────────
+  let activeMode = null; // 'addTrap' | 'addStation' | 'editTrap' | 'editStation'
   let tempMarker = null;
-  let isAddingStation = false;
   let tempStationMarker = null;
+  let editTempMarker = null;
 
+  function insertFormError(containerId, errorMsg) {
+    const formContainer = document.getElementById(containerId);
+    if (!formContainer) return;
+    const cardBody = formContainer.querySelector('.panel-body');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'notice amber lines-inline-form-error';
+    alertDiv.setAttribute('role', 'alert');
+    const icon = document.createElement('i');
+    icon.className = 'bi bi-exclamation-triangle-fill';
+    const message = document.createElement('span');
+    message.textContent = errorMsg;
+    alertDiv.appendChild(icon);
+    alertDiv.appendChild(message);
+    cardBody.insertBefore(alertDiv, cardBody.querySelector('form'));
+    setTimeout(() => { window.scrollBy({ top: alertDiv.offsetHeight, behavior: 'smooth' }); }, 300);
+  }
+
+  // ── Inline Add Trap Functionality ──────────────────────────────────────────
   const addTrapBtn = document.getElementById('inline-add-trap-btn');
   const trapsListContainer = document.getElementById('traps-list-container');
 
   if (addTrapBtn && trapsListContainer) {
     addTrapBtn.addEventListener('click', function () {
-      if (isAddingTrap) return; // Prevent opening multiple forms
-      isAddingTrap = true;
+      if (activeMode === 'addTrap') return;
+      activeMode = 'addTrap';
 
-      // Extract line ID and trap types (fallback to a default list if not provided)
       const lineId = mapElement.dataset.lineId || '0';
       const newTrapUrl = addTrapBtn.dataset.newTrapUrl || '#';
       let trapTypes = [
@@ -160,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       `;
 
-      // Insert at the top of the list
       trapsListContainer.prepend(newRow);
 
       if (coordinateInputUtils) {
@@ -170,52 +185,17 @@ document.addEventListener('DOMContentLoaded', function () {
         ]);
       }
 
-      setTimeout(() => {
-        newRow.classList.remove('lines-inline-form-flash');
-      }, 500);
+      setTimeout(() => { newRow.classList.remove('lines-inline-form-flash'); }, 500);
 
-      // Scroll so the top of the form sits just below the sticky navbar
-      const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
-      const scrollTarget = newRow.getBoundingClientRect().top + window.scrollY - navbarH - 8;
-      window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+      scrollAndFocusForm(newRow);
 
-      // Focus the first input without triggering a competing scroll
-      const firstInput = newRow.querySelector('input, select, button, a[href]');
-      if (firstInput) firstInput.focus({ preventScroll: true });
-
-      // Focus trap: keep Tab/Shift+Tab inside the form; Escape cancels
-      const focusTrapHandler = function (e) {
-        const focusable = Array.from(newRow.querySelectorAll(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        ));
-        if (!focusable.length) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-
-        if (e.key === 'Tab') {
-          if (e.shiftKey) {
-            if (document.activeElement === first) {
-              e.preventDefault();
-              last.focus();
-            }
-          } else {
-            if (document.activeElement === last) {
-              e.preventDefault();
-              first.focus();
-            }
-          }
-        }
-
-        if (e.key === 'Escape') {
-          cancelAddTrap();
-        }
-      };
+      const focusTrapHandler = makeFocusTrapHandler(newRow, cancelAddTrap);
       document.addEventListener('keydown', focusTrapHandler);
 
       function cancelAddTrap() {
         document.removeEventListener('keydown', focusTrapHandler);
         newRow.remove();
-        isAddingTrap = false;
+        activeMode = null;
         if (tempMarker) {
           map.removeLayer(tempMarker);
           tempMarker = null;
@@ -223,7 +203,6 @@ document.addEventListener('DOMContentLoaded', function () {
         addTrapBtn.focus();
       }
 
-      // Handle Cancel
       document.getElementById('cancel-add-trap').addEventListener('click', cancelAddTrap);
     });
   }
@@ -234,8 +213,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (addStationBtn && stationsListContainer) {
     addStationBtn.addEventListener('click', function () {
-      if (isAddingStation) return;
-      isAddingStation = true;
+      if (activeMode === 'addStation') return;
+      activeMode = 'addStation';
 
       const newStationUrl = addStationBtn.dataset.newStationUrl || '#';
       let stationTypes = [];
@@ -309,41 +288,17 @@ document.addEventListener('DOMContentLoaded', function () {
         ]);
       }
 
-      setTimeout(() => {
-        newRow.classList.remove('lines-inline-form-flash');
-      }, 500);
+      setTimeout(() => { newRow.classList.remove('lines-inline-form-flash'); }, 500);
 
-      const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
-      const scrollTarget = newRow.getBoundingClientRect().top + window.scrollY - navbarH - 8;
-      window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+      scrollAndFocusForm(newRow);
 
-      const firstInput = newRow.querySelector('input, select, button, a[href]');
-      if (firstInput) firstInput.focus({ preventScroll: true });
-
-      const focusTrapHandler = function (e) {
-        const focusable = Array.from(newRow.querySelectorAll(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        ));
-        if (!focusable.length) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-
-        if (e.key === 'Tab') {
-          if (e.shiftKey) {
-            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-          } else {
-            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-          }
-        }
-
-        if (e.key === 'Escape') { cancelAddStation(); }
-      };
+      const focusTrapHandler = makeFocusTrapHandler(newRow, cancelAddStation);
       document.addEventListener('keydown', focusTrapHandler);
 
       function cancelAddStation() {
         document.removeEventListener('keydown', focusTrapHandler);
         newRow.remove();
-        isAddingStation = false;
+        activeMode = null;
         if (tempStationMarker) {
           map.removeLayer(tempStationMarker);
           tempStationMarker = null;
@@ -356,10 +311,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ── Inline Edit Trap / Station State ───────────────────────────────────────
-  let isEditingTrap = false;
-  let isEditingStation = false;
-  let editTempMarker = null;
-
   function closeAnyOpenForms() {
     ['cancel-add-trap', 'cancel-add-station', 'cancel-edit-trap', 'cancel-edit-station']
       .forEach(function (id) { const btn = document.getElementById(id); if (btn) btn.click(); });
@@ -375,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function openEditTrapForm(triggerBtn, errorMsg, prefill) {
     closeAnyOpenForms();
-    isEditingTrap = true;
+    activeMode = 'editTrap';
 
     const trapId = triggerBtn.dataset.editTrap;
     const code = (prefill && prefill.code) || triggerBtn.dataset.trapCode || '';
@@ -454,31 +405,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setTimeout(function () { container.classList.remove('lines-inline-form-flash'); }, 500);
 
-    const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
-    const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - 8;
-    window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+    scrollAndFocusForm(container);
 
-    const firstInput = container.querySelector('input, select, button, a[href]');
-    if (firstInput) firstInput.focus({ preventScroll: true });
-
-    const focusTrapHandler = function (e) {
-      const focusable = Array.from(container.querySelectorAll(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      ));
-      if (!focusable.length) return;
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.key === 'Tab') {
-        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
-        else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
-      }
-      if (e.key === 'Escape') { doCancel(); }
-    };
+    const focusTrapHandler = makeFocusTrapHandler(container, doCancel);
     document.addEventListener('keydown', focusTrapHandler);
 
     function doCancel() {
       document.removeEventListener('keydown', focusTrapHandler);
       container.remove();
-      isEditingTrap = false;
+      activeMode = null;
       if (editTempMarker) { map.removeLayer(editTempMarker); editTempMarker = null; }
       triggerBtn.focus();
     }
@@ -496,7 +431,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function openEditStationForm(triggerBtn, errorMsg, prefill) {
     closeAnyOpenForms();
-    isEditingStation = true;
+    activeMode = 'editStation';
 
     const stationId = triggerBtn.dataset.editStation;
     const code = (prefill && prefill.code) || triggerBtn.dataset.stationCode || '';
@@ -590,31 +525,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setTimeout(function () { container.classList.remove('lines-inline-form-flash'); }, 500);
 
-    const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
-    const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - 8;
-    window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+    scrollAndFocusForm(container);
 
-    const firstInput = container.querySelector('input, select, button, a[href]');
-    if (firstInput) firstInput.focus({ preventScroll: true });
-
-    const focusTrapHandler = function (e) {
-      const focusable = Array.from(container.querySelectorAll(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      ));
-      if (!focusable.length) return;
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.key === 'Tab') {
-        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
-        else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
-      }
-      if (e.key === 'Escape') { doCancel(); }
-    };
+    const focusTrapHandler = makeFocusTrapHandler(container, doCancel);
     document.addEventListener('keydown', focusTrapHandler);
 
     function doCancel() {
       document.removeEventListener('keydown', focusTrapHandler);
       container.remove();
-      isEditingStation = false;
+      activeMode = null;
       if (editTempMarker) { map.removeLayer(editTempMarker); editTempMarker = null; }
       triggerBtn.focus();
     }
@@ -624,12 +543,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ── Map Click Handler for Coordinates ──────────────────────────────────────
   map.on('click', function (e) {
-    if (!isAddingTrap && !isAddingStation && !isEditingTrap && !isEditingStation) return;
+    if (!activeMode) return;
 
     const lat = e.latlng.lat.toFixed(6);
     const lng = e.latlng.lng.toFixed(6);
 
-    if (isAddingTrap) {
+    if (activeMode === 'addTrap') {
       const latInput = document.getElementById('inline-lat');
       const lngInput = document.getElementById('inline-lng');
       if (latInput) latInput.value = lat;
@@ -642,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function () {
       tempMarker = L.marker([lat, lng]).addTo(map)
         .bindPopup(`<strong>New Trap Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
         .openPopup();
-    } else if (isAddingStation) {
+    } else if (activeMode === 'addStation') {
       const latInput = document.getElementById('inline-station-lat');
       const lngInput = document.getElementById('inline-station-lng');
       if (latInput) latInput.value = lat;
@@ -655,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function () {
       tempStationMarker = L.marker([lat, lng]).addTo(map)
         .bindPopup(`<strong>New Station Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
         .openPopup();
-    } else if (isEditingTrap) {
+    } else if (activeMode === 'editTrap') {
       const latInput = document.getElementById('edit-trap-lat');
       const lngInput = document.getElementById('edit-trap-lng');
       if (latInput) latInput.value = lat;
@@ -736,28 +655,7 @@ document.addEventListener('DOMContentLoaded', function () {
     addStationBtn.click();
 
     const errorMsg = urlParams.get('error');
-    if (errorMsg) {
-      const formContainer = document.getElementById('new-station-form-container');
-      if (formContainer) {
-        const cardBody = formContainer.querySelector('.panel-body');
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'notice amber lines-inline-form-error';
-        alertDiv.setAttribute('role', 'alert');
-
-        const icon = document.createElement('i');
-        icon.className = 'bi bi-exclamation-triangle-fill';
-        const message = document.createElement('span');
-        message.textContent = errorMsg;
-        alertDiv.appendChild(icon);
-        alertDiv.appendChild(message);
-
-        cardBody.insertBefore(alertDiv, cardBody.querySelector('form'));
-
-        setTimeout(() => {
-          window.scrollBy({ top: alertDiv.offsetHeight, behavior: 'smooth' });
-        }, 300);
-      }
-    }
+    if (errorMsg) insertFormError('new-station-form-container', errorMsg);
 
     const codeInput = document.getElementById('inline-station-code');
     const typeSelect = document.getElementById('inline-station-type');
@@ -798,33 +696,9 @@ document.addEventListener('DOMContentLoaded', function () {
   if (urlParams.get('add_trap') === '1' && addTrapBtn) {
     addTrapBtn.click();
 
-    // Show error directly in the add trap form
     const errorMsg = urlParams.get('error');
-    if (errorMsg) {
-      const formContainer = document.getElementById('new-trap-form-container');
-      if (formContainer) {
-        const cardBody = formContainer.querySelector('.panel-body');
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'notice amber lines-inline-form-error';
-        alertDiv.setAttribute('role', 'alert');
+    if (errorMsg) insertFormError('new-trap-form-container', errorMsg);
 
-        const icon = document.createElement('i');
-        icon.className = 'bi bi-exclamation-triangle-fill';
-        const message = document.createElement('span');
-        message.textContent = errorMsg;
-        alertDiv.appendChild(icon);
-        alertDiv.appendChild(message);
-
-        cardBody.insertBefore(alertDiv, cardBody.querySelector('form'));
-
-        // Compensate for the extra height the error message adds to the form
-        setTimeout(() => {
-          window.scrollBy({ top: alertDiv.offsetHeight, behavior: 'smooth' });
-        }, 300);
-      }
-    }
-
-    // Populate fields
     const codeInput = document.querySelector('input[name="code"]');
     const typeSelect = document.querySelector('select[name="trap_type"]');
     const latInput = document.getElementById('inline-lat');
@@ -840,7 +714,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (lngInput) lngInput.value = coordinateInputUtils.sanitizeCoordinateValue(lngInput.value);
     }
 
-    // Re-create temporary map marker
     if (latInput && latInput.value && lngInput && lngInput.value) {
       const lat = parseFloat(latInput.value);
       const lng = parseFloat(lngInput.value);

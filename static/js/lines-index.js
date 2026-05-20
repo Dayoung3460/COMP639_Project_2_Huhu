@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function highlightLineCard(lineId) {
-    document.querySelectorAll('.js-line-card').forEach(function (card) {
+    lineCards.forEach(function (card) {
       card.classList.remove('border-primary', 'shadow-sm');
     });
 

@@ -166,3 +166,43 @@ function orderPointsByNearestNeighbor(points) {
 
   return orderedPoints;
 }
+
+/**
+ * Scroll so container is visible below the sticky navbar, then focus the first
+ * interactive element inside it.
+ * @param {HTMLElement} container
+ */
+function scrollAndFocusForm(container) {
+  const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
+  const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - 8;
+  window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+
+  const firstInput = container.querySelector('input, select, button, a[href]');
+  if (firstInput) firstInput.focus({ preventScroll: true });
+}
+
+/**
+ * Create a keyboard focus-trap handler for a container.
+ * Tab/Shift+Tab cycles within focusable elements; Escape calls onEscape.
+ * @param {HTMLElement} container
+ * @param {Function}    onEscape
+ * @returns {Function}  keydown handler — pass the same reference to removeEventListener
+ */
+function makeFocusTrapHandler(container, onEscape) {
+  return function (e) {
+    const focusable = Array.from(container.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+    if (e.key === 'Escape') { onEscape(); }
+  };
+}
