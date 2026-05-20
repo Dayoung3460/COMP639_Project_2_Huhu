@@ -320,7 +320,7 @@ def lines_index():
     })
 
     area_geojson = None
-    if not super_admin and group_id:
+    if not bypass_group and group_id:
         area_geojson = fetch_operational_area(db, group_id)
 
     return render_template(
