@@ -151,37 +151,6 @@ def lines_index():
 
         cursor.execute(
             f"""
-            SELECT l.line_id, COUNT(t.is_retired) as has_active_trap
-            FROM lines AS l
-            LEFT JOIN traps as t ON t.line_id = l.line_id
-            WHERE {group_clause} t.is_retired = FALSE
-            GROUP BY l.line_id
-            """,
-            group_params
-        )
-        line_has_active_traps = cursor.fetchall()
-        active_trap_line_ids = set(
-            line['line_id'] for line in line_has_active_traps
-            if line['has_active_trap'] > 0
-        )
-
-        cursor.execute(
-            f"""
-            SELECT l.line_id, COUNT(bs.station_id) AS has_active_station
-            FROM lines AS l
-            LEFT JOIN bait_stations AS bs ON bs.line_id = l.line_id
-            WHERE {group_clause} bs.is_retired = FALSE
-            GROUP BY l.line_id
-            """,
-            group_params
-        )
-        active_station_line_ids = set(
-            row['line_id'] for row in cursor.fetchall()
-            if row['has_active_station'] > 0
-        )
-
-        cursor.execute(
-            f"""
             SELECT
                 l.line_id,
                 l.name AS line_name,
@@ -253,12 +222,19 @@ def lines_index():
         )
         station_rows = cursor.fetchall()
 
+    active_trap_line_ids = {
+        line['line_id'] for line in lines if (line['trap_count'] or 0) > 0
+    }
+    active_station_line_ids = {
+        line['line_id'] for line in lines if (line['station_count'] or 0) > 0
+    }
+
+    def make_detail_url(line_id):
+        url = url_for('line_detail', line_id=line_id)
+        return f"{url}?filter={line_filter}" if line_filter != 'all' else url
+
     map_traps = []
     for trap in trap_rows:
-        detail_url = url_for('line_detail', line_id=trap['line_id'])
-        if line_filter != 'all':
-            detail_url = f"{detail_url}?filter={line_filter}"
-
         map_traps.append({
             'line_id': trap['line_id'],
             'line_name': trap['line_name'],
@@ -270,14 +246,10 @@ def lines_index():
             'longitude': float(trap['longitude']),
             'trap_is_retired': trap['trap_is_retired'],
             'is_station': False,
-            'detail_url': detail_url
+            'detail_url': make_detail_url(trap['line_id'])
         })
 
     for station in station_rows:
-        detail_url = url_for('line_detail', line_id=station['line_id'])
-        if line_filter != 'all':
-            detail_url = f"{detail_url}?filter={line_filter}"
-
         map_traps.append({
             'line_id': station['line_id'],
             'line_name': station['line_name'],
@@ -289,7 +261,7 @@ def lines_index():
             'longitude': float(station['longitude']),
             'trap_is_retired': station['station_is_retired'],
             'is_station': True,
-            'detail_url': detail_url
+            'detail_url': make_detail_url(station['line_id'])
         })
 
     for line in lines:
@@ -472,8 +444,8 @@ def line_detail(line_id):
             )
             operators = cursor.fetchall()
 
-    trap_types = fetch_active_lookup(db, 'trap_types')
-    bait_station_types = fetch_active_lookup(db, 'bait_station_types')
+    trap_types = fetch_active_lookup(db, 'trap_types') if line and line['type'] != 'Bait Station' else []
+    bait_station_types = fetch_active_lookup(db, 'bait_station_types') if line and line['type'] == 'Bait Station' else []
 
     return render_template(
         'lines/detail.html',
