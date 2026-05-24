@@ -242,6 +242,10 @@ def helpdesk_view(ticket_id):
     # Handle reply POST
     if request.method == 'POST':
         body = request.form.get('body', '').strip()
+        # P2-51: comments are not allowed once a request is Resolved.
+        if ticket['status'] == 'Resolved':
+            flash('This request is resolved and can no longer be commented on.', 'warning')
+            return redirect(url_for('helpdesk_view', ticket_id=ticket_id))
         if not body:
             flash('Reply cannot be empty.', 'danger')
         else:
