@@ -2,7 +2,11 @@
 
 from flask import render_template, request, session
 from app import app, db
-from app.utils import role_required, is_super_admin_mode
+from app.utils import role_required, is_super_admin_mode, is_support_tech_mode
+from app.themes import PLATFORM_DEFAULT_THEME
+
+# Fallback badge colour for groups with no custom theme row.
+DEFAULT_GROUP_COLOR = PLATFORM_DEFAULT_THEME['primary_color']
 
 def get_catch_records(recorded_by_id=None):
     """Query catch records with optional filter by recorded_by_id.
@@ -25,7 +29,10 @@ def get_catch_records(recorded_by_id=None):
     where_clauses = []
     query_params = []
 
-    if not is_super_admin_mode():
+    # Super Admin (platform-wide) and Support Technician see every group.
+    bypass_group = is_super_admin_mode() or is_support_tech_mode()
+
+    if not bypass_group:
         where_clauses.append("l.group_id = %s")
         query_params.append(session.get('group_id'))
     if recorded_by_id:
@@ -68,10 +75,14 @@ def get_catch_records(recorded_by_id=None):
                 tc.*,
                 t.code AS trap_code,
                 t.trap_type,
-                l.name AS line_name
+                l.name AS line_name,
+                g.name AS group_name,
+                COALESCE(gt.primary_color, '{DEFAULT_GROUP_COLOR}') AS group_color
             FROM trap_catches tc
             JOIN traps t ON tc.trap_id = t.trap_id
             JOIN lines l ON t.line_id = l.line_id
+            LEFT JOIN groups g ON g.group_id = l.group_id
+            LEFT JOIN group_themes gt ON gt.group_id = l.group_id
             LEFT JOIN users u ON tc.recorded_by_id = u.user_id
             {where_sql}
             {order_sql}
@@ -79,7 +90,7 @@ def get_catch_records(recorded_by_id=None):
         records = cursor.fetchall()
 
         # Scope filter dropdowns the same way as the record query.
-        if is_super_admin_mode():
+        if bypass_group:
             cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
             trap_codes = [r['code'] for r in cursor.fetchall()]
 
@@ -134,9 +145,9 @@ def catch_records():
     trap_map = None
     if session.get('group_role') in ('Super Admin', 'Group Coordinator'):
         # Trap state lookup for the inline edit-action gate. Scope to the
-        # active group unless Super Admin is in platform-wide mode.
+        # active group unless acting platform-wide (Super Admin / Support Tech).
         with db.get_cursor() as cursor:
-            if is_super_admin_mode():
+            if is_super_admin_mode() or is_support_tech_mode():
                 cursor.execute("SELECT trap_id, is_retired FROM traps")
             else:
                 cursor.execute(
@@ -157,7 +168,8 @@ def catch_records():
         records=records,
         selected_filters=filters,
         filter_data=filter_data,
-        trap_map=trap_map
+        trap_map=trap_map,
+        cross_group=is_super_admin_mode() or is_support_tech_mode()
     )
 
 
@@ -180,7 +192,10 @@ def get_observations(operator_id=None):
     where_clauses = []
     query_params = []
 
-    if not is_super_admin_mode():
+    # Super Admin (platform-wide) and Support Technician see every group.
+    bypass_group = is_super_admin_mode() or is_support_tech_mode()
+
+    if not bypass_group:
         where_clauses.append("l.group_id = %s")
         query_params.append(session.get('group_id'))
     if operator_id:
@@ -217,10 +232,14 @@ def get_observations(operator_id=None):
                 o.*,
                 t.code AS trap_code,
                 l.name AS line_name,
+                g.name AS group_name,
+                COALESCE(gt.primary_color, '{DEFAULT_GROUP_COLOR}') AS group_color,
                 u.first_name || ' ' || u.last_name AS operator_name
             FROM incidental_observations o
             LEFT JOIN traps t ON o.trap_id = t.trap_id
             LEFT JOIN lines l ON o.line_id = l.line_id
+            LEFT JOIN groups g ON g.group_id = l.group_id
+            LEFT JOIN group_themes gt ON gt.group_id = l.group_id
             LEFT JOIN users u ON o.operator_id = u.user_id
             {where_sql}
             {order_sql}
@@ -228,7 +247,7 @@ def get_observations(operator_id=None):
         records = cursor.fetchall()
 
         # Scope filter dropdowns the same way as the record query.
-        if is_super_admin_mode():
+        if bypass_group:
             cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
             trap_codes = [r['code'] for r in cursor.fetchall()]
 
@@ -275,7 +294,8 @@ def observations():
         'observer/observations.html',
         records=records,
         selected_filters=filters,
-        filter_data=filter_data
+        filter_data=filter_data,
+        cross_group=is_super_admin_mode() or is_support_tech_mode()
     )
 
 
@@ -287,7 +307,8 @@ def bait_records():
     Normal users see records for their active group. Super Admin acting
     platform-wide sees records from every group.
     """
-    super_admin = is_super_admin_mode()
+    # Super Admin (platform-wide) and Support Technician see every group.
+    bypass_group = is_super_admin_mode() or is_support_tech_mode()
     group_id = session.get('group_id')
     user_id = session['user_id']
     role = session.get('group_role')
@@ -302,7 +323,7 @@ def bait_records():
     where_clauses = []
     params = []
 
-    if not super_admin:
+    if not bypass_group:
         where_clauses.append('l.group_id = %s')
         params.append(group_id)
 
@@ -326,11 +347,15 @@ def bait_records():
             SELECT bsr.*,
                    bs.code AS station_code, bs.station_type,
                    l.line_id, l.name AS line_name,
+                   g.name AS group_name,
+                   COALESCE(gt.primary_color, '{DEFAULT_GROUP_COLOR}') AS group_color,
                    ru.username AS recorded_by_username,
                    eu.username AS edited_by_username
             FROM bait_station_records bsr
             JOIN bait_stations bs ON bs.station_id = bsr.station_id
             JOIN lines l ON l.line_id = bs.line_id
+            LEFT JOIN groups g ON g.group_id = l.group_id
+            LEFT JOIN group_themes gt ON gt.group_id = l.group_id
             LEFT JOIN users ru ON ru.user_id = bsr.recorded_by_id
             LEFT JOIN users eu ON eu.user_id = bsr.edited_by_id
             {where_sql}
@@ -338,7 +363,7 @@ def bait_records():
         """, params)
         records = cursor.fetchall()
 
-        if super_admin:
+        if bypass_group:
             cursor.execute("""
                 SELECT l.line_id, l.name
                 FROM lines l
@@ -362,7 +387,7 @@ def bait_records():
                 WHERE bs.line_id = %s
                 ORDER BY bs.code
             """, (station_filter_line,))
-        elif super_admin:
+        elif bypass_group:
             cursor.execute("""
                 SELECT bs.station_id, bs.code
                 FROM bait_stations bs
@@ -384,5 +409,6 @@ def bait_records():
                            lines=lines,
                            stations=stations,
                            user_id=user_id,
-                           role=role)
+                           role=role,
+                           cross_group=bypass_group)
 

@@ -5,8 +5,12 @@ from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
 from app.utils import role_required, LINE_COLOURS, is_super_admin_mode, is_support_tech_mode
 from app.helpers.dbHelper import fetch_active_lookup
+from app.themes import PLATFORM_DEFAULT_THEME
 
 logger = logging.getLogger(__name__)
+
+# Fallback badge colour for groups with no custom theme row.
+DEFAULT_GROUP_COLOR = PLATFORM_DEFAULT_THEME['primary_color']
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
 
@@ -132,10 +136,12 @@ def lines_index():
                     ),
                     ARRAY[]::int[]
                 ) AS assigned_operator_ids,
-                g.name AS group_name
+                g.name AS group_name,
+                COALESCE(gt.primary_color, '{DEFAULT_GROUP_COLOR}') AS group_color
             FROM lines l
             LEFT JOIN users u_ret ON u_ret.user_id = l.retired_by
             LEFT JOIN groups g ON g.group_id = l.group_id
+            LEFT JOIN group_themes gt ON gt.group_id = l.group_id
             WHERE {group_clause} (
                 CASE %s
                     WHEN 'all' THEN TRUE

@@ -304,6 +304,26 @@ def nz_datetime_filter(dt):
         return dt.strftime('%d %b %Y %H:%M')
     return ''
 
+@app.template_filter('contrast_text')
+def contrast_text_filter(hex_color):
+    """Return '#fff' or '#212529' — whichever reads better on hex_color.
+
+    Picks dark text for light backgrounds and vice versa using the
+    W3C relative-luminance threshold, so themed pill badges stay legible.
+    """
+    fallback = '#fff'
+    if not hex_color:
+        return fallback
+    h = hex_color.lstrip('#')
+    if len(h) != 6:
+        return fallback
+    try:
+        r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return fallback
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return '#212529' if luminance > 0.6 else '#fff'
+
 # ── Error handlers ────────────────────────────────────────────────────────────
 
 @app.errorhandler(403)
