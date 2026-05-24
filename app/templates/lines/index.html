@@ -101,13 +101,13 @@
                         <span class="badge-line-trap">Trap</span>
                       {% endif %}
                     </div>
-                    {# Super Admin acts cross-group, so surface which
-                       group each line belongs to. Hidden for normal
-                       users since their list is already group-scoped. #}
-                    {% if session.get('group_role') == 'Super Admin' and not session.get('group_id') and line.group_name %}
-                      <small class="text-muted d-block mb-1">
+                    {# Super Admin and Support Technician act cross-group, so
+                       surface which group each line belongs to. Hidden for
+                       normal users since their list is already group-scoped. #}
+                    {% if (session.get('group_role') == 'Support Technician' or (session.get('group_role') == 'Super Admin' and not session.get('group_id'))) and line.group_name %}
+                      <span class="badge rounded-pill mb-1" style="background-color: {{ line.group_color }}; color: {{ line.group_color | contrast_text }};">
                         <i class="bi bi-collection me-1" aria-hidden="true"></i>{{ line.group_name }}
-                      </small>
+                      </span>
                     {% endif %}
                     {% if line.is_retired and line.retired_at %}
                       <small class="text-muted d-block border-bottom pb-1 mb-1">Retired {{ line.retired_at.strftime('%d %b %Y %H:%M') }}{% if line.retired_by_username %} by @{{ line.retired_by_username }}{% endif %}</small>

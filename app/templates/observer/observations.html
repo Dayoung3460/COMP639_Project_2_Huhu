@@ -90,6 +90,7 @@
           <th role="button" data-sort-col="5" class="sortable">Longitude <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
           <th>Notes</th>
           <th role="button" data-sort-col="7" class="sortable">Recorded By <i class="bi bi-chevron-expand text-muted small" aria-hidden="true"></i></th>
+          {% if cross_group %}<th>Group</th>{% endif %}
         </tr>
       </thead>
       <tbody>
@@ -112,10 +113,17 @@
               {% endif %}
             </td>
             <td>{{ r.operator_name }}</td>
+            {% if cross_group %}
+            <td>
+              {% if r.group_name %}
+                <span class="badge rounded-pill" style="background-color: {{ r.group_color }}; color: {{ r.group_color | contrast_text }};">{{ r.group_name }}</span>
+              {% else %}—{% endif %}
+            </td>
+            {% endif %}
           </tr>
         {% else %}
           <tr>
-            <td colspan="8" style="text-align:center; padding:30px; color:#6b7c72;">
+            <td colspan="{{ 9 if cross_group else 8 }}" style="text-align:center; padding:30px; color:#6b7c72;">
               No observations found.
             </td>
           </tr>
