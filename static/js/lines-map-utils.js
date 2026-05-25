@@ -5,28 +5,27 @@
 
 /* ── Map constants ────────────────────────────────────────────────────────── */
 
-var MAP_MIN_ZOOM = 13;
+var MAP_MIN_ZOOM = 5;
 var MAP_MAX_ZOOM = 19;
-var MAP_DEFAULT_CENTER = [-43.6409, 172.4678];
+var MAP_DEFAULT_CENTER = [-41.2865, 174.7762];
 var MAP_RETIRED_COLOR = '#343a40';
-var MAP_RETIRED_FILL = '#adb5bd';
 
 /**
- * Create a Leaflet map with the LINZ aerial tile layer, bounded to Lincoln.
+ * Create a Leaflet map with the LINZ aerial tile layer, bounded to New Zealand.
  * @param {string} elementId  – DOM id of the map container
  * @param {string} linzApiKey – LINZ basemap API key
  * @returns {L.Map}
  */
-function createLincolnMap(elementId, linzApiKey) {
-  var lincolnBounds = L.latLngBounds(
-    L.latLng(-43.70, 172.40),
-    L.latLng(-43.58, 172.55)
+function createNzMap(elementId, linzApiKey) {
+  var nzBounds = L.latLngBounds(
+    L.latLng(-47.5, 165.5),
+    L.latLng(-33.5, 178.5)
   );
 
   var map = L.map(elementId, {
     minZoom: MAP_MIN_ZOOM,
     maxZoom: MAP_MAX_ZOOM,
-    maxBounds: lincolnBounds,
+    maxBounds: nzBounds,
     maxBoundsViscosity: 1.0
   });
 
@@ -166,4 +165,44 @@ function orderPointsByNearestNeighbor(points) {
   }
 
   return orderedPoints;
+}
+
+/**
+ * Scroll so container is visible below the sticky navbar, then focus the first
+ * interactive element inside it.
+ * @param {HTMLElement} container
+ */
+function scrollAndFocusForm(container) {
+  const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
+  const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - 8;
+  window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+
+  const firstInput = container.querySelector('input, select, button, a[href]');
+  if (firstInput) firstInput.focus({ preventScroll: true });
+}
+
+/**
+ * Create a keyboard focus-trap handler for a container.
+ * Tab/Shift+Tab cycles within focusable elements; Escape calls onEscape.
+ * @param {HTMLElement} container
+ * @param {Function}    onEscape
+ * @returns {Function}  keydown handler — pass the same reference to removeEventListener
+ */
+function makeFocusTrapHandler(container, onEscape) {
+  return function (e) {
+    const focusable = Array.from(container.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+    if (e.key === 'Escape') { onEscape(); }
+  };
 }

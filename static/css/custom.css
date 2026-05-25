@@ -3721,4 +3721,19 @@ body.layout-width-full .site-footer {
   width: 100%;
 }
 
+/* Muted label text inside coordinator dashboard cards */
+.coordinator-card-label {
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+/* Group operational area polygon overlay on the lines map */
+.area-polygon {
+  stroke: var(--theme-primary);
+  stroke-width: 2;
+  stroke-opacity: 0.8;
+  fill: var(--theme-primary);
+  fill-opacity: 0.08;
+}
+
 

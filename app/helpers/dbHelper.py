@@ -1,4 +1,5 @@
 """Database helper functions - reusable database operations."""
+import json
 
 def fetch_enum_values(db, enum_type):
     """Fetch all values for a given PostgreSQL ENUM type."""
@@ -426,6 +427,43 @@ def update_bait_station_record(db, data, editor_id):
             data['record_id'],
         ))
 
+def fetch_operational_area(db, group_id):
+    """Return the parsed GeoJSON polygon dict for a group, or None if unset."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT geojson FROM group_operational_areas WHERE group_id = %s',
+            (group_id,)
+        )
+        row = cursor.fetchone()
+    if not row:
+        return None
+    try:
+        return json.loads(row['geojson'])
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+def save_operational_area(db, group_id, geojson_str, user_id):
+    """Upsert the group's operational area polygon."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO group_operational_areas (group_id, geojson, updated_at, updated_by)
+            VALUES (%s, %s, CURRENT_TIMESTAMP, %s)
+            ON CONFLICT (group_id) DO UPDATE
+            SET geojson    = EXCLUDED.geojson,
+                updated_at = CURRENT_TIMESTAMP,
+                updated_by = EXCLUDED.updated_by
+            """,
+            (group_id, geojson_str, user_id)
+        )
+
+def delete_operational_area(db, group_id):
+    """Remove the group's operational area polygon."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'DELETE FROM group_operational_areas WHERE group_id = %s',
+            (group_id,)
+        )
 
 def insert_notification(db, user_id, message, category='info', url=None, group_id=None):
     """Insert a bell notification for the user.

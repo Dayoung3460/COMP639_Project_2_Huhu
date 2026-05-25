@@ -4,7 +4,7 @@ import os
 from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
 from app.utils import role_required, LINE_COLOURS, is_super_admin_mode, is_support_tech_mode
-from app.helpers.dbHelper import fetch_active_lookup
+from app.helpers.dbHelper import fetch_active_lookup, fetch_operational_area
 from app.themes import PLATFORM_DEFAULT_THEME
 
 logger = logging.getLogger(__name__)
@@ -259,12 +259,19 @@ def lines_index():
         )
         station_rows = cursor.fetchall()
 
+    active_trap_line_ids = {
+        line['line_id'] for line in lines if (line['trap_count'] or 0) > 0
+    }
+    active_station_line_ids = {
+        line['line_id'] for line in lines if (line['station_count'] or 0) > 0
+    }
+
+    def make_detail_url(line_id):
+        url = url_for('line_detail', line_id=line_id)
+        return f"{url}?filter={line_filter}" if line_filter != 'all' else url
+
     map_traps = []
     for trap in trap_rows:
-        detail_url = url_for('line_detail', line_id=trap['line_id'])
-        if line_filter != 'all':
-            detail_url = f"{detail_url}?filter={line_filter}"
-
         map_traps.append({
             'line_id': trap['line_id'],
             'line_name': trap['line_name'],
@@ -276,14 +283,10 @@ def lines_index():
             'longitude': float(trap['longitude']),
             'trap_is_retired': trap['trap_is_retired'],
             'is_station': False,
-            'detail_url': detail_url
+            'detail_url': make_detail_url(trap['line_id'])
         })
 
     for station in station_rows:
-        detail_url = url_for('line_detail', line_id=station['line_id'])
-        if line_filter != 'all':
-            detail_url = f"{detail_url}?filter={line_filter}"
-
         map_traps.append({
             'line_id': station['line_id'],
             'line_name': station['line_name'],
@@ -295,7 +298,7 @@ def lines_index():
             'longitude': float(station['longitude']),
             'trap_is_retired': station['station_is_retired'],
             'is_station': True,
-            'detail_url': detail_url
+            'detail_url': make_detail_url(station['line_id'])
         })
 
     for line in lines:
@@ -325,6 +328,10 @@ def lines_index():
         for operator_label in line['assigned_operator_labels']
     })
 
+    area_geojson = None
+    if not bypass_group and group_id:
+        area_geojson = fetch_operational_area(db, group_id)
+
     return render_template(
         'lines/index.html',
         lines=lines,
@@ -336,7 +343,8 @@ def lines_index():
         active_station_line_ids=active_station_line_ids,
         available_types=available_types,
         available_operators=available_operators,
-        line_colours=LINE_COLOURS
+        line_colours=LINE_COLOURS,
+        area_geojson=area_geojson,
     )
 
 
@@ -473,8 +481,8 @@ def line_detail(line_id):
             )
             operators = cursor.fetchall()
 
-    trap_types = fetch_active_lookup(db, 'trap_types')
-    bait_station_types = fetch_active_lookup(db, 'bait_station_types')
+    trap_types = fetch_active_lookup(db, 'trap_types') if line and line['type'] != 'Bait Station' else []
+    bait_station_types = fetch_active_lookup(db, 'bait_station_types') if line and line['type'] == 'Bait Station' else []
 
     return render_template(
         'lines/detail.html',

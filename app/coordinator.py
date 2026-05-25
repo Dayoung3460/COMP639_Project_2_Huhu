@@ -18,9 +18,18 @@ from app.utils import (
     role_required,
     sniff_image_kind,
 )
-from app.helpers.dbHelper import insert_notification, insert_user_role, update_user_role
+from app.helpers.dbHelper import (
+    insert_notification,
+    insert_user_role,
+    update_user_role,
+    fetch_operational_area,
+    save_operational_area,
+    delete_operational_area,
+)
 
 logger = logging.getLogger(__name__)
+
+linz_api_key = os.getenv('LINZ_API_KEY', '')
 
 
 @app.route('/coordinator/dashboard')
@@ -308,6 +317,56 @@ def coordinator_settings():
         group = cursor.fetchone()
 
     return render_template('coordinator/settings.html', is_public=group['is_public'])
+
+
+# ── Operational Area ──────────────────────────────────────────────────────────
+
+@app.route('/coordinator/operational-area', methods=['GET'])
+@role_required('Group Coordinator')
+def coordinator_operational_area():
+    """Editor page — Coordinator draws/edits/clears the group's area polygon."""
+    group_id = session['group_id']
+    area = fetch_operational_area(db, group_id)
+    return render_template(
+        'coordinator/operational_area.html',
+        area_geojson=area,
+        linz_api_key=linz_api_key,
+    )
+
+
+@app.route('/coordinator/operational-area', methods=['POST'])
+@role_required('Group Coordinator')
+def coordinator_operational_area_save():
+    """Save (insert or replace) the group's area polygon."""
+    group_id = session['group_id']
+    raw = request.form.get('geojson', '').strip()
+    if not raw:
+        flash('Please draw an area on the map before saving.', 'danger')
+        return redirect(url_for('coordinator_operational_area'))
+
+    try:
+        parsed = json.loads(raw)
+        if parsed.get('type') != 'Polygon' or not parsed.get('coordinates'):
+            raise ValueError('not a polygon')
+    except (json.JSONDecodeError, ValueError):
+        flash('Invalid polygon data.', 'danger')
+        return redirect(url_for('coordinator_operational_area'))
+
+    save_operational_area(db, group_id, raw, session['user_id'])
+    flash('Operational area saved.', 'success')
+    return redirect(url_for('coordinator_operational_area'))
+
+
+@app.route('/coordinator/operational-area/delete', methods=['POST'])
+@role_required('Group Coordinator')
+def coordinator_operational_area_delete():
+    """Remove the group's area polygon."""
+    if request.form.get('delete-confirm') != 'delete':
+        flash('You must type "delete" to confirm.', 'danger')
+        return redirect(url_for('coordinator_operational_area'))
+    delete_operational_area(db, session['group_id'])
+    flash('Operational area cleared.', 'success')
+    return redirect(url_for('coordinator_operational_area'))
 
 
 #   ── Join request list ────────────────────────────────────────────────────────
