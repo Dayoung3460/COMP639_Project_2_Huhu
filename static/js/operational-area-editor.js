@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const existingGeoJSON = dataEl ? dataEl.textContent.trim() : '';
 
   const map = createNzMap('area-editor-map', linzApiKey);
-  map.setView(MAP_DEFAULT_CENTER, 6);
+  map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
 
   const drawnItems = new L.FeatureGroup();
   map.addLayer(drawnItems);
@@ -30,10 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
       circlemarker: false,
       marker:      false,
     },
-    edit: {
-      featureGroup: drawnItems,
-      remove: true,
-    },
+    edit: false,
   });
   map.addControl(drawControl);
 
@@ -49,6 +46,10 @@ document.addEventListener('DOMContentLoaded', function () {
     geojsonInput.value = JSON.stringify(layers[0].toGeoJSON().geometry);
   }
 
+  function setEmptyState(isEmpty) {
+    mapEl.classList.toggle('area-editor-empty', isEmpty);
+  }
+
   if (existingGeoJSON && existingGeoJSON !== 'null') {
     try {
       const geom = JSON.parse(existingGeoJSON);
@@ -58,17 +59,87 @@ document.addEventListener('DOMContentLoaded', function () {
       serializeDrawnItems();
     } catch (e) {
       // Stored geometry is unreadable; start with an empty canvas
+      setEmptyState(true);
     }
+  } else {
+    setEmptyState(true);
+  }
+
+  let pendingLayer = null;
+  const replaceModalEl = document.getElementById('replace-area-modal');
+  const replaceModal = replaceModalEl ? new bootstrap.Modal(replaceModalEl) : null;
+
+  const confirmReplaceBtn = document.getElementById('replace-area-confirm-btn');
+  if (confirmReplaceBtn) {
+    confirmReplaceBtn.addEventListener('click', function () {
+      if (pendingLayer) {
+        drawnItems.clearLayers();
+        drawnItems.addLayer(pendingLayer);
+        pendingLayer = null;
+        setEmptyState(false);
+        serializeDrawnItems();
+      }
+      if (replaceModal) replaceModal.hide();
+    });
+  }
+
+  if (replaceModalEl) {
+    replaceModalEl.addEventListener('hidden.bs.modal', function () {
+      pendingLayer = null;
+    });
   }
 
   map.on(L.Draw.Event.CREATED, function (event) {
-    drawnItems.clearLayers();
-    drawnItems.addLayer(event.layer);
-    serializeDrawnItems();
+    if (drawnItems.getLayers().length > 0 && replaceModal) {
+      pendingLayer = event.layer;
+      replaceModal.show();
+    } else {
+      drawnItems.clearLayers();
+      drawnItems.addLayer(event.layer);
+      setEmptyState(false);
+      serializeDrawnItems();
+    }
   });
 
-  map.on(L.Draw.Event.EDITED, function () { serializeDrawnItems(); });
-  map.on(L.Draw.Event.DELETED, function () { serializeDrawnItems(); });
+  const normalActions = document.getElementById('area-normal-actions');
+  const editActions   = document.getElementById('area-edit-actions');
+  const editBoundaryBtn = document.getElementById('area-edit-boundary-btn');
+  const editSaveBtn     = document.getElementById('area-edit-save-btn');
+  const editCancelBtn   = document.getElementById('area-edit-cancel-btn');
+
+  let editHandler = null;
+
+  function enterEditMode() {
+    editHandler = new L.EditToolbar.Edit(map, { featureGroup: drawnItems });
+    editHandler.enable();
+    if (normalActions) normalActions.classList.add('d-none');
+    if (editActions)   editActions.classList.remove('d-none');
+  }
+
+  function exitEditMode() {
+    if (editHandler) { editHandler.disable(); editHandler = null; }
+    if (normalActions) normalActions.classList.remove('d-none');
+    if (editActions)   editActions.classList.add('d-none');
+  }
+
+  if (editBoundaryBtn) {
+    editBoundaryBtn.addEventListener('click', enterEditMode);
+  }
+
+  if (editSaveBtn) {
+    editSaveBtn.addEventListener('click', function () {
+      if (editHandler) editHandler.save();
+      serializeDrawnItems();
+      if (saveForm) saveForm.requestSubmit();
+    });
+  }
+
+  if (editCancelBtn) {
+    editCancelBtn.addEventListener('click', function () {
+      if (editHandler) editHandler.revertLayers();
+      exitEditMode();
+    });
+  }
 
   const saveForm = document.getElementById('area-save-form');
   if (saveForm) {

@@ -317,6 +317,8 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .btn-pf-full:hover { background: var(--pf-800); color: #fff; text-decoration: none; }
 
+.lines-page-header__actions .btn-pf-outline { padding: 10px 16px; font-size: 14px; }
+
 .btn-sm-pf {
   background: var(--pf-700); color: #fff; border: none;
   padding: 5px 12px; border-radius: var(--theme-button-radius, 6px); font-size: 12px;
@@ -3729,11 +3731,22 @@ body.layout-width-full .site-footer {
 
 /* Group operational area polygon overlay on the lines map */
 .area-polygon {
-  stroke: var(--theme-primary);
-  stroke-width: 2;
-  stroke-opacity: 0.8;
+  stroke: var(--amber);
+  stroke-width: 3;
+  stroke-opacity: 1;
   fill: var(--theme-primary);
   fill-opacity: 0.08;
+}
+
+/* Pulse the Leaflet.Draw polygon button when no area has been drawn yet */
+@keyframes area-draw-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--amber) 70%, transparent); }
+  50%       { box-shadow: 0 0 0 7px transparent; }
+}
+
+.area-editor-empty .leaflet-draw-draw-polygon {
+  animation: area-draw-pulse 2s ease-in-out infinite;
+  border-radius: 4px;
 }
 
 

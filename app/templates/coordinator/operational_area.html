@@ -9,9 +9,12 @@
   </div>
 
   {% call pf_panel(title='Draw Operational Area') %}
-    <p class="text-muted small mb-3">
-      Draw a polygon on the map to define your group's operational area. This boundary will be visible to all group members on the Lines page. Only one area can be saved per group.
-    </p>
+    {% if not area_geojson %}
+    <div class="notice amber mb-3">
+      <i class="bi bi-pentagon" aria-hidden="true"></i>
+      <div>No area set yet. Click the <strong>polygon button</strong> to start drawing your group's operational boundary.</div>
+    </div>
+    {% endif %}
 
     <script id="area-editor-geojson-data" type="application/json">{{ area_geojson | tojson }}</script>
     <div class="mb-3">
@@ -30,14 +33,40 @@
 
     <form method="POST" action="{{ url_for('coordinator_operational_area_save') }}" id="area-save-form" autocomplete="off">
       <input type="hidden" name="geojson" id="area-geojson-input" value="">
-      <div class="d-flex gap-2 flex-wrap align-items-center">
+      <div id="area-normal-actions" class="d-flex gap-2 flex-wrap align-items-center">
         {{ pf_button('Save Area', variant='btn-pf', type='submit', attrs={'id': 'area-save-btn', 'aria-label': 'Save operational area'}) }}
         {% if area_geojson %}
+          {{ pf_button('Edit Boundary', variant='btn-sm-outline', attrs={'id': 'area-edit-boundary-btn', 'type': 'button', 'aria-label': 'Edit boundary of operational area'}) }}
           {{ pf_button('Clear Area', variant='btn-sm-danger', attrs={'id': 'area-clear-btn', 'type': 'button', 'aria-label': 'Clear operational area', 'data-bs-toggle': 'modal', 'data-bs-target': '#clear-area-modal'}) }}
         {% endif %}
       </div>
+      {% if area_geojson %}
+      <div id="area-edit-actions" class="d-flex gap-2 align-items-center d-none">
+        {{ pf_button('Save Edit', variant='btn-pf', attrs={'id': 'area-edit-save-btn', 'type': 'button', 'aria-label': 'Save boundary edits'}) }}
+        {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'id': 'area-edit-cancel-btn', 'type': 'button', 'aria-label': 'Cancel boundary edits'}) }}
+      </div>
+      {% endif %}
     </form>
   {% endcall %}
+
+  <div class="modal fade pop-up-modal" id="replace-area-modal" tabindex="-1" aria-labelledby="replace-area-modal-title" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="replace-area-modal-title">Replace operational area</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>An operational area already exists. Drawing a new polygon will replace the current boundary.</p>
+          <p class="mb-0">Are you sure you want to continue?</p>
+        </div>
+        <div class="modal-footer">
+          {{ pf_button('Cancel', variant='btn-sm-outline', attrs={'data-bs-dismiss': 'modal'}) }}
+          {{ pf_button('Yes, replace', variant='btn-sm-amber', attrs={'id': 'replace-area-confirm-btn'}) }}
+        </div>
+      </div>
+    </div>
+  </div>
 
   {% if area_geojson %}
   <div class="modal fade pop-up-modal" id="clear-area-modal" tabindex="-1" aria-labelledby="clear-area-modal-title" aria-modal="true" role="dialog">
