@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const mapElement = document.getElementById('lines-overview-map');
   let map = null;
+  let areaLayer = null;
   const lineColors = [
     '#0d6efd', '#6610f2', '#20c997', '#fd7e14', '#d63384', '#198754', '#6f42c1',
     '#dc3545', '#0dcaf0', '#ffc107', '#d4a017', '#1982c4', '#8ac926', '#ff595e',
@@ -119,8 +120,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (visibleLatLngs.length > 0) {
       map.fitBounds(visibleLatLngs, { padding: [30, 30] });
+    } else if (areaLayer) {
+      try {
+        map.fitBounds(areaLayer.getBounds(), { padding: [30, 30] });
+      } catch (e) {
+        map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
+      }
     } else {
-      map.setView(MAP_DEFAULT_CENTER, 6);
+      map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
     }
   }
 
@@ -211,9 +218,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // defers each addLayer via whenReady, and when 'load' fires the nested
     // renderer init can leave _renderer._bounds undefined, crashing
     // Polygon._clipPoints with "Cannot read properties of undefined (reading 'min')".
-    map.setView(MAP_DEFAULT_CENTER, MAP_MIN_ZOOM);
+    map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
 
-    let areaLayer = null;
     if (areaGeoJSON) {
       try {
         areaLayer = L.geoJSON(areaGeoJSON, { style: { className: 'area-polygon' } });
@@ -273,16 +279,16 @@ document.addEventListener('DOMContentLoaded', function () {
       )).addTo(map);
     });
 
-    if (allLatLngs.length > 0) {
-      map.fitBounds(allLatLngs, { padding: [30, 30] });
-    } else if (areaLayer) {
+    if (areaLayer) {
       try {
         map.fitBounds(areaLayer.getBounds(), { padding: [30, 30] });
       } catch (e) {
-        map.setView(MAP_DEFAULT_CENTER, 6);
+        map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
       }
+    } else if (allLatLngs.length > 0) {
+      map.fitBounds(allLatLngs, { padding: [30, 30] });
     } else {
-      map.setView(MAP_DEFAULT_CENTER, 6);
+      map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
     }
 
     // Leaflet reads container dimensions at init time, before CSS layout is

@@ -43,10 +43,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const markersElement = document.getElementById(isBaitStation ? 'station-markers-data' : 'trap-markers-data');
   const markers = markersElement ? JSON.parse(markersElement.textContent) : [];
+  const areaElement = document.getElementById('area-geojson-data');
+  const areaGeoJSON = areaElement ? JSON.parse(areaElement.textContent) : null;
   const linzApiKey = mapElement.dataset.linzApiKey;
   const lineIsRetired = mapElement.dataset.lineIsRetired === 'true';
 
   const map = createNzMap('line-map', linzApiKey);
+  map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
+
+  let areaLayer = null;
+  if (areaGeoJSON) {
+    try {
+      areaLayer = L.geoJSON(areaGeoJSON, { style: { className: 'area-polygon' } });
+      areaLayer.addTo(map);
+    } catch (e) {
+      areaLayer = null;
+    }
+  }
 
   const lineColor = '#0d6efd';
 
@@ -78,9 +91,23 @@ document.addEventListener('DOMContentLoaded', function () {
       L.polyline(orderedLatLngs, getLinePolylineStyle(lineIsRetired, lineColor)).addTo(map);
     }
 
-    map.fitBounds(latlngs, { padding: [30, 30] });
+    if (areaLayer) {
+      try {
+        map.fitBounds(areaLayer.getBounds(), { padding: [30, 30] });
+      } catch (e) {
+        map.fitBounds(latlngs, { padding: [30, 30] });
+      }
+    } else {
+      map.fitBounds(latlngs, { padding: [30, 30] });
+    }
+  } else if (areaLayer) {
+    try {
+      map.fitBounds(areaLayer.getBounds(), { padding: [30, 30] });
+    } catch (e) {
+      map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
+    }
   } else {
-    map.setView(MAP_DEFAULT_CENTER, 6);
+    map.setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
   }
 
   setTimeout(function () { map.invalidateSize(); }, 0);

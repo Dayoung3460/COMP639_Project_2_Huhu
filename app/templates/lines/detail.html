@@ -109,6 +109,7 @@
         {% else %}
           <script id="trap-markers-data" type="application/json">{{ trap_markers|tojson }}</script>
         {% endif %}
+        <script id="area-geojson-data" type="application/json">{{ area_geojson | tojson }}</script>
         <div class="map-legend mt-2 d-flex gap-3 flex-wrap small text-muted align-items-center">
           {% if line.type == 'Bait Station' %}
             <span class="d-inline-flex align-items-center gap-1">

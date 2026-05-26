@@ -329,8 +329,11 @@ def lines_index():
     })
 
     area_geojson = None
+    area_missing = False
     if not bypass_group and group_id:
         area_geojson = fetch_operational_area(db, group_id)
+        if area_geojson is None:
+            area_missing = True
 
     return render_template(
         'lines/index.html',
@@ -345,6 +348,7 @@ def lines_index():
         available_operators=available_operators,
         line_colours=LINE_COLOURS,
         area_geojson=area_geojson,
+        area_missing=area_missing,
     )
 
 
@@ -484,6 +488,8 @@ def line_detail(line_id):
     trap_types = fetch_active_lookup(db, 'trap_types') if line and line['type'] != 'Bait Station' else []
     bait_station_types = fetch_active_lookup(db, 'bait_station_types') if line and line['type'] == 'Bait Station' else []
 
+    area_geojson = fetch_operational_area(db, line['group_id']) if line else None
+
     return render_template(
         'lines/detail.html',
         line=line,
@@ -496,5 +502,6 @@ def line_detail(line_id):
         linz_api_key=linz_api_key,
         trap_types=trap_types,
         bait_station_types=bait_station_types,
-        line_colours=LINE_COLOURS
+        line_colours=LINE_COLOURS,
+        area_geojson=area_geojson,
     )
