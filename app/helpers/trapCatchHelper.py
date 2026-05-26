@@ -132,7 +132,7 @@ def validate_coordinates(latitude, longitude):
             lat = float(latitude)
             if not (LINCOLN_NZ_LAT_RANGE[0] <= lat <= LINCOLN_NZ_LAT_RANGE[1]):
                 lat_error = (
-                    f"Latitude must be within Lincoln, NZ boundary "
+                    f"Latitude must be within New Zealand "
                     f"({LINCOLN_NZ_LAT_RANGE[0]} to {LINCOLN_NZ_LAT_RANGE[1]})."
                 )
         except ValueError:
@@ -143,7 +143,7 @@ def validate_coordinates(latitude, longitude):
             lon = float(longitude)
             if not (LINCOLN_NZ_LON_RANGE[0] <= lon <= LINCOLN_NZ_LON_RANGE[1]):
                 lon_error = (
-                    f"Longitude must be within Lincoln, NZ boundary "
+                    f"Longitude must be within New Zealand "
                     f"({LINCOLN_NZ_LON_RANGE[0]} to {LINCOLN_NZ_LON_RANGE[1]})."
                 )
         except ValueError:
