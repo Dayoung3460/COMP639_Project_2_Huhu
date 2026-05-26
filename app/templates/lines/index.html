@@ -7,6 +7,9 @@
   <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
     <h2 class="mb-0">Lines</h2>
     <div class="d-flex gap-2 align-items-center lines-page-header__actions">
+      {% if session.get('group_role') == 'Group Coordinator' %}
+        {{ pf_link_button(url_for('coordinator_operational_area'), 'Set Area' if area_missing else 'Edit Area', variant='btn-pf-outline', icon='bi-pencil-square', extra_classes='text-nowrap px-5') }}
+      {% endif %}
       {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
         {{ pf_link_button(url_for('new_line'), 'New Line', variant='btn-pf-full px-5', icon='bi-plus-lg') }}
       {% endif %}
@@ -179,10 +182,11 @@
         panel_class='mb-0 lines-map-panel-shell',
         header_class='lines-map-header'
       ) %}
-          {% if session.get('group_role') == 'Group Coordinator' %}
-            <div class="d-flex justify-content-end mb-2">
-              {{ pf_link_button(url_for('coordinator_operational_area'), 'Edit Area', variant='btn-sm-outline', icon='bi-pencil-square') }}
-            </div>
+          {% if area_missing %}
+          <div class="notice amber mb-2">
+            <i class="bi bi-pentagon" aria-hidden="true"></i>
+            <div>No operational area has been set for this group yet.{% if session.get('group_role') == 'Group Coordinator' %} Use <strong>Edit Area</strong> to define the boundary.{% endif %}</div>
+          </div>
           {% endif %}
           <script id="area-geojson-data" type="application/json">{{ area_geojson | tojson }}</script>
           <div class="lines-map-wrapper">
