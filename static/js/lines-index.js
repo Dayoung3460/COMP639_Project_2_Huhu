@@ -257,14 +257,20 @@ document.addEventListener('DOMContentLoaded', function () {
         : L.circleMarker(latLng, getTrapMarkerStyle(isRetiredVisual, lineColor)).addTo(map);
 
       const lineStatusBadge = statusBadgeHtml(Boolean(trap.line_is_retired));
-      const trapStatusBadge = statusBadgeHtml(Boolean(trap.trap_is_retired));
 
-      const itemLabel = trap.is_station ? 'Station Code' : 'Trap Code';
-      marker.bindPopup(
-        `<div class="mb-1"><strong>Line:</strong> ${trap.line_name} ${lineStatusBadge}</div>` +
-        `<div class="mb-1"><strong>${itemLabel}:</strong> ${trap.code} ${trapStatusBadge}</div>` +
-        `<a href="${trap.detail_url}" class="small">View line details</a>`
-      );
+      const popupContent = trap.is_station
+        ? `<div class="mb-1"><strong>Line:</strong> ${escapeHtml(trap.line_name)} ${lineStatusBadge}</div>` +
+          `<div class="mb-1"><strong>Station Code:</strong> ${escapeHtml(trap.code)}</div>` +
+          `<div class="mb-1"><strong>Station Type:</strong> ${escapeHtml(trap.trap_type)}</div>` +
+          `<div class="mb-1"><strong>Status:</strong> ${statusBadgeHtml(Boolean(trap.trap_is_retired))}</div>` +
+          `<a href="${trap.detail_url}" class="small">View line details</a>`
+        : `<div class="mb-1"><strong>Line:</strong> ${escapeHtml(trap.line_name)} ${lineStatusBadge}</div>` +
+          `<div class="mb-1"><strong>Trap Code:</strong> ${escapeHtml(trap.code)}</div>` +
+          `<div class="mb-1"><strong>Trap Type:</strong> ${escapeHtml(trap.trap_type)}</div>` +
+          `<div class="mb-1"><strong>Status:</strong> ${statusBadgeHtml(Boolean(trap.trap_is_retired))}</div>` +
+          `<a href="${trap.detail_url}" class="small">View line details</a>`;
+
+      marker.bindPopup(popupContent);
 
       markersByLine[lineId].push({ marker: marker, latLng: latLng });
     });
