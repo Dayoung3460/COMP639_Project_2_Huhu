@@ -207,3 +207,22 @@ function makeFocusTrapHandler(container, onEscape) {
     if (e.key === 'Escape') { onEscape(); }
   };
 }
+
+function syncCoordInputsToMarker(latInput, lngInput, onValidCoords) {
+  function tryUpdate() {
+    const lat = parseFloat(latInput.value);
+    const lng = parseFloat(lngInput.value);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      onValidCoords(lat, lng);
+    }
+  }
+  latInput.addEventListener('input', tryUpdate);
+  lngInput.addEventListener('input', tryUpdate);
+}
+
+function escapeHtml(str) {
+  const node = document.createTextNode(String(str == null ? '' : str));
+  const div = document.createElement('div');
+  div.appendChild(node);
+  return div.innerHTML;
+}
