@@ -5,6 +5,7 @@ from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
 from app.utils import role_required, LINE_COLOURS, is_super_admin_mode, is_support_tech_mode
 from app.helpers.dbHelper import fetch_active_lookup, fetch_operational_area
+from app.helpers.linesHelper import build_map_traps
 from app.themes import PLATFORM_DEFAULT_THEME
 
 logger = logging.getLogger(__name__)
@@ -270,36 +271,7 @@ def lines_index():
         url = url_for('line_detail', line_id=line_id)
         return f"{url}?filter={line_filter}" if line_filter != 'all' else url
 
-    map_traps = []
-    for trap in trap_rows:
-        map_traps.append({
-            'line_id': trap['line_id'],
-            'line_name': trap['line_name'],
-            'line_is_retired': trap['line_is_retired'],
-            'trap_id': trap['trap_id'],
-            'code': trap['code'],
-            'trap_type': trap['trap_type'],
-            'latitude': float(trap['latitude']),
-            'longitude': float(trap['longitude']),
-            'trap_is_retired': trap['trap_is_retired'],
-            'is_station': False,
-            'detail_url': make_detail_url(trap['line_id'])
-        })
-
-    for station in station_rows:
-        map_traps.append({
-            'line_id': station['line_id'],
-            'line_name': station['line_name'],
-            'line_is_retired': station['line_is_retired'],
-            'trap_id': None,
-            'code': station['code'],
-            'trap_type': station['station_type'],
-            'latitude': float(station['latitude']),
-            'longitude': float(station['longitude']),
-            'trap_is_retired': station['station_is_retired'],
-            'is_station': True,
-            'detail_url': make_detail_url(station['line_id'])
-        })
+    map_traps = build_map_traps(trap_rows, station_rows, make_detail_url)
 
     for line in lines:
         line['assigned_operator_labels'] = line.get('assigned_operator_labels') or []
