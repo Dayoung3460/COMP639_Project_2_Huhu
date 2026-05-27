@@ -317,7 +317,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 .btn-pf-full:hover { background: var(--pf-800); color: #fff; text-decoration: none; }
 
-.lines-page-header__actions .btn-pf-outline { padding: 10px 16px; font-size: 14px; }
+.lines-page-header__actions .btn-pf-outline { padding: 9px 16px; font-size: 14px; }
 
 .btn-sm-pf {
   background: var(--pf-700); color: #fff; border: none;
