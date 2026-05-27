@@ -185,7 +185,7 @@
           {% if area_missing %}
           <div class="notice amber mb-2">
             <i class="bi bi-pentagon" aria-hidden="true"></i>
-            <div>No operational area has been set for this group yet.{% if session.get('group_role') == 'Group Coordinator' %} Use <strong>Edit Area</strong> to define the boundary.{% endif %}</div>
+            <div>No operational area has been set for this group yet.{% if session.get('group_role') == 'Group Coordinator' %} Use <strong>Set Area</strong> to define the boundary.{% endif %}</div>
           </div>
           {% endif %}
           <script id="area-geojson-data" type="application/json">{{ area_geojson | tojson }}</script>
