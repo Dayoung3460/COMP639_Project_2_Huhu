@@ -62,12 +62,18 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const lineColor = '#0d6efd';
+  let linePolyline = null;
+  const markerLatLngs = {};
+  const markerOrder = [];
 
   if (markers.length > 0) {
     const latlngs = [];
 
     markers.forEach(function (item) {
       const latLng = [item.latitude, item.longitude];
+      const itemId = isBaitStation ? item.station_id : item.trap_id;
+      markerLatLngs[itemId] = latLng;
+      markerOrder.push(itemId);
       const isRetired = Boolean(item.is_retired);
 
       const marker = isBaitStation
@@ -82,13 +88,13 @@ document.addEventListener('DOMContentLoaded', function () {
         typeLabel = item.trap_type || '';
       }
 
-      marker.bindPopup(`<strong>${item.code}</strong><br>${typeLabel}<br>${statusBadge}`);
+      marker.bindPopup(`<strong>${escapeHtml(item.code)}</strong><br>${escapeHtml(typeLabel)}<br>${statusBadge}`);
       latlngs.push(latLng);
     });
 
     if (latlngs.length >= 2) {
       const orderedLatLngs = orderPointsByNearestNeighbor(latlngs);
-      L.polyline(orderedLatLngs, getLinePolylineStyle(lineIsRetired, lineColor)).addTo(map);
+      linePolyline = L.polyline(orderedLatLngs, getLinePolylineStyle(lineIsRetired, lineColor)).addTo(map);
     }
 
     if (areaLayer) {
@@ -114,9 +120,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ── Inline Form State ──────────────────────────────────────────────────────
   let activeMode = null; // 'addTrap' | 'addStation' | 'editTrap' | 'editStation'
+  let activeEditId = null;
   let tempMarker = null;
   let tempStationMarker = null;
   let editTempMarker = null;
+
+  function updateLinePolyline(editId, lat, lng) {
+    if (!linePolyline || !markerLatLngs[editId]) return;
+    markerLatLngs[editId] = [lat, lng];
+    const allLatLngs = markerOrder.map(function (id) { return markerLatLngs[id]; });
+    linePolyline.setLatLngs(allLatLngs.length >= 2 ? orderPointsByNearestNeighbor(allLatLngs) : allLatLngs);
+  }
+
+  function makeEditMarker(latNum, lngNum, popupText, latInput, lngInput, editId) {
+    const marker = L.marker([latNum, lngNum], { draggable: true }).addTo(map)
+      .bindPopup(popupText)
+      .openPopup();
+    marker.on('drag', function () {
+      const pos = marker.getLatLng();
+      if (latInput) latInput.value = pos.lat.toFixed(6);
+      if (lngInput) lngInput.value = pos.lng.toFixed(6);
+      updateLinePolyline(editId, pos.lat, pos.lng);
+    });
+    return marker;
+  }
 
   function insertFormError(containerId, errorMsg) {
     const formContainer = document.getElementById(containerId);
@@ -211,6 +238,17 @@ document.addEventListener('DOMContentLoaded', function () {
           document.getElementById('inline-lng')
         ]);
       }
+
+      syncCoordInputsToMarker(
+        document.getElementById('inline-lat'),
+        document.getElementById('inline-lng'),
+        function (lat, lng) {
+          if (tempMarker) map.removeLayer(tempMarker);
+          tempMarker = L.marker([lat, lng]).addTo(map)
+            .bindPopup('<strong>New Trap Location</strong><br>Lat: ' + lat + '<br>Lng: ' + lng)
+            .openPopup();
+        }
+      );
 
       setTimeout(() => { newRow.classList.remove('lines-inline-form-flash'); }, 500);
 
@@ -315,6 +353,17 @@ document.addEventListener('DOMContentLoaded', function () {
         ]);
       }
 
+      syncCoordInputsToMarker(
+        document.getElementById('inline-station-lat'),
+        document.getElementById('inline-station-lng'),
+        function (lat, lng) {
+          if (tempStationMarker) map.removeLayer(tempStationMarker);
+          tempStationMarker = L.marker([lat, lng]).addTo(map)
+            .bindPopup('<strong>New Station Location</strong><br>Lat: ' + lat + '<br>Lng: ' + lng)
+            .openPopup();
+        }
+      );
+
       setTimeout(() => { newRow.classList.remove('lines-inline-form-flash'); }, 500);
 
       scrollAndFocusForm(newRow);
@@ -356,6 +405,7 @@ document.addEventListener('DOMContentLoaded', function () {
     activeMode = 'editTrap';
 
     const trapId = triggerBtn.dataset.editTrap;
+    activeEditId = trapId;
     const code = (prefill && prefill.code) || triggerBtn.dataset.trapCode || '';
     const trapType = (prefill && prefill.trapType) || triggerBtn.dataset.trapType || '';
     const lat = (prefill && prefill.lat) || triggerBtn.dataset.trapLat || '';
@@ -419,14 +469,37 @@ document.addEventListener('DOMContentLoaded', function () {
       ]);
     }
 
+    const editTrapLatInput = document.getElementById('edit-trap-lat');
+    const editTrapLngInput = document.getElementById('edit-trap-lng');
+
+    syncCoordInputsToMarker(
+      editTrapLatInput,
+      editTrapLngInput,
+      function (latNum, lngNum) {
+        if (editTempMarker) map.removeLayer(editTempMarker);
+        updateLinePolyline(trapId, latNum, lngNum);
+        editTempMarker = makeEditMarker(
+          latNum, lngNum,
+          '<strong>Updated Location</strong><br>Lat: ' + latNum + '<br>Lng: ' + lngNum,
+          editTrapLatInput,
+          editTrapLngInput,
+          trapId
+        );
+      }
+    );
+
     if (lat && lng) {
       const latNum = parseFloat(lat);
       const lngNum = parseFloat(lng);
       if (!isNaN(latNum) && !isNaN(lngNum)) {
         if (editTempMarker) map.removeLayer(editTempMarker);
-        editTempMarker = L.marker([latNum, lngNum]).addTo(map)
-          .bindPopup(`<strong>Editing: ${code}</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`)
-          .openPopup();
+        editTempMarker = makeEditMarker(
+          latNum, lngNum,
+          `<strong>Editing: ${escapeHtml(code)}</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`,
+          editTrapLatInput,
+          editTrapLngInput,
+          trapId
+        );
       }
     }
 
@@ -441,6 +514,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.removeEventListener('keydown', focusTrapHandler);
       container.remove();
       activeMode = null;
+      activeEditId = null;
       if (editTempMarker) { map.removeLayer(editTempMarker); editTempMarker = null; }
       triggerBtn.focus();
     }
@@ -461,6 +535,7 @@ document.addEventListener('DOMContentLoaded', function () {
     activeMode = 'editStation';
 
     const stationId = triggerBtn.dataset.editStation;
+    activeEditId = stationId;
     const code = (prefill && prefill.code) || triggerBtn.dataset.stationCode || '';
     const stationType = (prefill && prefill.stationType) || triggerBtn.dataset.stationType || '';
     const otherType = (prefill && prefill.otherType) || triggerBtn.dataset.otherType || '';
@@ -539,14 +614,37 @@ document.addEventListener('DOMContentLoaded', function () {
       ]);
     }
 
+    const editStationLatInput = document.getElementById('edit-station-lat');
+    const editStationLngInput = document.getElementById('edit-station-lng');
+
+    syncCoordInputsToMarker(
+      editStationLatInput,
+      editStationLngInput,
+      function (latNum, lngNum) {
+        if (editTempMarker) map.removeLayer(editTempMarker);
+        updateLinePolyline(stationId, latNum, lngNum);
+        editTempMarker = makeEditMarker(
+          latNum, lngNum,
+          '<strong>Updated Location</strong><br>Lat: ' + latNum + '<br>Lng: ' + lngNum,
+          editStationLatInput,
+          editStationLngInput,
+          stationId
+        );
+      }
+    );
+
     if (lat && lng) {
       const latNum = parseFloat(lat);
       const lngNum = parseFloat(lng);
       if (!isNaN(latNum) && !isNaN(lngNum)) {
         if (editTempMarker) map.removeLayer(editTempMarker);
-        editTempMarker = L.marker([latNum, lngNum]).addTo(map)
-          .bindPopup(`<strong>Editing: ${code}</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`)
-          .openPopup();
+        editTempMarker = makeEditMarker(
+          latNum, lngNum,
+          `<strong>Editing: ${escapeHtml(code)}</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`,
+          editStationLatInput,
+          editStationLngInput,
+          stationId
+        );
       }
     }
 
@@ -561,6 +659,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.removeEventListener('keydown', focusTrapHandler);
       container.remove();
       activeMode = null;
+      activeEditId = null;
       if (editTempMarker) { map.removeLayer(editTempMarker); editTempMarker = null; }
       triggerBtn.focus();
     }
@@ -569,65 +668,62 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ── Map Click Handler for Coordinates ──────────────────────────────────────
+  function placeEditMarker(latNum, lngNum, latInput, lngInput) {
+    if (editTempMarker) map.removeLayer(editTempMarker);
+    updateLinePolyline(activeEditId, latNum, lngNum);
+    editTempMarker = makeEditMarker(
+      latNum, lngNum,
+      `<strong>Updated Location</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`,
+      latInput, lngInput, activeEditId
+    );
+  }
+
+  const modeConfig = {
+    addTrap: {
+      latId: 'inline-lat', lngId: 'inline-lng', announceId: 'inline-coord-announce',
+      placeMarker: function (latNum, lngNum, latInput, lngInput) {
+        if (tempMarker) map.removeLayer(tempMarker);
+        tempMarker = L.marker([latNum, lngNum]).addTo(map)
+          .bindPopup(`<strong>New Trap Location</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`)
+          .openPopup();
+      }
+    },
+    addStation: {
+      latId: 'inline-station-lat', lngId: 'inline-station-lng', announceId: 'inline-station-coord-announce',
+      placeMarker: function (latNum, lngNum, latInput, lngInput) {
+        if (tempStationMarker) map.removeLayer(tempStationMarker);
+        tempStationMarker = L.marker([latNum, lngNum]).addTo(map)
+          .bindPopup(`<strong>New Station Location</strong><br>Lat: ${latNum}<br>Lng: ${lngNum}`)
+          .openPopup();
+      }
+    },
+    editTrap: {
+      latId: 'edit-trap-lat', lngId: 'edit-trap-lng', announceId: 'edit-trap-coord-announce',
+      placeMarker: placeEditMarker
+    },
+    editStation: {
+      latId: 'edit-station-lat', lngId: 'edit-station-lng', announceId: 'edit-station-coord-announce',
+      placeMarker: placeEditMarker
+    }
+  };
+
   map.on('click', function (e) {
     if (!activeMode) return;
+    const config = modeConfig[activeMode];
+    if (!config) return;
 
     const lat = e.latlng.lat.toFixed(6);
     const lng = e.latlng.lng.toFixed(6);
 
-    if (activeMode === 'addTrap') {
-      const latInput = document.getElementById('inline-lat');
-      const lngInput = document.getElementById('inline-lng');
-      if (latInput) latInput.value = lat;
-      if (lngInput) lngInput.value = lng;
+    const latInput = document.getElementById(config.latId);
+    const lngInput = document.getElementById(config.lngId);
+    if (latInput) latInput.value = lat;
+    if (lngInput) lngInput.value = lng;
 
-      const announce = document.getElementById('inline-coord-announce');
-      if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
+    const announce = document.getElementById(config.announceId);
+    if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
 
-      if (tempMarker) map.removeLayer(tempMarker);
-      tempMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<strong>New Trap Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
-        .openPopup();
-    } else if (activeMode === 'addStation') {
-      const latInput = document.getElementById('inline-station-lat');
-      const lngInput = document.getElementById('inline-station-lng');
-      if (latInput) latInput.value = lat;
-      if (lngInput) lngInput.value = lng;
-
-      const announce = document.getElementById('inline-station-coord-announce');
-      if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
-
-      if (tempStationMarker) map.removeLayer(tempStationMarker);
-      tempStationMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<strong>New Station Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
-        .openPopup();
-    } else if (activeMode === 'editTrap') {
-      const latInput = document.getElementById('edit-trap-lat');
-      const lngInput = document.getElementById('edit-trap-lng');
-      if (latInput) latInput.value = lat;
-      if (lngInput) lngInput.value = lng;
-
-      const announce = document.getElementById('edit-trap-coord-announce');
-      if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
-
-      if (editTempMarker) map.removeLayer(editTempMarker);
-      editTempMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<strong>Updated Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
-        .openPopup();
-    } else {
-      const latInput = document.getElementById('edit-station-lat');
-      const lngInput = document.getElementById('edit-station-lng');
-      if (latInput) latInput.value = lat;
-      if (lngInput) lngInput.value = lng;
-
-      const announce = document.getElementById('edit-station-coord-announce');
-      if (announce) announce.textContent = `Coordinates set to latitude ${lat}, longitude ${lng}`;
-
-      if (editTempMarker) map.removeLayer(editTempMarker);
-      editTempMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<strong>Updated Location</strong><br>Lat: ${lat}<br>Lng: ${lng}`)
-        .openPopup();
-    }
+    config.placeMarker(parseFloat(lat), parseFloat(lng), latInput, lngInput);
   });
 
   // ── Auto-open forms if redirected back with errors ─────────────────────────
