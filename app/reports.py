@@ -1,6 +1,6 @@
 """reports.py — Reports and chart data routes (all logged-in roles)."""
 
-from flask import render_template, request
+from flask import render_template, request, session, redirect, url_for
 from app import app, db
 from app.utils import role_required
 
@@ -8,7 +8,9 @@ from app.utils import role_required
 @app.route('/reports')
 @role_required()
 def reports():
-    """Render the reports page with live summary stats."""
+    """Render the group analytics page — group members only."""
+    if session.get('group_role') == 'Super Admin':
+        return redirect(url_for('admin_reports'))
     line_id     = request.args.get('line_id', '')
     period      = request.args.get('period', '3')
     date_from   = request.args.get('date_from', '')
@@ -30,6 +32,12 @@ def reports():
         period_sql = f"AND tc.date BETWEEN '{date_from}' AND '{date_to} 23:59:59'"
     elif period != 'all':
         period_sql = f"AND tc.date >= NOW() - INTERVAL '{period} months'"
+
+    # ── Build group filter ────────────────────────────────────
+    group_id     = session.get('group_id')
+    group_name   = session.get('group_name', '')
+    group_sql    = 'AND l.group_id = %s' if group_id else ''
+    group_params = [group_id] if group_id else []
 
     # ── Build line filter ─────────────────────────────────────
     line_sql    = ''
@@ -65,25 +73,27 @@ def reports():
     try:
         with db.get_cursor() as cursor:
 
-            # All lines for filter dropdown — including retired
+            # Lines for filter dropdown — scoped to group
             cursor.execute(
-                '''SELECT line_id, name, is_retired
-                   FROM lines
-                   ORDER BY is_retired ASC, name ASC'''
+                'SELECT line_id, name, is_retired FROM lines WHERE group_id = %s ORDER BY is_retired ASC, name ASC',
+                (group_id,)
             )
             lines = cursor.fetchall()
 
-            # All operators who have catch records — for filter dropdown
+            # Operators who have catch records — scoped to group
             cursor.execute('''
                 SELECT DISTINCT u.user_id, u.first_name, u.last_name
                 FROM users u
                 JOIN trap_catches tc ON tc.recorded_by_id = u.user_id
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                WHERE l.group_id = %s
                 ORDER BY u.first_name, u.last_name
-            ''')
+            ''', (group_id,))
             operators = cursor.fetchall()
 
             # Combined params for filtered queries
-            all_params = line_params + operator_params
+            all_params = group_params + line_params + operator_params
 
             # Total captures (species != None)
             cursor.execute(f'''
@@ -92,7 +102,7 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {operator_sql} {status_filter}
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
             ''', all_params)
             stats['total_captures'] = cursor.fetchone()['count']
 
@@ -102,7 +112,7 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {period_sql} {line_sql} {operator_sql} {status_filter}
+                WHERE 1=1 {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
             ''', all_params)
             stats['total_records'] = cursor.fetchone()['count']
 
@@ -113,8 +123,8 @@ def reports():
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE t.is_retired = FALSE
                 AND l.is_retired = FALSE
-                {line_sql} {status_filter}
-            ''', line_params)
+                {group_sql} {line_sql} {status_filter}
+            ''', group_params + line_params)
             stats['active_trap_pct'] = cursor.fetchone()['total']
 
             # Top species
@@ -124,7 +134,7 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {operator_sql} {status_filter}
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY tc.species_caught
                 ORDER BY cnt DESC
                 LIMIT 1
@@ -151,10 +161,22 @@ def reports():
     insights        = {}
     recent_catches  = []
 
+    # New chart data
+    bait_labels       = []
+    bait_values       = []
+    bait_colors       = []
+    bait_summary      = ''
+    sex_maturity_data = {}
+    sex_summary       = ''
+    member_labels     = []
+    member_values     = []
+    member_colors     = []
+    member_summary    = ''
+
     try:
         with db.get_cursor() as cursor:
 
-            all_params = line_params + operator_params
+            all_params = group_params + line_params + operator_params
 
             # ── Catch trend — grouped by week ─────────────────
             cursor.execute(f'''
@@ -165,7 +187,7 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {operator_sql} {status_filter}
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY DATE_TRUNC('week', tc.date)
                 ORDER BY DATE_TRUNC('week', tc.date)
             ''', all_params)
@@ -180,7 +202,7 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {operator_sql} {status_filter}
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY tc.species_caught
                 ORDER BY cnt DESC
             ''', all_params)
@@ -216,7 +238,7 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
-                {period_sql} {line_sql} {operator_sql} {status_filter}
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY l.line_id, l.name, l.is_retired
                 ORDER BY l.is_retired ASC, cnt DESC
             ''', all_params)
@@ -240,7 +262,7 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {period_sql} {line_sql} {operator_sql} {status_filter}
+                WHERE 1=1 {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
                 GROUP BY l.line_id, l.name, l.is_retired, tc.status
                 ORDER BY l.is_retired ASC, l.name, tc.status
             ''', all_params)
@@ -291,7 +313,7 @@ def reports():
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.trap_condition = 'Needs maintenance'
-                {period_sql} {line_sql} {operator_sql} {status_filter}
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
                 ORDER BY t.code
             ''', all_params)
             maintenance_rows              = cursor.fetchall()
@@ -312,18 +334,19 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {line_sql} {operator_sql} {status_filter}
+                WHERE 1=1 {group_sql} {line_sql} {operator_sql} {status_filter}
                 ORDER BY tc.date DESC
                 LIMIT 1
-            ''', line_params + operator_params)
+            ''', group_params + line_params + operator_params)
             last = cursor.fetchone()
             if last:
                 insights['last_check_line'] = last['line_name']
                 insights['last_check_date'] = last['date']
 
-            # Retired lines
+            # Retired lines — scoped to group
             cursor.execute(
-                'SELECT name FROM lines WHERE is_retired = TRUE ORDER BY name'
+                'SELECT name FROM lines WHERE is_retired = TRUE AND group_id = %s ORDER BY name',
+                (group_id,)
             )
             retired_rows              = cursor.fetchall()
             insights['retired_lines'] = [r['name'] for r in retired_rows]
@@ -339,14 +362,125 @@ def reports():
                 FROM trap_catches tc
                 JOIN traps t ON tc.trap_id = t.trap_id
                 JOIN lines l ON t.line_id = l.line_id
-                WHERE 1=1 {line_sql} {operator_sql} {status_filter}
+                WHERE 1=1 {group_sql} {line_sql} {operator_sql} {status_filter}
                 ORDER BY tc.date DESC
                 LIMIT 10
-            ''', line_params + operator_params)
+            ''', group_params + line_params + operator_params)
             recent_catches = cursor.fetchall()
+
+            # ── Catches by bait type ───────────────────────────
+            cursor.execute(f'''
+                SELECT tc.bait_type, COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                WHERE tc.species_caught != 'None'
+                AND tc.bait_type IS NOT NULL
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
+                GROUP BY tc.bait_type
+                ORDER BY cnt DESC
+            ''', all_params)
+            bait_rows   = cursor.fetchall()
+            bait_palette = ['#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
+                            '#0891b2','#d97706','#059669','#dc2626','#6b7280']
+            bait_labels = [r['bait_type'] for r in bait_rows]
+            bait_values = [r['cnt'] for r in bait_rows]
+            bait_colors = [bait_palette[i % len(bait_palette)] for i in range(len(bait_rows))]
+
+            # ── Sex & maturity breakdown ───────────────────────
+            cursor.execute(f'''
+                SELECT tc.sex, tc.maturity, COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                WHERE tc.species_caught != 'None'
+                AND tc.sex IS NOT NULL
+                AND tc.maturity IS NOT NULL
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
+                GROUP BY tc.sex, tc.maturity
+                ORDER BY tc.sex, tc.maturity
+            ''', all_params)
+            sex_rows = cursor.fetchall()
+            for r in sex_rows:
+                sex_maturity_data.setdefault(r['sex'], {})[r['maturity']] = r['cnt']
+
+            # ── Activity by member ─────────────────────────────
+            cursor.execute(f'''
+                SELECT u.first_name || ' ' || u.last_name AS member_name,
+                       COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                JOIN users u ON tc.recorded_by_id = u.user_id
+                WHERE tc.species_caught != 'None'
+                {period_sql} {group_sql} {line_sql} {operator_sql} {status_filter}
+                GROUP BY u.user_id, u.first_name, u.last_name
+                ORDER BY cnt DESC
+            ''', all_params)
+            member_rows   = cursor.fetchall()
+            member_palette = ['#3d9b67','#e8920a','#1a6fa8','#7c3aed','#c0392b',
+                              '#0891b2','#d97706','#059669','#dc2626','#6b7280']
+            member_labels = [r['member_name'] for r in member_rows]
+            member_values = [r['cnt'] for r in member_rows]
+            member_colors = [member_palette[i % len(member_palette)] for i in range(len(member_rows))]
 
     except Exception as e:
         app.logger.error(f'Reports chart data error: {e}')
+
+    # ── Auto-summaries for new charts ─────────────────────────
+
+    # Bait type summary
+    if not bait_labels:
+        bait_summary = 'No catch data with bait type recorded in this period.'
+    else:
+        top_bait       = bait_labels[0]
+        top_bait_val   = bait_values[0]
+        total_bait     = sum(bait_values)
+        top_bait_pct   = round(top_bait_val / total_bait * 100, 1) if total_bait else 0
+        bait_summary   = (
+            f'{top_bait} is the most used bait type, accounting for {top_bait_pct}% '
+            f'of catches ({top_bait_val} total) this period.'
+        )
+        if len(bait_labels) == 1:
+            bait_summary += ' Only one bait type was recorded.'
+        elif len(bait_labels) >= 3:
+            bait_summary += f' {len(bait_labels)} different bait types were used across the group.'
+
+    # Sex & maturity summary
+    all_sex_rows = [
+        (sex, mat, cnt)
+        for sex, mats in sex_maturity_data.items()
+        for mat, cnt in mats.items()
+    ]
+    if not all_sex_rows:
+        sex_summary = 'No sex or maturity data recorded for this period.'
+    else:
+        total_sex = sum(c for _, _, c in all_sex_rows)
+        top_combo = max(all_sex_rows, key=lambda x: x[2])
+        top_pct   = round(top_combo[2] / total_sex * 100, 1) if total_sex else 0
+        adult_cnt = sum(c for _, m, c in all_sex_rows if m == 'Adult')
+        juv_cnt   = sum(c for _, m, c in all_sex_rows if m == 'Juvenile')
+        juv_pct   = round(juv_cnt / total_sex * 100, 1) if total_sex else 0
+        sex_summary = (
+            f'{top_combo[0]} {top_combo[1]}s make up the largest share of catches '
+            f'({top_pct}% — {top_combo[2]} total).'
+        )
+        if juv_cnt > 0:
+            sex_summary += f' Juveniles account for {juv_pct}% of all captures this period.'
+
+    # Member activity summary
+    if not member_labels:
+        member_summary = 'No catch data recorded by any member this period.'
+    else:
+        top_member     = member_labels[0]
+        top_member_val = member_values[0]
+        total_members  = len(member_labels)
+        member_summary = (
+            f'{top_member} leads the group with '
+            f'{top_member_val} catch{"es" if top_member_val != 1 else ""} recorded this period.'
+        )
+        if total_members > 1:
+            member_summary += f' {total_members} members contributed catch data.'
 
     return render_template('reports/index.html',
                            stats=stats,
@@ -358,6 +492,7 @@ def reports():
                            selected_period=period,
                            date_from=date_from,
                            date_to=date_to,
+                           group_name=group_name,
                            trend_labels=trend_labels,
                            trend_values=trend_values,
                            species_labels=species_labels,
@@ -370,7 +505,17 @@ def reports():
                            status_labels=status_labels,
                            status_datasets=status_datasets,
                            insights=insights,
-                           recent_catches=recent_catches)
+                           recent_catches=recent_catches,
+                           bait_labels=bait_labels,
+                           bait_values=bait_values,
+                           bait_colors=bait_colors,
+                           bait_summary=bait_summary,
+                           sex_maturity_data=sex_maturity_data,
+                           sex_summary=sex_summary,
+                           member_labels=member_labels,
+                           member_values=member_values,
+                           member_colors=member_colors,
+                           member_summary=member_summary)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
