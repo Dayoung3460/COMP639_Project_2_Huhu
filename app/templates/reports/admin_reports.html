@@ -1,0 +1,438 @@
+{# templates/reports/admin_reports.html
+   Route: GET /admin/reports  →  admin_reports()
+   Super Admin only — cross-group platform analytics.
+   Extends base.html.
+#}
+{% extends 'base.html' %}
+{% block title %}Platform Analytics{% endblock %}
+
+{% block page_title %}Platform Analytics{% endblock %}
+
+{% block header_actions %}
+  <form method="GET" action="{{ url_for('admin_reports') }}"
+        class="d-flex gap-2 align-items-center flex-wrap"
+        id="adminReportsForm">
+
+    {# Period filter #}
+    <select name="period" class="form-control" aria-label="Filter by time period"
+            style="width:150px; font-size:13px;"
+            id="periodSelect"
+            onchange="toggleDatePicker(this.value); if(this.value !== 'custom') this.form.submit();">
+      <option value="1"      {{ 'selected' if selected_period == '1' }}>Last Month</option>
+      <option value="3"      {{ 'selected' if selected_period == '3' }}>Last 3 Months</option>
+      <option value="6"      {{ 'selected' if selected_period == '6' }}>Last 6 Months</option>
+      <option value="12"     {{ 'selected' if selected_period == '12' }}>Last Year</option>
+      <option value="all"    {{ 'selected' if selected_period == 'all' }}>All Time</option>
+      <option value="custom" {{ 'selected' if selected_period == 'custom' }}>Custom Range</option>
+    </select>
+
+    {# Custom date range #}
+    <div id="dateRangePicker"
+         style="display:{{ 'flex' if selected_period == 'custom' else 'none' }};
+                gap:6px; align-items:center;">
+      <input type="date" name="date_from" class="form-control"
+             style="font-size:13px; width:145px;"
+             id="dateFrom"
+             value="{{ date_from or '' }}"
+             onchange="updateRefreshBtn()">
+      <span style="font-size:12px; color:#6b7c72;">to</span>
+      <input type="date" name="date_to" class="form-control"
+             style="font-size:13px; width:145px;"
+             id="dateTo"
+             value="{{ date_to or '' }}"
+             onchange="updateRefreshBtn()">
+    </div>
+
+    <button type="submit" class="btn-sm-pf" id="refreshBtn"
+            style="display:{{ 'inline-flex' if selected_period == 'custom' and date_from and date_to else 'none' }};">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Apply
+    </button>
+
+    <a href="{{ url_for('reports') }}" class="btn-sm-outline">
+      <i class="bi bi-graph-up me-1" aria-hidden="true"></i>Group Reports
+    </a>
+
+  </form>
+{% endblock %}
+
+{% block content %}
+
+  {# ── Context banner ── #}
+  <div style="background:linear-gradient(135deg,#1a5c38 0%,#2d7a4f 100%);
+              color:#fff; border-radius:10px; padding:14px 20px;
+              margin-bottom:20px; display:flex; align-items:center; gap:14px;">
+    <i class="bi bi-globe2" aria-hidden="true"
+       style="font-size:24px; flex-shrink:0; opacity:0.85;"></i>
+    <div>
+      <div style="font-family:'Cabin',sans-serif; font-size:14px; font-weight:700;">
+        Cross-Group Platform View
+      </div>
+      <div style="font-size:12px; opacity:0.8; margin-top:2px;">
+        Showing aggregated data across all active conservation groups.
+        Filters applied: period =
+        {% if selected_period == 'custom' and date_from and date_to %}
+          {{ date_from }} to {{ date_to }}
+        {% elif selected_period == 'all' %}
+          All Time
+        {% elif selected_period == '1' %}
+          Last Month
+        {% elif selected_period == '3' %}
+          Last 3 Months
+        {% elif selected_period == '6' %}
+          Last 6 Months
+        {% elif selected_period == '12' %}
+          Last Year
+        {% else %}
+          {{ selected_period }} months
+        {% endif %}.
+      </div>
+    </div>
+  </div>
+
+  {# ── Stat cards ── #}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-bug" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_captures }}</div>
+          <div class="stat-label">Platform Captures</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-collection" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.active_groups }}</div>
+          <div class="stat-label">Active Groups</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="bi bi-cpu" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.active_traps }}</div>
+          <div class="stat-label">Active Traps</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-trophy" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value" style="font-size:20px;">{{ stats.top_species }}</div>
+          <div class="stat-label">Most Caught Species</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Row 1: Trend + Species ── #}
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Platform Catch Trend</div>
+          <span class="panel-meta">All groups · catches per week</span>
+        </div>
+        <div class="panel-body">
+          {% if trend_values %}
+            <div style="position:relative; height:360px; width:100%;">
+              <canvas id="trendChart" style="width:100% !important;"></canvas>
+            </div>
+          {% else %}
+            <div style="text-align:center; padding:40px 0; color:#6b7c72;">
+              <i class="bi bi-graph-up" aria-hidden="true"
+                 style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              No catch data for this period.
+            </div>
+          {% endif %}
+          <p style="margin:12px 0 0; font-size:12px; color:#6b7c72; line-height:1.6;">
+            {{ trend_summary }}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Species Breakdown</div>
+          <span class="panel-meta">Platform-wide</span>
+        </div>
+        <div class="panel-body">
+          {% if species_values %}
+            <div style="position:relative; height:360px; width:100%;">
+              <canvas id="speciesChart" style="width:100% !important;"></canvas>
+            </div>
+          {% else %}
+            <div style="text-align:center; padding:40px 0; color:#6b7c72;">
+              <i class="bi bi-pie-chart" aria-hidden="true"
+                 style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              No captures recorded yet.
+            </div>
+          {% endif %}
+          <p style="margin:12px 0 0; font-size:12px; color:#6b7c72; line-height:1.6;">
+            {{ species_summary }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Row 2: Catches by Group (full width horizontal bar) ── #}
+  <div class="row g-3 mb-3">
+    <div class="col-12 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Catches by Group</div>
+          <span class="panel-meta" id="groupChartMeta">
+            {{ group_labels | length }} group{{ 's' if group_labels | length != 1 }}
+          </span>
+        </div>
+        <div class="panel-body">
+          {% if group_values %}
+            {# Dynamic height: 48px per bar, minimum 240px #}
+            {% set chart_height = [group_labels | length * 48, 240] | max %}
+            <div style="position:relative; height:{{ chart_height }}px; width:100%;">
+              <canvas id="groupChart" style="width:100% !important;"></canvas>
+            </div>
+          {% else %}
+            <div style="text-align:center; padding:40px 0; color:#6b7c72;">
+              <i class="bi bi-bar-chart-horizontal" aria-hidden="true"
+                 style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+              No catch data for selected period.
+            </div>
+          {% endif %}
+          <p style="margin:12px 0 0; font-size:12px; color:#6b7c72; line-height:1.6;">
+            {{ group_summary }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Row 3: Group Leaderboard table ── #}
+  <div class="row g-3 mb-3">
+    <div class="col-12 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Group Leaderboard</div>
+          <span class="panel-meta">All active groups · ranked by captures this period</span>
+        </div>
+        {% if group_rows %}
+          <div style="overflow-x:auto;">
+            <table class="pf-table" aria-label="Group leaderboard">
+              <thead>
+                <tr>
+                  <th style="width:32px;">#</th>
+                  <th>Group</th>
+                  <th style="text-align:right;">Members</th>
+                  <th style="text-align:right;">Active Lines</th>
+                  <th style="text-align:right;">Active Traps</th>
+                  <th style="text-align:right;">Captures</th>
+                  <th style="text-align:right;">Records</th>
+                  <th style="text-align:right;">Capture Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in group_rows %}
+                <tr>
+                  <td style="font-size:12px; color:#6b7c72; font-weight:600;">
+                    {{ loop.index }}
+                  </td>
+                  <td>
+                    <div style="font-weight:600; font-size:13px; font-family:'Cabin',sans-serif;">
+                      {{ row.group_name }}
+                    </div>
+                  </td>
+                  <td style="text-align:right; font-size:13px;">{{ row.member_count }}</td>
+                  <td style="text-align:right; font-size:13px;">{{ row.active_lines }}</td>
+                  <td style="text-align:right; font-size:13px;">{{ row.active_traps }}</td>
+                  <td style="text-align:right;">
+                    {% if row.catch_count > 0 %}
+                      <span style="font-weight:700; font-size:13px; color:var(--pf-700);">
+                        {{ row.catch_count }}
+                      </span>
+                    {% else %}
+                      <span style="font-size:12px; color:#6b7c72;">0</span>
+                    {% endif %}
+                  </td>
+                  <td style="text-align:right; font-size:13px; color:#6b7c72;">
+                    {{ row.total_records }}
+                  </td>
+                  <td style="text-align:right;">
+                    {% if row.total_records > 0 %}
+                      <span style="font-size:12px; font-weight:600;
+                                   color:{{ '#2d7a4f' if row.capture_rate >= 50 else ('#e8920a' if row.capture_rate >= 20 else '#6b7c72') }};">
+                        {{ row.capture_rate }}%
+                      </span>
+                    {% else %}
+                      <span style="font-size:12px; color:#6b7c72;">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="panel-body" style="text-align:center; padding:40px 0; color:#6b7c72;">
+            <i class="bi bi-table" aria-hidden="true"
+               style="font-size:36px; display:block; margin-bottom:10px; color:var(--pf-300);"></i>
+            No group data available.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size   = 12;
+  Chart.defaults.color       = '#6b7c72';
+  Chart.defaults.responsive  = true;
+  Chart.defaults.maintainAspectRatio = false;
+
+  // ── Date range controls ───────────────────────────────────
+  function updateRefreshBtn() {
+    const from = document.getElementById('dateFrom').value;
+    const to   = document.getElementById('dateTo').value;
+    document.getElementById('refreshBtn').style.display =
+      (from && to) ? 'inline-flex' : 'none';
+  }
+
+  function toggleDatePicker(val) {
+    document.getElementById('dateRangePicker').style.display =
+      val === 'custom' ? 'flex' : 'none';
+    if (val !== 'custom') {
+      document.getElementById('refreshBtn').style.display = 'none';
+    } else {
+      updateRefreshBtn();
+    }
+  }
+
+  const dateFrom = document.getElementById('dateFrom');
+  const dateTo   = document.getElementById('dateTo');
+  if (dateFrom && dateTo) {
+    dateFrom.addEventListener('change', function () {
+      dateTo.min = this.value;
+      if (dateTo.value && dateTo.value < this.value) dateTo.value = this.value;
+      updateRefreshBtn();
+    });
+    if (dateFrom.value) dateTo.min = dateFrom.value;
+  }
+
+  // ── 1. Platform Catch Trend (line chart) ─────────────────
+  {% if trend_values %}
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: {{ trend_labels | tojson }},
+      datasets: [{
+        label: 'Catches',
+        data: {{ trend_values | tojson }},
+        borderColor: '#1a5c38',
+        backgroundColor: 'rgba(26,92,56,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#1a5c38',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f0f5f2' }, ticks: { stepSize: 1 } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+  {% endif %}
+
+  // ── 2. Species Doughnut ───────────────────────────────────
+  {% if species_values %}
+  const otherBreakdown = {{ other_breakdown | tojson }};
+  new Chart(document.getElementById('speciesChart'), {
+    type: 'doughnut',
+    data: {
+      labels: {{ species_labels | tojson }},
+      datasets: [{
+        data: {{ species_values | tojson }},
+        backgroundColor: {{ species_colors | tojson }},
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 12, boxWidth: 12, font: { size: 11 } }
+        },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(item) {
+              if (item.label === 'Other' && Object.keys(otherBreakdown).length > 0) {
+                return '── breakdown ──\n' +
+                  Object.entries(otherBreakdown)
+                    .map(([k, v]) => `  ${k}: ${v}`).join('\n');
+              }
+              return '';
+            }
+          }
+        }
+      },
+      cutout: '60%'
+    }
+  });
+  {% endif %}
+
+  // ── 3. Catches by Group (horizontal bar chart) ───────────
+  {% if group_values %}
+  new Chart(document.getElementById('groupChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ group_labels | tojson }},
+      datasets: [{
+        label: 'Captures',
+        data: {{ group_values | tojson }},
+        backgroundColor: {{ group_colors | tojson }},
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) { return items[0].label; },
+            label: function(item) {
+              return ` ${item.raw} capture${item.raw !== 1 ? 's' : ''}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f0f5f2' }, ticks: { stepSize: 1 } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+  {% endif %}
+
+</script>
+{% endblock %}
