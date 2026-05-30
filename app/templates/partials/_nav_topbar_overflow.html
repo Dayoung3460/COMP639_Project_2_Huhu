@@ -28,6 +28,12 @@
   {# Super Admin system + manage lists. #}
   {% if session.get('group_role') == 'Super Admin' %}
     <a role="menuitem" tabindex="-1"
+       href="{{ url_for('admin_reports') }}"
+       class="topbar-overflow-item {{ 'active' if request.endpoint == 'admin_reports' }}">
+      <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Platform Analytics
+    </a>
+    <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
+    <a role="menuitem" tabindex="-1"
        href="{{ url_for('admin_users') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
       <i class="bi bi-people" aria-hidden="true"></i> Users

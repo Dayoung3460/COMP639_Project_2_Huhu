@@ -100,12 +100,18 @@
       <i class="bi bi-binoculars" aria-hidden="true"></i> <span class="link-text">Observations</span>
     </a>
 
-    {# Reports — all roles #}
+    {# Reports — all roles; Platform Analytics is Super Admin only #}
     <div class="sidebar-section-label">Reports</div>
     <a href="{{ url_for('reports') }}"
        class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
       <i class="bi bi-graph-up" aria-hidden="true"></i> <span class="link-text">Reports &amp; Charts</span>
     </a>
+    {% if session.get('group_role') == 'Super Admin' %}
+    <a href="{{ url_for('admin_reports') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'admin_reports' }}">
+      <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> <span class="link-text">Platform Analytics</span>
+    </a>
+    {% endif %}
 
     {# Super Admin platform management. "New Line" lives on the Lines
        page itself, so it doesn't need a sidebar entry too. #}

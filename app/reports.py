@@ -371,3 +371,337 @@ def reports():
                            status_datasets=status_datasets,
                            insights=insights,
                            recent_catches=recent_catches)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Super Admin Platform Analytics
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/admin/reports')
+@role_required('Super Admin')
+def admin_reports():
+    """Platform Analytics dashboard — Super Admin only."""
+
+    period    = request.args.get('period', '3')
+    date_from = request.args.get('date_from', '')
+    date_to   = request.args.get('date_to', '')
+
+    # ── Build date filter ─────────────────────────────────────
+    period_sql = ''
+    if period == 'custom' and date_from and date_to:
+        period_sql = f"AND tc.date BETWEEN '{date_from}' AND '{date_to} 23:59:59'"
+    elif period != 'all':
+        period_sql = f"AND tc.date >= NOW() - INTERVAL '{period} months'"
+
+    stats = {
+        'total_captures': 0,
+        'active_groups':  0,
+        'active_traps':   0,
+        'top_species':    '—',
+    }
+
+    trend_labels    = []
+    trend_values    = []
+    species_labels  = []
+    species_values  = []
+    species_colors  = []
+    other_breakdown = {}
+    group_labels    = []
+    group_values    = []
+    group_colors    = []
+    group_rows      = []
+
+    try:
+        with db.get_cursor() as cursor:
+
+            # ── Platform-wide summary stats ───────────────────
+
+            # Total captures (period-filtered)
+            cursor.execute(f'''
+                SELECT COUNT(*) AS count
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                WHERE tc.species_caught != 'None'
+                {period_sql}
+            ''')
+            stats['total_captures'] = cursor.fetchone()['count']
+
+            # Total active groups
+            cursor.execute(
+                "SELECT COUNT(*) AS count FROM groups WHERE is_active = TRUE"
+            )
+            stats['active_groups'] = cursor.fetchone()['count']
+
+            # Total active traps across all groups
+            cursor.execute('''
+                SELECT COUNT(*) AS count
+                FROM traps t
+                JOIN lines l ON t.line_id = l.line_id
+                WHERE t.is_retired = FALSE AND l.is_retired = FALSE
+            ''')
+            stats['active_traps'] = cursor.fetchone()['count']
+
+            # Top species (period-filtered, platform-wide)
+            cursor.execute(f'''
+                SELECT tc.species_caught, COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                WHERE tc.species_caught != 'None'
+                {period_sql}
+                GROUP BY tc.species_caught
+                ORDER BY cnt DESC
+                LIMIT 1
+            ''')
+            row = cursor.fetchone()
+            if row:
+                stats['top_species'] = row['species_caught']
+
+            # ── Catch trend — platform-wide, grouped by week ──
+            cursor.execute(f'''
+                SELECT
+                    TO_CHAR(DATE_TRUNC('week', tc.date), 'DD Mon') AS week_label,
+                    COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                WHERE tc.species_caught != 'None'
+                {period_sql}
+                GROUP BY DATE_TRUNC('week', tc.date)
+                ORDER BY DATE_TRUNC('week', tc.date)
+            ''')
+            trend_rows   = cursor.fetchall()
+            trend_labels = [r['week_label'] for r in trend_rows]
+            trend_values = [r['cnt'] for r in trend_rows]
+
+            # ── Species breakdown — platform-wide, 5% threshold
+            cursor.execute(f'''
+                SELECT tc.species_caught, COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                WHERE tc.species_caught != 'None'
+                {period_sql}
+                GROUP BY tc.species_caught
+                ORDER BY cnt DESC
+            ''')
+            species_rows  = cursor.fetchall()
+            total_catches = sum(r['cnt'] for r in species_rows)
+            threshold     = total_catches * 0.05 if total_catches > 0 else 0
+            palette       = ['#3d9b67', '#e8920a', '#1a6fa8', '#7c3aed', '#c0392b',
+                             '#0891b2', '#d97706', '#059669', '#dc2626', '#7c3aed']
+            color_idx   = 0
+            other_total = 0
+            for row in species_rows:
+                if row['cnt'] >= threshold:
+                    species_labels.append(row['species_caught'])
+                    species_values.append(row['cnt'])
+                    species_colors.append(palette[color_idx % len(palette)])
+                    color_idx += 1
+                else:
+                    other_breakdown[row['species_caught']] = row['cnt']
+                    other_total += row['cnt']
+            if other_total > 0:
+                species_labels.append('Other')
+                species_values.append(other_total)
+                species_colors.append('#6b7c72')
+
+            # ── Catches per group (horizontal bar chart) ──────
+            bar_palette = ['#3d9b67', '#e8920a', '#1a6fa8', '#7c3aed', '#c0392b',
+                           '#0891b2', '#d97706', '#059669', '#dc2626', '#6b7280']
+            cursor.execute(f'''
+                SELECT g.name AS group_name, COUNT(*) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                JOIN groups g ON l.group_id = g.group_id
+                WHERE tc.species_caught != 'None'
+                {period_sql}
+                GROUP BY g.group_id, g.name
+                ORDER BY cnt DESC
+            ''')
+            gbar_rows    = cursor.fetchall()
+            group_labels = [r['group_name'] for r in gbar_rows]
+            group_values = [r['cnt'] for r in gbar_rows]
+            group_colors = [bar_palette[i % len(bar_palette)]
+                            for i in range(len(gbar_rows))]
+
+            # ── Group leaderboard table ────────────────────────
+            # Subquery-based: member count, active lines/traps,
+            # period-filtered catch count and capture rate.
+            cursor.execute(f'''
+                SELECT
+                    g.name        AS group_name,
+                    g.is_active,
+                    COALESCE(members.member_count, 0)  AS member_count,
+                    COALESCE(ls.active_lines, 0)       AS active_lines,
+                    COALESCE(ts.active_traps, 0)       AS active_traps,
+                    COALESCE(stats.catch_count, 0)     AS catch_count,
+                    COALESCE(stats.total_records, 0)   AS total_records,
+                    CASE
+                        WHEN COALESCE(stats.total_records, 0) > 0
+                        THEN ROUND(
+                            COALESCE(stats.catch_count, 0) * 100.0
+                            / stats.total_records, 1)
+                        ELSE 0
+                    END AS capture_rate
+                FROM groups g
+                LEFT JOIN (
+                    SELECT group_id, COUNT(*) AS member_count
+                    FROM group_memberships
+                    GROUP BY group_id
+                ) members ON g.group_id = members.group_id
+                LEFT JOIN (
+                    SELECT group_id, COUNT(*) AS active_lines
+                    FROM lines
+                    WHERE is_retired = FALSE
+                    GROUP BY group_id
+                ) ls ON g.group_id = ls.group_id
+                LEFT JOIN (
+                    SELECT l.group_id, COUNT(*) AS active_traps
+                    FROM traps t
+                    JOIN lines l ON t.line_id = l.line_id
+                    WHERE t.is_retired = FALSE AND l.is_retired = FALSE
+                    GROUP BY l.group_id
+                ) ts ON g.group_id = ts.group_id
+                LEFT JOIN (
+                    SELECT
+                        l.group_id,
+                        COUNT(CASE WHEN tc.species_caught != 'None' THEN 1 END)
+                            AS catch_count,
+                        COUNT(*) AS total_records
+                    FROM trap_catches tc
+                    JOIN traps t ON tc.trap_id = t.trap_id
+                    JOIN lines l ON t.line_id = l.line_id
+                    WHERE 1=1 {period_sql}
+                    GROUP BY l.group_id
+                ) stats ON g.group_id = stats.group_id
+                WHERE g.is_active = TRUE
+                ORDER BY catch_count DESC, g.name
+            ''')
+            group_rows = cursor.fetchall()
+
+    except Exception as e:
+        app.logger.error(f'Admin reports error: {e}')
+
+    # ── Auto-generated chart summaries ───────────────────────
+    # Computed from live data — never hard-coded.
+
+    # Trend summary
+    if not trend_values:
+        trend_summary = 'No catch data was recorded in this period.'
+    elif len(trend_values) == 1:
+        v = trend_values[0]
+        trend_summary = (
+            f'{v} catch{"es" if v != 1 else ""} recorded in the '
+            f'only active week of this period.'
+        )
+    else:
+        total_t  = sum(trend_values)
+        peak_idx = trend_values.index(max(trend_values))
+        peak_lbl = trend_labels[peak_idx]
+        peak_val = trend_values[peak_idx]
+        avg_t    = total_t / len(trend_values)
+
+        mid         = len(trend_values) // 2
+        first_avg   = sum(trend_values[:mid]) / mid if mid else 0
+        second_avg  = sum(trend_values[mid:]) / (len(trend_values) - mid)
+        if second_avg > first_avg * 1.15:
+            direction = 'an upward trend'
+        elif second_avg < first_avg * 0.85:
+            direction = 'a downward trend'
+        else:
+            direction = 'stable activity'
+
+        trend_summary = (
+            f'{total_t} total catch{"es" if total_t != 1 else ""} were recorded '
+            f'across the platform this period, showing {direction}.'
+        )
+        if peak_val > avg_t * 1.5 and len(trend_values) > 2:
+            trend_summary += (
+                f' A spike occurred in the week of {peak_lbl} with {peak_val} '
+                f'catch{"es" if peak_val != 1 else ""} '
+                f'({round(peak_val / avg_t, 1)}× the weekly average).'
+            )
+        else:
+            trend_summary += (
+                f' The busiest week was {peak_lbl} with '
+                f'{peak_val} catch{"es" if peak_val != 1 else ""}.'
+            )
+
+    # Species summary
+    if not species_values:
+        species_summary = 'No captures have been recorded in this period.'
+    else:
+        total_sp    = sum(species_values)
+        top_sp      = species_labels[0]
+        top_sp_val  = species_values[0]
+        top_sp_pct  = round(top_sp_val / total_sp * 100, 1) if total_sp else 0
+        num_species = (
+            len(species_labels)
+            - (1 if 'Other' in species_labels else 0)
+            + len(other_breakdown)
+        )
+
+        species_summary = (
+            f'{num_species} distinct '
+            f'species{"" if num_species == 1 else ""} recorded platform-wide. '
+            f'{top_sp} is the most frequently caught, accounting for '
+            f'{top_sp_pct}% of all captures ({top_sp_val} total).'
+        )
+        if top_sp_pct >= 70:
+            species_summary += (
+                f' The platform is heavily dominated by {top_sp} this period.'
+            )
+        elif num_species == 1:
+            species_summary += ' Only a single species was recorded this period.'
+
+    # Group comparison summary
+    if not group_values:
+        group_summary = (
+            'No catch data was recorded across any group in this period.'
+        )
+    else:
+        top_grp   = group_labels[0]
+        top_gval  = group_values[0]
+        active_ct = len([v for v in group_values if v > 0])
+        total_grp = stats['active_groups']
+        inactive  = total_grp - active_ct
+
+        group_summary = (
+            f'{top_grp} leads all groups with {top_gval} '
+            f'capture{"s" if top_gval != 1 else ""} this period. '
+            f'{active_ct} out of {total_grp} active '
+            f'group{"s" if total_grp != 1 else ""} recorded at least one catch.'
+        )
+        if inactive > 0:
+            group_summary += (
+                f' {inactive} group{"s" if inactive != 1 else ""} '
+                f'recorded no catch activity this period.'
+            )
+        elif len(group_values) >= 2 and group_values[1] > 0:
+            gap = top_gval - group_values[1]
+            group_summary += (
+                f' {top_grp} leads the next group by '
+                f'{gap} capture{"s" if gap != 1 else ""}.'
+            )
+
+    return render_template('reports/admin_reports.html',
+                           stats=stats,
+                           selected_period=period,
+                           date_from=date_from,
+                           date_to=date_to,
+                           trend_labels=trend_labels,
+                           trend_values=trend_values,
+                           species_labels=species_labels,
+                           species_values=species_values,
+                           species_colors=species_colors,
+                           other_breakdown=other_breakdown,
+                           group_labels=group_labels,
+                           group_values=group_values,
+                           group_colors=group_colors,
+                           group_rows=group_rows,
+                           trend_summary=trend_summary,
+                           species_summary=species_summary,
+                           group_summary=group_summary)
