@@ -12,7 +12,7 @@ def reports():
     if session.get('group_role') == 'Super Admin':
         return redirect(url_for('admin_reports'))
     line_id     = request.args.get('line_id', '')
-    period      = request.args.get('period', '3')
+    period      = request.args.get('period', '12')
     date_from   = request.args.get('date_from', '')
     date_to     = request.args.get('date_to', '')
     operator_id = request.args.get('operator_id', '')
