@@ -131,6 +131,7 @@ from app import observer
 from app import operator
 from app import admin
 from app import coordinator
+from app import coordinator_export
 from app import lines
 from app import reports
 from app import general
