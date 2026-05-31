@@ -160,8 +160,8 @@
          class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_settings' }}">
         <i class="bi bi-gear" aria-hidden="true"></i> <span class="link-text">Group Settings</span>
       </a>
-      <a href="{{ url_for('coordinator_lines_export') }}"
-         class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_lines_export' }}">
+      <a href="{{ url_for('coordinator_export') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_export' }}">
         <i class="bi bi-download" aria-hidden="true"></i> <span class="link-text">Export CSV</span>
       </a>
     {% endif %}

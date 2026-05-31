@@ -1,16 +1,16 @@
 {# templates/coordinator/export.html
-   Route: GET/POST /coordinator/lines/export  →  coordinator_lines_export()
-   Group Coordinator only — CSV export for line records.
+   Route: GET/POST /coordinator/export  →  coordinator_export()
+   Group Coordinator only — CSV export hub.
 #}
 {% extends 'base.html' %}
-{% block title %}Export Line Records{% endblock %}
+{% block title %}Export Records{% endblock %}
 
 {% block page_title %}
 <div class="d-flex align-items-center gap-3">
   <div class="stat-icon green" style="width:36px;height:36px;font-size:18px;">
     <i class="bi bi-download"></i>
   </div>
-  Export Line Records
+  Export Records
 </div>
 {% endblock %}
 
@@ -24,148 +24,308 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:600px;">
+<div class="container py-4" style="max-width:680px;">
 
-  <form method="POST" action="{{ url_for('coordinator_lines_export') }}">
+  {# ── Pill navigation ── #}
+  <div class="d-flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Export type">
+    <button type="button" class="export-pill active" id="pill-lines"
+            onclick="switchPill('lines')" role="tab" aria-selected="true"
+            aria-controls="panel-lines">
+      <i class="bi bi-geo-alt" aria-hidden="true"></i> Line Records
+    </button>
+    <button type="button" class="export-pill" id="pill-trap-records"
+            onclick="switchPill('trap-records')" role="tab" aria-selected="false"
+            aria-controls="panel-trap-records">
+      <i class="bi bi-cpu" aria-hidden="true"></i> Trap Records
+    </button>
+    <button type="button" class="export-pill" id="pill-ar08"
+            onclick="switchPill('ar08')" role="tab" aria-selected="false"
+            aria-controls="panel-ar08">
+      <i class="bi bi-basket" aria-hidden="true"></i> Bait Records
+    </button>
+    <button type="button" class="export-pill" id="pill-ar09"
+            onclick="switchPill('ar09')" role="tab" aria-selected="false"
+            aria-controls="panel-ar09">
+      <i class="bi bi-clipboard2-check" aria-hidden="true"></i> Catch Records
+    </button>
+    <button type="button" class="export-pill" id="pill-ar10"
+            onclick="switchPill('ar10')" role="tab" aria-selected="false"
+            aria-controls="panel-ar10">
+      <i class="bi bi-binoculars" aria-hidden="true"></i> Observations
+    </button>
+  </div>
 
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">Select Export Type</div>
-        <span class="panel-meta">trap.nz compatible CSV format</span>
+  {# ── Pill 1: Line Records (AR-06) ── #}
+  <div id="panel-lines" role="tabpanel" aria-labelledby="pill-lines">
+    <form method="POST" action="{{ url_for('coordinator_export') }}">
+      <input type="hidden" name="export_type" value="lines">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Line Records</div>
+          <span class="panel-meta">trap.nz compatible CSV</span>
+        </div>
+        <div class="panel-body p-4">
+
+          <p style="font-size:13px; color:#6b7c72; margin-bottom:20px;">
+            Export individual trap or bait station locations for your group's lines.
+          </p>
+
+          {# Trap lines option #}
+          <label class="d-flex align-items-start gap-3 p-3 mb-3 export-option-label"
+                 id="label-trap" onclick="selectLineType('Trap')">
+            <input type="radio" name="line_type" value="Trap" id="type-trap"
+                   style="margin-top:3px; accent-color:var(--pf-600);" checked
+                   onchange="selectLineType('Trap')">
+            <div>
+              <div style="font-family:'Cabin',sans-serif; font-size:14px; font-weight:600; color:var(--pf-800);">
+                <i class="bi bi-cpu me-1" aria-hidden="true"></i> Trap Lines
+              </div>
+              <div style="font-size:12px; color:#6b7c72; margin-top:3px;">
+                Exports individual trap records (code, type, line, coordinates, status).
+              </div>
+              <div style="margin-top:8px;">
+                <span class="export-count-badge">{{ trap_count }} trap{{ 's' if trap_count != 1 }} available</span>
+              </div>
+            </div>
+          </label>
+
+          {# Bait station lines option #}
+          <label class="d-flex align-items-start gap-3 p-3 mb-4 export-option-label"
+                 id="label-bait" onclick="selectLineType('Bait Station')">
+            <input type="radio" name="line_type" value="Bait Station" id="type-bait"
+                   style="margin-top:3px; accent-color:var(--pf-600);"
+                   onchange="selectLineType('Bait Station')">
+            <div>
+              <div style="font-family:'Cabin',sans-serif; font-size:14px; font-weight:600; color:var(--pf-800);">
+                <i class="bi bi-basket me-1" aria-hidden="true"></i> Bait Station Lines
+              </div>
+              <div style="font-size:12px; color:#6b7c72; margin-top:3px;">
+                Exports individual bait station records (code, type, line, coordinates, status).
+              </div>
+              <div style="margin-top:8px;">
+                <span class="export-count-badge">{{ station_count }} station{{ 's' if station_count != 1 }} available</span>
+              </div>
+            </div>
+          </label>
+
+          {# CSV field preview #}
+          <div id="field-preview-trap" class="export-field-preview">
+            <div class="export-field-label">CSV Fields</div>
+            <code style="font-size:11px; color:var(--pf-800);">Code, Trap type, Line, Latitude, Longitude, Status</code>
+          </div>
+          <div id="field-preview-bait" class="export-field-preview" style="display:none;">
+            <div class="export-field-label">CSV Fields</div>
+            <code style="font-size:11px; color:var(--pf-800);">Code, Station type, Line, Latitude, Longitude, Status</code>
+          </div>
+
+          <button type="submit" class="btn-pf w-100">
+            <i class="bi bi-download me-2" aria-hidden="true"></i>Download CSV
+          </button>
+        </div>
       </div>
-      <div class="panel-body p-4">
+    </form>
+  </div>
 
-        <p style="font-size:13px; color:#6b7c72; margin-bottom:20px;">
-          Choose which line type to export. The downloaded file will be formatted
-          to comply with trap.nz CSV import specifications.
-        </p>
-
-        {# Trap lines option #}
-        <label class="d-flex align-items-start gap-3 p-3 mb-3"
-               style="border:2px solid var(--pf-200); border-radius:10px; cursor:pointer;
-                      transition:border-color 0.15s;"
-               id="label-trap"
-               onclick="selectType('Trap')">
-          <input type="radio" name="line_type" value="Trap" id="type-trap"
-                 style="margin-top:3px; accent-color:var(--pf-600);" checked
-                 onchange="selectType('Trap')">
-          <div>
-            <div style="font-family:'Cabin',sans-serif; font-size:14px; font-weight:600; color:var(--pf-800);">
-              <i class="bi bi-cpu me-1" aria-hidden="true"></i> Trap Lines
-            </div>
-            <div style="font-size:12px; color:#6b7c72; margin-top:3px;">
-              Exports individual trap records (code, type, line, coordinates, status).
-            </div>
-            <div style="margin-top:8px;">
-              <span class="badge" style="background:var(--pf-100); color:var(--pf-700);
-                                         font-size:11px; padding:3px 8px; border-radius:20px;">
-                {{ trap_count }} trap{{ 's' if trap_count != 1 }} available
-              </span>
-            </div>
-          </div>
-        </label>
-
-        {# Bait station lines option #}
-        <label class="d-flex align-items-start gap-3 p-3 mb-4"
-               style="border:2px solid var(--pf-200); border-radius:10px; cursor:pointer;
-                      transition:border-color 0.15s;"
-               id="label-bait"
-               onclick="selectType('Bait Station')">
-          <input type="radio" name="line_type" value="Bait Station" id="type-bait"
-                 style="margin-top:3px; accent-color:var(--pf-600);"
-                 onchange="selectType('Bait Station')">
-          <div>
-            <div style="font-family:'Cabin',sans-serif; font-size:14px; font-weight:600; color:var(--pf-800);">
-              <i class="bi bi-basket me-1" aria-hidden="true"></i> Bait Station Lines
-            </div>
-            <div style="font-size:12px; color:#6b7c72; margin-top:3px;">
-              Exports individual bait station records (code, type, line, coordinates, status).
-            </div>
-            <div style="margin-top:8px;">
-              <span class="badge" style="background:var(--pf-100); color:var(--pf-700);
-                                         font-size:11px; padding:3px 8px; border-radius:20px;">
-                {{ station_count }} station{{ 's' if station_count != 1 }} available
-              </span>
-            </div>
-          </div>
-        </label>
-
-        {# CSV field preview #}
-        <div id="field-preview-trap"
-             style="background:#f4faf6; border:1px solid var(--pf-200); border-radius:8px;
-                    padding:12px 14px; margin-bottom:20px; font-size:12px; color:#6b7c72;">
-          <div style="font-weight:600; color:var(--pf-700); margin-bottom:6px; font-family:'Cabin',sans-serif;">
-            CSV Fields
-          </div>
-          <code style="font-size:11px; color:var(--pf-800);">
-            Code, Trap type, Line, Latitude, Longitude, Status
-          </code>
+  {# ── Pill 2: Trap Records (AR-07) ── #}
+  <div id="panel-trap-records" role="tabpanel" aria-labelledby="pill-trap-records" style="display:none;">
+    <form method="POST" action="{{ url_for('coordinator_export') }}">
+      <input type="hidden" name="export_type" value="trap_records">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Trap Records</div>
+          <span class="panel-meta">trap.nz compatible CSV</span>
         </div>
-        <div id="field-preview-bait"
-             style="background:#f4faf6; border:1px solid var(--pf-200); border-radius:8px;
-                    padding:12px 14px; margin-bottom:20px; font-size:12px; color:#6b7c72;
-                    display:none;">
-          <div style="font-weight:600; color:var(--pf-700); margin-bottom:6px; font-family:'Cabin',sans-serif;">
-            CSV Fields
+        <div class="panel-body p-4">
+
+          <p style="font-size:13px; color:#6b7c72; margin-bottom:20px;">
+            Export trap catch records for your group. Filter by line or download all records.
+          </p>
+
+          {# Line filter #}
+          <div class="mb-4">
+            <label for="trap-line-filter"
+                   style="font-size:12px; font-weight:600; color:var(--pf-700);
+                          font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+              Filter by Line
+            </label>
+            <select name="line_id" id="trap-line-filter" class="form-control"
+                    style="font-size:13px;">
+              <option value="">All Lines ({{ catch_count }} record{{ 's' if catch_count != 1 }})</option>
+              {% for line in trap_lines %}
+                <option value="{{ line.line_id }}">{{ line.name }}</option>
+              {% endfor %}
+            </select>
           </div>
-          <code style="font-size:11px; color:var(--pf-800);">
-            Code, Station type, Line, Latitude, Longitude, Status
-          </code>
+
+          {# CSV field preview #}
+          <div class="export-field-preview mb-4">
+            <div class="export-field-label">CSV Fields</div>
+            <code style="font-size:11px; color:var(--pf-800);">
+              Date, Trap code, Line, Species, Sex, Maturity, Status, Rebaited, Bait type, Trap condition, Strikes, Notes, Recorded by
+            </code>
+          </div>
+
+          <button type="submit" class="btn-pf w-100">
+            <i class="bi bi-download me-2" aria-hidden="true"></i>Download CSV
+          </button>
         </div>
+      </div>
+    </form>
+  </div>
 
-        <button type="submit" class="btn-pf w-100">
-          <i class="bi bi-download me-2" aria-hidden="true"></i>Download CSV
-        </button>
-
+  {# ── Pill 3: Bait Records (AR-08 — coming soon) ── #}
+  <div id="panel-ar08" role="tabpanel" aria-labelledby="pill-ar08" style="display:none;">
+    <div class="panel">
+      <div class="panel-body p-4" style="text-align:center; padding:60px 20px !important;">
+        <i class="bi bi-basket" aria-hidden="true"
+           style="font-size:40px; color:var(--pf-300); display:block; margin-bottom:14px;"></i>
+        <div style="font-family:'Cabin',sans-serif; font-size:15px; font-weight:600;
+                    color:var(--pf-700); margin-bottom:6px;">Bait Records Export</div>
+        <div style="font-size:13px; color:#6b7c72;">Coming soon.</div>
       </div>
     </div>
+  </div>
 
-  </form>
+  {# ── Pill 4: Catch Records (AR-09 — coming soon) ── #}
+  <div id="panel-ar09" role="tabpanel" aria-labelledby="pill-ar09" style="display:none;">
+    <div class="panel">
+      <div class="panel-body p-4" style="text-align:center; padding:60px 20px !important;">
+        <i class="bi bi-clipboard2-check" aria-hidden="true"
+           style="font-size:40px; color:var(--pf-300); display:block; margin-bottom:14px;"></i>
+        <div style="font-family:'Cabin',sans-serif; font-size:15px; font-weight:600;
+                    color:var(--pf-700); margin-bottom:6px;">Catch Records Export</div>
+        <div style="font-size:13px; color:#6b7c72;">Coming soon.</div>
+      </div>
+    </div>
+  </div>
 
-  {# Info note #}
+  {# ── Pill 5: Observations (AR-10 — coming soon) ── #}
+  <div id="panel-ar10" role="tabpanel" aria-labelledby="pill-ar10" style="display:none;">
+    <div class="panel">
+      <div class="panel-body p-4" style="text-align:center; padding:60px 20px !important;">
+        <i class="bi bi-binoculars" aria-hidden="true"
+           style="font-size:40px; color:var(--pf-300); display:block; margin-bottom:14px;"></i>
+        <div style="font-family:'Cabin',sans-serif; font-size:15px; font-weight:600;
+                    color:var(--pf-700); margin-bottom:6px;">Observations Export</div>
+        <div style="font-size:13px; color:#6b7c72;">Coming soon.</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Info note ── #}
   <div style="margin-top:16px; background:#f4faf6; border:1px solid var(--pf-200);
               border-radius:10px; padding:14px 16px; font-size:12px; color:#6b7c72;
               display:flex; gap:10px; align-items:flex-start;">
     <i class="bi bi-info-circle" aria-hidden="true"
        style="flex-shrink:0; margin-top:1px; color:var(--pf-500);"></i>
     <span>
-      The exported file is formatted for compatibility with the
+      All exported files are formatted for compatibility with the
       <strong style="color:var(--pf-700);">trap.nz</strong> national CSV import standard.
-      The file will download immediately — it cannot be previewed in the browser.
+      Files download immediately and cannot be previewed in the browser.
     </span>
   </div>
 
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+  .export-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 2px solid var(--pf-300);
+    background: #fff;
+    color: var(--pf-600);
+    font-family: 'Cabin', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .export-pill:hover {
+    border-color: var(--pf-500);
+    color: var(--pf-700);
+  }
+  .export-pill.active {
+    background: var(--pf-600);
+    border-color: var(--pf-600);
+    color: #fff;
+  }
+  .export-option-label {
+    border: 2px solid var(--pf-200);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .export-option-label.selected {
+    border-color: var(--pf-600);
+  }
+  .export-count-badge {
+    background: var(--pf-100);
+    color: var(--pf-700);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+  .export-field-preview {
+    background: #f4faf6;
+    border: 1px solid var(--pf-200);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #6b7c72;
+  }
+  .export-field-label {
+    font-weight: 600;
+    color: var(--pf-700);
+    margin-bottom: 6px;
+    font-family: 'Cabin', sans-serif;
+    font-size: 12px;
+  }
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
-  function selectType(type) {
+  const panels = ['lines', 'trap-records', 'ar08', 'ar09', 'ar10'];
+
+  function switchPill(name) {
+    panels.forEach(p => {
+      document.getElementById('panel-' + p).style.display = 'none';
+      const pill = document.getElementById('pill-' + p);
+      pill.classList.remove('active');
+      pill.setAttribute('aria-selected', 'false');
+    });
+    document.getElementById('panel-' + name).style.display = 'block';
+    const activePill = document.getElementById('pill-' + name);
+    activePill.classList.add('active');
+    activePill.setAttribute('aria-selected', 'true');
+  }
+
+  function selectLineType(type) {
     const labelTrap = document.getElementById('label-trap');
     const labelBait = document.getElementById('label-bait');
-    const previewTrap = document.getElementById('field-preview-trap');
-    const previewBait = document.getElementById('field-preview-bait');
-    const activeStyle = '2px solid var(--pf-600)';
-    const inactiveStyle = '2px solid var(--pf-200)';
-
     if (type === 'Trap') {
-      labelTrap.style.border = activeStyle;
-      labelBait.style.border = inactiveStyle;
-      previewTrap.style.display = 'block';
-      previewBait.style.display = 'none';
+      labelTrap.classList.add('selected');
+      labelBait.classList.remove('selected');
       document.getElementById('type-trap').checked = true;
+      document.getElementById('field-preview-trap').style.display = 'block';
+      document.getElementById('field-preview-bait').style.display = 'none';
     } else {
-      labelBait.style.border = activeStyle;
-      labelTrap.style.border = inactiveStyle;
-      previewBait.style.display = 'block';
-      previewTrap.style.display = 'none';
+      labelBait.classList.add('selected');
+      labelTrap.classList.remove('selected');
       document.getElementById('type-bait').checked = true;
+      document.getElementById('field-preview-bait').style.display = 'block';
+      document.getElementById('field-preview-trap').style.display = 'none';
     }
   }
 
-  // Set initial active border on page load
-  document.addEventListener('DOMContentLoaded', function() {
-    selectType('Trap');
+  document.addEventListener('DOMContentLoaded', function () {
+    selectLineType('Trap');
   });
 </script>
 {% endblock %}
