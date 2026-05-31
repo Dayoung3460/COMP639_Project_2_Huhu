@@ -198,6 +198,61 @@ def coordinator_export():
                             line_name_slug = '_' + line_row['name'].lower().replace(' ', '_')
                     filename = f'{safe_name}_bait_stations{line_name_slug}_{date_str}.csv'
 
+                # ── Pill 5: Bait station records (AR-10) ──────────────────
+                elif export_type == 'bait_station_records':
+                    line_id    = request.form.get('line_id', '')
+                    station_id = request.form.get('station_id', '')
+                    date_from  = request.form.get('date_from', '')
+                    date_to    = request.form.get('date_to', '')
+
+                    fieldnames = ['Date', 'Station code', 'Line',
+                                  'Target species', 'Active ingredient',
+                                  'Formulation', 'Concentration',
+                                  'Bait remaining', 'Bait removed',
+                                  'Bait added', 'Notes', 'Recorded by']
+
+                    conditions = ['l.group_id = %s']
+                    params     = [group_id]
+
+                    if line_id:
+                        conditions.append('l.line_id = %s')
+                        params.append(line_id)
+                    if station_id:
+                        conditions.append('bs.station_id = %s')
+                        params.append(station_id)
+                    if date_from:
+                        conditions.append('bsr.date >= %s')
+                        params.append(date_from)
+                    if date_to:
+                        conditions.append('bsr.date <= %s')
+                        params.append(date_to)
+
+                    where_sql = ' AND '.join(conditions)
+
+                    cursor.execute(f'''
+                        SELECT
+                            TO_CHAR(bsr.date, 'YYYY-MM-DD HH24:MI')      AS "Date",
+                            bs.code                                        AS "Station code",
+                            l.name                                         AS "Line",
+                            COALESCE(bsr.target_species, '')              AS "Target species",
+                            bsr.active_ingredient                          AS "Active ingredient",
+                            bsr.formulation                               AS "Formulation",
+                            bsr.concentration                             AS "Concentration",
+                            bsr.bait_remaining                            AS "Bait remaining",
+                            COALESCE(bsr.bait_removed, 0)                AS "Bait removed",
+                            COALESCE(bsr.bait_added, 0)                  AS "Bait added",
+                            COALESCE(bsr.notes, '')                       AS "Notes",
+                            COALESCE(u.first_name || ' ' || u.last_name, '') AS "Recorded by"
+                        FROM bait_station_records bsr
+                        JOIN bait_stations bs  ON bsr.station_id    = bs.station_id
+                        JOIN lines l           ON bs.line_id        = l.line_id
+                        LEFT JOIN users u      ON bsr.recorded_by_id = u.user_id
+                        WHERE {where_sql}
+                        ORDER BY bsr.date DESC, l.name, bs.code
+                    ''', params)
+                    rows = cursor.fetchall()
+                    filename = f'{safe_name}_bait_station_records_{date_str}.csv'
+
         except Exception as e:
             app.logger.error(f'CSV export error: {e}')
 
@@ -220,6 +275,7 @@ def coordinator_export():
     trap_count           = 0
     trap_check_count     = 0
     bait_station_count   = 0
+    bait_record_count    = 0
     trap_lines           = []
     bait_station_lines   = []
 
@@ -273,6 +329,14 @@ def coordinator_export():
             ''', (group_id,))
             bait_station_lines = cursor.fetchall()
 
+            cursor.execute('''
+                SELECT COUNT(*) AS cnt FROM bait_station_records bsr
+                JOIN bait_stations bs ON bsr.station_id = bs.station_id
+                JOIN lines l ON bs.line_id = l.line_id
+                WHERE l.group_id = %s
+            ''', (group_id,))
+            bait_record_count = cursor.fetchone()['cnt']
+
     except Exception as e:
         app.logger.error(f'CSV export count error: {e}')
 
@@ -282,6 +346,7 @@ def coordinator_export():
                            trap_count=trap_count,
                            trap_check_count=trap_check_count,
                            bait_station_count=bait_station_count,
+                           bait_record_count=bait_record_count,
                            trap_lines=trap_lines,
                            bait_station_lines=bait_station_lines)
 
@@ -307,3 +372,26 @@ def api_traps_by_line():
         except Exception as e:
             app.logger.error(f'api_traps_by_line error: {e}')
     return jsonify(traps)
+
+
+@app.route('/api/stations_by_line')
+@role_required('Group Coordinator')
+def api_stations_by_line():
+    """JSON list of active bait stations for a line — scoped to the coordinator's group."""
+    line_id  = request.args.get('line_id', '')
+    group_id = session.get('group_id')
+    stations = []
+    if line_id:
+        try:
+            with db.get_cursor() as cursor:
+                cursor.execute('''
+                    SELECT bs.station_id, bs.code
+                    FROM bait_stations bs
+                    JOIN lines l ON bs.line_id = l.line_id
+                    WHERE bs.line_id = %s AND l.group_id = %s AND bs.is_retired = FALSE
+                    ORDER BY bs.code
+                ''', (line_id, group_id))
+                stations = [dict(r) for r in cursor.fetchall()]
+        except Exception as e:
+            app.logger.error(f'api_stations_by_line error: {e}')
+    return jsonify(stations)
