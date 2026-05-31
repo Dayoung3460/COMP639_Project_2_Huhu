@@ -316,17 +316,89 @@
     </form>
   </div>
 
-  {# ── Pill 5: Bait Station Records (coming soon) ── #}
+  {# ── Pill 5: Bait Station Records (AR-10) ── #}
   <div id="panel-bait-records" role="tabpanel" aria-labelledby="pill-bait-records" style="display:none;">
-    <div class="panel">
-      <div class="panel-body p-4" style="text-align:center; padding:60px 20px !important;">
-        <i class="bi bi-journal-check" aria-hidden="true"
-           style="font-size:40px; color:var(--pf-300); display:block; margin-bottom:14px;"></i>
-        <div style="font-family:'Cabin',sans-serif; font-size:15px; font-weight:600;
-                    color:var(--pf-700); margin-bottom:6px;">Bait Station Records Export</div>
-        <div style="font-size:13px; color:#6b7c72;">Coming soon.</div>
+    <form method="POST" action="{{ url_for('coordinator_export') }}">
+      <input type="hidden" name="export_type" value="bait_station_records">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Bait Station Records</div>
+          <span class="panel-meta">trap.nz compatible CSV</span>
+        </div>
+        <div class="panel-body p-4">
+
+          <p style="font-size:13px; color:#6b7c72; margin-bottom:20px;">
+            Export bait station check records for your group. Use the filters below to narrow the export.
+          </p>
+
+          {# Line filter #}
+          <div class="mb-3">
+            <label for="bsr-line-filter"
+                   style="font-size:12px; font-weight:600; color:var(--pf-700);
+                          font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+              Filter by Line
+            </label>
+            <select name="line_id" id="bsr-line-filter" class="form-control"
+                    style="font-size:13px;"
+                    onchange="loadStationsByLine(this.value)">
+              <option value="">All Lines ({{ bait_record_count }} record{{ 's' if bait_record_count != 1 }})</option>
+              {% for line in bait_station_lines %}
+                <option value="{{ line.line_id }}">{{ line.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {# Station filter (populated by JS) #}
+          <div class="mb-3">
+            <label for="bsr-station-filter"
+                   style="font-size:12px; font-weight:600; color:var(--pf-700);
+                          font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+              Filter by Station
+            </label>
+            <select name="station_id" id="bsr-station-filter" class="form-control"
+                    style="font-size:13px;">
+              <option value="">All Stations</option>
+            </select>
+          </div>
+
+          {# Date range #}
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <label for="bsr-date-from"
+                     style="font-size:12px; font-weight:600; color:var(--pf-700);
+                            font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+                Date From
+              </label>
+              <input type="date" name="date_from" id="bsr-date-from"
+                     class="form-control" style="font-size:13px;">
+            </div>
+            <div class="col-6">
+              <label for="bsr-date-to"
+                     style="font-size:12px; font-weight:600; color:var(--pf-700);
+                            font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+                Date To
+              </label>
+              <input type="date" name="date_to" id="bsr-date-to"
+                     class="form-control" style="font-size:13px;">
+            </div>
+          </div>
+
+          {# CSV field preview #}
+          <div class="export-field-preview mb-4">
+            <div class="export-field-label">CSV Fields</div>
+            <code style="font-size:11px; color:var(--pf-800);">
+              Date, Station code, Line, Target species, Active ingredient,
+              Formulation, Concentration, Bait remaining, Bait removed, Bait added,
+              Notes, Recorded by
+            </code>
+          </div>
+
+          <button type="submit" class="btn-pf w-100">
+            <i class="bi bi-download me-2" aria-hidden="true"></i>Download CSV
+          </button>
+        </div>
       </div>
-    </div>
+    </form>
   </div>
 
   {# ── Info note ── #}
@@ -455,6 +527,25 @@
           opt.value = trap.trap_id;
           opt.textContent = trap.code;
           trapSelect.appendChild(opt);
+        });
+      })
+      .catch(() => {});
+  }
+
+  // Populate station dropdown when a line is selected on the Bait Station Records panel
+  function loadStationsByLine(lineId) {
+    const stationSelect = document.getElementById('bsr-station-filter');
+    stationSelect.innerHTML = '<option value="">All Stations</option>';
+    if (!lineId) return;
+
+    fetch(`/api/stations_by_line?line_id=${encodeURIComponent(lineId)}`)
+      .then(r => r.json())
+      .then(data => {
+        data.forEach(station => {
+          const opt = document.createElement('option');
+          opt.value = station.station_id;
+          opt.textContent = station.code;
+          stationSelect.appendChild(opt);
         });
       })
       .catch(() => {});
