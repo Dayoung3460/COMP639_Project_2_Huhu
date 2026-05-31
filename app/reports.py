@@ -427,6 +427,100 @@ def reports():
     except Exception as e:
         app.logger.error(f'Reports chart data error: {e}')
 
+    # ── Auto-summaries for Project 1 charts ──────────────────
+
+    # Catch trend summary
+    if not trend_values:
+        trend_summary = 'Not enough data to identify trends yet.'
+    elif len(trend_values) == 1:
+        v = trend_values[0]
+        trend_summary = (
+            f'{v} catch{"es" if v != 1 else ""} recorded in the only active week of this period.'
+        )
+    else:
+        total_t  = sum(trend_values)
+        peak_idx = trend_values.index(max(trend_values))
+        peak_lbl = trend_labels[peak_idx]
+        peak_val = trend_values[peak_idx]
+        avg_t    = total_t / len(trend_values)
+        mid         = len(trend_values) // 2
+        first_avg   = sum(trend_values[:mid]) / mid if mid else 0
+        second_avg  = sum(trend_values[mid:]) / (len(trend_values) - mid)
+        if second_avg > first_avg * 1.15:
+            direction = 'an upward trend'
+        elif second_avg < first_avg * 0.85:
+            direction = 'a downward trend'
+        else:
+            direction = 'stable activity'
+        trend_summary = (
+            f'{total_t} total catch{"es" if total_t != 1 else ""} recorded this period, '
+            f'showing {direction}.'
+        )
+        if peak_val > avg_t * 1.5 and len(trend_values) > 2:
+            trend_summary += (
+                f' A spike occurred in the week of {peak_lbl} with {peak_val} '
+                f'catch{"es" if peak_val != 1 else ""} '
+                f'({round(peak_val / avg_t, 1)}× the weekly average).'
+            )
+        else:
+            trend_summary += (
+                f' The busiest week was {peak_lbl} with '
+                f'{peak_val} catch{"es" if peak_val != 1 else ""}.'
+            )
+
+    # Species summary
+    if not species_values:
+        species_summary = 'Not enough data to identify trends yet.'
+    else:
+        total_sp   = sum(species_values)
+        top_sp     = species_labels[0]
+        top_sp_val = species_values[0]
+        top_sp_pct = round(top_sp_val / total_sp * 100, 1) if total_sp else 0
+        num_species = (
+            len(species_labels)
+            - (1 if 'Other' in species_labels else 0)
+            + len(other_breakdown)
+        )
+        species_summary = (
+            f'{top_sp} is the most commonly caught species, accounting for '
+            f'{top_sp_pct}% of all captures ({top_sp_val} total).'
+        )
+        if num_species > 1:
+            species_summary += f' {num_species} distinct species recorded this period.'
+
+    # Line summary
+    if not line_values:
+        line_summary = 'Not enough data to identify trends yet.'
+    else:
+        top_line     = line_labels[0]
+        top_line_val = line_values[0]
+        total_line   = sum(line_values)
+        line_summary = (
+            f'{top_line} has the highest catch count with '
+            f'{top_line_val} catch{"es" if top_line_val != 1 else ""} this period.'
+        )
+        if len(line_labels) > 1:
+            avg_line = round(total_line / len(line_labels), 1)
+            line_summary += f' On average, lines recorded {avg_line} catches each.'
+
+    # Trap status summary
+    if not status_datasets:
+        status_summary = 'Not enough data to identify trends yet.'
+    else:
+        status_totals  = {ds['label']: sum(ds['data']) for ds in status_datasets}
+        top_status     = max(status_totals, key=status_totals.get)
+        top_status_val = status_totals[top_status]
+        total_records  = sum(status_totals.values())
+        top_status_pct = round(top_status_val / total_records * 100, 1) if total_records else 0
+        status_summary = (
+            f'"{top_status}" is the most recorded trap status, '
+            f'making up {top_status_pct}% of all records ({top_status_val} total).'
+        )
+        sprung_val = status_totals.get('Sprung', 0)
+        if sprung_val > 0:
+            sprung_pct = round(sprung_val / total_records * 100, 1)
+            status_summary += f' Sprung traps account for {sprung_pct}% of records this period.'
+
     # ── Auto-summaries for new charts ─────────────────────────
 
     # Bait type summary
@@ -506,6 +600,10 @@ def reports():
                            status_datasets=status_datasets,
                            insights=insights,
                            recent_catches=recent_catches,
+                           trend_summary=trend_summary,
+                           species_summary=species_summary,
+                           line_summary=line_summary,
+                           status_summary=status_summary,
                            bait_labels=bait_labels,
                            bait_values=bait_values,
                            bait_colors=bait_colors,
