@@ -33,29 +33,29 @@
             aria-controls="panel-lines">
       <i class="bi bi-geo-alt" aria-hidden="true"></i> Line Records
     </button>
-    <button type="button" class="export-pill" id="pill-trap-records"
-            onclick="switchPill('trap-records')" role="tab" aria-selected="false"
-            aria-controls="panel-trap-records">
-      <i class="bi bi-cpu" aria-hidden="true"></i> Trap Records
+    <button type="button" class="export-pill" id="pill-traps"
+            onclick="switchPill('traps')" role="tab" aria-selected="false"
+            aria-controls="panel-traps">
+      <i class="bi bi-cpu" aria-hidden="true"></i> Traps
     </button>
-    <button type="button" class="export-pill" id="pill-ar08"
-            onclick="switchPill('ar08')" role="tab" aria-selected="false"
-            aria-controls="panel-ar08">
-      <i class="bi bi-basket" aria-hidden="true"></i> Bait Records
+    <button type="button" class="export-pill" id="pill-trap-checks"
+            onclick="switchPill('trap-checks')" role="tab" aria-selected="false"
+            aria-controls="panel-trap-checks">
+      <i class="bi bi-clipboard2-check" aria-hidden="true"></i> Trap Checks
     </button>
-    <button type="button" class="export-pill" id="pill-ar09"
-            onclick="switchPill('ar09')" role="tab" aria-selected="false"
-            aria-controls="panel-ar09">
-      <i class="bi bi-clipboard2-check" aria-hidden="true"></i> Catch Records
+    <button type="button" class="export-pill" id="pill-bait-stations"
+            onclick="switchPill('bait-stations')" role="tab" aria-selected="false"
+            aria-controls="panel-bait-stations">
+      <i class="bi bi-basket" aria-hidden="true"></i> Bait Stations
     </button>
-    <button type="button" class="export-pill" id="pill-ar10"
-            onclick="switchPill('ar10')" role="tab" aria-selected="false"
-            aria-controls="panel-ar10">
-      <i class="bi bi-binoculars" aria-hidden="true"></i> Observations
+    <button type="button" class="export-pill" id="pill-bait-records"
+            onclick="switchPill('bait-records')" role="tab" aria-selected="false"
+            aria-controls="panel-bait-records">
+      <i class="bi bi-journal-check" aria-hidden="true"></i> Bait Station Records
     </button>
   </div>
 
-  {# ── Pill 1: Line Records (AR-06) ── #}
+  {# ── Pill 1: Line Records ── #}
   <div id="panel-lines" role="tabpanel" aria-labelledby="pill-lines">
     <form method="POST" action="{{ url_for('coordinator_export') }}">
       <input type="hidden" name="export_type" value="lines">
@@ -67,7 +67,7 @@
         <div class="panel-body p-4">
 
           <p style="font-size:13px; color:#6b7c72; margin-bottom:20px;">
-            Export individual trap or bait station locations for your group's lines.
+            Export a summary of your group's trap or bait station lines.
           </p>
 
           {# Trap lines option #}
@@ -81,10 +81,10 @@
                 <i class="bi bi-cpu me-1" aria-hidden="true"></i> Trap Lines
               </div>
               <div style="font-size:12px; color:#6b7c72; margin-top:3px;">
-                Exports individual trap records (code, type, line, coordinates, status).
+                Exports each trap line's name, type, status, and trap count.
               </div>
               <div style="margin-top:8px;">
-                <span class="export-count-badge">{{ trap_count }} trap{{ 's' if trap_count != 1 }} available</span>
+                <span class="export-count-badge">{{ trap_line_count }} line{{ 's' if trap_line_count != 1 }} available</span>
               </div>
             </div>
           </label>
@@ -100,10 +100,10 @@
                 <i class="bi bi-basket me-1" aria-hidden="true"></i> Bait Station Lines
               </div>
               <div style="font-size:12px; color:#6b7c72; margin-top:3px;">
-                Exports individual bait station records (code, type, line, coordinates, status).
+                Exports each bait station line's name, type, status, and station count.
               </div>
               <div style="margin-top:8px;">
-                <span class="export-count-badge">{{ station_count }} station{{ 's' if station_count != 1 }} available</span>
+                <span class="export-count-badge">{{ bait_line_count }} line{{ 's' if bait_line_count != 1 }} available</span>
               </div>
             </div>
           </label>
@@ -111,11 +111,11 @@
           {# CSV field preview #}
           <div id="field-preview-trap" class="export-field-preview">
             <div class="export-field-label">CSV Fields</div>
-            <code style="font-size:11px; color:var(--pf-800);">Code, Trap type, Line, Latitude, Longitude, Status</code>
+            <code style="font-size:11px; color:var(--pf-800);">Name, Type, Status, Trap count</code>
           </div>
           <div id="field-preview-bait" class="export-field-preview" style="display:none;">
             <div class="export-field-label">CSV Fields</div>
-            <code style="font-size:11px; color:var(--pf-800);">Code, Station type, Line, Latitude, Longitude, Status</code>
+            <code style="font-size:11px; color:var(--pf-800);">Name, Type, Status, Station count</code>
           </div>
 
           <button type="submit" class="btn-pf w-100">
@@ -126,19 +126,19 @@
     </form>
   </div>
 
-  {# ── Pill 2: Trap Records (AR-07) ── #}
-  <div id="panel-trap-records" role="tabpanel" aria-labelledby="pill-trap-records" style="display:none;">
+  {# ── Pill 2: Traps (device records) ── #}
+  <div id="panel-traps" role="tabpanel" aria-labelledby="pill-traps" style="display:none;">
     <form method="POST" action="{{ url_for('coordinator_export') }}">
-      <input type="hidden" name="export_type" value="trap_records">
+      <input type="hidden" name="export_type" value="traps">
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">Trap Records</div>
+          <div class="panel-title">Traps</div>
           <span class="panel-meta">trap.nz compatible CSV</span>
         </div>
         <div class="panel-body p-4">
 
           <p style="font-size:13px; color:#6b7c72; margin-bottom:20px;">
-            Export trap catch records for your group. Filter by line or download all records.
+            Export individual trap device records for your group. Filter by line or download all.
           </p>
 
           {# Line filter #}
@@ -150,7 +150,7 @@
             </label>
             <select name="line_id" id="trap-line-filter" class="form-control"
                     style="font-size:13px;">
-              <option value="">All Lines ({{ catch_count }} record{{ 's' if catch_count != 1 }})</option>
+              <option value="">All Lines ({{ trap_count }} trap{{ 's' if trap_count != 1 }})</option>
               {% for line in trap_lines %}
                 <option value="{{ line.line_id }}">{{ line.name }}</option>
               {% endfor %}
@@ -161,7 +161,7 @@
           <div class="export-field-preview mb-4">
             <div class="export-field-label">CSV Fields</div>
             <code style="font-size:11px; color:var(--pf-800);">
-              Date, Trap code, Line, Species, Sex, Maturity, Status, Rebaited, Bait type, Trap condition, Strikes, Notes, Recorded by
+              Code, Trap type, Line, Latitude, Longitude, Status
             </code>
           </div>
 
@@ -173,40 +173,123 @@
     </form>
   </div>
 
-  {# ── Pill 3: Bait Records (AR-08 — coming soon) ── #}
-  <div id="panel-ar08" role="tabpanel" aria-labelledby="pill-ar08" style="display:none;">
+  {# ── Pill 3: Trap Checks (AR-08) ── #}
+  <div id="panel-trap-checks" role="tabpanel" aria-labelledby="pill-trap-checks" style="display:none;">
+    <form method="POST" action="{{ url_for('coordinator_export') }}">
+      <input type="hidden" name="export_type" value="trap_checks">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Trap Checks</div>
+          <span class="panel-meta">trap.nz compatible CSV</span>
+        </div>
+        <div class="panel-body p-4">
+
+          <p style="font-size:13px; color:#6b7c72; margin-bottom:20px;">
+            Export trap check records for your group. Use the filters below to narrow the export.
+          </p>
+
+          {# Line filter #}
+          <div class="mb-3">
+            <label for="tc-line-filter"
+                   style="font-size:12px; font-weight:600; color:var(--pf-700);
+                          font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+              Filter by Line
+            </label>
+            <select name="line_id" id="tc-line-filter" class="form-control"
+                    style="font-size:13px;"
+                    onchange="loadTrapsByLine(this.value)">
+              <option value="">All Lines ({{ trap_check_count }} record{{ 's' if trap_check_count != 1 }})</option>
+              {% for line in trap_lines %}
+                <option value="{{ line.line_id }}">{{ line.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {# Trap filter (populated by JS) #}
+          <div class="mb-3">
+            <label for="tc-trap-filter"
+                   style="font-size:12px; font-weight:600; color:var(--pf-700);
+                          font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+              Filter by Trap
+            </label>
+            <select name="trap_id" id="tc-trap-filter" class="form-control"
+                    style="font-size:13px;">
+              <option value="">All Traps</option>
+            </select>
+          </div>
+
+          {# Species filter #}
+          <div class="mb-3">
+            <label for="tc-species-filter"
+                   style="font-size:12px; font-weight:600; color:var(--pf-700);
+                          font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+              Filter by Species
+            </label>
+            <input type="text" name="species" id="tc-species-filter"
+                   class="form-control" style="font-size:13px;"
+                   placeholder="e.g. Rat, Possum (leave blank for all)">
+          </div>
+
+          {# Date range #}
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <label for="tc-date-from"
+                     style="font-size:12px; font-weight:600; color:var(--pf-700);
+                            font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+                Date From
+              </label>
+              <input type="date" name="date_from" id="tc-date-from"
+                     class="form-control" style="font-size:13px;">
+            </div>
+            <div class="col-6">
+              <label for="tc-date-to"
+                     style="font-size:12px; font-weight:600; color:var(--pf-700);
+                            font-family:'Cabin',sans-serif; display:block; margin-bottom:6px;">
+                Date To
+              </label>
+              <input type="date" name="date_to" id="tc-date-to"
+                     class="form-control" style="font-size:13px;">
+            </div>
+          </div>
+
+          {# CSV field preview #}
+          <div class="export-field-preview mb-4">
+            <div class="export-field-label">CSV Fields</div>
+            <code style="font-size:11px; color:var(--pf-800);">
+              Date, Trap code, Line, Species, Sex, Maturity, Status, Rebaited,
+              Bait type, Trap condition, Strikes, Notes, Recorded by
+            </code>
+          </div>
+
+          <button type="submit" class="btn-pf w-100">
+            <i class="bi bi-download me-2" aria-hidden="true"></i>Download CSV
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {# ── Pill 4: Bait Stations (coming soon) ── #}
+  <div id="panel-bait-stations" role="tabpanel" aria-labelledby="pill-bait-stations" style="display:none;">
     <div class="panel">
       <div class="panel-body p-4" style="text-align:center; padding:60px 20px !important;">
         <i class="bi bi-basket" aria-hidden="true"
            style="font-size:40px; color:var(--pf-300); display:block; margin-bottom:14px;"></i>
         <div style="font-family:'Cabin',sans-serif; font-size:15px; font-weight:600;
-                    color:var(--pf-700); margin-bottom:6px;">Bait Records Export</div>
+                    color:var(--pf-700); margin-bottom:6px;">Bait Stations Export</div>
         <div style="font-size:13px; color:#6b7c72;">Coming soon.</div>
       </div>
     </div>
   </div>
 
-  {# ── Pill 4: Catch Records (AR-09 — coming soon) ── #}
-  <div id="panel-ar09" role="tabpanel" aria-labelledby="pill-ar09" style="display:none;">
+  {# ── Pill 5: Bait Station Records (coming soon) ── #}
+  <div id="panel-bait-records" role="tabpanel" aria-labelledby="pill-bait-records" style="display:none;">
     <div class="panel">
       <div class="panel-body p-4" style="text-align:center; padding:60px 20px !important;">
-        <i class="bi bi-clipboard2-check" aria-hidden="true"
+        <i class="bi bi-journal-check" aria-hidden="true"
            style="font-size:40px; color:var(--pf-300); display:block; margin-bottom:14px;"></i>
         <div style="font-family:'Cabin',sans-serif; font-size:15px; font-weight:600;
-                    color:var(--pf-700); margin-bottom:6px;">Catch Records Export</div>
-        <div style="font-size:13px; color:#6b7c72;">Coming soon.</div>
-      </div>
-    </div>
-  </div>
-
-  {# ── Pill 5: Observations (AR-10 — coming soon) ── #}
-  <div id="panel-ar10" role="tabpanel" aria-labelledby="pill-ar10" style="display:none;">
-    <div class="panel">
-      <div class="panel-body p-4" style="text-align:center; padding:60px 20px !important;">
-        <i class="bi bi-binoculars" aria-hidden="true"
-           style="font-size:40px; color:var(--pf-300); display:block; margin-bottom:14px;"></i>
-        <div style="font-family:'Cabin',sans-serif; font-size:15px; font-weight:600;
-                    color:var(--pf-700); margin-bottom:6px;">Observations Export</div>
+                    color:var(--pf-700); margin-bottom:6px;">Bait Station Records Export</div>
         <div style="font-size:13px; color:#6b7c72;">Coming soon.</div>
       </div>
     </div>
@@ -291,7 +374,7 @@
 
 {% block scripts %}
 <script>
-  const panels = ['lines', 'trap-records', 'ar08', 'ar09', 'ar10'];
+  const panels = ['lines', 'traps', 'trap-checks', 'bait-stations', 'bait-records'];
 
   function switchPill(name) {
     panels.forEach(p => {
@@ -322,6 +405,25 @@
       document.getElementById('field-preview-bait').style.display = 'block';
       document.getElementById('field-preview-trap').style.display = 'none';
     }
+  }
+
+  // Populate trap dropdown when a line is selected on the Trap Checks panel
+  function loadTrapsByLine(lineId) {
+    const trapSelect = document.getElementById('tc-trap-filter');
+    trapSelect.innerHTML = '<option value="">All Traps</option>';
+    if (!lineId) return;
+
+    fetch(`/api/traps_by_line?line_id=${encodeURIComponent(lineId)}`)
+      .then(r => r.json())
+      .then(data => {
+        data.forEach(trap => {
+          const opt = document.createElement('option');
+          opt.value = trap.trap_id;
+          opt.textContent = trap.code;
+          trapSelect.appendChild(opt);
+        });
+      })
+      .catch(() => {});
   }
 
   document.addEventListener('DOMContentLoaded', function () {
