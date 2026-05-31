@@ -162,6 +162,42 @@ def coordinator_export():
                     rows = cursor.fetchall()
                     filename = f'{safe_name}_trap_checks_{date_str}.csv'
 
+                # ── Pill 4: Bait station device records (AR-09) ───────────
+                elif export_type == 'bait_stations':
+                    line_id = request.form.get('line_id', '')
+                    fieldnames = ['Code', 'Station type', 'Line',
+                                  'Latitude', 'Longitude', 'Status']
+
+                    line_sql    = 'AND l.line_id = %s' if line_id else ''
+                    line_params = [line_id] if line_id else []
+
+                    cursor.execute(f'''
+                        SELECT
+                            bs.code          AS "Code",
+                            bs.station_type  AS "Station type",
+                            l.name           AS "Line",
+                            bs.latitude      AS "Latitude",
+                            bs.longitude     AS "Longitude",
+                            CASE WHEN bs.is_retired THEN 'Retired' ELSE 'Active' END
+                                             AS "Status"
+                        FROM bait_stations bs
+                        JOIN lines l ON bs.line_id = l.line_id
+                        WHERE l.group_id = %s AND l.type = 'Bait Station'
+                        {line_sql}
+                        ORDER BY l.name, bs.code
+                    ''', [group_id] + line_params)
+                    rows = cursor.fetchall()
+
+                    line_name_slug = ''
+                    if line_id:
+                        cursor.execute(
+                            'SELECT name FROM lines WHERE line_id = %s', (line_id,)
+                        )
+                        line_row = cursor.fetchone()
+                        if line_row:
+                            line_name_slug = '_' + line_row['name'].lower().replace(' ', '_')
+                    filename = f'{safe_name}_bait_stations{line_name_slug}_{date_str}.csv'
+
         except Exception as e:
             app.logger.error(f'CSV export error: {e}')
 
@@ -179,12 +215,13 @@ def coordinator_export():
         )
 
     # ── GET — render export hub ───────────────────────────────────────────────
-    trap_line_count    = 0
-    bait_line_count    = 0
-    trap_count         = 0
-    trap_check_count   = 0
-    trap_lines         = []
-    trap_lines_all     = []   # for trap-check trap dropdown seed
+    trap_line_count      = 0
+    bait_line_count      = 0
+    trap_count           = 0
+    trap_check_count     = 0
+    bait_station_count   = 0
+    trap_lines           = []
+    bait_station_lines   = []
 
     try:
         with db.get_cursor() as cursor:
@@ -216,11 +253,25 @@ def coordinator_export():
             trap_check_count = cursor.fetchone()['cnt']
 
             cursor.execute('''
+                SELECT COUNT(*) AS cnt FROM bait_stations bs
+                JOIN lines l ON bs.line_id = l.line_id
+                WHERE l.group_id = %s AND l.type = 'Bait Station'
+            ''', (group_id,))
+            bait_station_count = cursor.fetchone()['cnt']
+
+            cursor.execute('''
                 SELECT line_id, name FROM lines
                 WHERE group_id = %s AND type = 'Trap' AND is_retired = FALSE
                 ORDER BY name
             ''', (group_id,))
             trap_lines = cursor.fetchall()
+
+            cursor.execute('''
+                SELECT line_id, name FROM lines
+                WHERE group_id = %s AND type = 'Bait Station' AND is_retired = FALSE
+                ORDER BY name
+            ''', (group_id,))
+            bait_station_lines = cursor.fetchall()
 
     except Exception as e:
         app.logger.error(f'CSV export count error: {e}')
@@ -230,7 +281,9 @@ def coordinator_export():
                            bait_line_count=bait_line_count,
                            trap_count=trap_count,
                            trap_check_count=trap_check_count,
-                           trap_lines=trap_lines)
+                           bait_station_count=bait_station_count,
+                           trap_lines=trap_lines,
+                           bait_station_lines=bait_station_lines)
 
 
 @app.route('/api/traps_by_line')
