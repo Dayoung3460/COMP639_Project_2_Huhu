@@ -90,12 +90,10 @@
        class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'observations' }}">
       {% if show_icons %}<i class="bi bi-binoculars" aria-hidden="true"></i> {% endif %}Observations
     </a>
-    {% if session.get('group_role') != 'Super Admin' %}
     <a href="{{ url_for('reports') }}"
        class="{{ wrapper_class }} {{ 'active' if request.endpoint == 'reports' }}">
       {% if show_icons %}<i class="bi bi-graph-up" aria-hidden="true"></i> {% endif %}Group Analytics
     </a>
-    {% endif %}
   {% endif %}
 
   {# Coordinator's 6th primary slot — Members. #}

@@ -9,8 +9,38 @@ from app.utils import role_required
 @role_required()
 def reports():
     """Render the group analytics page — group members only."""
-    if session.get('group_role') == 'Super Admin':
-        return redirect(url_for('admin_reports'))
+    is_super_admin = session.get('group_role') == 'Super Admin'
+
+    # ── Super Admin: group selector ───────────────────────────
+    all_groups = []
+    if is_super_admin:
+        try:
+            with db.get_cursor() as cursor:
+                cursor.execute(
+                    'SELECT group_id, name FROM groups WHERE is_active = TRUE ORDER BY name'
+                )
+                all_groups = cursor.fetchall()
+        except Exception as e:
+            app.logger.error(f'Reports group list error: {e}')
+
+        selected_group_id = request.args.get('group_id', '')
+        group_id   = int(selected_group_id) if selected_group_id else None
+        group_name = next(
+            (g['name'] for g in all_groups if g['group_id'] == group_id), ''
+        ) if group_id else ''
+
+        # No group selected yet — return early with prompt
+        if not group_id:
+            return render_template('reports/index.html',
+                                   is_super_admin=True,
+                                   all_groups=all_groups,
+                                   selected_group_id=None,
+                                   group_name='',
+                                   no_group_selected=True)
+    else:
+        group_id   = session.get('group_id')
+        group_name = session.get('group_name', '')
+
     line_id     = request.args.get('line_id', '')
     period      = request.args.get('period', '12')
     date_from   = request.args.get('date_from', '')
@@ -34,8 +64,8 @@ def reports():
         period_sql = f"AND tc.date >= NOW() - INTERVAL '{period} months'"
 
     # ── Build group filter ────────────────────────────────────
-    group_id     = session.get('group_id')
-    group_name   = session.get('group_name', '')
+    # group_id / group_name already set above (session for normal roles,
+    # URL param for Super Admin). Do not overwrite them here.
     group_sql    = 'AND l.group_id = %s' if group_id else ''
     group_params = [group_id] if group_id else []
 
@@ -587,6 +617,10 @@ def reports():
                            date_from=date_from,
                            date_to=date_to,
                            group_name=group_name,
+                           is_super_admin=is_super_admin,
+                           all_groups=all_groups,
+                           selected_group_id=group_id,
+                           no_group_selected=False,
                            trend_labels=trend_labels,
                            trend_values=trend_values,
                            species_labels=species_labels,

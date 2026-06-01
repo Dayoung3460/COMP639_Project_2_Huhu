@@ -24,34 +24,39 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:680px;">
+<div class="container py-4" style="max-width:760px;">
 
   {# ── Pill navigation ── #}
   <div class="d-flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Export type">
     <button type="button" class="export-pill active" id="pill-lines"
             onclick="switchPill('lines')" role="tab" aria-selected="true"
             aria-controls="panel-lines">
-      <i class="bi bi-geo-alt" aria-hidden="true"></i> Line Records
+      <i class="bi bi-geo-alt" aria-hidden="true"></i>
+      <span>Line Records</span>
     </button>
     <button type="button" class="export-pill" id="pill-traps"
             onclick="switchPill('traps')" role="tab" aria-selected="false"
             aria-controls="panel-traps">
-      <i class="bi bi-cpu" aria-hidden="true"></i> Traps
+      <i class="bi bi-cpu" aria-hidden="true"></i>
+      <span>Traps</span>
     </button>
     <button type="button" class="export-pill" id="pill-trap-checks"
             onclick="switchPill('trap-checks')" role="tab" aria-selected="false"
             aria-controls="panel-trap-checks">
-      <i class="bi bi-clipboard2-check" aria-hidden="true"></i> Trap Checks
+      <i class="bi bi-clipboard2-check" aria-hidden="true"></i>
+      <span>Trap Checks</span>
     </button>
     <button type="button" class="export-pill" id="pill-bait-stations"
             onclick="switchPill('bait-stations')" role="tab" aria-selected="false"
             aria-controls="panel-bait-stations">
-      <i class="bi bi-basket" aria-hidden="true"></i> Bait Stations
+      <i class="bi bi-basket" aria-hidden="true"></i>
+      <span>Bait Stations</span>
     </button>
     <button type="button" class="export-pill" id="pill-bait-records"
             onclick="switchPill('bait-records')" role="tab" aria-selected="false"
             aria-controls="panel-bait-records">
-      <i class="bi bi-journal-check" aria-hidden="true"></i> Bait Station Records
+      <i class="bi bi-journal-check" aria-hidden="true"></i>
+      <span>Bait Station Records</span>
     </button>
   </div>
 
@@ -417,31 +422,50 @@
 </div>
 {% endblock %}
 
-{% block styles %}
+{% block head_extra %}
 <style>
   .export-pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: 2px solid var(--pf-300);
+    gap: 5px;
+    padding: 12px 14px 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--pf-200);
     background: #fff;
-    color: var(--pf-600);
+    color: var(--pf-500);
     font-family: 'Cabin', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
+    min-width: 90px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .export-pill i {
+    font-size: 20px;
+    transition: color 0.15s, transform 0.15s;
   }
   .export-pill:hover {
-    border-color: var(--pf-500);
+    border-color: var(--pf-400);
     color: var(--pf-700);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.10);
+    transform: translateY(-2px);
+  }
+  .export-pill:hover i {
+    color: var(--pf-600);
+    transform: scale(1.1);
   }
   .export-pill.active {
-    background: var(--pf-600);
     border-color: var(--pf-600);
-    color: #fff;
+    border-left-width: 3px;
+    background: var(--pf-100);
+    color: var(--pf-800);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .export-pill.active i {
+    color: var(--pf-600);
   }
   .export-option-label {
     border: 2px solid var(--pf-200);

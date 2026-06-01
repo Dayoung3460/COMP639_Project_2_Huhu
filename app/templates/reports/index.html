@@ -12,6 +12,21 @@
         class="d-flex gap-2 align-items-center flex-wrap"
         id="reportsForm">
 
+    {# Super Admin group selector #}
+    {% if is_super_admin %}
+    <select name="group_id" class="form-control" aria-label="Select group"
+            style="width:180px; font-size:13px;"
+            onchange="this.form.submit()">
+      <option value="">— Select a Group —</option>
+      {% for g in all_groups %}
+        <option value="{{ g.group_id }}"
+                {{ 'selected' if selected_group_id == g.group_id }}>
+          {{ g.name }}
+        </option>
+      {% endfor %}
+    </select>
+    {% endif %}
+
     {# Line filter #}
     <select name="line_id" class="form-control" aria-label="Filter by line"
             style="width:160px; font-size:13px;"
@@ -103,6 +118,33 @@
 
 {% block content %}
 
+  {# ── Super Admin: no group selected prompt ── #}
+  {% if no_group_selected %}
+  <div style="text-align:center; padding:60px 20px;">
+    <i class="bi bi-people" aria-hidden="true"
+       style="font-size:48px; color:var(--pf-300); display:block; margin-bottom:16px;"></i>
+    <div style="font-family:'Cabin',sans-serif; font-size:18px; font-weight:700;
+                color:var(--pf-700); margin-bottom:8px;">Select a Group to View Analytics</div>
+    <div style="font-size:13px; color:#6b7c72; margin-bottom:24px;">
+      Use the group selector above to view analytics for a specific group.
+    </div>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+      {% for g in all_groups %}
+        <a href="{{ url_for('reports', group_id=g.group_id) }}"
+           style="display:inline-flex; align-items:center; gap:6px;
+                  padding:8px 16px; border-radius:8px;
+                  background:var(--pf-100); border:1.5px solid var(--pf-300);
+                  color:var(--pf-700); font-family:'Cabin',sans-serif;
+                  font-size:13px; font-weight:600; text-decoration:none;
+                  transition:background 0.15s, border-color 0.15s;">
+          <i class="bi bi-collection" aria-hidden="true"></i>
+          {{ g.name }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+
   {# ── Group context banner ── #}
   {% if group_name %}
   <div style="background:linear-gradient(135deg,#1a5c38 0%,#2d7a4f 100%);
@@ -112,10 +154,10 @@
        style="font-size:24px; flex-shrink:0; opacity:0.85;"></i>
     <div>
       <div style="font-family:'Cabin',sans-serif; font-size:14px; font-weight:700;">
-        {{ group_name }} — Group Analytics
+        {{ group_name }} — Group Analytics{% if is_super_admin %} <span style="opacity:0.7; font-weight:400;">(Super Admin view)</span>{% endif %}
       </div>
       <div style="font-size:12px; opacity:0.8; margin-top:2px;">
-        Showing data for your group only. Period:
+        {% if is_super_admin %}Viewing as Super Admin.{% else %}Showing data for your group only.{% endif %} Period:
         {% if selected_period == 'custom' and date_from and date_to %}
           {{ date_from }} to {{ date_to }}
         {% elif selected_period == 'all' %}All Time
@@ -511,6 +553,8 @@
     </div>
   </div>
 
+  {% endif %}{# end no_group_selected else #}
+
 {% endblock %}
 
 {% block scripts %}
@@ -550,6 +594,7 @@
     if (dateFrom.value) dateTo.min = dateFrom.value;
   }
 
+  {% if not no_group_selected %}
   // ── All line data from Python ─────────────────────────────
   const allLineLabels = {{ line_labels | tojson }};
   const allLineValues = {{ line_values | tojson }};
@@ -875,6 +920,7 @@
     }
   });
   {% endif %}
+  {% endif %}{# end no_group_selected chart guard #}
 
   // ── Print report ──────────────────────────────────────────
   function printReport() {
