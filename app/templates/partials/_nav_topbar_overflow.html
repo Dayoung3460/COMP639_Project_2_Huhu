@@ -135,13 +135,11 @@
        class="topbar-overflow-item {{ 'active' if request.endpoint == 'observations' }}">
       <i class="bi bi-binoculars" aria-hidden="true"></i> Observations
     </a>
-    {% if session.get('group_role') != 'Super Admin' %}
     <a role="menuitem" tabindex="-1"
        href="{{ url_for('reports') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint == 'reports' }}">
       <i class="bi bi-graph-up" aria-hidden="true"></i> Group Analytics
     </a>
-    {% endif %}
   {% endif %}
 
   {# Support — all roles; queue + user search shown only for staff. #}
