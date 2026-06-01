@@ -35,6 +35,7 @@ def reports():
                                    is_super_admin=True,
                                    all_groups=all_groups,
                                    selected_group_id=None,
+                                   selected_period='12',
                                    group_name='',
                                    no_group_selected=True)
     else:
