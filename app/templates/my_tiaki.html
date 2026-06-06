@@ -1,9 +1,10 @@
 {# templates/my_tiaki.html
    Route: GET /my-tiaki  →  my_tiaki()
    Cross-group personal home page. Logged-in user only.
-   Shipped with placeholder content for the feed, "Coming up", tabs,
-   and "My requests" — schema for those concepts doesn't exist yet.
-   Real data is used only for the eyebrow greeting and the "You" card.
+   The feed unions real activity (trap catches, bait station records,
+   incidental observations, member-joined events) across every group
+   the user belongs to. Sidebar: real groups, notifications (from the
+   nav context processor), pending requests, and the "You" card.
 #}
 {% extends 'base_marketing.html' %}
 
@@ -14,10 +15,6 @@
 {% endblock %}
 
 {% block content %}
-{# Initials reused for placeholder feed avatars and the "You" card. #}
-{% set _parts = (nav_full_name or session.username or '').split() %}
-{% set me_initials = ((_parts[0][:1] if _parts else '?') + (_parts[-1][:1] if _parts|length > 1 else ''))|upper %}
-
 <div class="container-wide my-tiaki-page">
   <div class="my-tiaki-grid">
 
@@ -39,168 +36,135 @@
         </p>
       </header>
 
-      {# ── Tabs ──────────────────────────────────────────────── #}
-      {# Placeholder — counts hardcoded, "Just mine" / "Mentions"
-         require schema we don't have yet. All four tabs render the
-         same content for now. #}
-      <nav class="feed-tabs" role="tablist" aria-label="Feed filters">
-        <button type="button" role="tab" aria-selected="true"
-                class="feed-tab is-active">
-          All <span class="feed-tab-count">28</span>
-        </button>
-        <button type="button" role="tab" aria-selected="false" class="feed-tab">
-          My groups <span class="feed-tab-count">28</span>
-        </button>
-        <button type="button" role="tab" aria-selected="false" class="feed-tab">
-          Just mine <span class="feed-tab-count">5</span>
-        </button>
-        <button type="button" role="tab" aria-selected="false" class="feed-tab">
-          Mentions <span class="feed-tab-count">2</span>
-        </button>
-      </nav>
+      {% if not my_groups %}
+        {# ── No memberships — point at the public browse grid ──── #}
+        <div class="empty-state empty-state-quiet" role="status">
+          <h3>You're not in a group yet</h3>
+          <p>Join a conservation group to see catches, bait checks, and
+             member activity here.</p>
+          <a href="{{ url_for('index') }}#groups" class="btn btn-primary">Find a group</a>
+        </div>
 
-      {# ── Feed ──────────────────────────────────────────────── #}
-      <ul class="feed" role="list">
+      {% else %}
 
-        {# 1. Update post ──────────────────────────────────── #}
-        <li class="feed-card">
-          <div class="feed-card-head">
-            <span class="feed-avatar feed-avatar-accent" aria-hidden="true">SH</span>
-            <p class="feed-card-meta">
-              <strong>Sarah Henare</strong>
-              <span class="feed-card-action">posted an update in</span>
-              <span class="group-tag">Lyttelton Pest-Free</span>
-            </p>
-            <time class="feed-card-time" datetime="PT2H">2h ago</time>
-          </div>
-          <p class="feed-card-title">Autumn check schedule is up.</p>
-          <blockquote class="feed-card-quote">
-            "Great work everyone — we hit 1,000 catches for the year. Autumn check
-            rotations are pinned. Mei, can you take Mt Pleasant for May? Tom's
-            covering Diamond Harbour Bait."
-          </blockquote>
-          <div class="feed-card-foot">
-            <span class="feed-card-stat"><span aria-hidden="true">♡</span> 12 likes</span>
-            <span class="feed-card-stat"><span aria-hidden="true">⌐</span> 3 comments</span>
-            <a href="#" class="feed-card-link">Open update <span aria-hidden="true">→</span></a>
-          </div>
-        </li>
+        {# ── Tabs — client-side filter over the rendered feed ──── #}
+        <nav class="feed-tabs" role="tablist" aria-label="Feed filters">
+          <button type="button" role="tab" aria-selected="true"
+                  class="feed-tab is-active" data-filter="all">
+            All <span class="feed-tab-count">{{ counts.all }}</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false"
+                  class="feed-tab" data-filter="catch">
+            Catches <span class="feed-tab-count">{{ counts.catch }}</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false"
+                  class="feed-tab" data-filter="bait">
+            Bait checks <span class="feed-tab-count">{{ counts.bait }}</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false"
+                  class="feed-tab" data-filter="mine">
+            Just mine <span class="feed-tab-count">{{ counts.mine }}</span>
+          </button>
+        </nav>
 
-        {# 2. Catch record ─────────────────────────────────── #}
-        <li class="feed-card">
-          <div class="feed-card-head">
-            <span class="feed-avatar feed-avatar-primary" aria-hidden="true">SH</span>
-            <p class="feed-card-meta">
-              <strong>Sarah Henare</strong>
-              <span class="feed-card-action">recorded a catch on</span>
-              <span class="group-tag">Lyttelton Pest-Free</span>
-            </p>
-            <time class="feed-card-time" datetime="PT3H">3h ago</time>
-          </div>
-          <p class="feed-card-body">
-            Rat caught at <strong>Trap C-04</strong> on Diamond Harbour Line.
-          </p>
-          <dl class="feed-data">
-            <div><dt>Species</dt><dd>Rat</dd></div>
-            <div><dt>Bait</dt><dd>Peanut butter</dd></div>
-            <div><dt>Trap status</dt><dd>Reset</dd></div>
-          </dl>
-        </li>
+        {# ── Feed ──────────────────────────────────────────────── #}
+        {% if feed_items %}
+          <ul class="feed" role="list" id="feedList">
+            {% for item in feed_items %}
+              <li class="feed-card" data-kind="{{ item.kind }}"
+                  data-mine="{{ 1 if item.is_mine else 0 }}">
+                <div class="feed-card-head">
+                  <span class="feed-avatar {{ item.avatar_class }}" aria-hidden="true">
+                    {% if item.kind == 'member_joined' and not item.is_mine %}
+                      +
+                    {% elif item.profile_photo %}
+                      <img src="{{ url_for('static', filename='images/uploads/' ~ item.profile_photo) }}" alt="">
+                    {% else %}
+                      {{ item.initials }}
+                    {% endif %}
+                  </span>
+                  <p class="feed-card-meta">
+                    <strong>{{ item.actor_name }}</strong>
+                    {% if item.kind == 'catch' %}
+                      <span class="feed-card-action">recorded a {{ 'check' if item.is_check else 'catch' }} on</span>
+                    {% elif item.kind == 'bait' %}
+                      <span class="feed-card-action">recorded a bait check on</span>
+                    {% elif item.kind == 'observation' %}
+                      <span class="feed-card-action">logged an observation in</span>
+                    {% else %}
+                      <span class="feed-card-action">joined</span>
+                    {% endif %}
+                    <span class="group-tag">{{ item.group_name }}</span>
+                    {% if item.kind == 'member_joined' %}
+                      <span class="feed-card-action">as {{ item.detail_a }}</span>
+                    {% endif %}
+                  </p>
+                  <time class="feed-card-time"
+                        datetime="{{ item.ts.isoformat() }}"
+                        title="{{ item.ts|nz_datetime }}">{{ item.when }}</time>
+                </div>
 
-        {# 3. Milestone ────────────────────────────────────── #}
-        <li class="feed-card">
-          <div class="feed-card-head">
-            <span class="feed-avatar feed-avatar-soft" aria-hidden="true">★</span>
-            <p class="feed-card-meta">
-              <span class="group-tag">Lyttelton Pest-Free</span>
-              <span class="feed-card-action">hit a milestone</span>
-            </p>
-            <time class="feed-card-time" datetime="PT5H">5h ago</time>
-          </div>
-          <p class="feed-card-body">
-            The group has now recorded <strong>1,000 catches</strong> this year.
-          </p>
-          <div class="feed-callout">
-            <span class="feed-callout-num">1,000</span>
-            <span class="feed-callout-text">
-              Pests removed in 2026 across 22 active trap lines.
-              That's an average of 4 per day across the group.
-            </span>
-          </div>
-          <div class="feed-card-foot">
-            <span class="feed-card-stat"><span aria-hidden="true">♡</span> 31 likes</span>
-            <a href="#" class="feed-card-link">View group stats <span aria-hidden="true">→</span></a>
-          </div>
-        </li>
+                {% if item.kind == 'catch' %}
+                  <p class="feed-card-body">
+                    {% if item.is_check %}
+                      No catch at <strong>Trap {{ item.place_code }}</strong> on {{ item.line_name }}.
+                    {% else %}
+                      {{ item.detail_a }} caught at <strong>Trap {{ item.place_code }}</strong> on {{ item.line_name }}.
+                    {% endif %}
+                  </p>
+                  <dl class="feed-data">
+                    <div><dt>Species</dt><dd>{{ item.detail_a }}</dd></div>
+                    <div><dt>Bait</dt><dd>{{ item.detail_b or '—' }}</dd></div>
+                    <div><dt>Trap status</dt><dd>{{ item.detail_c }}</dd></div>
+                  </dl>
 
-        {# 4. Bait check ───────────────────────────────────── #}
-        <li class="feed-card">
-          <div class="feed-card-head">
-            <span class="feed-avatar feed-avatar-accent" aria-hidden="true">TW</span>
-            <p class="feed-card-meta">
-              <strong>Tama Walker</strong>
-              <span class="feed-card-action">recorded a bait check on</span>
-              <span class="group-tag">Banks Peninsula Restoration</span>
-            </p>
-            <time class="feed-card-time" datetime="P1D">yesterday</time>
-          </div>
-          <p class="feed-card-body">
-            Refilled <strong>BS-09</strong> on Akaroa Saddle Bait Line. 0.6 kg added.
-          </p>
-          <dl class="feed-data">
-            <div><dt>Active ingredient</dt><dd>Brodifacoum</dd></div>
-            <div><dt>Remaining</dt><dd>0.4 kg</dd></div>
-            <div><dt>Added</dt><dd>0.6 kg</dd></div>
-          </dl>
-        </li>
+                {% elif item.kind == 'bait' %}
+                  <p class="feed-card-body">
+                    Checked <strong>{{ item.place_code }}</strong> on {{ item.line_name }}.
+                    {%- if item.num_b is not none %} {{ item.num_b|round(2) }} kg added.{% endif %}
+                  </p>
+                  <dl class="feed-data">
+                    <div><dt>Active ingredient</dt><dd>{{ item.detail_a or '—' }}</dd></div>
+                    {% if item.num_a is not none %}
+                      <div><dt>Remaining</dt><dd>{{ item.num_a|round(2) }} kg</dd></div>
+                    {% endif %}
+                    {% if item.num_b is not none %}
+                      <div><dt>Added</dt><dd>{{ item.num_b|round(2) }} kg</dd></div>
+                    {% endif %}
+                  </dl>
 
-        {# 5. Own check ────────────────────────────────────── #}
-        <li class="feed-card">
-          <div class="feed-card-head">
-            <span class="feed-avatar feed-avatar-self" aria-hidden="true">{{ me_initials }}</span>
-            <p class="feed-card-meta">
-              <strong>You</strong>
-              <span class="feed-card-action">recorded a check on</span>
-              <span class="group-tag">Lyttelton Pest-Free</span>
-            </p>
-            <time class="feed-card-time" datetime="P1D">yesterday</time>
-          </div>
-          <p class="feed-card-body">
-            No catch at <strong>Trap A-02</strong> on Mt Pleasant Line. Bait replaced.
-          </p>
-          <dl class="feed-data">
-            <div><dt>Species</dt><dd>None</dd></div>
-            <div><dt>Bait</dt><dd>Peanut butter</dd></div>
-            <div><dt>Trap status</dt><dd>Reset</dd></div>
-          </dl>
-          <div class="feed-card-foot">
-            <a href="#" class="feed-card-link">View record <span aria-hidden="true">→</span></a>
-            <a href="#" class="feed-card-link">Edit</a>
-          </div>
-        </li>
+                {% elif item.kind == 'observation' %}
+                  <p class="feed-card-body">
+                    Spotted <strong>{{ item.detail_a }}</strong> on {{ item.line_name }}{% if item.place_code %}, near Trap {{ item.place_code }}{% endif %}.
+                  </p>
+                  {% if item.detail_b %}
+                    <blockquote class="feed-card-quote">{{ item.detail_b|truncate(180) }}</blockquote>
+                  {% endif %}
 
-        {# 6. Member joined ────────────────────────────────── #}
-        <li class="feed-card">
-          <div class="feed-card-head">
-            <span class="feed-avatar feed-avatar-soft" aria-hidden="true">+</span>
-            <p class="feed-card-meta">
-              <strong>Mei Lin</strong>
-              <span class="feed-card-action">joined</span>
-              <span class="group-tag">Lyttelton Pest-Free</span>
-              <span class="feed-card-action">as Operator</span>
-            </p>
-            <time class="feed-card-time" datetime="P2D">2 days ago</time>
-          </div>
-          <p class="feed-card-body">
-            Welcome Mei — assigned to <strong>Mt Pleasant Line</strong> by Sarah Henare.
-          </p>
-        </li>
+                {% endif %}
+              </li>
+            {% endfor %}
 
-      </ul>
+            {# Revealed by JS when a tab filter matches nothing #}
+            <li class="empty-state empty-state-quiet" id="feedFilterEmpty"
+                role="status" hidden>
+              <h3>Nothing here yet</h3>
+              <p>No activity of this kind in your groups so far.</p>
+            </li>
+          </ul>
+        {% else %}
+          <div class="empty-state empty-state-quiet" role="status">
+            <h3>No activity yet</h3>
+            <p>Once people in your groups record checks and catches,
+               they'll show up here.</p>
+          </div>
+        {% endif %}
+
+      {% endif %}
     </main>
 
     {# ════════════════════════════════════════════════════════════════
-       SIDEBAR — my groups, coming up, my requests, you
+       SIDEBAR — my groups, notifications, my requests, you
        ════════════════════════════════════════════════════════════════ #}
     <aside class="my-tiaki-aside" aria-label="Your Tiaki summary">
 
@@ -208,90 +172,88 @@
       <section class="aside-card" aria-labelledby="aside-groups-title">
         <header class="aside-card-head">
           <h2 id="aside-groups-title" class="aside-card-title">My groups</h2>
-          <span class="aside-card-count" aria-label="3 groups">3</span>
+          <span class="aside-card-count"
+                aria-label="{{ my_groups|length }} group{{ '' if my_groups|length == 1 else 's' }}">{{ my_groups|length }}</span>
         </header>
-        <ul class="aside-list" role="list">
-          <li class="aside-row">
-            <span class="aside-swatch" style="background:#1a3a2e" aria-hidden="true"></span>
-            <span class="aside-row-text">
-              <span class="aside-row-title">Lyttelton Pest-Free</span>
-              <span class="aside-row-meta">Coordinator</span>
-            </span>
-          </li>
-          <li class="aside-row">
-            <span class="aside-swatch" style="background:#2c5279" aria-hidden="true"></span>
-            <span class="aside-row-text">
-              <span class="aside-row-title">Banks Peninsula Restoration</span>
-              <span class="aside-row-meta">Operator</span>
-            </span>
-          </li>
-          <li class="aside-row">
-            <span class="aside-swatch" style="background:#a04a2c" aria-hidden="true"></span>
-            <span class="aside-row-text">
-              <span class="aside-row-title">Darfield Possum Catch</span>
-              <span class="aside-row-meta">Observer</span>
-            </span>
-          </li>
-        </ul>
+        {% if my_groups %}
+          <ul class="aside-list" role="list">
+            {% for g in my_groups %}
+              <li class="aside-row">
+                <span class="aside-swatch" style="background:{{ g.color_theme }}" aria-hidden="true"></span>
+                <span class="aside-row-text">
+                  <span class="aside-row-title">
+                    <a href="{{ url_for('enter_group', group_id=g.group_id) }}">{{ g.name }}</a>
+                  </span>
+                  <span class="aside-row-meta">{{ g.role }}</span>
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="aside-row-meta">
+            No groups yet —
+            <a href="{{ url_for('index') }}#groups" class="picker-inline-link">find one near you</a>.
+          </p>
+        {% endif %}
       </section>
 
-      {# ── Coming up ──────────────────────────────────────── #}
-      <section class="aside-card" aria-labelledby="aside-tasks-title">
+      {# ── Notifications — reuses nav_notifications from the
+            context processor; click marks read + redirects ──── #}
+      <section class="aside-card" aria-labelledby="aside-notif-title">
         <header class="aside-card-head">
-          <h2 id="aside-tasks-title" class="aside-card-title">Coming up</h2>
-          <span class="aside-card-count" aria-label="3 tasks">3 tasks</span>
+          <h2 id="aside-notif-title" class="aside-card-title">Notifications</h2>
+          <span class="aside-card-count"
+                aria-label="{{ nav_notifications|length }} notifications">{{ nav_notifications|length }}</span>
         </header>
-        <ul class="aside-list" role="list">
-          <li class="aside-row">
-            <span class="aside-date-pill aside-date-pill-soon" aria-hidden="true">Tomorrow</span>
-            <span class="aside-row-text">
-              <span class="aside-row-title">Mt Pleasant Line</span>
-              <span class="aside-row-meta">Lyttelton Pest-Free</span>
-            </span>
-          </li>
-          <li class="aside-row">
-            <span class="aside-date-pill" aria-hidden="true">6 May</span>
-            <span class="aside-row-text">
-              <span class="aside-row-title">Diamond Harbour Bait Line</span>
-              <span class="aside-row-meta">Lyttelton Pest-Free</span>
-            </span>
-          </li>
-          <li class="aside-row">
-            <span class="aside-date-pill" aria-hidden="true">11 May</span>
-            <span class="aside-row-text">
-              <span class="aside-row-title">Akaroa Saddle Bait Line</span>
-              <span class="aside-row-meta">Banks Peninsula</span>
-            </span>
-          </li>
-        </ul>
+        {% if nav_notifications %}
+          <ul class="aside-list" role="list">
+            {% for n in nav_notifications[:4] %}
+              <li class="aside-row">
+                <span class="aside-date-pill" aria-hidden="true">{{ n.created_at.strftime('%-d %b') }}</span>
+                <span class="aside-row-text">
+                  <span class="aside-row-title">
+                    {% if n.url %}
+                      <a href="{{ url_for('notification_click', notification_id=n.notification_id) }}">{{ n.message }}</a>
+                    {% else %}
+                      {{ n.message }}
+                    {% endif %}
+                  </span>
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="aside-row-meta">You're all caught up.</p>
+        {% endif %}
       </section>
 
-      {# ── My requests ────────────────────────────────────── #}
+      {# ── My requests — pending only; full history on /my-requests #}
       <section class="aside-card" aria-labelledby="aside-requests-title">
         <header class="aside-card-head">
-          <h2 id="aside-requests-title" class="aside-card-title">My requests</h2>
-          <span class="aside-card-count" aria-label="2 requests">2</span>
+          <h2 id="aside-requests-title" class="aside-card-title">
+            <a href="{{ url_for('my_requests') }}">My requests</a>
+          </h2>
+          <span class="aside-card-count"
+                aria-label="{{ my_requests|length }} open requests">{{ my_requests|length }}</span>
         </header>
-        <ul class="aside-list" role="list">
-          <li class="aside-row aside-row-stacked">
-            <p class="aside-row-title">
-              Join request to <em>Lincoln Reserve Group</em>
-            </p>
-            <p class="aside-row-meta">
-              <span class="status-pill status-pending">Pending</span>
-              <span aria-hidden="true">·</span> 2 days ago
-            </p>
-          </li>
-          <li class="aside-row aside-row-stacked">
-            <p class="aside-row-title">
-              New group application: <em>Banks Coastal</em>
-            </p>
-            <p class="aside-row-meta">
-              <span class="status-pill status-review">Under review</span>
-              <span aria-hidden="true">·</span> 1 week ago
-            </p>
-          </li>
-        </ul>
+        {% if my_requests %}
+          <ul class="aside-list" role="list">
+            {% for r in my_requests %}
+              <li class="aside-row aside-row-stacked">
+                <p class="aside-row-title">
+                  {{ r.type }}{% if r.type == 'Join request' %} to{% else %}:{% endif %}
+                  <em>{{ r.subject }}</em>
+                </p>
+                <p class="aside-row-meta">
+                  <span class="status-pill status-pending">Pending</span>
+                  <span aria-hidden="true">·</span> {{ r.at|nz_date }}
+                </p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="aside-row-meta">No open requests.</p>
+        {% endif %}
       </section>
 
       {# ── You ────────────────────────────────────────────── #}
@@ -302,7 +264,7 @@
             {% if nav_profile_photo %}
               <img src="{{ url_for('static', filename='images/uploads/' ~ nav_profile_photo) }}" alt="">
             {% else %}
-              {{ me_initials }}
+              {{ nav_initials }}
             {% endif %}
           </span>
           <div class="you-text">
@@ -318,4 +280,8 @@
     </aside>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/my-tiaki-feed.js') }}" defer></script>
 {% endblock %}

@@ -74,7 +74,9 @@ body {
   color: var(--color-primary);
   letter-spacing: -0.02em;
   display: inline-flex;
-  align-items: baseline;
+  /* center, not baseline — the brand is an <img> logo now, and its
+     baseline is the image bottom, which dropped the context pill low */
+  align-items: center;
   gap: 8px;
   text-decoration: none;
   /* Touch target on mobile */
@@ -1229,15 +1231,18 @@ body {
    ============================================================ */
 
 /* ── Header: brand context pill ───────────────────────── */
+/* Quiet outline chip — the old soft-terracotta fill fought the
+   logo's own terracotta tagline sitting right beside it. */
 .brand-pill {
   display: inline-flex;
   align-items: center;
   height: 24px;
   padding: 0 12px;
-  margin-left: 4px;
+  margin-left: 8px;
   border-radius: 999px;
-  background: var(--color-accent-soft);
-  color: #6b2f1c;       /* darker terracotta — verified ≥ 7:1 on the soft accent */
+  background: transparent;
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-soft);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -1297,6 +1302,16 @@ body {
 
 .user-avatar:hover {
   background: var(--color-primary-soft);
+}
+
+/* .site-nav a (0,1,1) outranks .user-avatar (0,1,0) — without these
+   the nav-link rules force dark ink text and 10px/44px padding onto
+   the avatar, breaking contrast and squashing the circle. */
+.site-nav a.user-avatar,
+.site-nav a.user-avatar:hover {
+  color: var(--color-bg);
+  padding: 0;
+  min-height: 0;
 }
 
 /* ── Page layout ──────────────────────────────────────── */
@@ -1444,6 +1459,14 @@ body {
   letter-spacing: 0.04em;
   color: var(--color-bg);
   flex-shrink: 0;
+  /* Profile photos render inside the circle (mirrors .you-avatar) */
+  overflow: hidden;
+}
+
+.feed-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .feed-avatar-accent  { background: var(--color-accent); }
@@ -1896,4 +1919,32 @@ body {
   .private-card {
     padding: 40px 24px;
   }
+}
+/* ── Profile pages (personal surface) ────────────────────── */
+.profile-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 0 96px;
+}
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 8px 0 24px;
+}
+.profile-avatar {       /* composes with .you-avatar */
+  width: 80px;
+  height: 80px;
+  font-size: 22px;
+}
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.profile-stack {
+  display: grid;
+  gap: 16px;
 }

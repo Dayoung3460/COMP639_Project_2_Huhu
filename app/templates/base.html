@@ -33,6 +33,11 @@
       --theme-button-radius: {{ _t.button_radius }};
       --theme-font-heading:  "{{ _t.font_heading }}";
       --theme-font-body:     "{{ _t.font_body }}";
+      {# Platform ribbon height — 0 when logged out so every sticky
+         offset keyed to it collapses to today's values. Must live in
+         this inline block (before custom.css loads); custom.css only
+         references it via var(--ribbon-h, 0px) fallbacks. #}
+      --ribbon-h: {{ '32px' if session.get('user_id') else '0px' }};
     }
   </style>
   {# Load the active theme's heading + body fonts. Dedupe when they match
@@ -74,6 +79,24 @@
    mode, .app-wrap is a passthrough (max-width: none). Closes
    immediately before </body>. #}
 <div class="app-wrap">
+
+{# ══════════════════════════════════════════════════════ #}
+{# PLATFORM RIBBON — escape hatch back to the main app.   #}
+{# Tiaki-branded (fixed ink colour, never re-stained by   #}
+{# the group theme). Logged-in only; Super Admin/Support  #}
+{# platform modes (no group_id) get it too.               #}
+{# ══════════════════════════════════════════════════════ #}
+{% if session.get('user_id') %}
+<nav class="platform-ribbon" aria-label="Platform">
+  <a class="platform-ribbon-brand" href="{{ url_for('my_tiaki') }}">
+    <img class="platform-ribbon-logo"
+         src="{{ url_for('static', filename='images/logo-mobile.png') }}"
+         alt="" aria-hidden="true">
+    <span>My Tiaki</span>
+  </a>
+  <a class="platform-ribbon-link" href="{{ url_for('select_group') }}">Switch group</a>
+</nav>
+{% endif %}
 
 {# ══════════════════════════════════════════════════════ #}
 {# NAVBAR                                                 #}

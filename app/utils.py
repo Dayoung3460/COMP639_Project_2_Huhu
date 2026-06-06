@@ -245,21 +245,25 @@ def check_user_status():
         'select_group', 'logout', 'forgot_password', 'reset_password',
         'apply_for_group', 'group_landing', 'enter_group', 'request_join_group',
         'my_requests', 'cancel_join_request',
-        # my_tiaki is a cross-group personal surface — reachable without
-        # an active group_role (e.g. straight after login when a user
-        # has multiple memberships and hasn't picked yet).
-        'my_tiaki',
+        # Cross-group personal surfaces — reachable without an active
+        # group_role (e.g. straight after login when a user has multiple
+        # memberships and hasn't picked a group yet). Each route does its
+        # own user_id login check.
+        'my_tiaki', 'profile', 'edit_profile', 'change_password',
+        'notification_click',
     }
 
     if request.endpoint in excluded_routes:
         return
 
     if 'user_id' in session:
-        # Stale P1 sessions have user_id but no group_role — send them back to login
+        # Logged in but no group context yet (multi-group user who hasn't
+        # picked, or a genuinely stale pre-group-era session). Either way
+        # the user is still authenticated — send them to the group picker
+        # rather than destroying the session.
         if 'group_role' not in session:
-            session.clear()
-            flash('Your session has expired. Please log in again.', 'info')
-            return redirect(url_for('login'))
+            flash('Pick a group to continue.', 'info')
+            return redirect(url_for('select_group'))
 
         from app import db
         with db.get_cursor() as cursor:
