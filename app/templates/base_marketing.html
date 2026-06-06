@@ -75,11 +75,14 @@
       <a class="brand"
          href="{% if session.user_id %}{{ url_for('my_tiaki') }}{% else %}{{ url_for('index') }}{% endif %}"
          aria-label="Tiaki home">
-        Tiaki
+        {# Full lockup (kiwi + wordmark + tagline) on desktop; compact
+           mark on small screens. Tagline lives inside the artwork, so
+           no text tagline alongside. #}
+        <img class="brand-logo" src="{{ url_for('static', filename='images/logo.png') }}"
+             alt="Tiaki — predator-free Aotearoa">
+        <img class="brand-logo-mobile" src="{{ url_for('static', filename='images/logo-mobile.png') }}"
+             alt="" aria-hidden="true">
         {% block brand_pill %}{% endblock %}
-        {% if not session.user_id %}
-          <span class="brand-tagline" aria-hidden="true">— conservation, together</span>
-        {% endif %}
       </a>
       {% if session.user_id %}
         {# Logged-in nav: feed/profile/groups/requests + sign-out + avatar.
