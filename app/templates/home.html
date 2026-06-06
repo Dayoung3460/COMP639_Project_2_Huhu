@@ -2,242 +2,263 @@
 
 {% block title %}Tiaki — Predator-free Aotearoa, one trap line at a time{% endblock %}
 
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home-landing.css') }}">
+{% endblock %}
+
 {% block content %}
 
-<section class="hero" aria-labelledby="hero-heading">
-  <div class="container-wide hero-inner">
-    <div class="hero-content">
-      <h1 id="hero-heading">
-        Predator-free Aotearoa, <em>one trap line at a time.</em>
-      </h1>
-      <p>Tiaki connects volunteer conservation groups across Aotearoa New Zealand. Track traps, monitor bait stations, and see your group's impact — all in one place.</p>
+{# ═══════════════ HERO — LIVE TRAP NETWORK ═══════════════
+   Dark panel with a decorative canvas of animated trap lines.
+   Stats and the "latest catches" ticker are REAL data; the canvas
+   itself is ambient artwork (labelled decorative for AT). #}
+<section class="hero-net" aria-labelledby="hero-heading">
+  <div class="hero-panel" id="heroPanel">
+    <canvas class="hero-canvas" id="trapCanvas" aria-hidden="true"></canvas>
+    <div class="hero-scrim" aria-hidden="true"></div>
 
-      <div class="hero-actions">
-        {% if session.user_id %}
-          <a href="{{ url_for('select_group') }}" class="btn btn-primary">Open My Tiaki</a>
-          <a href="#groups" class="btn btn-secondary">Find a group</a>
-        {% else %}
-          <a href="#groups" class="btn btn-primary">Find a group near you</a>
-          <a href="{{ url_for('register') }}" class="btn btn-secondary">Start your account</a>
-        {% endif %}
+    <div class="hero-panel-inner">
+      <span class="hero-live"><span class="hero-live-dot" aria-hidden="true"></span>Live trap network · Aotearoa</span>
+
+      <div class="hero-overlay">
+        <h1 class="hero-display" id="hero-heading">
+          Predator-free Aotearoa, <em>one trap line at a time.</em>
+        </h1>
+        <p class="hero-lede">Tiaki connects volunteer conservation groups across Aotearoa New Zealand. Track traps, monitor bait stations, and watch the catches add up — live.</p>
+
+        <div class="hero-cta">
+          {% if session.user_id %}
+            <a href="{{ url_for('select_group') }}" class="btn btn-accent">Open My Tiaki</a>
+            <a href="#groups" class="btn btn-glass">Find a group</a>
+          {% else %}
+            <a href="#groups" class="btn btn-accent" id="findNearBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 1 1 14 0c0 5.8-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+              Find a group near you
+            </a>
+            <a href="{{ url_for('register') }}" class="btn btn-glass">Start your account</a>
+          {% endif %}
+        </div>
+
+        <dl class="hero-readouts" aria-label="Platform statistics">
+          <div class="readout">
+            <dt class="visually-hidden">Active groups</dt>
+            <dd>
+              <span class="readout-num">{{ stats.total_groups }}</span>
+              <span class="readout-label" aria-hidden="true">Active groups</span>
+            </dd>
+          </div>
+          <div class="readout">
+            <dt class="visually-hidden">Traps monitored</dt>
+            <dd>
+              <span class="readout-num">{{ stats.total_traps }}</span>
+              <span class="readout-label" aria-hidden="true">Traps monitored</span>
+            </dd>
+          </div>
+          <div class="readout">
+            <dt class="visually-hidden">Catches recorded</dt>
+            <dd>
+              <span class="readout-num readout-num-accent">{{ stats.total_catches }}</span>
+              <span class="readout-label" aria-hidden="true">Catches recorded</span>
+            </dd>
+          </div>
+        </dl>
       </div>
 
-      <dl class="hero-stats" aria-label="Platform statistics">
-        <div>
-          <dt class="visually-hidden">Active groups</dt>
-          <dd>
-            <span class="hero-stat-num">{{ stats.total_groups }}</span>
-            <span class="hero-stat-label" aria-hidden="true">Active groups</span>
-          </dd>
-        </div>
-        <div>
-          <dt class="visually-hidden">Trap and bait lines</dt>
-          <dd>
-            <span class="hero-stat-num">{{ stats.total_lines }}</span>
-            <span class="hero-stat-label" aria-hidden="true">Trap &amp; bait lines</span>
-          </dd>
-        </div>
-        <div>
-          <dt class="visually-hidden">Catches recorded</dt>
-          <dd>
-            <span class="hero-stat-num">{{ stats.total_catches }}</span>
-            <span class="hero-stat-label" aria-hidden="true">Catches recorded</span>
-          </dd>
-        </div>
-      </dl>
     </div>
 
-    {# Decorative card stack — non-functional, hidden from assistive tech #}
-    <div class="hero-visual" aria-hidden="true">
-      {% set hero_cards = featured_groups[:3] if featured_groups else [] %}
-      {% if hero_cards|length >= 1 %}
-        <div class="hero-card hero-card-1">
-          <div class="hero-card-thumb"></div>
-          <h3>{{ hero_cards[0].name }}</h3>
-          <div class="meta">{{ hero_cards[0].member_count }} members</div>
+    {% if ticker_json %}
+      {# Real recent catches across public groups. Decorative duplicate of
+         data available elsewhere, so hidden from AT. #}
+      <div class="hero-ticker" aria-hidden="true">
+        <div class="hero-ticker-inner">
+          <span class="hero-ticker-label">Latest catches</span>
+          <div class="hero-ticker-feed" id="tickerFeed">
+            {% for c in ticker_json %}
+              <span class="tick-item" data-at="{{ c.at }}">
+                <span class="tick-item-dot"></span>
+                <b>{{ c.species }}</b>&nbsp;{{ c.line }} <span class="age"></span>
+              </span>
+            {% endfor %}
+          </div>
         </div>
-      {% endif %}
-      {% if hero_cards|length >= 2 %}
-        <div class="hero-card hero-card-3">
-          <div class="hero-card-thumb"></div>
-          <h3>{{ hero_cards[1].name }}</h3>
-          <div class="meta">{{ hero_cards[1].member_count }} members</div>
-        </div>
-      {% endif %}
-      {% if hero_cards|length >= 3 %}
-        <div class="hero-card hero-card-2">
-          <div class="hero-card-thumb"></div>
-          <h3>{{ hero_cards[2].name }}</h3>
-          <div class="meta">{{ hero_cards[2].member_count }} members</div>
-        </div>
-      {% endif %}
-    </div>
+      </div>
+    {% endif %}
+
+    <div class="trap-tip" id="trapTip" aria-hidden="true"></div>
   </div>
 </section>
 
-<section class="section" id="groups" aria-labelledby="groups-heading">
-  <div class="container-wide">
-    <div class="section-header">
-      <div>
-        <div class="section-eyebrow">Browse</div>
-        <h2 id="groups-heading">Conservation groups</h2>
+{# ═══════════════ BROWSE ═══════════════ #}
+<section class="browse container-wide" id="groups" aria-labelledby="groups-heading">
+  <p class="browse-eyebrow">Browse</p>
+  <h2 class="browse-title" id="groups-heading">Conservation groups</h2>
+  <div class="browse-rule" aria-hidden="true"></div>
+
+  {% if public_groups %}
+    {# ── Toolbar — search, visibility, region, sort, view ───────── #}
+    <div class="toolbar" id="browseToolbar">
+      <div class="toolbar-row">
+        <div class="search" role="search">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <label class="visually-hidden" for="searchInput">Search conservation groups by name or location</label>
+          <input type="search" id="searchInput" placeholder="Search groups by name or location…" autocomplete="off">
+          <button class="search-clear" id="searchClear" aria-label="Clear search" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="seg" id="visSeg" role="group" aria-label="Filter by visibility">
+          <span class="seg-thumb" id="visThumb" aria-hidden="true"></span>
+          <button type="button" data-vis="all" aria-pressed="true">All</button>
+          <button type="button" data-vis="public" aria-pressed="false">Public</button>
+          <button type="button" data-vis="private" aria-pressed="false">Private</button>
+        </div>
+      </div>
+
+      <div class="toolbar-row">
+        {# Region picker #}
+        <div class="control" id="regionControl">
+          <button class="control-btn" type="button" id="regionBtn" aria-haspopup="listbox" aria-expanded="false">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 1 1 14 0c0 5.8-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            <span>Near <b id="regionLabel">anywhere</b></span>
+            <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="menu" id="regionMenu" role="listbox" aria-label="Region">
+            <button class="menu-item" id="useLocation" data-region="__locate" type="button">
+              <span class="menu-item-locate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                Use my location
+              </span>
+            </button>
+            <div class="menu-head">Regions</div>
+            {# region items injected by home-browse.js #}
+          </div>
+        </div>
+
+        {# Sort #}
+        <div class="control" id="sortControl">
+          <button class="control-btn" type="button" id="sortBtn" aria-haspopup="listbox" aria-expanded="false">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4 3 8M7 4l4 4"/><path d="M17 20V4M17 20l4-4M17 20l-4-4"/></svg>
+            <span>Sort: <b id="sortLabel">Most members</b></span>
+            <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="menu" id="sortMenu" role="listbox" aria-label="Sort">
+            <button class="menu-item" data-sort="members" aria-selected="true" type="button">Most members <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="menu-item" data-sort="lines" aria-selected="false" type="button">Most trap lines <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="menu-item" data-sort="catches" aria-selected="false" type="button">Most catches <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="menu-item" data-sort="newest" aria-selected="false" type="button">Newest <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="menu-item" data-sort="az" aria-selected="false" type="button">Name A–Z <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+          </div>
+        </div>
+
+        <div class="toolbar-spacer"></div>
+
+        {# View toggle #}
+        <div class="viewtoggle" id="viewToggle" role="group" aria-label="View">
+          <button type="button" data-view="grid" aria-pressed="true" aria-label="Grid view" title="Grid">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button type="button" data-view="list" aria-pressed="false" aria-label="List view" title="List">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+          </button>
+          <button type="button" data-view="map" aria-pressed="false" aria-label="Map view" title="Map">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    {% if public_groups %}
-      {# ── Search + visibility chips ─────────────────────────── #}
-      <div class="group-search" role="search">
-        <label class="visually-hidden" for="group-search-input">
-          Search conservation groups by name or location
-        </label>
-        <input id="group-search-input"
-               type="search"
-               class="group-search-input"
-               placeholder="Search groups by name or location…"
-               autocomplete="off"
-               aria-controls="group-grid">
-        <div class="chip-group" role="group" aria-label="Filter by visibility">
-          <button type="button" class="chip is-active"
-                  data-visibility-filter="all" aria-pressed="true">All</button>
-          <button type="button" class="chip"
-                  data-visibility-filter="public" aria-pressed="false">Public</button>
-          <button type="button" class="chip"
-                  data-visibility-filter="private" aria-pressed="false">Private</button>
-        </div>
-      </div>
+    {# ── Result meta ─────────────────────────────────────────── #}
+    <div class="resultbar">
+      <div class="resultbar-count" aria-live="polite"><b id="resultNum">{{ public_groups|length }}</b> <span id="resultWord">{{ 'group' if public_groups|length == 1 else 'groups' }}</span></div>
+      <div class="fchips" id="chips"></div>
+    </div>
 
-      <ul id="group-grid" class="group-grid" role="list" aria-live="polite">
-        {% for g in public_groups %}
-          {% set search_blob = ((g.name or '') ~ ' ' ~ (g.description or '') ~ ' ' ~ (g.location or ''))|lower %}
-          <li data-search="{{ search_blob }}"
-              data-visibility="{% if g.is_public %}public{% else %}private{% endif %}">
-            {# Group card accent: per-group color_theme if set, otherwise
-               the active theme's secondary, with a hard fallback so cards
-               render even when CSS vars are unsupported (color-mix() era
-               browsers). #}
-            <a class="group-card {% if not g.is_public %}is-private{% endif %}"
-               href="{{ url_for('group_landing', group_id=g.group_id) }}"
-               style="--group-accent: {% if g.color_theme %}{{ g.color_theme }}{% else %}var(--theme-secondary, #c65d3c){% endif %};"
-               aria-label="{% if g.is_public %}View{% else %}Request access to{% endif %} {{ g.name }} — {% if g.is_public %}public{% else %}private{% endif %} group with {{ g.member_count }} member{% if g.member_count != 1 %}s{% endif %}">
-              <div class="group-card-image" aria-hidden="true">
-                {% if g.tile_image %}
-                  {# Super Admin-controlled tile image (stored under
-                     static/images/uploads/). Separate from the coordinator-
-                     managed cover_photo / profile_photo. #}
-                  <img src="{{ url_for('static', filename='images/uploads/' + g.tile_image) }}"
-                       alt="{{ g.name }}" loading="lazy">
-                {% endif %}
-                {% if not g.is_public %}
-                  <span class="group-card-lock">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
-                         stroke="currentColor" stroke-width="2.2"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <rect x="4" y="11" width="16" height="10" rx="2" ry="2"/>
-                      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-                    </svg>
-                    Private
-                  </span>
-                {% endif %}
-              </div>
-              <div class="group-card-body">
-                <h3>{{ g.name }}</h3>
-                <div class="group-meta">
-                  {% if g.created_at %}Founded {{ g.created_at.strftime('%Y') }}{% endif %}
-                </div>
-                <p>{{ g.description or 'A volunteer-led conservation group.' }}</p>
-                {% if not g.is_public %}
-                  <p class="group-card-private-note">
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                         stroke="currentColor" stroke-width="2.2"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <rect x="4" y="11" width="16" height="10" rx="2" ry="2"/>
-                      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-                    </svg>
-                    Joining requires permission
-                  </p>
-                {% endif %}
-                <div class="group-card-footer">
-                  <span><strong>{{ g.member_count }}</strong> {% if g.member_count == 1 %}member{% else %}members{% endif %}</span>
-                  <span><strong>{{ g.line_count }}</strong> {% if g.line_count == 1 %}line{% else %}lines{% endif %}</span>
-                </div>
-              </div>
-            </a>
-          </li>
+    {# ── Results — server-rendered grid; JS re-renders on filter ─ #}
+    <div class="results">
+      <div class="grid" id="grid" data-view="grid" role="list">
+        {% for g in groups_json %}
+          <a class="card" role="listitem" href="{{ g.url }}"
+             data-id="{{ g.id }}" data-private="{{ 'true' if g.vis == 'private' else 'false' }}"
+             style="--card-accent: {{ g.accent or 'var(--color-accent)' }};"
+             aria-label="{% if g.vis == 'public' %}View{% else %}Request access to{% endif %} {{ g.name }} — {{ g.vis }} group with {{ g.members }} member{% if g.members != 1 %}s{% endif %}">
+            <div class="card-photo" aria-hidden="true">
+              {% if g.tile %}
+                <img src="{{ g.tile }}" alt="" loading="lazy">
+              {% endif %}
+              {% if g.vis == 'private' %}
+                <span class="card-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Private</span>
+              {% endif %}
+              {% if g.region %}
+                <span class="card-region"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 1 1 14 0c0 5.8-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg> {{ g.region }}</span>
+              {% endif %}
+            </div>
+            <div class="card-body">
+              <h3 class="card-name">{{ g.name }}</h3>
+              {% if g.founded %}<p class="card-founded">Founded {{ g.founded }}</p>{% endif %}
+              <p class="card-blurb">{{ g.blurb }}</p>
+              {% if g.vis == 'private' %}
+                <span class="card-lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Joining requires permission</span>
+              {% endif %}
+              <div class="card-reveal"><span class="card-cta">View group <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            </div>
+            <div class="card-foot">
+              <span><b>{{ g.members }}</b> {{ 'member' if g.members == 1 else 'members' }}</span>
+              <span><b>{{ g.lines }}</b> {{ 'line' if g.lines == 1 else 'lines' }}</span>
+            </div>
+          </a>
         {% endfor %}
-      </ul>
-
-      {# Hidden by default; revealed via JS when search/chip filters
-         leave zero matching cards. #}
-      <div id="group-no-match" class="empty-state empty-state-quiet" role="status" hidden>
-        <h3>No groups match your search</h3>
-        <p>Try a different keyword, or clear your filters to see every group.</p>
       </div>
 
-      {% if not has_public_groups %}
-        {# AC #6: zero public groups exist — surface alongside the (private-only) grid. #}
-        <div class="empty-state empty-state-quiet" role="status">
-          <h3>No public groups yet</h3>
-          <p>The first public conservation groups are still on their way. In the meantime, private groups can be requested by their members.</p>
-          {% if not session.user_id %}
-            <a href="{{ url_for('register') }}" class="btn btn-primary">Create an account</a>
-          {% endif %}
+      {# Map view — Leaflet/LINZ aerial map (markers injected by
+         home-browse.js); side list synced with the map #}
+      <div class="mapview" id="mapview">
+        <div class="mapwrap">
+          <div id="homeMap" data-linz-key="{{ linz_api_key }}" aria-label="Map of conservation groups across Aotearoa"></div>
         </div>
-      {% endif %}
+        <div class="maplist" id="maplist"></div>
+      </div>
 
-    {% else %}
-      <div class="empty-state" role="status">
+      <div class="empty" id="emptyFilter" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <h3>No groups match</h3>
+        <p>Try a different search, region, or visibility filter.</p>
+        <button class="btn btn-secondary" type="button" id="resetBtn">Clear all filters</button>
+      </div>
+    </div>
+
+    {% if not has_public_groups %}
+      {# AC #6: zero public groups exist — surface alongside the (private-only) grid. #}
+      <div class="empty-state empty-state-quiet" role="status">
         <h3>No public groups yet</h3>
-        <p>Tiaki is still finding its first conservation groups. If you're starting one in your community, we'd love to hear from you.</p>
+        <p>The first public conservation groups are still on their way. In the meantime, private groups can be requested by their members.</p>
         {% if not session.user_id %}
           <a href="{{ url_for('register') }}" class="btn btn-primary">Create an account</a>
         {% endif %}
       </div>
     {% endif %}
-  </div>
+
+  {% else %}
+    <div class="empty-state" role="status">
+      <h3>No public groups yet</h3>
+      <p>Tiaki is still finding its first conservation groups. If you're starting one in your community, we'd love to hear from you.</p>
+      {% if not session.user_id %}
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Create an account</a>
+      {% endif %}
+    </div>
+  {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts %}
-{% if public_groups %}
-<script>
-  (function () {
-    const input = document.getElementById('group-search-input');
-    const chips = document.querySelectorAll('[data-visibility-filter]');
-    const items = document.querySelectorAll('#group-grid > li');
-    const noMatch = document.getElementById('group-no-match');
-    const grid = document.getElementById('group-grid');
-
-    let activeVisibility = 'all';
-
-    function applyFilter() {
-      const term = (input.value || '').trim().toLowerCase();
-      let visibleCount = 0;
-      items.forEach(function (li) {
-        const matchesTerm = !term || (li.dataset.search || '').includes(term);
-        const matchesVis = activeVisibility === 'all'
-          || li.dataset.visibility === activeVisibility;
-        const show = matchesTerm && matchesVis;
-        li.hidden = !show;
-        if (show) visibleCount++;
-      });
-      noMatch.hidden = visibleCount > 0;
-      grid.hidden = visibleCount === 0;
-    }
-
-    input.addEventListener('input', applyFilter);
-    chips.forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        activeVisibility = chip.dataset.visibilityFilter;
-        chips.forEach(function (c) {
-          const isActive = c === chip;
-          c.classList.toggle('is-active', isActive);
-          c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        });
-        applyFilter();
-      });
-    });
-  })();
+<script type="application/json" id="homeData">
+  {{ {'groups': groups_json, 'ticker': ticker_json, 'lineNames': line_names}|tojson }}
 </script>
-{% endif %}
-
+{# Leaflet — same version/integrity as the trap-line pages #}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/lines-map-utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/home-browse.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/home-hero.js') }}" defer></script>
 {% endblock %}

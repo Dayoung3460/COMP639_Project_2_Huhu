@@ -88,6 +88,23 @@ body {
   font-weight: 400;
 }
 
+/* Logo lockups — full logo on desktop, compact mark on mobile.
+   Heights tuned so the wordmark reads at the same scale as the old
+   26px text brand. */
+.brand-logo {
+  height: 44px;
+  width: auto;
+}
+.brand-logo-mobile {
+  display: none;
+  height: 36px;
+  width: auto;
+}
+@media (max-width: 640px) {
+  .brand-logo { display: none; }
+  .brand-logo-mobile { display: block; }
+}
+
 .site-nav {
   display: flex;
   gap: 8px;

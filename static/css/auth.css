@@ -117,6 +117,17 @@
 
 .auth-aside-mark:hover { color: var(--color-bg); }
 
+/* Logo image inside the mark — dark-ink artwork whitened for the
+   dark green panel */
+.auth-aside-logo {
+  height: 40px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+  transition: opacity 0.15s ease;
+}
+.auth-aside-mark:hover .auth-aside-logo { opacity: 1; }
+
 .auth-aside-quote {
   position: relative;
   max-width: 480px;
@@ -514,6 +525,15 @@
   text-align: center;
   max-width: 720px;
   margin: 0 auto 56px;
+}
+
+.picker-logo {
+  display: inline-block;
+  margin-bottom: 28px;
+}
+.picker-logo img {
+  height: 44px;
+  width: auto;
 }
 
 .picker-greeting {
