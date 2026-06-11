@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#309f6c"/>
+      <stop offset="1" stop-color="#09431a"/>
+    </linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <g transform="translate(106.0,106.0) scale(3.0)" fill="white" opacity="0.10" color="white">
+    <path d="M50,12 L30,42 L40,42 L25,62 L40,62 L20,82 L80,82 L60,62 L75,62 L60,42 L70,42 Z" />
+      <rect x="46" y="80" width="8" height="18" />
+  </g>
+  <text x="256.0" y="256.0" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif"
+        font-size="220" font-weight="700" fill="white"
+        text-anchor="middle" dominant-baseline="central"
+        letter-spacing="-6">PFL</text>
+</svg>

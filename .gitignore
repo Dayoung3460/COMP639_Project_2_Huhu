@@ -68,6 +68,10 @@ static/images/uploads/*
 !static/images/uploads/group_banks.png
 !static/images/uploads/group_selwyn.png
 !static/images/uploads/group_riccarton.png
+# Seeded group identity SVGs (avatar/tile/cover for each group)
+!static/images/uploads/group_*_avatar.svg
+!static/images/uploads/group_*_tile.svg
+!static/images/uploads/group_*_cover.svg
 
 # ── P2-44 group identity uploads — canonical going forward ──────
 # static/uploads/ is the new convention; static/images/uploads/ above

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs><linearGradient id="g" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a6c48"/>
+      <stop offset="1" stop-color="#0b2e20"/>
+    </linearGradient></defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <ellipse cx="624.0" cy="300.0" rx="78" ry="60" fill="none" stroke="white" stroke-width="1.5" opacity="0.1"/><ellipse cx="624.0" cy="300.0" rx="156" ry="120" fill="none" stroke="white" stroke-width="1.5" opacity="0.1"/><ellipse cx="624.0" cy="300.0" rx="234" ry="180" fill="none" stroke="white" stroke-width="1.5" opacity="0.1"/><ellipse cx="624.0" cy="300.0" rx="312" ry="240" fill="none" stroke="white" stroke-width="1.5" opacity="0.1"/><ellipse cx="624.0" cy="300.0" rx="390" ry="300" fill="none" stroke="white" stroke-width="1.5" opacity="0.1"/><ellipse cx="624.0" cy="300.0" rx="468" ry="360" fill="none" stroke="white" stroke-width="1.5" opacity="0.1"/>
+  <g transform="translate(48.0,1.1368683772161603e-13) scale(5.699999999999999)" fill="white" opacity="0.16" color="white"><path d="M0,90 L12,72 L25,82 L40,50 L55,75 L70,45 L82,68 L100,52 L100,100 L0,100 Z" />
+      <circle cx="78" cy="22" r="6" opacity="0.5" /></g>
+  <text x="782" y="57.1" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="46" font-weight="700" fill="white" opacity="0.92" text-anchor="end" letter-spacing="3">OPC</text>
+</svg>
