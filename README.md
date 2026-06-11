@@ -70,16 +70,38 @@ See [Custom Themes Epic](#custom-themes-epic) below for the architecture deep-di
 
 All test accounts use the password: **`Password1!`**
 
-| Role | Username | Name |
-|---|---|---|
-| Admin | `smitchell` | Sarah Mitchell |
-| Admin | `jthornton` | James Thornton |
-| Operator | `landerson` | Liam Anderson |
-| Operator | `owalker` | Olivia Walker |
-| Operator | `ncampbell` | Noah Campbell |
-| Observer | `ataylor` | Ava Taylor |
-| Observer | `mharris` | Mason Harris |
-| Observer | `ejackson` | Elijah Jackson |
+### Site-Wide Accounts
+
+| Role | Username | Name | Notes |
+|---|---|---|---|
+| Super Admin | `smitchell` | Sarah Mitchell | |
+| Super Admin | `jparata` | James Parata | Also Group Coordinator of Christchurch City Trappers |
+| Support Technician | `lchen` | Lily Chen | No group memberships |
+| Support Technician | `mreid` | Mark Reid | No group memberships |
+
+### Group Accounts
+
+Group roles are per-group — several users hold different roles in different groups.
+
+| Username | Name | Predator Free Lincoln University | Christchurch City Trappers | Banks Peninsula Restoration |
+|---|---|---|---|---|
+| `bkim` | Bo Kim | Group Coordinator | — | Operator |
+| `cwhite` | Cara White | — | Group Coordinator | — |
+| `dlee` | Dana Lee | — | — | Group Coordinator |
+| `enyberg` | Erik Nyberg | Operator | — | Group Coordinator |
+| `fgrant` | Fiona Grant | Operator | — | Observer |
+| `gwatson` | Glen Watson | Operator | — | Observer |
+| `hpatel` | Hira Patel | Observer | Operator | — |
+| `iford` | Isla Ford | Observer | Operator | — |
+| `jmoss` | Jake Moss | Observer | Observer | — |
+| `ktaylor` | Kai Taylor | Observer (inactive account) | — | — |
+
+### No-Membership Accounts (for join request testing)
+
+| Username | Name |
+|---|---|
+| `trequest1` | Tom Request |
+| `trequest2` | Sara Request |
 
 ---
 
