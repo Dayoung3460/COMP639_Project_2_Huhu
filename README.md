@@ -1,3 +1,27 @@
+# Tiaki + Innovation Epic - 3D Terrain Map
+
+This is a fork of the COMP639 Project 2 baseline with the **Innovation Epic - 3D Terrain Map (P2-106)** implemented on top.
+
+## Run order
+
+```bash
+psql -d tiaki -f sql/create_tables.sql
+psql -d tiaki -f sql/populate_tables.sql
+psql -d tiaki -f sql/seed_data.sql
+psql -d tiaki -f sql/3d_epic_migration.sql
+python run.py
+```
+
+See **docs/3D_EPIC.md** for the full story-by-story mapping and design notes.
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -p 'test_*.py'
+```
+
+---
+
 # Tiaki — Predator Trapping & Monitoring
 
 A web application for Predator Free Lincoln University (PF-LU), a fictional volunteer group running a predator-control initiative across the Lincoln University campus.
