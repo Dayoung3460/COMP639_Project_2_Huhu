@@ -75,11 +75,11 @@
         <input type="text" name="search" class="form-control" style="max-width:320px;"
                placeholder="Search by name or username"
                value="{{ search }}" aria-label="Search users">
-        <button type="submit" class="btn btn-outline-secondary">
+        <button type="submit" class="btn-pf">
           <i class="bi bi-search me-1" aria-hidden="true"></i>Search
         </button>
         {% if search %}
-          <a href="{{ url_for('admin_support_technicians') }}" class="btn btn-link text-muted">Clear</a>
+          <a href="{{ url_for('admin_support_technicians') }}" class="btn-pf-outline">Clear</a>
         {% endif %}
       </form>
 

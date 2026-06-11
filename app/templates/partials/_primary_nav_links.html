@@ -105,9 +105,13 @@
   {% endif %}
 
 
-  {# P2-107 -- Group Updates + Knowledge Hub #}
+  {# P2-107 -- Group Updates + Knowledge Hub.
+     Hidden from cross-group roles (Super Admin, Support Technician):
+     the updates feature is group-scoped and these roles sit above the
+     group context, so the route rejects them. Hide the link to avoid
+     the dead-end. #}
   {% if session.get('user_id') %}
-    {% if session.get('group_id') %}
+    {% if session.get('group_id') and session.get('group_role') not in ('Super Admin', 'Support Technician') %}
     <a href="{{ url_for('updates_list') }}"
        class="{{ wrapper_class }} {{ 'active' if request.endpoint and request.endpoint.startswith('updates_') }}">
       {% if show_icons %}<i class="bi bi-megaphone" aria-hidden="true"></i> {% endif %}Updates
@@ -119,8 +123,12 @@
     </a>
   {% endif %}
 
-  {# Innovation Epic -- 3D Terrain Map (visible to all in-group roles) #}
-  {% if session.get('group_id') and session.get('group_role') in ('Observer', 'Operator', 'Group Coordinator', 'Super Admin') %}
+  {# Innovation Epic -- 3D Terrain Map. Visible to all in-group roles
+     plus the cross-group staff roles (Super Admin, Support Technician),
+     who get a group-picker on the page itself instead of using their
+     session group. #}
+  {% if session.get('group_role') in ('Super Admin', 'Support Technician')
+        or (session.get('group_id') and session.get('group_role') in ('Observer', 'Operator', 'Group Coordinator')) %}
     <a href="{{ url_for('map3d_index') }}"
        class="{{ wrapper_class }} {{ 'active' if request.endpoint and request.endpoint.startswith('map3d_') }}">
       {% if show_icons %}<i class="bi bi-box" aria-hidden="true"></i> {% endif %}3D Map

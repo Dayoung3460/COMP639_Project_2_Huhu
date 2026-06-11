@@ -145,9 +145,10 @@ from app import map3d  # noqa: F401 -- Innovation epic: 3D terrain map (P2-106)
 # ── Template globals ──────────────────────────────────────────────────────────
 
 _ROLE_TO_DASHBOARD = {
-    'Super Admin':       'admin_dashboard',
-    'Group Coordinator': 'coordinator_dashboard',
-    'Operator':          'operator_dashboard',
+    'Super Admin':         'admin_dashboard',
+    'Group Coordinator':   'coordinator_dashboard',
+    'Operator':            'operator_dashboard',
+    'Support Technician':  'helpdesk_queue',
     # Observer + any other unrecognised role falls through to
     # observer_dashboard via dict.get's default below.
 }

@@ -1,68 +1,177 @@
 {# templates/auth/profile.html
    Route: GET /profile  →  profile()
-   Personal, cross-group page — lives on the marketing surface
-   (base_marketing.html), same as My Tiaki. The tenant user-pill
-   links here; the platform ribbon takes you back into a group.
+   Personal, cross-group page. Reachable from BOTH surfaces:
+     - From the in-app shell (clicking the user-pill in pf-navbar) →
+       render inside base.html so the chrome stays consistent with the
+       page the user just came from.
+     - From the marketing surface (My Tiaki, Switch group) →
+       render inside base_marketing.html, keeping the editorial
+       cover/profile look that surface wants.
+   Jinja's `extends` is parse-time and can't sit inside an `if`, so
+   the route passes `base_template` based on session.group_id and we
+   extend that variable here.
 #}
-{% extends 'base_marketing.html' %}
+{% extends base_template %}
 
 {% block title %}My Profile · Tiaki{% endblock %}
 
-{% block content %}
-<div class="container profile-page">
-
-  {# ── Header ─────────────────────────────────────────────── #}
-  <p class="section-eyebrow">Account</p>
-  <div class="profile-head">
-    <span class="you-avatar profile-avatar" aria-hidden="true">
-      {% if user.profile_photo %}
-        <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}" alt="">
-      {% else %}
-        {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
-      {% endif %}
-    </span>
-    <div>
-      <h1 class="feed-title">
-        {{ user.first_name }} {{ user.last_name }}
-        {% if session.get('group_role') %}
-          <span class="group-tag">{{ session.group_role }}</span>
-        {% endif %}
-      </h1>
-      <p class="you-handle">@{{ user.username }}</p>
-      {% if user.date_joined %}
-        <p class="aside-row-meta">Joined {{ user.date_joined.strftime('%-d %B %Y') }}</p>
-      {% endif %}
-    </div>
+{# ── In-app header chrome (only renders inside base.html) ── #}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-person-circle"></i>
   </div>
-
-  <div class="profile-actions">
-    <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary btn-sm">Edit profile</a>
-    <a href="{{ url_for('change_password') }}" class="btn btn-ghost btn-sm">Change password</a>
-  </div>
-
-  {# ── Info panels ────────────────────────────────────────── #}
-  <div class="profile-stack">
-    <section class="aside-card" aria-labelledby="profile-personal-title">
-      <header class="aside-card-head">
-        <h2 id="profile-personal-title" class="aside-card-title">Personal details</h2>
-      </header>
-      <dl class="feed-data">
-        <div><dt>Email</dt><dd>{{ user.email }}</dd></div>
-        <div><dt>Phone</dt><dd>{{ user.phone or '—' }}</dd></div>
-        <div><dt>Address</dt><dd>{{ user.address or '—' }}</dd></div>
-      </dl>
-    </section>
-
-    <section class="aside-card" aria-labelledby="profile-emergency-title">
-      <header class="aside-card-head">
-        <h2 id="profile-emergency-title" class="aside-card-title">Emergency contact</h2>
-      </header>
-      <dl class="feed-data">
-        <div><dt>Name</dt><dd>{{ user.emergency_contact_name or '—' }}</dd></div>
-        <div><dt>Phone</dt><dd>{{ user.emergency_contact_phone or '—' }}</dd></div>
-      </dl>
-    </section>
-  </div>
-
+  My Profile
 </div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Profile</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% if in_app %}
+  {# ════════════════════════════════════════════════════════════════════
+     IN-APP VARIANT — uses .panel + custom.css idioms so it sits
+     naturally between the page-head strip and the in-app footer.
+     Selected when the route receives ?ctx=app (the in-app navbar
+     user-pill sets it). Internal links below preserve ctx=app so the
+     user doesn't get bounced into the marketing variant on the next click.
+     ════════════════════════════════════════════════════════════════════ #}
+  <div class="container py-2" style="max-width: 760px;">
+
+    <div class="panel mb-3">
+      <div class="panel-body p-4">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <span class="you-avatar profile-avatar" aria-hidden="true">
+            {% if user.profile_photo %}
+              <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}" alt="">
+            {% else %}
+              {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
+            {% endif %}
+          </span>
+          <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <h2 class="mb-0" style="font-family: var(--theme-font-heading, 'Cabin'), sans-serif;">
+                {{ user.first_name }} {{ user.last_name }}
+              </h2>
+              {% if session.get('group_role') %}
+                <span class="badge-role-{{ session.group_role|lower|replace(' ', '-') }}">{{ session.group_role }}</span>
+              {% endif %}
+            </div>
+            <div class="text-muted small mt-1">@{{ user.username }}</div>
+            {% if user.date_joined %}
+              <div class="text-muted small">
+                Joined {{ user.date_joined.strftime('%d %B %Y').lstrip('0') }}
+              </div>
+            {% endif %}
+          </div>
+          <div class="ms-auto d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('edit_profile', ctx='app') }}" class="btn-sm-pf">
+              <i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit profile
+            </a>
+            <a href="{{ url_for('change_password') }}" class="btn-sm-outline">
+              <i class="bi bi-shield-lock me-1" aria-hidden="true"></i>Change password
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel mb-3">
+      <div class="panel-header">
+        <div class="panel-title">Personal details</div>
+      </div>
+      <div class="panel-body">
+        <dl class="row g-2 mb-0">
+          <dt class="col-sm-3 fw-semibold">Email</dt>
+          <dd class="col-sm-9 mb-0">{{ user.email }}</dd>
+          <dt class="col-sm-3 fw-semibold">Phone</dt>
+          <dd class="col-sm-9 mb-0">{{ user.phone or '—' }}</dd>
+          <dt class="col-sm-3 fw-semibold">Address</dt>
+          <dd class="col-sm-9 mb-0">{{ user.address or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Emergency contact</div>
+      </div>
+      <div class="panel-body">
+        <dl class="row g-2 mb-0">
+          <dt class="col-sm-3 fw-semibold">Name</dt>
+          <dd class="col-sm-9 mb-0">{{ user.emergency_contact_name or '—' }}</dd>
+          <dt class="col-sm-3 fw-semibold">Phone</dt>
+          <dd class="col-sm-9 mb-0">{{ user.emergency_contact_phone or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+
+  </div>
+{% else %}
+  {# ════════════════════════════════════════════════════════════════════
+     MARKETING / CROSS-GROUP VARIANT — original editorial look,
+     unchanged. This is what users see from My Tiaki / Switch Group.
+     ════════════════════════════════════════════════════════════════════ #}
+  <div class="container profile-page">
+
+    <p class="section-eyebrow">Account</p>
+    <div class="profile-head">
+      <span class="you-avatar profile-avatar" aria-hidden="true">
+        {% if user.profile_photo %}
+          <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}" alt="">
+        {% else %}
+          {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
+        {% endif %}
+      </span>
+      <div>
+        <h1 class="feed-title">
+          {{ user.first_name }} {{ user.last_name }}
+          {% if session.get('group_role') %}
+            <span class="group-tag">{{ session.group_role }}</span>
+          {% endif %}
+        </h1>
+        <p class="you-handle">@{{ user.username }}</p>
+        {% if user.date_joined %}
+          <p class="aside-row-meta">Joined {{ user.date_joined.strftime('%d %B %Y').lstrip('0') }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="profile-actions">
+      <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary btn-sm">Edit profile</a>
+      <a href="{{ url_for('change_password') }}" class="btn btn-ghost btn-sm">Change password</a>
+    </div>
+
+    <div class="profile-stack">
+      <section class="aside-card" aria-labelledby="profile-personal-title">
+        <header class="aside-card-head">
+          <h2 id="profile-personal-title" class="aside-card-title">Personal details</h2>
+        </header>
+        <dl class="feed-data">
+          <div><dt>Email</dt><dd>{{ user.email }}</dd></div>
+          <div><dt>Phone</dt><dd>{{ user.phone or '—' }}</dd></div>
+          <div><dt>Address</dt><dd>{{ user.address or '—' }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="aside-card" aria-labelledby="profile-emergency-title">
+        <header class="aside-card-head">
+          <h2 id="profile-emergency-title" class="aside-card-title">Emergency contact</h2>
+        </header>
+        <dl class="feed-data">
+          <div><dt>Name</dt><dd>{{ user.emergency_contact_name or '—' }}</dd></div>
+          <div><dt>Phone</dt><dd>{{ user.emergency_contact_phone or '—' }}</dd></div>
+        </dl>
+      </section>
+    </div>
+
+  </div>
+{% endif %}
 {% endblock %}

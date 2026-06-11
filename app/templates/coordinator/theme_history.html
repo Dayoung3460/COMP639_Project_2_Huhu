@@ -23,6 +23,25 @@
 
 {% block title %}Theme history{% endblock %}
 
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-clock-history"></i>
+  </div>
+  Theme history
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_themes') }}">Themes</a></li>
+    <li class="breadcrumb-item active">History</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block head_extra %}
   {# Each history row's mini-preview is typed in its own
      font_heading + font_body, so load every distinct family once

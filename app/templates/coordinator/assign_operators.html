@@ -2,8 +2,27 @@
 {% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel_simple %}
 {% block title %}Assign Operators — {{ line.name }}{% endblock %}
 
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-people"></i>
+  </div>
+  Assign Operators
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+{{ line.name }}
+{% endblock %}
+
 {% block header_actions %}
-  {{ pf_link_button(url_for('coordinator_lines_assign'), 'All Lines', variant='btn-sm-outline', icon='bi-arrow-left') }}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_lines_assign') }}">Assign Operators</a></li>
+    <li class="breadcrumb-item active">{{ line.name }}</li>
+  </ol>
+</nav>
 {% endblock %}
 
 {% block content %}

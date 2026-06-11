@@ -1,30 +1,43 @@
 {% extends 'base.html' %}
-{% block title %}User Search{% endblock %}
+{% block title %}Account Management{% endblock %}
 
-{% block page_head_icon %}<i class="bi bi-search"></i>{% endblock %}
-{% block page_title %}User Search{% endblock %}
-{% block page_subtitle %}Search user profiles across all groups{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-search"></i>
+  </div>
+  Account Management
+</div>
+{% endblock %}
 
-{% block breadcrumb %}
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item active" aria-current="page">User Search</li>
-    </ol>
-  </nav>
+{% block page_subtitle %}
+Search user profiles across all groups.
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Account Management</li>
+  </ol>
+</nav>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:900px;">
+<div class="container py-2" style="max-width:900px;">
 
-  <div class="card mb-4">
-    <div class="card-body">
+  <div class="panel mb-3">
+    <div class="panel-body">
       <form method="POST" action="{{ url_for('helpdesk_user_search') }}" role="search">
         <div class="input-group">
           <span class="input-group-text" aria-hidden="true"><i class="bi bi-search"></i></span>
-          <input type="search" name="q" class="form-control form-control-lg"
-                 placeholder="Search by name, email, or username…"
+          <input type="search" name="q" class="form-control"
+                 placeholder="Search by name, email, or username&hellip;"
                  value="{{ query }}" autofocus aria-label="Search users">
-          <button type="submit" class="btn btn-primary">Search</button>
+          <button type="submit" class="btn-pf">Search</button>
+          {% if query %}
+            <a href="{{ url_for('helpdesk_user_search') }}" class="btn-pf-outline">Clear</a>
+          {% endif %}
         </div>
       </form>
     </div>
@@ -32,47 +45,60 @@
 
   {% if query %}
     {% if not users %}
-      <p class="text-muted">No users found for <strong>{{ query }}</strong>.</p>
+      <div class="panel">
+        <div class="panel-body text-center py-5">
+          <i class="bi bi-person-x" aria-hidden="true" style="font-size: 32px; color: var(--pf-300);"></i>
+          <p class="mt-3 mb-1 fw-semibold">No users found</p>
+          <p class="text-muted small mb-0">No matches for <strong>{{ query }}</strong>.</p>
+        </div>
+      </div>
     {% else %}
-      <p class="text-muted small mb-2">{{ users | length }} result(s) for <strong>{{ query }}</strong>{% if users | length == 50 %} — showing first 50{% endif %}</p>
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Username</th>
-              <th>Group memberships</th>
-              <th>Status</th>
-              <th>Date joined</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for u in users %}
-            <tr>
-              <td class="fw-medium">{{ u.full_name }}</td>
-              <td>{{ u.email }}</td>
-              <td class="text-muted">{{ u.username }}</td>
-              <td class="small">{{ u.memberships }}</td>
-              <td>
-                {% if u.account_status == 'active' %}
-                  <span class="badge bg-success-subtle text-success-emphasis">Active</span>
-                {% else %}
-                  <span class="badge bg-danger-subtle text-danger-emphasis">Inactive</span>
-                {% endif %}
-              </td>
-              <td class="text-nowrap small">{{ u.date_joined | nz_datetime }}</td>
-              <td>
-                <a href="{{ url_for('helpdesk_user_profile', target_user_id=u.user_id) }}"
-                   class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-person me-1" aria-hidden="true"></i>View
-                </a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <p class="table-cell-meta mb-2">
+        {{ users | length }} result{{ '' if users|length == 1 else 's' }}
+        for <strong>{{ query }}</strong>{% if users | length == 50 %} &mdash; showing first 50{% endif %}
+      </p>
+      <div class="panel">
+        <div class="pf-table-responsive">
+          <table class="pf-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Username</th>
+                <th>Group memberships</th>
+                <th>Status</th>
+                <th>Date joined</th>
+                <th class="text-end">&nbsp;</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+              <tr>
+                <td><strong>{{ u.full_name }}</strong></td>
+                <td>{{ u.email }}</td>
+                <td class="table-cell-meta">{{ u.username }}</td>
+                <td class="small">{{ u.memberships }}</td>
+                <td>
+                  {% if u.account_status == 'active' %}
+                    <span class="badge-active">Active</span>
+                  {% elif u.account_status == 'suspended' %}
+                    <span class="badge-status-removed">Suspended</span>
+                  {% else %}
+                    <span class="badge-inactive">Inactive</span>
+                  {% endif %}
+                </td>
+                <td class="table-cell-meta text-nowrap">{{ u.date_joined | nz_datetime }}</td>
+                <td class="text-end text-nowrap" style="width: 1%;">
+                  <a href="{{ url_for('helpdesk_user_profile', target_user_id=u.user_id) }}"
+                     class="btn-sm-outline">
+                    <i class="bi bi-person me-1" aria-hidden="true"></i>View
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     {% endif %}
   {% endif %}

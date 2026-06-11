@@ -1,9 +1,27 @@
 {% extends 'base.html' %}
 {% block title %}500 Server Error{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon red" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-exclamation-triangle"></i>
+  </div>
+  Something went wrong
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item active">500</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5 text-center">
   <h1 class="display-1 fw-bold text-muted">500</h1>
   <p class="lead">Something went wrong on our end. Please try again.</p>
-  <a href="{{ url_for('index') }}" class="btn btn-pf">Go Home</a>
+  <a href="{{ url_for('index') }}" class="btn-pf">Go Home</a>
 </div>
 {% endblock %}

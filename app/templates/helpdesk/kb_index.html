@@ -1,80 +1,111 @@
 {% extends 'base.html' %}
 {% block title %}Knowledge Base{% endblock %}
 
-{% block page_head_icon %}<i class="bi bi-book"></i>{% endblock %}
-{% block page_title %}Knowledge Base{% endblock %}
-{% block page_subtitle %}Browse common questions and guides before submitting a request{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-book"></i>
+  </div>
+  Knowledge Base
+</div>
+{% endblock %}
 
-{% block breadcrumb %}
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item active" aria-current="page">Knowledge Base</li>
-    </ol>
-  </nav>
+{% block page_subtitle %}
+Browse common questions and guides before submitting a request.
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Knowledge Base</li>
+  </ol>
+</nav>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:860px;">
+<div class="container py-2" style="max-width:860px;">
 
-  {# ── Search ──────────────────────────────────────────────────── #}
-  <div class="card mb-4">
-    <div class="card-body">
-      <form method="GET" action="{{ url_for('kb_index') }}" role="search">
-        <div class="input-group">
-          <span class="input-group-text" aria-hidden="true"><i class="bi bi-search"></i></span>
-          <input type="search" name="q" class="form-control"
-                 placeholder="Search articles…"
-                 value="{{ q }}" autofocus aria-label="Search knowledge base">
-          <button type="submit" class="btn btn-primary">Search</button>
-          {% if q %}
-            <a href="{{ url_for('kb_index') }}" class="btn btn-outline-secondary">Clear</a>
-          {% endif %}
+  {# ── Search + author actions ───────────────────────────────────── #}
+  <div class="panel mb-3">
+    <div class="panel-body">
+      <form method="GET" action="{{ url_for('kb_index') }}" role="search"
+            class="d-flex align-items-end gap-3 flex-wrap">
+        <div style="flex: 1 1 280px;">
+          <label for="kb-q" class="form-label mb-1">Search articles</label>
+          <div class="input-group">
+            <span class="input-group-text" aria-hidden="true"><i class="bi bi-search"></i></span>
+            <input id="kb-q" type="search" name="q" class="form-control"
+                   placeholder="Title or body text&hellip;"
+                   value="{{ q }}" autofocus aria-label="Search knowledge base">
+          </div>
         </div>
+        <button type="submit" class="btn-pf"
+                style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center;">Search</button>
+        {% if q %}
+          <a href="{{ url_for('kb_index') }}" class="btn-pf-outline"
+             style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center;">Clear</a>
+        {% endif %}
+        {% if can_author %}
+          <a href="{{ url_for('kb_new') }}" class="btn-pf ms-auto"
+             style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center;">
+            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New Article
+          </a>
+        {% endif %}
       </form>
     </div>
   </div>
 
-  {# ── Author actions ──────────────────────────────────────────── #}
-  {% if can_author %}
-  <div class="d-flex justify-content-end mb-3">
-    <a href="{{ url_for('kb_new') }}" class="btn btn-primary btn-sm">
-      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New Article
-    </a>
-  </div>
-  {% endif %}
-
-  {# ── Search results ──────────────────────────────────────────── #}
+  {# ── Search results ────────────────────────────────────────────── #}
   {% if q %}
     {% if not articles %}
-      <p class="text-muted">No articles found for <strong>{{ q }}</strong>.</p>
+      <div class="panel">
+        <div class="panel-body text-center py-5">
+          <i class="bi bi-search" aria-hidden="true" style="font-size: 32px; color: var(--pf-300);"></i>
+          <p class="mt-3 mb-1 fw-semibold">No articles found</p>
+          <p class="text-muted small mb-0">No matches for <strong>{{ q }}</strong>.</p>
+        </div>
+      </div>
     {% else %}
-      <p class="text-muted small mb-3">{{ articles | length }} result(s) for <strong>{{ q }}</strong></p>
-      <div class="list-group mb-4">
-        {% for a in articles %}
-        <a href="{{ url_for('kb_article', article_id=a.article_id) }}"
-           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-          <div>
-            <div class="fw-medium">{{ a.title }}</div>
-            <div class="small text-muted">{{ a.category_name }}</div>
-          </div>
-          {% if not a.is_published %}
-            <span class="badge bg-warning-subtle text-warning-emphasis ms-2">Draft</span>
-          {% endif %}
-        </a>
-        {% endfor %}
+      <p class="table-cell-meta mb-2">
+        {{ articles | length }} result{{ '' if articles|length == 1 else 's' }} for <strong>{{ q }}</strong>
+      </p>
+      <div class="panel">
+        <div class="list-group list-group-flush">
+          {% for a in articles %}
+          <a href="{{ url_for('kb_article', article_id=a.article_id) }}"
+             class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-medium">{{ a.title }}</div>
+              <div class="small text-muted">{{ a.category_name }}</div>
+            </div>
+            {% if not a.is_published %}
+              <span class="hub-status-badge draft">Draft</span>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
       </div>
     {% endif %}
 
-  {# ── Grouped by category ─────────────────────────────────────── #}
+  {# ── Grouped by category ───────────────────────────────────────── #}
   {% else %}
     {% if not categories %}
-      <p class="text-muted">No articles yet.</p>
+      <div class="panel">
+        <div class="panel-body text-center py-5">
+          <i class="bi bi-journal" aria-hidden="true" style="font-size: 32px; color: var(--pf-300);"></i>
+          <p class="mt-3 mb-1 fw-semibold">No articles yet</p>
+          <p class="text-muted small mb-0">Check back soon, or contact support if you need help.</p>
+        </div>
+      </div>
     {% else %}
       {% for cat in categories %}
         {% if cat.articles %}
-        <div class="card mb-3">
-          <div class="card-header fw-semibold">
-            <i class="bi bi-folder me-2" aria-hidden="true"></i>{{ cat.name }}
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <i class="bi bi-folder me-2" aria-hidden="true"></i>{{ cat.name }}
+            </div>
           </div>
           <div class="list-group list-group-flush">
             {% for a in cat.articles %}
@@ -83,7 +114,7 @@
               <span>{{ a.title }}</span>
               <div class="d-flex align-items-center gap-2">
                 {% if not a.is_published %}
-                  <span class="badge bg-warning-subtle text-warning-emphasis">Draft</span>
+                  <span class="hub-status-badge draft">Draft</span>
                 {% endif %}
                 <span class="text-muted small text-nowrap">{{ a.updated_at | nz_datetime }}</span>
               </div>
@@ -98,7 +129,7 @@
 
   {% if session.get('group_role') not in ('Super Admin', 'Support Technician') %}
   <div class="mt-3">
-    <a href="{{ url_for('helpdesk_submit') }}" class="btn btn-outline-primary">
+    <a href="{{ url_for('helpdesk_submit') }}" class="btn-pf-outline">
       <i class="bi bi-headset me-1" aria-hidden="true"></i>Can't find an answer? Submit a request
     </a>
   </div>

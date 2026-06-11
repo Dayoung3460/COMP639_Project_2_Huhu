@@ -1,9 +1,28 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel, pf_panel_simple, pf_trap_status_badge %}
 {% block title %}{{ line.name if line else 'Line Detail' }}{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-signpost-2"></i>
+  </div>
+  {{ line.name if line else 'Line Detail' }}
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('lines_index', filter=line_filter if line_filter != 'active' else None) }}">Lines</a></li>
+    <li class="breadcrumb-item active">{{ line.name if line else 'Detail' }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  {{ pf_link_button(url_for('lines_index', filter=line_filter if line_filter != 'active' else None), 'Back to Lines', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
+<div class="container py-2">
 
   {% if line %}
     {% set current_filter = line_filter | default('all') %}

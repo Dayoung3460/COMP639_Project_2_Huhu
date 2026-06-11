@@ -20,7 +20,7 @@ from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_us
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @app.route('/admin/dashboard')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_dashboard():
     """Admin dashboard — system-wide statistics and quick actions."""
     stats = {
@@ -142,7 +142,7 @@ def admin_dashboard():
 # ── User management ───────────────────────────────────────────────────────────
 
 @app.route('/admin/users')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_users():
     """Platform-wide user list for Super Admin.
 
@@ -190,7 +190,7 @@ def admin_users():
 
 
 @app.route('/admin/users/<int:user_id>')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_user_detail(user_id):
     """View detailed profile for a single user.
 
@@ -280,7 +280,7 @@ def admin_user_detail(user_id):
 
 
 @app.route('/admin/users/<int:user_id>/toggle-active', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def toggle_active(user_id):
     """Activate or deactivate a user account."""
     # Prevent admin from deactivating themselves
@@ -334,7 +334,7 @@ def toggle_active(user_id):
 
 
 @app.route('/admin/users/<int:user_id>/edit-role', methods=['GET', 'POST'])
-@role_required('Super Admin')
+@role_required('Super Admin')  # role changes — Super Admin only per spec
 def edit_role(user_id):
     """Edit a user's role."""
     # Prevent admin from changing their own role
@@ -372,7 +372,7 @@ def edit_role(user_id):
     return render_template('admin/edit_role.html', user=user, roles=lookup['valid_roles'])
 
 @app.route('/admin/users/<int:user_id>/notes', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def update_user_notes(user_id):
     """Update the admin-only notes for a user."""
     notes = request.form.get('notes', '').strip()
@@ -394,7 +394,7 @@ def update_user_notes(user_id):
 # ── Lines ─────────────────────────────────────────────────────────────────────
 
 @app.route('/admin/lines/new', methods=['GET', 'POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def new_line():
     """Create a new line (Trap or Bait Station).
 
@@ -456,7 +456,7 @@ def new_line():
 
 
 @app.route('/admin/lines/<int:line_id>/edit', methods=['GET', 'POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def edit_line(line_id):
     """Edit an existing trap line."""
     line = None
@@ -526,7 +526,7 @@ def edit_line(line_id):
 
 
 @app.route('/admin/lines/<int:line_id>/retire', methods=['POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def retire_line(line_id):
     """Retire a trap line (set is_retired = TRUE)."""
     has_active_traps = request.args.get('active_traps') == '1'
@@ -580,7 +580,7 @@ def retire_line(line_id):
 
 
 @app.route('/admin/lines/<int:line_id>/unretire', methods=['POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def unretire_line(line_id):
     """Unretire a line (set is_retired = FALSE)."""
     with db.get_cursor() as cursor:
@@ -607,7 +607,7 @@ def unretire_line(line_id):
 # ── Traps ─────────────────────────────────────────────────────────────────────
 
 @app.route('/admin/lines/<int:line_id>/new_trap', methods=['POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def new_trap(line_id):
     """Add a new trap to a line."""
     with db.get_cursor() as cursor:
@@ -681,7 +681,7 @@ def new_trap(line_id):
     return redirect(url_for('line_detail', line_id=line_id))
 
 @app.route('/admin/traps/<int:line_id>/<int:trap_id>/edit', methods=['GET', 'POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def edit_trap(line_id, trap_id):
     """Edit an existing trap."""
     trap_types = fetch_active_lookup(db, 'trap_types')
@@ -759,7 +759,7 @@ def edit_trap(line_id, trap_id):
 
 
 @app.route('/admin/traps/<int:line_id>/retire', methods=['POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def retire_trap(line_id):
     """Retire an individual trap (set is_retired = TRUE)."""
     trap_id = request.form.get('trap_id')
@@ -803,7 +803,7 @@ def retire_trap(line_id):
 
 
 @app.route('/admin/traps/<int:line_id>/<int:trap_id>/unretire', methods=['POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def unretire_trap(line_id, trap_id):
     """Unretire an individual trap (set is_retired = FALSE)."""
     super_admin = is_super_admin_mode()
@@ -834,7 +834,7 @@ def unretire_trap(line_id, trap_id):
 # ── Bait stations ─────────────────────────────────────────────────────────────
 
 @app.route('/admin/lines/<int:line_id>/new-bait-station', methods=['GET', 'POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def new_bait_station(line_id):
     """Add a new bait station to a Bait Station line."""
     with db.get_cursor() as cursor:
@@ -907,7 +907,7 @@ def new_bait_station(line_id):
 
 
 @app.route('/admin/lines/<int:line_id>/bait-stations/<int:station_id>/edit', methods=['GET', 'POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def edit_bait_station(line_id, station_id):
     """Edit an existing bait station."""
     with db.get_cursor() as cursor:
@@ -980,7 +980,7 @@ def edit_bait_station(line_id, station_id):
 
 
 @app.route('/admin/lines/<int:line_id>/bait-stations/deactivate', methods=['POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def deactivate_bait_station(line_id):
     """Deactivate a bait station (soft-delete)."""
     station_id = request.form.get('station_id', type=int)
@@ -1012,7 +1012,7 @@ def deactivate_bait_station(line_id):
 
 
 @app.route('/admin/lines/<int:line_id>/bait-stations/<int:station_id>/activate', methods=['POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def activate_bait_station(line_id, station_id):
     """Reactivate a deactivated bait station."""
     super_admin = is_super_admin_mode()
@@ -1039,7 +1039,7 @@ def activate_bait_station(line_id, station_id):
 # ── Operator assignment ───────────────────────────────────────────────────────
 
 @app.route('/admin/lines/<int:line_id>/assign', methods=['GET', 'POST'])
-@role_required('Super Admin', 'Group Coordinator')
+@role_required('Super Admin', 'Group Coordinator', 'Support Technician')
 def assign_operators(line_id):
     """Assign or reassign operators to a trap line."""
     # Group ownership gate — Coordinator can only assign on lines in their
@@ -1215,7 +1215,7 @@ LOOKUP_CONFIGS = {
 
 
 @app.route('/admin/reference-data')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def reference_data():
     """Landing page showing all reference data tables."""
     table_info = []
@@ -1235,7 +1235,7 @@ def reference_data():
 
 
 @app.route('/admin/reference-data/<config_key>', methods=['GET', 'POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def manage_lookup(config_key):
     """Generic CRUD handler for any lookup table."""
     if config_key not in LOOKUP_CONFIGS:
@@ -1306,14 +1306,14 @@ def manage_lookup(config_key):
 
 
 @app.route('/admin/species')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def manage_species():
     """Redirect to generic reference data handler."""
     return redirect(url_for('manage_lookup', config_key='species'))
 
 
 @app.route('/admin/statuses')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def manage_statuses():
     """Redirect to generic reference data handler."""
     return redirect(url_for('manage_lookup', config_key='statuses'))
@@ -1322,7 +1322,7 @@ def manage_statuses():
 # ── Group management ─────────────────────────────────────────────────────────
 
 @app.route('/admin/groups')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_groups():
     """List all groups with summary info."""
     search = request.args.get('search', '').strip()
@@ -1362,7 +1362,7 @@ def admin_groups():
 
 
 @app.route('/admin/groups/create', methods=['GET', 'POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_create():
     """Create a new group directly and optionally appoint coordinators."""
     with db.get_cursor() as cursor:
@@ -1444,7 +1444,7 @@ def admin_group_create():
 
 
 @app.route('/admin/groups/<int:group_id>')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_detail(group_id):
     """View and manage a single group."""
     with db.get_cursor() as cursor:
@@ -1493,7 +1493,7 @@ def admin_group_detail(group_id):
 
 
 @app.route('/admin/groups/<int:group_id>/edit', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_edit(group_id):
     """Edit a group's name and description."""
     name = request.form.get('name', '').strip()
@@ -1522,7 +1522,7 @@ def admin_group_edit(group_id):
 
 
 @app.route('/admin/groups/<int:group_id>/toggle-active', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_toggle_active(group_id):
     """Deactivate or reactivate a group."""
     with db.get_cursor() as cursor:
@@ -1545,7 +1545,7 @@ def admin_group_toggle_active(group_id):
 
 
 @app.route('/admin/groups/<int:group_id>/coordinators/add', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_group_add_coordinator(group_id):
     """Promote an existing member to Group Coordinator."""
     user_id = request.form.get('user_id', type=int)
@@ -1571,7 +1571,7 @@ def admin_group_add_coordinator(group_id):
 
 
 @app.route('/admin/groups/<int:group_id>/coordinators/remove/<int:user_id>', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_group_remove_coordinator(group_id, user_id):
     """Demote a Group Coordinator back to Observer (must keep at least one)."""
     with db.get_cursor() as cursor:
@@ -1593,7 +1593,7 @@ def admin_group_remove_coordinator(group_id, user_id):
 
 
 @app.route('/admin/groups/<int:group_id>/image', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_update_image(group_id):
     """Upload or replace the group's tile image (Super Admin controlled).
 
@@ -1636,7 +1636,7 @@ def admin_group_update_image(group_id):
 
 
 @app.route('/admin/groups/<int:group_id>/image/remove', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_remove_image(group_id):
     """Remove the group's tile image (Super Admin controlled)."""
     with db.get_cursor() as cursor:
@@ -1663,7 +1663,7 @@ def admin_group_remove_image(group_id):
 # ── Group applications ────────────────────────────────────────────────────────
 
 @app.route('/admin/group-applications')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_applications():
     """List all group creation applications, filterable by status."""
     status_filter = request.args.get('status', 'pending').strip()
@@ -1710,7 +1710,7 @@ def admin_group_applications():
 
 
 @app.route('/admin/group-applications/<int:application_id>/approve', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_application_approve(application_id):
     """Approve a group application — creates the group and assigns the applicant as coordinator."""
     with db.get_cursor() as cursor:
@@ -1772,7 +1772,7 @@ def admin_group_application_approve(application_id):
 
 
 @app.route('/admin/group-applications/<int:application_id>/reject', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_group_application_reject(application_id):
     """Reject a group application with an optional reason."""
     reason = request.form.get('reason', '').strip()
@@ -1812,7 +1812,7 @@ def admin_group_application_reject(application_id):
 
 
 @app.route('/admin/bait-types')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def manage_bait_types():
     """Redirect to generic reference data handler."""
     return redirect(url_for('manage_lookup', config_key='bait-types'))
@@ -1824,7 +1824,7 @@ import logging as _logging
 _admin_logger = _logging.getLogger(__name__)
 
 @app.route('/admin/support-technicians')
-@role_required('Super Admin')
+@role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_support_technicians():
     """List current technicians; search for users to grant/revoke the role."""
     search = request.args.get('search', '').strip()
@@ -1880,7 +1880,7 @@ def admin_support_technicians():
 
 
 @app.route('/admin/support-technicians/<int:user_id>/grant', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_support_tech_grant(user_id):
     """Grant the Support Technician role to a user."""
     with db.get_cursor() as cursor:
@@ -1916,7 +1916,7 @@ def admin_support_tech_grant(user_id):
 
 
 @app.route('/admin/support-technicians/<int:user_id>/revoke', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_support_tech_revoke(user_id):
     """Revoke the Support Technician role from a user."""
     with db.get_cursor() as cursor:

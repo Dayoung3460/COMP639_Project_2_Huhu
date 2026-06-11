@@ -5,12 +5,10 @@
 ```bash
 psql -d tiaki -f sql/create_tables.sql
 psql -d tiaki -f sql/populate_tables.sql
-psql -d tiaki -f sql/seed_data.sql
-psql -d tiaki -f sql/3d_epic_migration.sql
 python run.py
 ```
 
-Migration is idempotent and add-only -- creates `map3d_view_prefs` (per-user toggle persistence) and `map3d_view_log` (lightweight access log for demo metrics). No existing tables modified.
+The epic's tables (`map3d_view_prefs` for per-user toggle persistence and `map3d_view_log` for the lightweight access log used in demo metrics) are now created directly inside `create_tables.sql` — the separate `3d_epic_migration.sql` file has been folded in.
 
 ## Story-by-story implementation map
 

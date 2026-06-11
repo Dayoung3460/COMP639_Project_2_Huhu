@@ -656,9 +656,9 @@ def reports():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route('/admin/reports')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def admin_reports():
-    """Platform Analytics dashboard — Super Admin only."""
+    """Platform Analytics dashboard — Super Admin + Support Technician."""
 
     period    = request.args.get('period', '3')
     date_from = request.args.get('date_from', '')

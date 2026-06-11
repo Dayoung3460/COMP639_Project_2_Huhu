@@ -485,9 +485,15 @@ def updates_comment_remove(comment_id):
 @app.route('/hub')
 @role_required()
 def hub_index():
-    if not _user_in_any_group(session['user_id']):
-        flash('The Knowledge Hub is for members of at least one group.', 'warning')
-        return redirect(url_for('select_group'))
+    # Cross-group roles (Super Admin, Support Technician) always have hub
+    # access — they're platform-wide. Everyone else needs membership in
+    # at least one group, otherwise the hub redirects them to the picker
+    # so they can join a group first.
+    role = session.get('group_role')
+    if role not in ('Super Admin', 'Support Technician'):
+        if not _user_in_any_group(session['user_id']):
+            flash('The Knowledge Hub is for members of at least one group.', 'warning')
+            return redirect(url_for('select_group'))
 
     category_slug = (request.args.get('category') or '').strip() or None
     q = (request.args.get('q') or '').strip()
@@ -837,7 +843,7 @@ def hub_edit(article_id):
 
 
 @app.route('/hub/moderate')
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def hub_moderation():
     with db.get_cursor() as cursor:
         cursor.execute(
@@ -858,7 +864,7 @@ def hub_moderation():
 
 
 @app.route('/hub/article/<int:article_id>/decision', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def hub_decision(article_id):
     decision = (request.form.get('decision') or '').lower()
     note = (request.form.get('note') or '').strip() or None
@@ -924,7 +930,7 @@ def hub_decision(article_id):
 
 
 @app.route('/hub/article/<int:article_id>/feature', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def hub_toggle_feature(article_id):
     """Toggle the featured flag (AC: 'featuring can be removed')."""
     with db.get_cursor() as cursor:

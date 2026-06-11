@@ -318,7 +318,9 @@ def change_password():
             )
 
         flash('Password updated successfully.', 'success')
-        return redirect(url_for('profile'))
+        # change_password is an in-app surface page, so bounce the user
+        # back into the in-app profile variant rather than the marketing one.
+        return redirect(url_for('profile', ctx='app'))
 
     return render_template('auth/change_password.html')
 
@@ -335,7 +337,18 @@ def profile():
         )
         user = cursor.fetchone()
 
-    return render_template('auth/profile.html', user=user)
+    # /profile is reachable from both surfaces. Surface signal is
+    # ?ctx=app (set by base.html's user-pill); marketing pages link
+    # without it so the editorial layout stays the default. We can't
+    # use session.group_id — it stays set after the user navigates
+    # to a marketing page, so it would lock both pathways into the
+    # in-app variant.
+    in_app = request.args.get('ctx') == 'app'
+    base_template = 'base.html' if in_app else 'base_marketing.html'
+    return render_template('auth/profile.html',
+                           user=user,
+                           base_template=base_template,
+                           in_app=in_app)
 
 @app.route('/profile/edit', methods=['GET', 'POST'])
 def edit_profile():
@@ -439,7 +452,10 @@ def edit_profile():
         session['username'] = username
 
         flash('Profile updated successfully.', 'success')
-        return redirect(url_for('profile'))
+        # Bounce back to whichever surface the edit was submitted from
+        # so the user stays in the in-app shell (or marketing) consistently.
+        in_app = request.args.get('ctx') == 'app'
+        return redirect(url_for('profile', ctx='app') if in_app else url_for('profile'))
 
     with db.get_cursor() as cursor:
         cursor.execute(
@@ -448,7 +464,14 @@ def edit_profile():
         )
         user = cursor.fetchone()
 
-    return render_template('auth/edit_profile.html', user=user)
+    # Same dual-surface trick as /profile — ?ctx=app signals the in-app
+    # entry. Internal links on the in-app variant must keep the param.
+    in_app = request.args.get('ctx') == 'app'
+    base_template = 'base.html' if in_app else 'base_marketing.html'
+    return render_template('auth/edit_profile.html',
+                           user=user,
+                           base_template=base_template,
+                           in_app=in_app)
 
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
