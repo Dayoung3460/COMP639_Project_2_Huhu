@@ -545,7 +545,10 @@ body {
 /* ── Flash messages ─────────────────────────────────────── */
 .flash-stack {
   position: fixed;
-  top: 24px;
+  /* Sits below the .site-header (~76px: 16px padding * 2 + ~44px brand)
+     so the "You have been logged out." toast doesn't cover the Sign in
+     / Join Tiaki buttons in the top-right of the header. */
+  top: 96px;
   right: 24px;
   z-index: 2000;
   display: flex;
@@ -632,7 +635,9 @@ body {
     justify-content: flex-end;
   }
   .flash-stack {
-    top: 12px;
+    /* Mobile header wraps and grows taller — push the toast clear of
+       the wrapped nav row containing Sign in / Join Tiaki. */
+    top: 120px;
     right: 12px;
     left: 12px;
     max-width: none;

@@ -1,6 +1,6 @@
-# Tiaki + Innovation Epic - 3D Terrain Map
+# Tiaki + P2-107 (Group Updates & Knowledge Hub) + Innovation Epic (3D Terrain Map)
 
-This is a fork of the COMP639 Project 2 baseline with the **Innovation Epic - 3D Terrain Map (P2-106)** implemented on top.
+This is a fork of the COMP639 Project 2 baseline with both the **P2-107** epic (Group Updates + Knowledge Hub) and the **Innovation Epic - 3D Terrain Map (P2-106)** implemented on top.
 
 ## Run order
 
@@ -8,11 +8,12 @@ This is a fork of the COMP639 Project 2 baseline with the **Innovation Epic - 3D
 psql -d tiaki -f sql/create_tables.sql
 psql -d tiaki -f sql/populate_tables.sql
 psql -d tiaki -f sql/seed_data.sql
+psql -d tiaki -f sql/group_updates_hub_migration.sql
 psql -d tiaki -f sql/3d_epic_migration.sql
 python run.py
 ```
 
-See **docs/3D_EPIC.md** for the full story-by-story mapping and design notes.
+See **docs/UPDATES_HUB_EPIC.md** for the Group Updates + Knowledge Hub story-by-story mapping, and **docs/3D_EPIC.md** for the 3D Terrain Map story-by-story mapping and design notes.
 
 ## Tests
 

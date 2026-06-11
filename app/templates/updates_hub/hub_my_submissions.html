@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}My Knowledge Hub submissions{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:780px;">
+  <h2 class="mb-3"><i class="bi bi-list-check"></i> My Knowledge Hub submissions</h2>
+  <p class="text-muted">Status of every article you've submitted.</p>
+
+  {% set status_colour = {
+    'draft':          'secondary',
+    'pending_review': 'warning',
+    'published':      'success',
+    'rejected':       'danger',
+    'archived':       'secondary',
+  } %}
+
+  {% if articles %}
+  <div class="table-responsive panel p-0">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th scope="col">Title</th>
+          <th scope="col">Category</th>
+          <th scope="col">Status</th>
+          <th scope="col">Last update</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in articles %}
+        <tr>
+          <td><strong>{{ a.title }}</strong></td>
+          <td>{{ a.category_name }}</td>
+          <td>
+            <span class="badge bg-{{ status_colour[a.status] }}">
+              {{ a.status|replace('_', ' ')|capitalize }}
+            </span>
+            {% if a.status == 'rejected' and a.review_note %}
+              <div class="small text-muted">Note: {{ a.review_note }}</div>
+            {% endif %}
+          </td>
+          <td class="small text-muted">{{ a.updated_at | nz_datetime }}</td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('hub_article', article_id=a.article_id) }}">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    You haven't submitted any articles yet.
+    <a href="{{ url_for('hub_submit') }}">Submit one now.</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Group updates{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-0"><i class="bi bi-megaphone"></i> Group updates</h2>
+    {% if can_post %}
+    <a href="{{ url_for('updates_new') }}" class="btn-pf btn-sm">
+      <i class="bi bi-plus-circle"></i> New update
+    </a>
+    {% endif %}
+  </div>
+  <p class="text-muted">
+    Announcements, seasonal notices, and operational news from
+    {{ session.get('group_name', 'your group') }}. Visible only to members of this group.
+  </p>
+
+  {% if updates %}
+  <div class="row g-3">
+    {% for u in updates %}
+    <div class="col-md-6">
+      <article class="panel h-100 d-flex flex-column" aria-labelledby="upd-{{ u.update_id }}-t">
+        {% if u.thumb and u.thumb[0] %}
+          <img src="{{ url_for('static', filename='images/uploads/' ~ u.thumb[0]) }}"
+               alt="" class="img-fluid mb-2 rounded">
+        {% endif %}
+        <h3 id="upd-{{ u.update_id }}-t" class="h5 mb-1">
+          <a href="{{ url_for('updates_detail', update_id=u.update_id) }}">{{ u.title }}</a>
+          {% if u.status == 'draft' %}
+            <span class="badge bg-secondary ms-1">Draft</span>
+          {% endif %}
+        </h3>
+        <p class="small text-muted mb-2">
+          {{ u.first_name }} {{ u.last_name }} ·
+          {{ (u.published_at or u.created_at) | nz_datetime }}
+        </p>
+        <p class="flex-grow-1">{{ u.body[:240] }}{% if u.body|length > 240 %}…{% endif %}</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted">
+            <i class="bi bi-heart{% if u.liked_by_me %}-fill text-danger{% endif %}"></i> {{ u.like_count }}
+            · <i class="bi bi-chat"></i> {{ u.comment_count }}
+          </span>
+          <a href="{{ url_for('updates_detail', update_id=u.update_id) }}"
+             class="btn btn-sm btn-outline-secondary">Read</a>
+        </div>
+      </article>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    No updates yet.
+    {% if can_post %}<a href="{{ url_for('updates_new') }}">Post the first one.</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
