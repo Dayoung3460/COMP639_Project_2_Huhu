@@ -1,3 +1,27 @@
+# Tiaki + P2-107 - Group Updates & Shared Knowledge Hub
+
+This is a fork of the COMP639 Project 2 baseline with the **P2-107** epic (Group Updates + Knowledge Hub) implemented on top.
+
+## Run order
+
+```bash
+psql -d tiaki -f sql/create_tables.sql
+psql -d tiaki -f sql/populate_tables.sql
+psql -d tiaki -f sql/seed_data.sql
+psql -d tiaki -f sql/group_updates_hub_migration.sql
+python run.py
+```
+
+See **docs/UPDATES_HUB_EPIC.md** for the full story-by-story mapping.
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -p 'test_*.py'
+```
+
+---
+
 # Tiaki — Predator Trapping & Monitoring
 
 A web application for Predator Free Lincoln University (PF-LU), a fictional volunteer group running a predator-control initiative across the Lincoln University campus.

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}{{ update.title }}{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:760px;">
+  <nav aria-label="breadcrumb" class="small mb-2">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('updates_list') }}">Updates</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ update.title }}</li>
+    </ol>
+  </nav>
+  <article aria-labelledby="upd-title">
+    <h1 id="upd-title" class="h3">{{ update.title }}</h1>
+    <p class="text-muted small">
+      {{ update.first_name }} {{ update.last_name }} ·
+      {{ (update.published_at or update.created_at) | nz_datetime }}
+      {% if update.status == 'draft' %}<span class="badge bg-secondary">Draft</span>{% endif %}
+      {% if update.status == 'removed' %}<span class="badge bg-warning text-dark">Removed</span>{% endif %}
+    </p>
+    {% if photos %}
+      <div class="row g-2 mb-3">
+        {% for p in photos %}
+          <div class="col-sm-6 col-lg-4">
+            <img src="{{ url_for('static', filename='images/uploads/' ~ p) }}"
+                 alt="" class="img-fluid rounded">
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="mb-3" style="white-space:pre-wrap;">{{ update.body }}</div>
+  </article>
+
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <button id="like-btn"
+            data-update-id="{{ update.update_id }}"
+            data-liked="{{ 'true' if update.liked_by_me else 'false' }}"
+            class="btn btn-sm {% if update.liked_by_me %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}"
+            aria-pressed="{{ 'true' if update.liked_by_me else 'false' }}">
+      <i class="bi bi-heart{% if update.liked_by_me %}-fill{% endif %}"></i>
+      <span id="like-label">{{ 'Liked' if update.liked_by_me else 'Like' }}</span>
+      (<span id="like-count">{{ update.like_count }}</span>)
+    </button>
+    {% if can_moderate %}
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{{ url_for('updates_edit', update_id=update.update_id) }}">
+        <i class="bi bi-pencil"></i> Edit
+      </a>
+      <form method="post" action="{{ url_for('updates_remove', update_id=update.update_id) }}"
+            onsubmit="return confirm('Remove this update?')">
+        <button class="btn btn-outline-danger btn-sm" type="submit">
+          <i class="bi bi-trash"></i> Remove
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  <section aria-labelledby="comments-heading">
+    <h2 id="comments-heading" class="h5"><i class="bi bi-chat"></i> Comments</h2>
+    <ul id="comments-list" class="list-group mb-3">
+      {% for c in comments %}
+        <li class="list-group-item {% if c.status == 'removed' %}text-muted fst-italic{% endif %}"
+            data-comment-id="{{ c.comment_id }}">
+          <div class="d-flex justify-content-between">
+            <strong>{{ c.first_name }} {{ c.last_name }}</strong>
+            <span class="small text-muted">{{ c.created_at | nz_datetime }}</span>
+          </div>
+          {% if c.status == 'removed' %}
+            [Removed by coordinator]
+          {% else %}
+            <div style="white-space:pre-wrap;">{{ c.body }}</div>
+            {% if can_moderate %}
+              <form method="post"
+                    action="{{ url_for('updates_comment_remove', comment_id=c.comment_id) }}"
+                    class="mt-1" onsubmit="return confirm('Remove this comment?')">
+                <button class="btn btn-sm btn-link text-danger p-0" type="submit">Remove</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if update.status == 'published' %}
+    <form method="post" action="{{ url_for('updates_comment', update_id=update.update_id) }}">
+      <label for="comment-body" class="form-label">Add a comment</label>
+      <textarea id="comment-body" name="body" class="form-control" rows="3"
+                maxlength="4000" required></textarea>
+      <button class="btn-pf btn-sm mt-2" type="submit">Post comment</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+
+<script>
+  // Like-toggle + comment refresh: no full page reload, per AC.
+  (function () {
+    const likeBtn = document.getElementById('like-btn');
+    if (likeBtn) {
+      likeBtn.addEventListener('click', async () => {
+        try {
+          const r = await fetch('{{ url_for("updates_toggle_like", update_id=update.update_id) }}',
+                                { method: 'POST', credentials: 'same-origin' });
+          if (!r.ok) return;
+          const j = await r.json();
+          document.getElementById('like-count').textContent = j.count;
+          document.getElementById('like-label').textContent = j.liked ? 'Liked' : 'Like';
+          likeBtn.setAttribute('aria-pressed', j.liked ? 'true' : 'false');
+          likeBtn.classList.toggle('btn-outline-danger', j.liked);
+          likeBtn.classList.toggle('btn-outline-secondary', !j.liked);
+          const icon = likeBtn.querySelector('i');
+          icon.className = j.liked ? 'bi bi-heart-fill' : 'bi bi-heart';
+        } catch (e) { /* ignore -- next click retries */ }
+      });
+    }
+    // Poll comments every 30s so new posts surface without a full reload.
+    const list = document.getElementById('comments-list');
+    if (list) {
+      setInterval(async () => {
+        try {
+          const r = await fetch('{{ url_for("updates_comments_json", update_id=update.update_id) }}',
+                                { credentials: 'same-origin' });
+          if (!r.ok) return;
+          const j = await r.json();
+          if (!j.comments) return;
+          list.innerHTML = j.comments.map(c =>
+            `<li class="list-group-item ${c.removed ? 'text-muted fst-italic' : ''}" data-comment-id="${c.id}">
+               <div class="d-flex justify-content-between">
+                 <strong>${c.author}</strong>
+                 <span class="small text-muted">${(c.at || '').replace('T',' ').substring(0,16)}</span>
+               </div>
+               <div style="white-space:pre-wrap;">${c.body.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+             </li>`
+          ).join('');
+        } catch (e) {}
+      }, 30000);
+    }
+  })();
+</script>
+{% endblock %}

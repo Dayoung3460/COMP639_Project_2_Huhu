@@ -102,6 +102,24 @@
 
     {# Reports — all roles; Platform Analytics is Super Admin only #}
     <div class="sidebar-section-label">Reports</div>
+        <a href="{{ url_for('updates_list') }}"
+       class="sidebar-link {{ 'active' if request.endpoint and request.endpoint.startswith('updates_') }}">
+      <i class="bi bi-megaphone" aria-hidden="true"></i> <span class="link-text">Group updates</span>
+    </a>
+    <a href="{{ url_for('hub_index') }}"
+       class="sidebar-link {{ 'active' if request.endpoint and request.endpoint.startswith('hub_') and request.endpoint != 'hub_my_submissions' and request.endpoint != 'hub_moderation' }}">
+      <i class="bi bi-mortarboard" aria-hidden="true"></i> <span class="link-text">Knowledge Hub</span>
+    </a>
+    <a href="{{ url_for('hub_my_submissions') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'hub_my_submissions' }}">
+      <i class="bi bi-list-check" aria-hidden="true"></i> <span class="link-text">My submissions</span>
+    </a>
+    {% if session.get('group_role') in ('Group Coordinator', 'Super Admin') %}
+    <a href="{{ url_for('hub_moderation') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'hub_moderation' }}">
+      <i class="bi bi-hourglass-split" aria-hidden="true"></i> <span class="link-text">Hub moderation</span>
+    </a>
+    {% endif %}
     <a href="{{ url_for('reports') }}"
        class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
       <i class="bi bi-graph-up" aria-hidden="true"></i> <span class="link-text">Group Analytics</span>

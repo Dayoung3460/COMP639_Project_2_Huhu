@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Knowledge Hub moderation{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-3"><i class="bi bi-hourglass-split"></i> Knowledge Hub moderation</h2>
+  <p class="text-muted">Member submissions awaiting review. The action and who performed it are recorded.</p>
+
+  {% if pending %}
+    {% for a in pending %}
+    <article class="panel mb-3" aria-labelledby="mod-{{ a.article_id }}-t">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+          <h3 id="mod-{{ a.article_id }}-t" class="h5 mb-1">
+            <a href="{{ url_for('hub_article', article_id=a.article_id) }}">{{ a.title }}</a>
+            <span class="badge bg-success ms-1">{{ a.category_name }}</span>
+          </h3>
+          <p class="small text-muted mb-1">
+            Submitted by {{ a.first_name }} {{ a.last_name }}
+            {% if a.author_group_name %} ({{ a.author_group_name }}){% endif %} ·
+            {{ a.created_at | nz_datetime }}
+          </p>
+          {% if a.summary %}<p class="mb-2">{{ a.summary }}</p>{% endif %}
+          <details>
+            <summary>Preview body</summary>
+            <div class="mt-2" style="white-space:pre-wrap;">{{ a.body }}</div>
+          </details>
+        </div>
+        <form method="post" action="{{ url_for('hub_decision', article_id=a.article_id) }}"
+              class="d-flex flex-column gap-2" style="min-width:240px;">
+          <label class="small mb-0">
+            <input type="checkbox" name="is_featured"> Feature on publish
+          </label>
+          <input name="note" class="form-control form-control-sm" placeholder="Note to submitter (optional)" maxlength="500">
+          <div class="d-flex gap-2">
+            <button name="decision" value="approve" class="btn btn-sm btn-success">Approve</button>
+            <button name="decision" value="reject"  class="btn btn-sm btn-outline-danger">Reject</button>
+          </div>
+        </form>
+      </div>
+    </article>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-info">Queue is empty.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Knowledge Hub{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-0"><i class="bi bi-mortarboard"></i> Shared Knowledge Hub</h2>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('hub_submit') }}" class="btn-pf btn-sm">
+        <i class="bi bi-plus-circle"></i> Submit article
+      </a>
+      <a href="{{ url_for('hub_my_submissions') }}" class="btn-pf-outline btn-sm">
+        <i class="bi bi-list-check"></i> My submissions
+      </a>
+      {% if can_moderate %}
+      <a href="{{ url_for('hub_moderation') }}" class="btn-pf-outline btn-sm">
+        <i class="bi bi-hourglass-split"></i> Moderation queue
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  <p class="text-muted">
+    Curated guidance across the platform. Published entries are visible to any group's members.
+  </p>
+
+  {% if featured %}
+  <section class="mb-4" aria-labelledby="featured-h">
+    <h3 id="featured-h" class="h5"><i class="bi bi-star-fill text-warning"></i> Featured</h3>
+    <div class="row g-3">
+      {% for f in featured %}
+      <div class="col-md-4">
+        <article class="panel h-100">
+          <h4 class="h6">
+            <a href="{{ url_for('hub_article', article_id=f.article_id) }}">{{ f.title }}</a>
+          </h4>
+          <p class="small text-muted">{{ f.category_name }}</p>
+          <p class="small">{{ f.summary or (f.body[:140] ~ '…') }}</p>
+        </article>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <form method="get" class="row g-2 mb-3" role="search" aria-label="Search the Knowledge Hub">
+    <div class="col-md-6">
+      <label for="q-search" class="form-label small">Search</label>
+      <input id="q-search" type="text" name="q" value="{{ query }}" class="form-control form-control-sm"
+             placeholder="Title, body or summary text..." maxlength="80">
+    </div>
+    <div class="col-md-4">
+      <label for="q-cat" class="form-label small">Category</label>
+      <select id="q-cat" name="category" class="form-select form-select-sm">
+        <option value="">All categories</option>
+        {% for c in categories %}
+          <option value="{{ c.slug }}" {% if selected_category == c.slug %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button class="btn-pf-outline btn-sm w-100">Apply</button>
+    </div>
+  </form>
+
+  {% if articles %}
+  <div class="row g-3">
+    {% for a in articles %}
+    <div class="col-md-6">
+      <article class="panel h-100 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <span class="badge bg-success">{{ a.category_name }}</span>
+          {% if a.is_featured %}<i class="bi bi-star-fill text-warning" aria-label="Featured"></i>{% endif %}
+        </div>
+        {% if a.thumb and a.thumb[0] %}
+          <img src="{{ url_for('static', filename='images/uploads/' ~ a.thumb[0]) }}"
+               alt="" class="img-fluid mb-2 rounded">
+        {% endif %}
+        <h3 class="h5">
+          <a href="{{ url_for('hub_article', article_id=a.article_id) }}">{{ a.title }}</a>
+        </h3>
+        <p class="small text-muted mb-1">
+          v{{ a.current_version }} · {{ a.published_at | nz_datetime if a.published_at else '' }}
+          {% if a.author_group_name %} · {{ a.author_group_name }}{% endif %}
+        </p>
+        <p class="flex-grow-1">{{ a.summary or (a.body[:200] ~ '…') }}</p>
+        <a href="{{ url_for('hub_article', article_id=a.article_id) }}"
+           class="btn btn-sm btn-outline-secondary align-self-start">Read</a>
+      </article>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    {# Explicit empty state -- AC: "A search with no matches shows a clear empty state." #}
+    <div class="alert alert-info">
+      {% if query or selected_category %}
+        No articles match
+        {% if query %}<em>"{{ query }}"</em>{% endif %}
+        {% if selected_category %}in this category{% endif %}.
+        <a href="{{ url_for('hub_index') }}">Clear filters</a> to see all published entries.
+      {% else %}
+        No published articles yet. Be the first to <a href="{{ url_for('hub_submit') }}">submit one</a>.
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Submit Knowledge Article{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:780px;">
+  <h2 class="mb-3"><i class="bi bi-plus-circle"></i> Submit a Knowledge Hub article</h2>
+  <p class="text-muted">
+    Submissions enter a moderation queue. You can track yours on
+    <a href="{{ url_for('hub_my_submissions') }}">My submissions</a>.
+  </p>
+  <form method="post" enctype="multipart/form-data" novalidate>
+    <div class="mb-3">
+      <label for="h-title" class="form-label">Title <span class="text-danger" aria-hidden="true">*</span></label>
+      <input id="h-title" name="title" class="form-control" required maxlength="255"
+             value="{{ draft.title if draft else '' }}">
+    </div>
+    <div class="mb-3">
+      <label for="h-cat" class="form-label">Category <span class="text-danger" aria-hidden="true">*</span></label>
+      <select id="h-cat" name="category_id" class="form-select" required>
+        <option value="">— pick —</option>
+        {% for c in categories %}
+          <option value="{{ c.category_id }}" {% if draft and draft.category_id == c.category_id %}selected{% endif %}>
+            {{ c.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="h-sum" class="form-label">Short summary</label>
+      <input id="h-sum" name="summary" class="form-control" maxlength="500"
+             value="{{ draft.summary if draft else '' }}">
+    </div>
+    <div class="mb-3">
+      <label for="h-body" class="form-label">Body <span class="text-danger" aria-hidden="true">*</span></label>
+      <textarea id="h-body" name="body" class="form-control" rows="10" required>{{ draft.body if draft else '' }}</textarea>
+    </div>
+    <div class="mb-3">
+      <label for="h-photos" class="form-label">Photos (optional, multiple allowed)</label>
+      <input id="h-photos" type="file" name="photos" class="form-control"
+             accept="image/png,image/jpeg,image/gif" multiple>
+      <div class="form-text">Max 4 MB each.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn-pf" type="submit"><i class="bi bi-send"></i> Submit for review</button>
+      <a class="btn btn-link" href="{{ url_for('hub_index') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
