@@ -170,6 +170,32 @@ Your trap network in 3D
     display: none;
   }
 
+  /* Keyboard hint shown only while a flyby is running, just above the
+     speed control row (which sits at bottom: 24px and is ~44px tall). */
+  #m3d-fly-hint {
+    position: absolute;
+    bottom: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.66);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    pointer-events: none;
+    z-index: 7;
+  }
+  #m3d-fly-hint[hidden] { display: none; }
+  #m3d-fly-hint kbd {
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 4px;
+    padding: 0 4px;
+    font-family: inherit;
+    font-size: 11.5px;
+  }
+
   #m3d-fly-ctrls .m3d-fly-speed-lbl {
     color: #444;
     font-weight: 500;
@@ -384,12 +410,16 @@ Your trap network in 3D
       <button id="m3d-imagery-reload" type="button" class="m3d-reload">Reload</button>
     </div>
     <div id="m3d-fly-ctrls" hidden role="group" aria-label="Flyby controls">
-      <button id="m3d-fly-pause" type="button" title="Pause / continue the flyby" aria-label="Pause flyby">⏸
+      <button id="m3d-fly-pause" type="button" title="Pause / continue (Space)" aria-label="Pause flyby">⏸
         Pause</button>
       <span class="m3d-fly-speed-lbl">Speed</span>
-      <button id="m3d-fly-slow" type="button" title="Slow down" aria-label="Slow down flyby">−</button>
+      <button id="m3d-fly-slow" type="button" title="Slow down (−)" aria-label="Slow down flyby">−</button>
       <span id="m3d-fly-speed">1×</span>
-      <button id="m3d-fly-fast" type="button" title="Speed up" aria-label="Speed up flyby">+</button>
+      <button id="m3d-fly-fast" type="button" title="Speed up (+)" aria-label="Speed up flyby">+</button>
+    </div>
+    <div id="m3d-fly-hint" hidden aria-live="polite">
+      Click to look freely &nbsp;·&nbsp; <kbd>Space</kbd> pause &nbsp;·&nbsp; <kbd>+</kbd>/<kbd>−</kbd> speed
+      &nbsp;·&nbsp; <kbd>Esc</kbd> release cursor
     </div>
     <div id="m3d-popup" class="m3d-popup" role="dialog" aria-label="Asset details">
       <button class="close" type="button" aria-label="Close" id="m3d-popup-close">&times;</button>
