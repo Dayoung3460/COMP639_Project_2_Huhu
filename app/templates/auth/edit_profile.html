@@ -1,176 +1,136 @@
 {# templates/auth/edit_profile.html
    Route: GET/POST /profile/edit  →  edit_profile()
-   Extends base.html — logged-in users only (sidebar layout).
+   Personal, cross-group page — marketing surface. Form field names
+   and the photo preview ids are a contract with edit_profile() and
+   the inline preview script; don't rename them.
 #}
-{% extends 'base.html' %}
-{% block title %}Edit Profile{% endblock %}
+{% extends 'base_marketing.html' %}
 
-{% block page_title %}Edit Profile{% endblock %}
+{% block title %}Edit Profile · Tiaki{% endblock %}
 
-{% block header_actions %}
-  <a href="{{ url_for('profile') }}" class="btn-sm-outline">
-    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to Profile
-  </a>
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 {% endblock %}
 
 {% block content %}
-<form method="POST" action="{{ url_for('edit_profile') }}"
-      enctype="multipart/form-data">
+<div class="container profile-page">
 
-  <div class="row g-3">
+  <p class="section-eyebrow">Account</p>
+  <h1 class="feed-title">Edit profile</h1>
+  <p class="aside-row-meta"><span aria-hidden="true">*</span> Required fields</p>
 
-      <p class="mt-4 mb-0" style="font-size:11px; color:#6b7c72; ">
-        <span class="required-star" aria-hidden="true">*</span> Required fields
-      </p>
-    {# ── Left column ── #}
-    <div class="col-lg-8">
+  <form method="POST" action="{{ url_for('edit_profile') }}"
+        enctype="multipart/form-data">
+    <div class="profile-stack">
 
-      {# Personal Details #}
-      <div class="panel mb-3">
-        <div class="panel-header">
-          <div class="panel-title"><i class="bi bi-person me-2" aria-hidden="true"></i>Personal Details</div>
-        </div>
-        <div class="panel-body">
-          <div class="row g-2">
-            <div class="col-6 field-group">
-              <label class="form-label" for="firstNameInput">First Name <span class="required-star" aria-hidden="true">*</span></label>
-              <input type="text" class="form-control form-control-sm" name="first_name"
-                     id="firstNameInput"
-                     value="{{ user.first_name if user else '' }}" required>
-            </div>
-            <div class="col-6 field-group">
-              <label class="form-label" for="lastNameInput">Last Name <span class="required-star" aria-hidden="true">*</span></label>
-              <input type="text" class="form-control form-control-sm" name="last_name"
-                     id="lastNameInput"
-                     value="{{ user.last_name if user else '' }}" required>
-            </div>
-            <div class="col-6 field-group">
-              <label class="form-label" for="usernameInput">Username <span class="required-star" aria-hidden="true">*</span></label>
-              <input type="text" class="form-control form-control-sm" name="username"
-                     id="usernameInput"
-                     value="{{ user.username if user else '' }}" required>
-              <div class="form-hint">Must be unique</div>
-            </div>
-            <div class="col-6 field-group">
-              <label class="form-label" for="emailInput">Email <span class="required-star" aria-hidden="true">*</span></label>
-              <input type="email" class="form-control form-control-sm" name="email"
-                     id="emailInput"
-                     value="{{ user.email if user else '' }}" required>
-            </div>
-            <div class="col-6 field-group">
-              <label class="form-label" for="phoneInput">Phone</label>
-              <input type="text" class="form-control form-control-sm" name="phone"
-                     id="phoneInput"
-                     placeholder="e.g. 021 123 4567"
-                     value="{{ user.phone or '' }}">
-            </div>
-            <div class="col-6 field-group">
-              <label class="form-label" for="addressInput">Home Address</label>
-              <input type="text" class="form-control form-control-sm" name="address"
-                     id="addressInput"
-                     placeholder="e.g. 12 Haslemere Road"
-                     value="{{ user.address or '' }}">
-              <div class="form-hint">Emergency use only</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {# Emergency Contact #}
-      <div class="panel mb-3">
-        <div class="panel-header">
-          <div class="panel-title"><i class="bi bi-heart-pulse me-2" aria-hidden="true"></i>Emergency Contact</div>
-        </div>
-        <div class="panel-body">
-          <div class="row g-2">
-            <div class="col-6 field-group">
-              <label class="form-label" for="emergencyNameInput">Contact Name</label>
-              <input type="text" class="form-control form-control-sm" name="emergency_name"
-                     id="emergencyNameInput"
-                     placeholder="Full name"
-                     value="{{ user.emergency_contact_name or '' }}">
-            </div>
-            <div class="col-6 field-group">
-              <label class="form-label" for="emergencyPhoneInput">Contact Phone</label>
-              <input type="text" class="form-control form-control-sm" name="emergency_phone"
-                     id="emergencyPhoneInput"
-                     placeholder="Phone number"
-                     value="{{ user.emergency_contact_phone or '' }}">
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    {# ── Right column ── #}
-    <div class="col-lg-4">
-
-      {# Profile Photo #}
-      <div class="panel mb-3">
-        <div class="panel-header">
-          <div class="panel-title"><i class="bi bi-camera me-2" aria-hidden="true"></i>Profile Photo</div>
-        </div>
-        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; gap:14px;">
-
-          {# Avatar preview #}
-          <div id="photoPreview"
-               aria-hidden="true"
-               style="width:80px; height:80px; border-radius:50%;
-                      background:var(--pf-600); border:3px solid var(--pf-300);
-                      display:flex; align-items:center; justify-content:center;
-                      font-size:24px; color:#fff; font-family:'Cabin',sans-serif;
-                      font-weight:700; flex-shrink:0; overflow:hidden;">
+      {# ── Profile photo ──────────────────────────────────── #}
+      <section class="aside-card" aria-labelledby="edit-photo-title">
+        <header class="aside-card-head">
+          <h2 id="edit-photo-title" class="aside-card-title">Profile photo</h2>
+        </header>
+        <div class="profile-head">
+          <span id="photoPreview" class="you-avatar profile-avatar" aria-hidden="true">
             {% if user.profile_photo %}
-              <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}"
-                   style="width:100%; height:100%; object-fit:cover;"
-                   alt="">
+              <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}" alt="">
             {% else %}
               {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
             {% endif %}
+          </span>
+          <div class="field" style="flex:1; min-width:240px;">
+            <label for="photoInput">Upload a new photo</label>
+            <input type="file" name="profile_photo" id="photoInput"
+                   accept=".png,.jpg,.jpeg,.gif">
+            <p class="field-help">PNG, JPG, GIF. Leave blank to keep current.</p>
+            {% if user.profile_photo %}
+              <p class="field-help">
+                <label>
+                  <input type="checkbox" name="remove_photo" id="removePhoto">
+                  Remove current photo
+                </label>
+              </p>
+            {% endif %}
           </div>
-
-          {# Upload #}
-          <div style="width:100%;">
-            <label for="photoInput" class="visually-hidden">Upload profile photo</label>
-            <input type="file" class="form-control form-control-sm" name="profile_photo"
-                   id="photoInput" accept=".png,.jpg,.jpeg,.gif">
-            <div class="form-hint text-center">PNG, JPG, GIF. Leave blank to keep current.</div>
-          </div>
-
-          {# Remove option #}
-          {% if user.profile_photo %}
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="remove_photo" id="removePhoto">
-            <label class="form-check-label" for="removePhoto"
-                   style="font-size:12px; color:#c0392b;">
-              Remove current photo
-            </label>
-          </div>
-          {% endif %}
-
         </div>
-      </div>
+      </section>
 
-      {# Actions #}
-      <div class="d-flex flex-column gap-2">
-        <button type="submit" class="btn-sm-pf" style="justify-content:center; padding:8px;">
-          <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Save Changes
-        </button>
-        <a href="{{ url_for('profile') }}" class="btn-sm-outline"
-           style="justify-content:center; padding:8px; text-align:center;">
-          Cancel
-        </a>
-        <a href="{{ url_for('change_password') }}" class="btn-sm-outline"
-           style="justify-content:center; padding:8px; text-align:center;">
-          <i class="bi bi-key me-1" aria-hidden="true"></i>Change Password
-        </a>
-      </div>
+      {# ── Personal details ───────────────────────────────── #}
+      <section class="aside-card" aria-labelledby="edit-personal-title">
+        <header class="aside-card-head">
+          <h2 id="edit-personal-title" class="aside-card-title">Personal details</h2>
+        </header>
+        <div class="field-row">
+          <div class="field">
+            <label for="firstNameInput">First name <span aria-hidden="true">*</span></label>
+            <input type="text" name="first_name" id="firstNameInput"
+                   value="{{ user.first_name if user else '' }}" required>
+          </div>
+          <div class="field">
+            <label for="lastNameInput">Last name <span aria-hidden="true">*</span></label>
+            <input type="text" name="last_name" id="lastNameInput"
+                   value="{{ user.last_name if user else '' }}" required>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="usernameInput">Username <span aria-hidden="true">*</span></label>
+            <input type="text" name="username" id="usernameInput"
+                   value="{{ user.username if user else '' }}" required>
+            <p class="field-help">Must be unique</p>
+          </div>
+          <div class="field">
+            <label for="emailInput">Email <span aria-hidden="true">*</span></label>
+            <input type="email" name="email" id="emailInput"
+                   value="{{ user.email if user else '' }}" required>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="phoneInput">Phone</label>
+            <input type="text" name="phone" id="phoneInput"
+                   placeholder="e.g. 021 123 4567"
+                   value="{{ user.phone or '' }}">
+          </div>
+          <div class="field">
+            <label for="addressInput">Home address</label>
+            <input type="text" name="address" id="addressInput"
+                   placeholder="e.g. 12 Haslemere Road"
+                   value="{{ user.address or '' }}">
+            <p class="field-help">Emergency use only</p>
+          </div>
+        </div>
+      </section>
+
+      {# ── Emergency contact ──────────────────────────────── #}
+      <section class="aside-card" aria-labelledby="edit-emergency-title">
+        <header class="aside-card-head">
+          <h2 id="edit-emergency-title" class="aside-card-title">Emergency contact</h2>
+        </header>
+        <div class="field-row">
+          <div class="field">
+            <label for="emergencyNameInput">Contact name</label>
+            <input type="text" name="emergency_name" id="emergencyNameInput"
+                   placeholder="Full name"
+                   value="{{ user.emergency_contact_name or '' }}">
+          </div>
+          <div class="field">
+            <label for="emergencyPhoneInput">Contact phone</label>
+            <input type="text" name="emergency_phone" id="emergencyPhoneInput"
+                   placeholder="Phone number"
+                   value="{{ user.emergency_contact_phone or '' }}">
+          </div>
+        </div>
+      </section>
+
+      <button type="submit" class="btn btn-primary btn-block">Save changes</button>
+      <p class="auth-link-row">
+        <a href="{{ url_for('profile') }}">Cancel</a> ·
+        <a href="{{ url_for('change_password') }}">Change password</a>
+      </p>
 
     </div>
-  </div>
+  </form>
 
-</form>
+</div>
 {% endblock %}
 
 {% block scripts %}

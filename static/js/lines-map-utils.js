@@ -174,8 +174,10 @@ function orderPointsByNearestNeighbor(points) {
  * @param {HTMLElement} container
  */
 function scrollAndFocusForm(container) {
-  const navbarH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h')) || 58;
-  const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - 8;
+  const rootStyle = getComputedStyle(document.documentElement);
+  const navbarH = parseFloat(rootStyle.getPropertyValue('--navbar-h')) || 58;
+  const ribbonH = parseFloat(rootStyle.getPropertyValue('--ribbon-h')) || 0;
+  const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - ribbonH - 8;
   window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
 
   const firstInput = container.querySelector('input, select, button, a[href]');

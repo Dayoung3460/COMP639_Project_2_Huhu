@@ -140,6 +140,7 @@ from app import themes
 from app import identity_defaults  # noqa: F401 — registers /identity/default/* routes
 from app import helpdesk
 from app import updates_hub  # noqa: F401 -- Updates + Knowledge Hub (P2-107)
+from app import map3d  # noqa: F401 -- Innovation epic: 3D terrain map (P2-106)
 
 # ── Template globals ──────────────────────────────────────────────────────────
 
