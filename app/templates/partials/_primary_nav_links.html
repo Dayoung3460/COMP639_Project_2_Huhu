@@ -104,4 +104,13 @@
     </a>
   {% endif %}
 
+
+  {# Innovation Epic -- 3D Terrain Map (visible to all in-group roles) #}
+  {% if session.get('group_id') and session.get('group_role') in ('Observer', 'Operator', 'Group Coordinator', 'Super Admin') %}
+    <a href="{{ url_for('map3d_index') }}"
+       class="{{ wrapper_class }} {{ 'active' if request.endpoint and request.endpoint.startswith('map3d_') }}">
+      {% if show_icons %}<i class="bi bi-box" aria-hidden="true"></i> {% endif %}3D Map
+    </a>
+  {% endif %}
+
 {% endmacro %}

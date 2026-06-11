@@ -56,6 +56,19 @@
               }
             ) }}
           {% endif %}
+        {% endif %}
+        {# View in 3D sits where Add Trap/Station used to be, so the
+           Add button keeps its primary-action slot at the left edge.
+           Ungated so Observers/Operators (and retired lines) still
+           get the deep link into the 3D viewer. #}
+        {{ pf_link_button(
+          url_for('map3d_index', line=line.line_id),
+          'View in 3D',
+          variant='btn-sm-outline',
+          icon='bi-box',
+          attrs={'title': 'Open this line in the 3D terrain map'}
+        ) }}
+        {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') and not line.is_retired %}
           {% if session.get('group_role') == 'Group Coordinator' %}
             {{ pf_link_button(url_for('coordinator_assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
           {% else %}
