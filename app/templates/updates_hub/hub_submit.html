@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Submit Knowledge Article{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-plus-circle"></i>
+  </div>
+  Submit an article
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Submissions enter a moderation queue. Track yours on
+<a href="{{ url_for('hub_my_submissions') }}">My submissions</a>.
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('hub_index') }}">Knowledge Hub</a></li>
+    <li class="breadcrumb-item active">Submit</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width:780px;">
+  <div class="panel">
+    <div class="panel-body p-4">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="mb-3">
+          <label for="h-title" class="form-label">Title <span class="text-danger" aria-hidden="true">*</span></label>
+          <input id="h-title" name="title" class="form-control" required maxlength="255"
+                 value="{{ draft.title if draft else '' }}">
+        </div>
+        <div class="mb-3">
+          <label for="h-cat" class="form-label">Category <span class="text-danger" aria-hidden="true">*</span></label>
+          <select id="h-cat" name="category_id" class="form-select" required>
+            <option value="">&mdash; pick &mdash;</option>
+            {% for c in categories %}
+              <option value="{{ c.category_id }}" {% if draft and draft.category_id == c.category_id %}selected{% endif %}>
+                {{ c.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="h-sum" class="form-label">Short summary</label>
+          <input id="h-sum" name="summary" class="form-control" maxlength="500"
+                 value="{{ draft.summary if draft else '' }}">
+        </div>
+        <div class="mb-3">
+          <label for="h-body" class="form-label">Body <span class="text-danger" aria-hidden="true">*</span></label>
+          <textarea id="h-body" name="body" class="form-control" rows="10" required>{{ draft.body if draft else '' }}</textarea>
+        </div>
+        <div class="mb-4">
+          <label for="h-photos" class="form-label">Photos (optional, multiple allowed)</label>
+          <input id="h-photos" type="file" name="photos" class="form-control"
+                 accept="image/png,image/jpeg,image/gif" multiple>
+          <div class="form-text">Max 4 MB each.</div>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <a class="btn-pf-outline" href="{{ url_for('hub_index') }}">Cancel</a>
+          <button class="btn-pf" type="submit">
+            <i class="bi bi-send me-1" aria-hidden="true"></i>Submit for review
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -49,6 +49,11 @@
          class="sidebar-link {{ 'active' if request.endpoint == 'operator_dashboard' }}">
         <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
       </a>
+    {% elif session.get('group_role') == 'Support Technician' %}
+      <a href="{{ url_for('helpdesk_queue') }}"
+         class="sidebar-link {{ 'active' if request.endpoint == 'helpdesk_queue' }}">
+        <i class="bi bi-house" aria-hidden="true"></i> <span class="link-text">Dashboard</span>
+      </a>
     {% else %}
       <a href="{{ url_for('observer_dashboard') }}"
          class="sidebar-link {{ 'active' if request.endpoint == 'observer_dashboard' }}">
@@ -100,22 +105,55 @@
       <i class="bi bi-binoculars" aria-hidden="true"></i> <span class="link-text">Observations</span>
     </a>
 
-    {# Reports — all roles; Platform Analytics is Super Admin only #}
-    <div class="sidebar-section-label">Reports</div>
+    {# Community — Group Updates + Knowledge Hub (P2-107).
+       "Group updates" is group-scoped and rejects cross-group roles
+       (Super Admin, Support Technician), so hide the link from them. #}
+    <div class="sidebar-section-label">Community</div>
+    {% if session.get('group_role') not in ('Super Admin', 'Support Technician') %}
+    <a href="{{ url_for('updates_list') }}"
+       class="sidebar-link {{ 'active' if request.endpoint and request.endpoint.startswith('updates_') }}">
+      <i class="bi bi-megaphone" aria-hidden="true"></i> <span class="link-text">Group updates</span>
+    </a>
+    {% endif %}
+    <a href="{{ url_for('hub_index') }}"
+       class="sidebar-link {{ 'active' if request.endpoint and request.endpoint.startswith('hub_') and request.endpoint != 'hub_my_submissions' and request.endpoint != 'hub_moderation' }}">
+      <i class="bi bi-mortarboard" aria-hidden="true"></i> <span class="link-text">Knowledge Hub</span>
+    </a>
+    <a href="{{ url_for('hub_my_submissions') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'hub_my_submissions' }}">
+      <i class="bi bi-list-check" aria-hidden="true"></i> <span class="link-text">My submissions</span>
+    </a>
+    {% if session.get('group_role') in ('Group Coordinator', 'Super Admin') %}
+    <a href="{{ url_for('hub_moderation') }}"
+       class="sidebar-link {{ 'active' if request.endpoint == 'hub_moderation' }}">
+      <i class="bi bi-hourglass-split" aria-hidden="true"></i> <span class="link-text">Hub moderation</span>
+    </a>
+    {% endif %}
+
+    {# Visualise — 3D Map (Innovation Epic) + analytics reports.
+       Platform Analytics is Super Admin only. #}
+    <div class="sidebar-section-label">Visualise</div>
+    <a href="{{ url_for('map3d_index') }}"
+       class="sidebar-link {{ 'active' if request.endpoint and request.endpoint.startswith('map3d_') }}">
+      <i class="bi bi-box" aria-hidden="true"></i> <span class="link-text">3D Map</span>
+    </a>
     <a href="{{ url_for('reports') }}"
        class="sidebar-link {{ 'active' if request.endpoint == 'reports' }}">
       <i class="bi bi-graph-up" aria-hidden="true"></i> <span class="link-text">Group Analytics</span>
     </a>
-    {% if session.get('group_role') == 'Super Admin' %}
+    {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
     <a href="{{ url_for('admin_reports') }}"
        class="sidebar-link {{ 'active' if request.endpoint == 'admin_reports' }}">
       <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> <span class="link-text">Platform Analytics</span>
     </a>
     {% endif %}
 
-    {# Super Admin platform management. "New Line" lives on the Lines
-       page itself, so it doesn't need a sidebar entry too. #}
-    {% if session.get('group_role') == 'Super Admin' %}
+    {# Platform management. Support Technician gets the same Manage block
+       as Super Admin except the "Support Technicians" sub-link, which
+       grants/revokes the TS role (role changes are Super Admin only per
+       spec). "New Line" lives on the Lines page itself, so it doesn't
+       need a sidebar entry too. #}
+    {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
       <div class="sidebar-section-label">Manage</div>
       <a href="{{ url_for('admin_users') }}"
          class="sidebar-link {{ 'active' if request.endpoint in ['admin_users','admin_user_detail'] }}">
@@ -133,10 +171,12 @@
          class="sidebar-link {{ 'active' if request.endpoint in ['reference_data', 'manage_lookup'] }}">
         <i class="bi bi-database-gear" aria-hidden="true"></i> <span class="link-text">Reference Data</span>
       </a>
+      {% if session.get('group_role') == 'Super Admin' %}
       <a href="{{ url_for('admin_support_technicians') }}"
          class="sidebar-link {{ 'active' if request.endpoint in ['admin_support_technicians', 'admin_support_tech_grant', 'admin_support_tech_revoke'] }}">
         <i class="bi bi-headset" aria-hidden="true"></i> <span class="link-text">Support Technicians</span>
       </a>
+      {% endif %}
     {% endif %}
 
     {# Group Coordinator management — scoped to the active group. #}
@@ -191,10 +231,15 @@
           <i class="bi bi-clock-history" aria-hidden="true"></i> <span class="link-text">History</span>
         </a>
       {% endif %}
+      {# Group Identity is a per-group concept — Super Admin sits above
+         a single group so the cover/profile asset editor doesn't apply
+         to them. Hidden for Super Admin to avoid the dead-end. #}
+      {% if session.get('group_role') != 'Super Admin' %}
       <a href="{{ url_for('coordinator_group_identity') }}"
          class="sidebar-link {{ 'active' if request.endpoint == 'coordinator_group_identity' }}">
         <i class="bi bi-image" aria-hidden="true"></i> <span class="link-text">Group identity</span>
       </a>
+      {% endif %}
     {% endif %}
 
     {# Support — all roles; queue + user search shown only for staff #}
@@ -206,11 +251,11 @@
     {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
       <a href="{{ url_for('helpdesk_queue') }}"
          class="sidebar-link {{ 'active' if request.endpoint in ('helpdesk_queue', 'helpdesk_ticket') }}">
-        <i class="bi bi-inbox-fill" aria-hidden="true"></i> <span class="link-text">All Requests</span>
+        <i class="bi bi-inbox-fill" aria-hidden="true"></i> <span class="link-text">Support Queue</span>
       </a>
       <a href="{{ url_for('helpdesk_user_search') }}"
          class="sidebar-link {{ 'active' if request.endpoint in ('helpdesk_user_search', 'helpdesk_user_profile') }}">
-        <i class="bi bi-search" aria-hidden="true"></i> <span class="link-text">User Search</span>
+        <i class="bi bi-person-gear" aria-hidden="true"></i> <span class="link-text">Account Management</span>
       </a>
     {% endif %}
     {% if session.get('group_role') not in ('Support Technician', 'Super Admin') %}
@@ -224,9 +269,13 @@
       </a>
     {% endif %}
 
-    {# Account — all roles #}
+    {# Account — all roles.
+       Profile pulls double-duty as a marketing-surface page too, so we
+       pass ?ctx=app from the sidebar so the route renders the in-app
+       variant. Other in-app entry points (footer, topbar overflow,
+       navbar user-pill) do the same. #}
     <div class="sidebar-section-label">Account</div>
-    <a href="{{ url_for('profile') }}"
+    <a href="{{ url_for('profile', ctx='app') }}"
        class="sidebar-link {{ 'active' if request.endpoint == 'profile' }}">
       <i class="bi bi-person" aria-hidden="true"></i> <span class="link-text">My Profile</span>
     </a>

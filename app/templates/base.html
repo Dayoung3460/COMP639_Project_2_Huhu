@@ -163,7 +163,7 @@
        username-only cases (see _compute_initials). #}
     <div class="nav-actions">
 
-      <a href="{{ url_for('profile') }}" class="user-pill">
+      <a href="{{ url_for('profile', ctx='app') }}" class="user-pill">
         <div class="user-pill__avatar">
           {% if nav_profile_photo %}
             <img src="{{ url_for('static', filename='images/uploads/' + nav_profile_photo) }}"
@@ -197,7 +197,8 @@
           <i class="bi bi-bell-fill" style="font-size:18px;" aria-hidden="true"></i>
           {% set notif_count = nav_notifications|length %}
           {% if notif_count > 0 %}
-            <span style="position:absolute; top:0; right:0;
+            <span id="notifBadge"
+                  style="position:absolute; top:0; right:0;
                          background:#dc3545; color:#fff;
                          font-size:10px; font-weight:700; line-height:1;
                          padding:2px 5px; border-radius:10px; min-width:16px; text-align:center;">
@@ -483,6 +484,27 @@
       bsAlert.close();
     }, 4000);
   });
+
+  // ── Notification bell: mark all read on dropdown open ────
+  // Fires once per page-load. Hides the badge immediately for
+  // perceived responsiveness; server call clears is_active so the
+  // next page render shows an empty bell.
+  (function () {
+    const btn   = document.getElementById('notifDropdown');
+    const badge = document.getElementById('notifBadge');
+    if (!btn || !badge) return;
+
+    let marked = false;
+    btn.addEventListener('show.bs.dropdown', function () {
+      if (marked) return;
+      marked = true;
+      badge.style.display = 'none';
+      fetch('{{ url_for("notifications_mark_all_read") }}', {
+        method: 'POST',
+        credentials: 'same-origin',
+      }).catch(function () { /* best-effort; UI already updated */ });
+    });
+  })();
 
   // ── Sidebar collapse toggle ──────────────────────────────
   (function () {

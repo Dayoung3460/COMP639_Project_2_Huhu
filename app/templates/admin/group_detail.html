@@ -222,7 +222,10 @@
                     <th scope="col">Name</th>
                     <th scope="col" class="text-center">Username</th>
                     <th scope="col" class="text-center">Account</th>
+                    {# Remove action is role-changing — Super Admin only per spec. #}
+                    {% if session.get('group_role') == 'Super Admin' %}
                     <th scope="col" class="text-center">Actions</th>
+                    {% endif %}
                   </tr>
                 </thead>
                 <tbody>
@@ -240,6 +243,7 @@
                           {{ c.account_status | capitalize }}
                         </span>
                       </td>
+                      {% if session.get('group_role') == 'Super Admin' %}
                       <td class="text-center">
                         {% if coordinators | length > 1 %}
                           <button type="button" class="btn-sm-danger"
@@ -257,6 +261,7 @@
                           </button>
                         {% endif %}
                       </td>
+                      {% endif %}
                     </tr>
                   {% endfor %}
                 </tbody>
@@ -267,6 +272,8 @@
           {% endif %}
 
           <!-- Add coordinator from existing members -->
+          {# Promote/demote is role-changing — Super Admin only per spec. #}
+          {% if session.get('group_role') == 'Super Admin' %}
           {% if promotable_members %}
             <form method="POST" action="{{ url_for('admin_group_add_coordinator', group_id=group.group_id) }}"
                   class="d-flex gap-2 align-items-end" autocomplete="off">
@@ -295,6 +302,7 @@
               No other members available to promote. Add members to the group first.
             </p>
           {% endif %}
+          {% endif %}{# /Super Admin only #}
 
         </div>
       </div>

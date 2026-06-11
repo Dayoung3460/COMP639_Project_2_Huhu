@@ -1,0 +1,466 @@
+{% extends 'base.html' %}
+{% block title %}3D Terrain Map{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-box"></i>
+  </div>
+  3D Terrain Map
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Your trap network in 3D
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">3D Map</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  /* Make the page itself a viewport-tall flex column so the stage can grow
+     into whatever space is left after the header + toolbar. */
+  .m3d-page {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* The 3D stage needs every vertical pixel — hide the group hero strip
+     (rendered by base.html when a group is active) on this route. The
+     group brand still shows in the navbar; the hero photo is just
+     visual chrome that costs ~200px of stage height. */
+  body .hero {
+    display: none;
+  }
+
+  /* Stage height is set directly from JS (fitStageHeight) with !important so
+     it always fills viewport-minus-everything-above, no matter the nav size. */
+  /* #m3d-fullscreen + #m3d-flybtn now styled via #m3d-topbar above */
+  #m3d-stage {
+    position: relative;
+    width: 100%;
+    min-height: 650px;
+    background: #0b1622;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  #m3d-stage:fullscreen {
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  /* Top bar overlaid on the stage; holds all controls + buttons inline */
+  #m3d-topbar {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.92);
+    color: #222;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 5;
+  }
+
+  #m3d-topbar label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    color: #444;
+    font-weight: 500;
+  }
+
+  #m3d-topbar select,
+  #m3d-topbar input {
+    font-size: 12px;
+    padding: 1px 4px;
+    height: 22px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: #fff;
+    max-width: 180px;
+  }
+
+  #m3d-topbar input {
+    width: 60px;
+  }
+
+  #m3d-topbar button {
+    font-size: 12px;
+    padding: 2px 8px;
+    height: 22px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+  }
+
+  #m3d-topbar button:hover {
+    background: #f3f3f3;
+  }
+
+  #m3d-topbar button:disabled {
+    color: #999;
+    cursor: not-allowed;
+    background: #eee;
+  }
+
+  #m3d-topbar .m3d-retry {
+    background: #ffc107;
+  }
+
+  #m3d-topbar .m3d-retry:hover {
+    background: #ffca2c;
+  }
+
+  #m3d-topbar .m3d-reload {
+    background: #6c757d;
+    color: #fff;
+  }
+
+  #m3d-topbar .m3d-reload:hover {
+    background: #5a6268;
+  }
+
+  #m3d-topbar .m3d-sep {
+    display: inline-block;
+    width: 1px;
+    height: 16px;
+    background: #ccc;
+    margin: 0 2px;
+  }
+
+  /* Flyby controls -- floating overlay, bottom-centre of the stage. */
+  #m3d-fly-ctrls {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    color: #222;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.25);
+    z-index: 7;
+  }
+
+  #m3d-fly-ctrls[hidden] {
+    display: none;
+  }
+
+  /* Keyboard hint shown only while a flyby is running, just above the
+     speed control row (which sits at bottom: 24px and is ~44px tall). */
+  #m3d-fly-hint {
+    position: absolute;
+    bottom: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.66);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    pointer-events: none;
+    z-index: 7;
+  }
+  #m3d-fly-hint[hidden] { display: none; }
+  #m3d-fly-hint kbd {
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 4px;
+    padding: 0 4px;
+    font-family: inherit;
+    font-size: 11.5px;
+  }
+
+  #m3d-fly-ctrls .m3d-fly-speed-lbl {
+    color: #444;
+    font-weight: 500;
+    padding: 0 4px;
+  }
+
+  #m3d-fly-ctrls #m3d-fly-speed {
+    min-width: 36px;
+    text-align: center;
+    font-weight: 600;
+    color: #222;
+  }
+
+  #m3d-fly-ctrls button {
+    font-size: 13px;
+    padding: 4px 10px;
+    height: 28px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+  }
+
+  #m3d-fly-ctrls button:hover {
+    background: #f1f1f1;
+  }
+
+  #m3d-fly-ctrls #m3d-fly-slow,
+  #m3d-fly-ctrls #m3d-fly-fast {
+    width: 30px;
+    padding: 0;
+    font-weight: 700;
+  }
+
+  #m3d-stage canvas {
+    display: block;
+    outline: none;
+  }
+
+  .m3d-legend {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: auto;
+    background: rgba(255, 255, 255, 0.92);
+    color: #222;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    max-width: 280px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .m3d-legend ul {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 0;
+  }
+
+  .m3d-legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0;
+  }
+
+  .m3d-legend .sw {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+
+  /* Bootstrap's .text-muted (#6c757d) on the legend's white background
+     is borderline unreadable. Darken it here so the elevation/imagery
+     status lines and the controls hint stay easy to scan. */
+  .m3d-legend .text-muted {
+    color: #2d3d33 !important;
+  }
+
+  .m3d-popup {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    max-width: 280px;
+    background: rgba(255, 255, 255, 0.96);
+    color: #222;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: none;
+  }
+
+  .m3d-popup.show {
+    display: block;
+  }
+
+  .m3d-popup .close {
+    float: right;
+    border: 0;
+    background: transparent;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .m3d-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #15201a;
+    text-align: center;
+    padding: 32px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.85);
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container py-2 m3d-page">
+  {% if is_super_admin %}
+  <div class="d-flex justify-content-end mb-2">
+    <form method="get" id="m3d-group-form">
+      <label for="m3d-group" class="form-label small mb-1">Group</label>
+      <select id="m3d-group" name="group_id" class="form-select form-select-sm" onchange="this.form.submit()"
+        aria-label="Select a group">
+        <option value="">-- select a group --</option>
+        {% for g in all_groups %}
+        <option value="{{ g.group_id }}" {% if g.group_id==selected_group_id %}selected{% endif %}>{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if no_group_selected %}
+  <div class="alert alert-info" role="alert">
+    <i class="bi bi-info-circle"></i> Select a group above to view its 3D terrain map.
+  </div>
+  {% else %}
+
+  <div id="m3d-stage" tabindex="0" aria-label="3D terrain map of {{ session.get('group_name', '') }}">
+    <div id="m3d-topbar" aria-label="3D map controls">
+      <button id="m3d-fullscreen" type="button" title="Toggle fullscreen" aria-label="Toggle fullscreen">⛶
+        Fullscreen</button>
+      <button id="m3d-flybtn" type="button" title="Fly along the focused line at 200 m altitude"
+        aria-label="Fly along the focused line">✈ Fly the line</button>
+      <span class="m3d-sep"></span>
+      <label>Focus
+        <select id="m3d-line" aria-label="Focus a line">
+          <option value="">-- whole network --</option>
+          {% if is_operator and assigned_lines %}
+          <optgroup label="Your assigned lines">
+            {% for l in assigned_lines %}
+            <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
+            {% endfor %}
+          </optgroup>
+          <optgroup label="All group lines">
+            {% for l in lines %}
+            <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
+            {% endfor %}
+          </optgroup>
+          {% else %}
+          {% for l in lines %}
+          <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
+          {% endfor %}
+          {% endif %}
+        </select>
+      </label>
+      <label>Type
+        <select id="m3d-type" aria-label="Line type">
+          <option value="">All</option>
+          <option value="Trap">Traps</option>
+          <option value="Bait Station">Bait stations</option>
+        </select>
+      </label>
+      <label>Days
+        <input id="m3d-days" type="number" min="1" max="365" step="1" value="{{ prefs.activity_days }}">
+      </label>
+      <label>Sharpen
+        <select id="m3d-detail" aria-label="When to load high-res imagery">
+          <option value="0">Off</option>
+          <option value="2000">≤ 2 km</option>
+          <option value="1000">≤ 1 km</option>
+          <option value="400">≤ 400 m</option>
+        </select>
+      </label>
+      <span class="m3d-sep"></span>
+      <label>Elev
+        <select id="m3d-elevation" aria-label="Elevation grid density">
+          <option value="8">8×8</option>
+          <option value="16">16×16</option>
+          <option value="32">32×32</option>
+          <option value="48">48×48</option>
+          <option value="64">64×64</option>
+        </select>
+      </label>
+      <button id="m3d-terrain-retry" type="button" class="m3d-retry">Retry</button>
+      <label>Img
+        <select id="m3d-imagery" aria-label="Base aerial photo resolution">
+          <option value="640">640px</option>
+          <option value="1280">1280px</option>
+          <option value="2560">2560px</option>
+          <option value="5120">5120px</option>
+        </select>
+      </label>
+      <button id="m3d-imagery-reload" type="button" class="m3d-reload">Reload</button>
+    </div>
+    <div id="m3d-fly-ctrls" hidden role="group" aria-label="Flyby controls">
+      <button id="m3d-fly-pause" type="button" title="Pause / continue (Space)" aria-label="Pause flyby">⏸
+        Pause</button>
+      <span class="m3d-fly-speed-lbl">Speed</span>
+      <button id="m3d-fly-slow" type="button" title="Slow down (−)" aria-label="Slow down flyby">−</button>
+      <span id="m3d-fly-speed">1×</span>
+      <button id="m3d-fly-fast" type="button" title="Speed up (+)" aria-label="Speed up flyby">+</button>
+    </div>
+    <div id="m3d-fly-hint" hidden aria-live="polite">
+      Click to look freely &nbsp;·&nbsp; <kbd>Space</kbd> pause &nbsp;·&nbsp; <kbd>+</kbd>/<kbd>−</kbd> speed
+      &nbsp;·&nbsp; <kbd>Esc</kbd> release cursor
+    </div>
+    <div id="m3d-popup" class="m3d-popup" role="dialog" aria-label="Asset details">
+      <button class="close" type="button" aria-label="Close" id="m3d-popup-close">&times;</button>
+      <div id="m3d-popup-body"></div>
+    </div>
+    <div id="m3d-empty" class="m3d-empty" hidden>
+      No assets to display. Have a Group Coordinator add a line and some traps.
+    </div>
+    <div id="m3d-legend" class="m3d-legend" aria-hidden="true">
+      <strong>Activity legend</strong>
+      <ul id="m3d-legend-list"></ul>
+      <div id="m3d-terrain-src" class="small mt-1 text-muted">Elevation: loading…</div>
+      <div id="m3d-imagery-src" class="small mt-1 text-muted">Imagery: loading…</div>
+      <div class="small text-muted mt-1">Drag to orbit · right-drag (or Shift+drag) to pan · scroll to zoom.</div>
+    </div>
+  </div>
+
+  {% endif %}
+</div>
+
+{% if not no_group_selected %}
+{# Prettier (and similar HTML formatters) treat Jinja's `{{ }}` as
+   nested braces and insert spaces inside, turning `{{ x }}` into
+   `{ { x } }` — invalid Jinja, which kills the whole config block
+   and the map silently fails to init. The marker below tells Prettier
+   to leave the next element alone. If your editor strips it, prefer
+   `Math.max(N, ...)` edits in static/js/map3d.js instead of touching
+   this template. #}
+{# prettier-ignore #}
+<script>
+  window.M3D_CONFIG = {
+    dataUrl:            {{ url_for('map3d_group_data') | tojson }},
+    lineDataUrl:        {{ url_for('map3d_line_data', line_id=0) | tojson }},
+    operationalAreaUrl: {{ url_for('map3d_operational_area') | tojson }},
+    prefsUrl:           {{ url_for('map3d_save_prefs') | tojson }},
+    detailUrlTpl:       "/lines",
+    initialDays:        {{ prefs.activity_days }},
+    showVegetation:     {{ 'true' if prefs.show_vegetation else 'false' }},
+    groupId:            {{ selected_group_id | tojson }},
+  };
+</script>
+<script src="{{ url_for('static', filename='js/map3d.js') }}"></script>
+{% endif %}
+{% endblock %}

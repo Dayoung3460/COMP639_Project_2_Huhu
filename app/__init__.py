@@ -139,13 +139,16 @@ from app import my_tiaki
 from app import themes
 from app import identity_defaults  # noqa: F401 — registers /identity/default/* routes
 from app import helpdesk
+from app import updates_hub  # noqa: F401 -- Updates + Knowledge Hub (P2-107)
+from app import map3d  # noqa: F401 -- Innovation epic: 3D terrain map (P2-106)
 
 # ── Template globals ──────────────────────────────────────────────────────────
 
 _ROLE_TO_DASHBOARD = {
-    'Super Admin':       'admin_dashboard',
-    'Group Coordinator': 'coordinator_dashboard',
-    'Operator':          'operator_dashboard',
+    'Super Admin':         'admin_dashboard',
+    'Group Coordinator':   'coordinator_dashboard',
+    'Operator':            'operator_dashboard',
+    'Support Technician':  'helpdesk_queue',
     # Observer + any other unrecognised role falls through to
     # observer_dashboard via dict.get's default below.
 }

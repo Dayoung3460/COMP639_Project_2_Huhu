@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit update' if update and update.update_id else 'New update' }}{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon {{ 'amber' if update and update.update_id else 'green' }}"
+       style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-{{ 'pencil-square' if update and update.update_id else 'megaphone' }}"></i>
+  </div>
+  {{ 'Edit update' if update and update.update_id else 'New group update' }}
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('updates_list') }}">Updates</a></li>
+    <li class="breadcrumb-item active">{{ 'Edit' if update and update.update_id else 'New' }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width:760px;">
+  <form method="post" enctype="multipart/form-data" novalidate>
+    <div class="mb-3">
+      <label for="u-title" class="form-label">Title <span class="text-danger" aria-hidden="true">*</span></label>
+      <input id="u-title" name="title" class="form-control" required maxlength="255"
+             value="{{ update.title if update else '' }}">
+    </div>
+    <div class="mb-3">
+      <label for="u-body" class="form-label">Body <span class="text-danger" aria-hidden="true">*</span></label>
+      <textarea id="u-body" name="body" class="form-control" rows="8" required>{{ update.body if update else '' }}</textarea>
+    </div>
+    {% if photos %}
+      <fieldset class="border rounded p-2 mb-3">
+        <legend class="float-none w-auto px-2 h6">Existing photos</legend>
+        <div class="row g-2">
+          {% for p in photos %}
+          <div class="col-sm-4">
+            <div class="position-relative">
+              <img src="{{ url_for('static', filename='images/uploads/' ~ p.photo_path) }}"
+                   alt="" class="img-fluid rounded mb-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                       name="delete_photo_id" value="{{ p.photo_id }}"
+                       id="del-{{ p.photo_id }}">
+                <label class="form-check-label small" for="del-{{ p.photo_id }}">
+                  Remove on save
+                </label>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </fieldset>
+    {% endif %}
+    <div class="mb-3">
+      <label for="u-photos" class="form-label">Add photos (multiple allowed)</label>
+      <input id="u-photos" type="file" name="photos" class="form-control"
+             accept="image/png,image/jpeg,image/gif" multiple>
+      <div class="form-text">Max 4 MB each. Allowed: JPG, PNG, GIF.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn-pf-outline" type="submit" name="action" value="draft">
+        <i class="bi bi-save"></i> Save draft
+      </button>
+      <button class="btn-pf" type="submit" name="action" value="publish">
+        <i class="bi bi-megaphone"></i> Publish
+      </button>
+      <a class="btn-pf-outline" href="{{ url_for('updates_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

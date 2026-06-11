@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58b682"/>
+      <stop offset="1" stop-color="#1c4d22"/>
+    </linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <g transform="translate(106.0,106.0) scale(3.0)" fill="white" opacity="0.10" color="white">
+    <polygon points="10,100 10,60 22,46 34,60 34,100" />
+      <rect x="40" y="32" width="20" height="68" />
+      <rect x="66" y="48" width="12" height="52" />
+      <rect x="82" y="38" width="14" height="62" />
+  </g>
+  <text x="256.0" y="256.0" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif"
+        font-size="220" font-weight="700" fill="white"
+        text-anchor="middle" dominant-baseline="central"
+        letter-spacing="-6">WTB</text>
+</svg>

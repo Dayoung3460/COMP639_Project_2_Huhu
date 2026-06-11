@@ -1,10 +1,28 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_link_button %}
 {% block title %}Bait Station Records{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-droplet-half"></i>
+  </div>
+  Bait Station Records
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Bait records</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Bait Station Records</h2>
+<div class="container py-2">
+  <div class="d-flex justify-content-end mb-3">
     <div class="d-flex gap-2 align-items-center">
       {% if role == 'Operator' %}
         {{ pf_link_button(url_for('add_bait_record'), 'Add Record', variant='btn-sm-pf', icon='bi-plus-lg') }}
@@ -152,7 +170,7 @@
       </div>
       <div class="modal-body text-prewrap" id="textDetailBody"></div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn-sm-outline" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

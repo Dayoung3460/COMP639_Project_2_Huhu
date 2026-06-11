@@ -23,6 +23,25 @@
 
 {% block title %}Pick a theme target{% endblock %}
 
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-bullseye"></i>
+  </div>
+  Pick a theme target
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_themes') }}">Themes</a></li>
+    <li class="breadcrumb-item active">Select target</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block head_extra %}
   {# Every tile renders its preview in its own heading + body font, so
      load each distinct family once (deduped via _seen_fonts — same

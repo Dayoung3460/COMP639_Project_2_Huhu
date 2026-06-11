@@ -1,9 +1,28 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel, pf_panel_simple, pf_trap_status_badge %}
 {% block title %}{{ line.name if line else 'Line Detail' }}{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-signpost-2"></i>
+  </div>
+  {{ line.name if line else 'Line Detail' }}
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('lines_index', filter=line_filter if line_filter != 'active' else None) }}">Lines</a></li>
+    <li class="breadcrumb-item active">{{ line.name if line else 'Detail' }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  {{ pf_link_button(url_for('lines_index', filter=line_filter if line_filter != 'active' else None), 'Back to Lines', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
+<div class="container py-2">
 
   {% if line %}
     {% set current_filter = line_filter | default('all') %}
@@ -56,6 +75,19 @@
               }
             ) }}
           {% endif %}
+        {% endif %}
+        {# View in 3D sits where Add Trap/Station used to be, so the
+           Add button keeps its primary-action slot at the left edge.
+           Ungated so Observers/Operators (and retired lines) still
+           get the deep link into the 3D viewer. #}
+        {{ pf_link_button(
+          url_for('map3d_index', line=line.line_id),
+          'View in 3D',
+          variant='btn-sm-outline',
+          icon='bi-box',
+          attrs={'title': 'Open this line in the 3D terrain map'}
+        ) }}
+        {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') and not line.is_retired %}
           {% if session.get('group_role') == 'Group Coordinator' %}
             {{ pf_link_button(url_for('coordinator_assign_operators', line_id=line.line_id), 'Assign Operators', variant='btn-sm-outline') }}
           {% else %}

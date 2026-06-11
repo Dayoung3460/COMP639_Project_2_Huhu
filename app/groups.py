@@ -319,6 +319,25 @@ def notification_click(notification_id):
     return redirect(dest)
 
 
+@app.route('/notifications/mark-all-read', methods=['POST'])
+def notifications_mark_all_read():
+    """Mark every active notification for the current user (in the
+    current group scope, matching the dropdown query in inject_globals)
+    as read. Called from the navbar bell when the dropdown opens."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'ok': False}), 401
+
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE user_notifications SET is_active = FALSE '
+            'WHERE user_id = %s AND is_active = TRUE '
+            '  AND (group_id IS NULL OR group_id = %s)',
+            (user_id, session.get('group_id', 0))
+        )
+    return jsonify({'ok': True})
+
+
 @app.route('/groups/<int:group_id>/enter')
 def enter_group(group_id):
     """Sets the session context for a group the user is already a member of."""

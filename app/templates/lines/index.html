@@ -1,19 +1,35 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel, pf_trap_status_badge %}
 {% block title %}Lines{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-signpost-split"></i>
+  </div>
+  Lines
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Lines</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
+<div class="container py-2">
   {% set current_filter = line_filter | default('all') %}
-  <div class="d-flex justify-content-between align-items-center mb-4 lines-page-header">
-    <h2 class="mb-0">Lines</h2>
-    <div class="d-flex gap-2 align-items-center lines-page-header__actions">
-      {% if session.get('group_role') == 'Group Coordinator' %}
-        {{ pf_link_button(url_for('coordinator_operational_area'), 'Set Area' if area_missing else 'Edit Area', variant='btn-pf-outline', icon='bi-pencil-square', extra_classes='text-nowrap px-5') }}
-      {% endif %}
-      {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
-        {{ pf_link_button(url_for('new_line'), 'New Line', variant='btn-pf-full px-5', icon='bi-plus-lg') }}
-      {% endif %}
-    </div>
+  <div class="d-flex justify-content-end gap-2 align-items-center mb-3 lines-page-header__actions">
+    {% if session.get('group_role') == 'Group Coordinator' %}
+      {{ pf_link_button(url_for('coordinator_operational_area'), 'Set Area' if area_missing else 'Edit Area', variant='btn-pf-outline', icon='bi-pencil-square', extra_classes='text-nowrap') }}
+    {% endif %}
+    {% if session.get('group_role') in ('Super Admin', 'Group Coordinator') %}
+      {{ pf_link_button(url_for('new_line'), 'New Line', variant='btn-pf', icon='bi-plus-lg') }}
+    {% endif %}
   </div>
 
   <section class="mb-4" aria-label="Search and filter lines">

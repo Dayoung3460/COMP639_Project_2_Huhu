@@ -35,8 +35,138 @@ linz_api_key = os.getenv('LINZ_API_KEY', '')
 @app.route('/coordinator/dashboard')
 @role_required('Group Coordinator')
 def coordinator_dashboard():
-    """Group Coordinator dashboard — placeholder."""
-    return render_template('coordinator/dashboard.html')
+    """Group Coordinator dashboard — group-scoped stats, alerts, quick
+    actions, recent activity. Mirrors the admin dashboard structure but
+    every query is filtered by the active group_id."""
+    group_id = session.get('group_id')
+
+    stats = {
+        'total_members':    0,
+        'observers':        0,
+        'operators':        0,
+        'pending_requests': 0,
+        'total_lines':      0,
+        'retired_lines':    0,
+        'total_traps':      0,
+        'retired_traps':    0,
+        'total_catches':    0,
+        'catches_month':    0,
+        'maintenance_traps': 0,
+        'pending_updates':  0,
+    }
+    recent_members = []
+    recent_catches = []
+
+    try:
+        with db.get_cursor() as cursor:
+
+            # ── Members ───────────────────────────────────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                              AS total,
+                    COUNT(*) FILTER (WHERE role = 'Observer')             AS observers,
+                    COUNT(*) FILTER (WHERE role = 'Operator')             AS operators
+                FROM group_memberships
+                WHERE group_id = %s
+            """, (group_id,))
+            row = cursor.fetchone()
+            stats['total_members'] = row['total']
+            stats['observers']     = row['observers']
+            stats['operators']     = row['operators']
+
+            # ── Pending join requests ─────────────────────────
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt
+                FROM group_join_requests
+                WHERE group_id = %s AND status = 'pending'
+            """, (group_id,))
+            stats['pending_requests'] = cursor.fetchone()['cnt']
+
+            # ── Lines & Traps (scoped to this group) ──────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                    AS total,
+                    COUNT(*) FILTER (WHERE is_retired = TRUE)   AS retired
+                FROM lines
+                WHERE group_id = %s
+            """, (group_id,))
+            row = cursor.fetchone()
+            stats['total_lines']   = row['total']
+            stats['retired_lines'] = row['retired']
+
+            cursor.execute("""
+                SELECT
+                    COUNT(*)                                    AS total,
+                    COUNT(*) FILTER (WHERE t.is_retired = TRUE) AS retired
+                FROM traps t
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE l.group_id = %s
+            """, (group_id,))
+            row = cursor.fetchone()
+            stats['total_traps']   = row['total']
+            stats['retired_traps'] = row['retired']
+
+            # ── Catches (this group) ──────────────────────────
+            cursor.execute("""
+                SELECT
+                    COUNT(*) FILTER (WHERE tc.species_caught != 'None') AS total,
+                    COUNT(*) FILTER (WHERE tc.species_caught != 'None'
+                                     AND tc.date >= NOW() - INTERVAL '30 days') AS month
+                FROM trap_catches tc
+                JOIN traps t ON t.trap_id = tc.trap_id
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE l.group_id = %s
+            """, (group_id,))
+            row = cursor.fetchone()
+            stats['total_catches'] = row['total']
+            stats['catches_month'] = row['month']
+
+            # ── Maintenance flags (last 30 days, this group) ──
+            cursor.execute("""
+                SELECT COUNT(DISTINCT t.trap_id) AS cnt
+                FROM trap_catches tc
+                JOIN traps t ON t.trap_id = tc.trap_id
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE l.group_id = %s
+                  AND tc.trap_condition = 'Needs maintenance'
+                  AND tc.date >= NOW() - INTERVAL '30 days'
+            """, (group_id,))
+            stats['maintenance_traps'] = cursor.fetchone()['cnt']
+
+            # ── Recent member joins (last 5) ──────────────────
+            cursor.execute("""
+                SELECT u.username, u.first_name, u.last_name,
+                       gm.role, u.account_status, u.date_joined
+                FROM group_memberships gm
+                JOIN users u ON u.user_id = gm.user_id
+                WHERE gm.group_id = %s
+                ORDER BY u.date_joined DESC NULLS LAST
+                LIMIT 5
+            """, (group_id,))
+            recent_members = cursor.fetchall()
+
+            # ── Recent catches (this group, last 5) ───────────
+            cursor.execute("""
+                SELECT tc.date, tc.species_caught,
+                       t.code AS trap_code, l.name AS line_name,
+                       u.username AS recorded_by
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                LEFT JOIN users u ON tc.recorded_by_id = u.user_id
+                WHERE l.group_id = %s AND tc.species_caught != 'None'
+                ORDER BY tc.date DESC
+                LIMIT 5
+            """, (group_id,))
+            recent_catches = cursor.fetchall()
+
+    except Exception as e:
+        logger.error('Coordinator dashboard error: %s', e)
+
+    return render_template('coordinator/dashboard.html',
+                           stats=stats,
+                           recent_members=recent_members,
+                           recent_catches=recent_catches)
 
 
 # ── Operator assignment — line selector ──────────────────────────────────────
@@ -464,7 +594,7 @@ def coordinator_decide_request(request_id):
 
 
 @app.route('/coordinator/themes/select-target')
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def coordinator_theme_select_target():
     """Picker page — list every active group + Platform default tile.
 
@@ -492,7 +622,7 @@ def coordinator_theme_select_target():
 
 
 @app.route('/coordinator/themes/select-target', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def coordinator_theme_select_target_set():
     """Stash the picked target in session and bounce to the gallery."""
     target_type = (request.form.get('target_type') or '').strip()
@@ -537,7 +667,7 @@ def coordinator_theme_select_target_set():
 # the handlers.
 
 @app.route('/coordinator/themes')
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_themes():
     """Browse pre-made theme presets for the active target.
 
@@ -600,7 +730,7 @@ def coordinator_themes():
 
 
 @app.route('/coordinator/themes/<int:preset_id>')
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_preview(preset_id):
     """Fuller preview of a single preset, with Apply action (P2-42).
 
@@ -626,7 +756,7 @@ def coordinator_theme_preview(preset_id):
 
 
 @app.route('/coordinator/themes/<int:preset_id>/apply', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_apply_theme(preset_id):
     """Apply a pre-made theme preset to the active target (P2-42).
 
@@ -657,7 +787,7 @@ def coordinator_apply_theme(preset_id):
 
 @app.route('/coordinator/themes/saved/<int:history_id>/apply',
            methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_apply_saved_theme(history_id):
     """Apply a pinned theme_history row's values to the active group target.
 
@@ -724,7 +854,7 @@ def _theme_export_filename(group_name):
 
 
 @app.route('/coordinator/themes/export')
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_export():
     """Download the active target's current theme as a JSON archive."""
     target = themes.resolve_theme_target(session)
@@ -766,7 +896,7 @@ def coordinator_theme_export():
 
 
 @app.route('/coordinator/themes/import', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_import():
     """Apply a previously exported theme JSON to the active target.
 
@@ -932,7 +1062,7 @@ def _initial_values_for_editor(target, from_preset_raw, blank=False):
 
 
 @app.route('/coordinator/themes/customise')
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_customise():
     """GET — render the custom theme editor.
 
@@ -994,7 +1124,7 @@ def coordinator_theme_customise():
 
 
 @app.route('/coordinator/themes/customise', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_customise_save():
     """POST — save the submitted custom theme.
 
@@ -1126,7 +1256,7 @@ def _require_group_target_for_history():
 
 
 @app.route('/coordinator/themes/history')
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_history():
     """List the active group target's theme_history snapshots.
 
@@ -1150,7 +1280,7 @@ def coordinator_theme_history():
 
 
 @app.route('/coordinator/themes/history/save-as', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_history_save_as():
     """Pin the current group theme as a named history row.
 
@@ -1184,7 +1314,7 @@ def coordinator_theme_history_save_as():
 
 @app.route('/coordinator/themes/history/<int:history_id>/restore',
            methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_history_restore(history_id):
     """Re-apply a history snapshot to the active group's theme."""
     target, bail = _require_group_target_for_history()
@@ -1212,7 +1342,7 @@ def coordinator_theme_history_restore(history_id):
 
 @app.route('/coordinator/themes/history/<int:history_id>/delete',
            methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_theme_history_delete(history_id):
     """Remove a history row (typically used to unpin a saved theme)."""
     target, bail = _require_group_target_for_history()
@@ -1442,7 +1572,7 @@ def _remove_identity_slot(slot):
 
 
 @app.route('/coordinator/group/identity')
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_group_identity():
     """Two-card page showing current cover + profile state.
 
@@ -1475,24 +1605,24 @@ def coordinator_group_identity():
 
 
 @app.route('/coordinator/group/identity/cover', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_identity_upload_cover():
     return _upload_identity_slot('cover')
 
 
 @app.route('/coordinator/group/identity/profile', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_identity_upload_profile():
     return _upload_identity_slot('profile')
 
 
 @app.route('/coordinator/group/identity/cover/remove', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_identity_remove_cover():
     return _remove_identity_slot('cover')
 
 
 @app.route('/coordinator/group/identity/profile/remove', methods=['POST'])
-@role_required('Group Coordinator', 'Super Admin')
+@role_required('Group Coordinator', 'Super Admin', 'Support Technician')
 def coordinator_identity_remove_profile():
     return _remove_identity_slot('profile')

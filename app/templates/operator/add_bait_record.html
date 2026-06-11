@@ -1,13 +1,32 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_link_button %}
 {% block title %}Add Bait Station Record{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-plus-square"></i>
+  </div>
+  Add Bait Station Record
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+<span class="text-danger" aria-hidden="true">*</span> Required fields
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('bait_records') }}">Bait records</a></li>
+    <li class="breadcrumb-item active">Add</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:720px;">
-  {% if show_back %}
-    {{ pf_link_button(url_for('bait_records'), 'Back to Records', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
-  {% endif %}
-  <h2 class="mb-4">Add Bait Station Record</h2>
-  <p class="small text-muted mb-3"><span class="text-danger" aria-hidden="true">*</span> Required fields</p>
+<div class="container py-2" style="max-width:720px;">
 
   <form method="POST" action="{{ url_for('add_bait_record') }}" aria-label="Add bait station record" novalidate>
 

@@ -1,13 +1,31 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_link_button %}
 {% block title %}Reference Data{% endblock %}
-{% block content %}
-<div class="container py-4" style="max-width: 720px;">
 
-  <div class="mb-4">
-    <h2 class="mb-1">Reference Data</h2>
-    <p class="text-muted mb-0" style="font-size: 13px;">Manage lookup lists used across the platform. Changes apply to all groups.</p>
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-database-gear"></i>
   </div>
+  Reference Data
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Manage lookup lists used across the platform. Changes apply to all groups.
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Reference Data</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width: 720px;">
 
   <div class="row g-3">
     {% for table in tables %}

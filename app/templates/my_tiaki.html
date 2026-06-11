@@ -209,7 +209,7 @@
           <ul class="aside-list" role="list">
             {% for n in nav_notifications[:4] %}
               <li class="aside-row">
-                <span class="aside-date-pill" aria-hidden="true">{{ n.created_at.strftime('%-d %b') }}</span>
+                <span class="aside-date-pill" aria-hidden="true">{{ n.created_at.strftime('%d %b').lstrip('0') }}</span>
                 <span class="aside-row-text">
                   <span class="aside-row-title">
                     {% if n.url %}

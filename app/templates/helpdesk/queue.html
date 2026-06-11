@@ -65,7 +65,7 @@
       <option value="updated"  {% if sort == 'updated'   %}selected{% endif %}>Last updated</option>
     </select>
 
-    <button type="submit" class="btn btn-outline-secondary btn-sm">Apply</button>
+    <button type="submit" class="btn-sm-pf">Apply</button>
 
     {% if status_filter or priority_filter or type_filter or assigned_filter or mine_filter or sort != 'priority' %}
       <a href="{{ url_for('helpdesk_queue') }}" class="btn btn-link btn-sm text-muted p-0 ms-1">

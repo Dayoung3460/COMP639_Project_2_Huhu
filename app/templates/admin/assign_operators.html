@@ -1,9 +1,31 @@
 {% extends 'base.html' %}
 {% block title %}Assign Operators{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-people"></i>
+  </div>
+  Assign Operators
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Line: {{ line.name if line else '—' }}
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('lines_index') }}">Lines</a></li>
+    <li class="breadcrumb-item active">Assign Operators</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:560px;">
-  <h2 class="mb-1">Assign Operators</h2>
-  <p class="text-muted small mb-4">Line: {{ line.name if line else '—' }}</p>
+<div class="container py-2" style="max-width:560px;">
 
   <form method="POST">
     <fieldset>

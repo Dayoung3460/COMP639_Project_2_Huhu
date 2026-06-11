@@ -7,13 +7,15 @@
 -- Re-runnable: every DROP uses CASCADE.
 --
 -- Run order on a fresh PostgreSQL database:
---   1. create_tables.sql      (this file — all 22 tables incl. theme system)
---   2. populate_tables.sql    (seed users, groups, traps, catches, etc.)
---   3. themes_populate.sql    (seed theme presets + platform default)
+--   1. create_tables.sql   (this file — every table + enum + FK, including
+--                            theme system, helpdesk, P2-107 Group Updates +
+--                            Knowledge Hub, and the 3D Terrain Map epic)
+--   2. populate_tables.sql (seed users/groups/traps/catches/observations +
+--                            Knowledge Hub categories + analytics seed)
 --
--- Note: the older sql/themes_create.sql is now redundant; its tables
--- (theme_presets, group_themes, platform_theme, theme_history) are
--- included in this file. Delete themes_create.sql after switching.
+-- The old separate migration files (themes_create.sql, seed_data.sql,
+-- group_updates_hub_migration.sql, 3d_epic_migration.sql) have all been
+-- folded in — there are no extra psql steps.
 -- =============================================================
 
 -- -------------------------------------------------------------
@@ -276,10 +278,14 @@ DROP TABLE IF EXISTS "public"."user_notifications" CASCADE;
 CREATE SEQUENCE IF NOT EXISTS user_notifications_notification_id_seq;
 
 -- Table Definition
+-- NOTE: the group_id FK can't be declared inline because `groups` is
+-- created further down (lines after this). The constraint is added
+-- as an ALTER TABLE in the foreign-key section below, matching the
+-- pattern lines/group_memberships/group_join_requests use.
 CREATE TABLE "public"."user_notifications" (
     "notification_id" int4 NOT NULL DEFAULT nextval('user_notifications_notification_id_seq'::regclass),
     "user_id" int4 NOT NULL,
-    "group_id" int4 DEFAULT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
+    "group_id" int4 DEFAULT NULL,
     "message" text NOT NULL,
     "category" varchar(20) NOT NULL DEFAULT 'info'::character varying,
     "url" varchar(500) DEFAULT NULL,
@@ -502,6 +508,7 @@ ALTER TABLE "public"."group_join_requests" ADD FOREIGN KEY ("group_id") REFERENC
 -- Indices
 CREATE UNIQUE INDEX group_join_requests_one_pending_per_user_group ON public.group_join_requests (user_id, group_id) WHERE status = 'pending';
 ALTER TABLE "public"."user_notifications" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
+ALTER TABLE "public"."user_notifications" ADD FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id") ON DELETE CASCADE;
 ALTER TABLE "public"."group_applications" ADD FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE CASCADE;
 ALTER TABLE "public"."group_applications" ADD FOREIGN KEY ("decided_by") REFERENCES "public"."users"("user_id");
 ALTER TABLE "public"."lines" ADD FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id");
@@ -664,4 +671,162 @@ CREATE TABLE "public"."group_operational_areas" (
     PRIMARY KEY ("group_id"),
     FOREIGN KEY ("group_id") REFERENCES "public"."groups"("group_id") ON DELETE CASCADE,
     FOREIGN KEY ("updated_by") REFERENCES "public"."users"("user_id")
+);
+
+
+-- =============================================================
+-- INNOVATION EPIC — 3D Terrain Map (was 3d_epic_migration.sql)
+-- Per-user prefs + lightweight access log.
+-- =============================================================
+
+DROP TABLE IF EXISTS map3d_view_log CASCADE;
+DROP TABLE IF EXISTS map3d_view_prefs CASCADE;
+
+CREATE TABLE map3d_view_prefs (
+    user_id          INT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    show_vegetation  BOOL NOT NULL DEFAULT TRUE,
+    activity_days    INT  NOT NULL DEFAULT 30 CHECK (activity_days BETWEEN 1 AND 365),
+    updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE map3d_view_log (
+    log_id      SERIAL PRIMARY KEY,
+    user_id     INT REFERENCES users(user_id) ON DELETE SET NULL,
+    group_id    INT REFERENCES groups(group_id) ON DELETE SET NULL,
+    line_id     INT REFERENCES lines(line_id)  ON DELETE SET NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_map3d_view_log_group_time
+    ON map3d_view_log (group_id, created_at DESC);
+
+
+-- =============================================================
+-- P2-107 — Group Updates & Shared Knowledge Hub
+-- (was group_updates_hub_migration.sql)
+-- =============================================================
+
+-- ── Group Updates ─────────────────────────────────────────────
+DROP TABLE IF EXISTS group_update_comments CASCADE;
+DROP TABLE IF EXISTS group_update_likes    CASCADE;
+DROP TABLE IF EXISTS group_update_photos   CASCADE;
+DROP TABLE IF EXISTS group_updates         CASCADE;
+DROP TYPE  IF EXISTS update_status_enum;
+DROP TYPE  IF EXISTS update_comment_status_enum;
+
+CREATE TYPE update_status_enum         AS ENUM ('draft', 'published', 'removed');
+CREATE TYPE update_comment_status_enum AS ENUM ('visible', 'removed');
+
+CREATE TABLE group_updates (
+    update_id    SERIAL PRIMARY KEY,
+    group_id     INT NOT NULL REFERENCES groups(group_id) ON DELETE CASCADE,
+    author_id    INT REFERENCES users(user_id) ON DELETE SET NULL,
+    title        VARCHAR(255) NOT NULL,
+    body         TEXT NOT NULL,
+    status       update_status_enum NOT NULL DEFAULT 'draft',
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    published_at TIMESTAMP,
+    updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    removed_at   TIMESTAMP
+);
+CREATE INDEX idx_group_updates_group_status
+    ON group_updates (group_id, status, published_at DESC);
+
+CREATE TABLE group_update_photos (
+    photo_id    SERIAL PRIMARY KEY,
+    update_id   INT NOT NULL REFERENCES group_updates(update_id) ON DELETE CASCADE,
+    photo_path  VARCHAR(500) NOT NULL,
+    display_order INT NOT NULL DEFAULT 0,
+    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE group_update_likes (
+    update_id INT NOT NULL REFERENCES group_updates(update_id) ON DELETE CASCADE,
+    user_id   INT NOT NULL REFERENCES users(user_id)          ON DELETE CASCADE,
+    liked_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (update_id, user_id)
+);
+
+CREATE TABLE group_update_comments (
+    comment_id  SERIAL PRIMARY KEY,
+    update_id   INT NOT NULL REFERENCES group_updates(update_id) ON DELETE CASCADE,
+    author_id   INT REFERENCES users(user_id) ON DELETE SET NULL,
+    body        TEXT NOT NULL,
+    status      update_comment_status_enum NOT NULL DEFAULT 'visible',
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    removed_at  TIMESTAMP,
+    removed_by  INT REFERENCES users(user_id) ON DELETE SET NULL
+);
+CREATE INDEX idx_update_comments_update
+    ON group_update_comments (update_id, created_at);
+
+-- ── Shared Knowledge Hub (separate from helpdesk KB tables above) ──
+DROP TABLE IF EXISTS knowledge_moderation_log     CASCADE;
+DROP TABLE IF EXISTS knowledge_article_versions   CASCADE;
+DROP TABLE IF EXISTS knowledge_article_photos     CASCADE;
+DROP TABLE IF EXISTS knowledge_articles           CASCADE;
+DROP TABLE IF EXISTS knowledge_categories         CASCADE;
+DROP TYPE  IF EXISTS knowledge_status_enum;
+
+CREATE TYPE knowledge_status_enum AS ENUM
+    ('draft', 'pending_review', 'published', 'rejected', 'archived');
+
+CREATE TABLE knowledge_categories (
+    category_id   SERIAL PRIMARY KEY,
+    slug          VARCHAR(60) UNIQUE NOT NULL,
+    name          VARCHAR(120) NOT NULL,
+    description   TEXT,
+    display_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE knowledge_articles (
+    article_id      SERIAL PRIMARY KEY,
+    category_id     INT NOT NULL REFERENCES knowledge_categories(category_id),
+    title           VARCHAR(255) NOT NULL,
+    body            TEXT NOT NULL,
+    summary         VARCHAR(500),
+    author_id       INT REFERENCES users(user_id) ON DELETE SET NULL,
+    author_group_id INT REFERENCES groups(group_id) ON DELETE SET NULL,
+    status          knowledge_status_enum NOT NULL DEFAULT 'draft',
+    is_featured     BOOL NOT NULL DEFAULT FALSE,
+    current_version INT  NOT NULL DEFAULT 1,
+    reviewed_by     INT REFERENCES users(user_id) ON DELETE SET NULL,
+    reviewed_at     TIMESTAMP,
+    review_note     TEXT,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    published_at    TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_articles_status_cat
+    ON knowledge_articles (status, category_id, published_at DESC);
+CREATE INDEX idx_articles_featured
+    ON knowledge_articles (is_featured, published_at DESC)
+    WHERE is_featured = TRUE AND status = 'published';
+
+CREATE TABLE knowledge_article_photos (
+    photo_id      SERIAL PRIMARY KEY,
+    article_id    INT NOT NULL REFERENCES knowledge_articles(article_id) ON DELETE CASCADE,
+    photo_path    VARCHAR(500) NOT NULL,
+    display_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE knowledge_article_versions (
+    version_id   SERIAL PRIMARY KEY,
+    article_id   INT NOT NULL REFERENCES knowledge_articles(article_id) ON DELETE CASCADE,
+    version_no   INT NOT NULL,
+    title        VARCHAR(255) NOT NULL,
+    body         TEXT NOT NULL,
+    summary      VARCHAR(500),
+    edited_by    INT REFERENCES users(user_id) ON DELETE SET NULL,
+    edited_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    note         TEXT,
+    UNIQUE (article_id, version_no)
+);
+
+CREATE TABLE knowledge_moderation_log (
+    log_id      SERIAL PRIMARY KEY,
+    article_id  INT NOT NULL REFERENCES knowledge_articles(article_id) ON DELETE CASCADE,
+    actor_id    INT REFERENCES users(user_id) ON DELETE SET NULL,
+    action      VARCHAR(20) NOT NULL CHECK (action IN ('approved','rejected','featured','unfeatured','versioned')),
+    note        TEXT,
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
