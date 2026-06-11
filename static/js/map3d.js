@@ -150,7 +150,15 @@
     // this, clicks on overlay UI (the retry button, popup close, legend) get
     // swallowed by pointer-capture and never reach those elements.
     if (e.target !== renderer.domElement) return;
-    if (flybyActive) { stopFlyby(); return; }   // interrupt a flyby; one more click drags
+    if (flybyActive) {
+      // Click during a flyby grabs the mouse for full 360° look. Esc (or the
+      // "Stop flyby" button) releases it. We never stop the flyby from a click
+      // here — that's what the toolbar button is for.
+      if (document.pointerLockElement !== renderer.domElement) {
+        renderer.domElement.requestPointerLock?.();
+      }
+      return;
+    }
     isDown = true; moved = false;
     lastX = downX = e.clientX; lastY = downY = e.clientY;
     panning = (e.button === 2 || e.shiftKey);   // right-drag or Shift-drag pans
@@ -769,7 +777,13 @@
   scene.add(pathGroup);
   let lastShown = [];
   let tracksTimer = null;
-  function pathHalfWidth() { return Math.max(1, dist * 0.004); }
+  // Flyby width is a small constant chosen to read like a footpath next to the
+  // shrunken flyby markers — same reason markerViewScale() has its own branch.
+  const FLYBY_PATH_HALF_WIDTH = 30;
+  function pathHalfWidth() {
+    if (flybyActive) return FLYBY_PATH_HALF_WIDTH;
+    return Math.max(1, dist * 0.004);
+  }
   function buildPaths(shown) {
     while (pathGroup.children.length) {
       const c = pathGroup.children.pop();
@@ -1027,7 +1041,14 @@
 
   // Markers keep a roughly constant on-screen size (visible when zoomed out,
   // not giant when zoomed in); kept small so dense clusters overlap less.
-  function markerViewScale() { return Math.max(0.4, dist * 0.006); }
+  // During a flyby we shrink them hard so the camera (skimming low along a
+  // dense line) doesn't get swallowed by its own markers — at orbit-scale a
+  // 100-trap line looks like a wall of meshes from a metre away.
+  const FLYBY_MARKER_SCALE = 15;
+  function markerViewScale() {
+    if (flybyActive) return FLYBY_MARKER_SCALE;
+    return Math.max(0.4, dist * 0.006);
+  }
 
   // ---- Flyby: trace the focused line at a fixed altitude above the terrain ----
   // Camera position rides 200 m above the LOCAL terrain (so it climbs hills and
@@ -1036,7 +1057,8 @@
   const FLYBY_HEIGHT_M = 400;        // ** maximum ** altitude (real metres above local ground)
   const FLYBY_MIN_HEIGHT_M = 5;      // can't drop the camera into the ground
   const FLYBY_DURATION_MS = 30000;   // total wall-clock duration at 1× speed
-  const FLYBY_SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5];   // ± buttons step through this ladder
+  const FLYBY_SPEED_STEPS = [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5];   // ± buttons step through this ladder
+  const FLYBY_START_SPEED_IDX = 2;   // 0.5× default — index into FLYBY_SPEED_STEPS
   // Mouse-driven look limits during flyby. Move the cursor anywhere on the
   // canvas: horizontal offset from centre → yaw, vertical offset → pitch.
   const FLYBY_MAX_YAW = Math.PI / 3;   // ±60° look left/right
@@ -1047,7 +1069,7 @@
   let flybyPaused = false;
   let flybyProgress = 0;                // 0..1 along the path; advances per-frame by dt × speed
   let flybyLastFrameTime = 0;
-  let flybySpeedIdx = 3;                // index into FLYBY_SPEED_STEPS (3 = 1×)
+  let flybySpeedIdx = FLYBY_START_SPEED_IDX;   // index into FLYBY_SPEED_STEPS
   let flybyAltitude = FLYBY_HEIGHT_M;   // real metres -- wheel scroll adjusts this while flying
   let flybyPath = [];                   // [{x, z}, ...] interpolated centre-line at ~10 m spacing
   let flybySmoothedGround = null;       // low-passed ground height for jitter-free vertical motion
@@ -1075,6 +1097,7 @@
 
   // Refs to the in-flight control widgets (hidden until a flyby is running).
   const flyCtrls = document.getElementById('m3d-fly-ctrls');
+  const flyHint = document.getElementById('m3d-fly-hint');
   const flyPauseBtn = document.getElementById('m3d-fly-pause');
   const flySlowBtn = document.getElementById('m3d-fly-slow');
   const flyFastBtn = document.getElementById('m3d-fly-fast');
@@ -1092,6 +1115,7 @@
   function setFlyButtonState() {
     if (flyBtn) flyBtn.textContent = flybyActive ? '■ Stop flyby' : '✈ Fly the line';
     if (flyCtrls) flyCtrls.hidden = !flybyActive;
+    if (flyHint) flyHint.hidden = !flybyActive;
   }
 
   function startFlyby() {
@@ -1105,12 +1129,13 @@
     flybyProgress = 0;
     flybyLastFrameTime = 0;            // tickFlyby seeds this on the first frame
     flybyPaused = false;
-    flybySpeedIdx = 3;                 // reset to 1×
+    flybySpeedIdx = FLYBY_START_SPEED_IDX;   // reset to default starting speed
     flybyAltitude = FLYBY_HEIGHT_M;    // start at the max; user can wheel down lower
     flybySmoothedGround = null;        // smoothing seeds on the first tick
     flybyTargetYaw = flybyTargetPitch = 0;   // start looking dead ahead
     flybyYaw = flybyPitch = 0;
     flybyActive = true;
+    buildPaths(lastShown);   // rebuild ribbon at the narrow flyby width
     setFlyButtonState();
     updateFlyPauseLabel();
     updateFlySpeedLabel();
@@ -1120,6 +1145,10 @@
     if (!flybyActive) return;
     flybyActive = false;
     flybyPaused = false;
+    if (document.pointerLockElement === renderer.domElement) {
+      document.exitPointerLock?.();
+    }
+    buildPaths(lastShown);   // restore the orbit-scaled ribbon width
     setFlyButtonState();
     // Snap the orbit state to where the camera ended so normal controls resume cleanly.
     target.set(camera.position.x, surfaceHeightXZ(camera.position.x, camera.position.z, 0),
@@ -1184,27 +1213,63 @@
     camera.lookAt(_flyLook);
   }
 
-  // Mouse-driven look during flyby. Hover the canvas: horizontal cursor offset
-  // from centre → yaw, vertical → pitch. Leaving the canvas relaxes the head
-  // back to forward. Uses a dedicated listener so it doesn't collide with the
-  // existing isDown-gated orbit/pan handler.
+  // Mouse-driven look during flyby. Two modes:
+  //   1. Pointer-locked (click the canvas): full first-person mouselook — yaw
+  //      is unrestricted (look behind you), pitch clamped just short of ±90°
+  //      to dodge gimbal flip. Movement deltas accumulate into the target
+  //      angles; the same EMA smooths them onto the camera in tickFlyby.
+  //   2. Hover (no lock): horizontal cursor offset from canvas centre → yaw,
+  //      vertical → pitch, clamped to the FLYBY_MAX_* limits. This is the
+  //      easy-mode look for users who don't want to lock the cursor.
+  const FLYBY_LOOK_SENSITIVITY = 0.0025;          // radians per pixel of mouse delta
+  const FLYBY_PITCH_LIMIT = Math.PI / 2 - 0.05;   // ~85° — avoid the singularity at straight up/down
+  function normalizeYaw(y) {
+    // Keep yaw in (-π, π] so the EMA doesn't take the long way round after a
+    // full spin. We track the smoothed yaw alongside the target so we can
+    // unwrap consistently.
+    while (y > Math.PI) y -= 2 * Math.PI;
+    while (y <= -Math.PI) y += 2 * Math.PI;
+    return y;
+  }
+  document.addEventListener('mousemove', (e) => {
+    if (!flybyActive) return;
+    if (document.pointerLockElement !== renderer.domElement) return;
+    flybyTargetYaw = normalizeYaw(flybyTargetYaw - e.movementX * FLYBY_LOOK_SENSITIVITY);
+    flybyTargetPitch = Math.max(
+      -FLYBY_PITCH_LIMIT,
+      Math.min(FLYBY_PITCH_LIMIT, flybyTargetPitch - e.movementY * FLYBY_LOOK_SENSITIVITY)
+    );
+    // Keep the smoothed yaw on the same side of the discontinuity so lerp
+    // takes the short path even right after the wrap.
+    if (flybyTargetYaw - flybyYaw > Math.PI) flybyYaw += 2 * Math.PI;
+    else if (flybyTargetYaw - flybyYaw < -Math.PI) flybyYaw -= 2 * Math.PI;
+  });
   stage.addEventListener('pointermove', (e) => {
     if (!flybyActive) return;
+    if (document.pointerLockElement === renderer.domElement) return;   // pointer-lock path handles this
     if (e.target !== renderer.domElement) return;   // ignore hovers over the overlay UI
     const rect = renderer.domElement.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;   // -1..1
+    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
     const clampedX = Math.max(-1, Math.min(1, nx));
     const clampedY = Math.max(-1, Math.min(1, ny));
     flybyTargetYaw = -clampedX * FLYBY_MAX_YAW;
-    // Up in screen-space is -Y; positive pitch means look up.
     const p = -clampedY;
     flybyTargetPitch = p >= 0 ? p * FLYBY_MAX_PITCH_UP : p * FLYBY_MAX_PITCH_DOWN;
   });
   stage.addEventListener('pointerleave', () => {
     if (!flybyActive) return;
+    if (document.pointerLockElement === renderer.domElement) return;   // locked → don't reset
     flybyTargetYaw = 0;
     flybyTargetPitch = 0;
+  });
+  document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement !== renderer.domElement) {
+      // Lock released (Esc, flyby stopped, etc.) — relax to forward so the
+      // hover path takes over cleanly.
+      flybyTargetYaw = 0;
+      flybyTargetPitch = 0;
+    }
   });
 
   if (flyBtn) {
@@ -1231,6 +1296,25 @@
       updateFlySpeedLabel();
     });
   }
+
+  // Keyboard shortcuts during a flyby — needed because pointer lock hides
+  // the cursor, leaving the floating button row unclickable. Esc is handled
+  // by the browser (it releases pointer lock); after that the buttons work.
+  document.addEventListener('keydown', (e) => {
+    if (!flybyActive) return;
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      flybyPaused = !flybyPaused;
+      updateFlyPauseLabel();
+    } else if (e.key === '+' || e.key === '=') {
+      flybySpeedIdx = Math.min(FLYBY_SPEED_STEPS.length - 1, flybySpeedIdx + 1);
+      updateFlySpeedLabel();
+    } else if (e.key === '-' || e.key === '_') {
+      flybySpeedIdx = Math.max(0, flybySpeedIdx - 1);
+      updateFlySpeedLabel();
+    }
+  });
 
   function animate() {
     requestAnimationFrame(animate);
