@@ -7,9 +7,6 @@ This is a fork of the COMP639 Project 2 baseline with both the **P2-107** epic (
 ```bash
 psql -d tiaki -f sql/create_tables.sql
 psql -d tiaki -f sql/populate_tables.sql
-psql -d tiaki -f sql/seed_data.sql
-psql -d tiaki -f sql/group_updates_hub_migration.sql
-psql -d tiaki -f sql/3d_epic_migration.sql
 python run.py
 ```
 

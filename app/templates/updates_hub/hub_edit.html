@@ -1,64 +1,95 @@
 {% extends 'base.html' %}
 {% block title %}Edit Knowledge Article{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon amber" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-pencil"></i>
+  </div>
+  Edit article
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Saving creates a new version &mdash; previous revisions stay in the history log.
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('hub_index') }}">Knowledge Hub</a></li>
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('hub_article', article_id=article.article_id) }}">{{ article.title }}</a>
+    </li>
+    <li class="breadcrumb-item active">Edit</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:780px;">
-  <h2 class="mb-3"><i class="bi bi-pencil"></i> Edit article (creates a new version)</h2>
-  <form method="post" enctype="multipart/form-data" novalidate>
-    <div class="mb-3">
-      <label for="he-title" class="form-label">Title <span class="text-danger" aria-hidden="true">*</span></label>
-      <input id="he-title" name="title" class="form-control" required maxlength="255"
-             value="{{ article.title }}">
-    </div>
-    <div class="mb-3">
-      <label for="he-cat" class="form-label">Category</label>
-      <select id="he-cat" name="category_id" class="form-select">
-        {% for c in categories %}
-          <option value="{{ c.category_id }}" {% if article.category_id == c.category_id %}selected{% endif %}>{{ c.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="mb-3">
-      <label for="he-sum" class="form-label">Summary</label>
-      <input id="he-sum" name="summary" class="form-control" maxlength="500"
-             value="{{ article.summary or '' }}">
-    </div>
-    <div class="mb-3">
-      <label for="he-body" class="form-label">Body <span class="text-danger" aria-hidden="true">*</span></label>
-      <textarea id="he-body" name="body" class="form-control" rows="10" required>{{ article.body }}</textarea>
-    </div>
-    {% if photos %}
-      <fieldset class="border rounded p-2 mb-3">
-        <legend class="float-none w-auto px-2 h6">Existing photos</legend>
-        <div class="row g-2">
-          {% for p in photos %}
-          <div class="col-sm-4">
-            <img src="{{ url_for('static', filename='images/uploads/' ~ p.photo_path) }}"
-                 alt="" class="img-fluid rounded mb-1">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox"
-                     name="delete_photo_id" value="{{ p.photo_id }}"
-                     id="dp-{{ p.photo_id }}">
-              <label class="form-check-label small" for="dp-{{ p.photo_id }}">Remove on save</label>
-            </div>
-          </div>
-          {% endfor %}
+<div class="container py-2" style="max-width:780px;">
+  <div class="panel">
+    <div class="panel-body p-4">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="mb-3">
+          <label for="he-title" class="form-label">Title <span class="text-danger" aria-hidden="true">*</span></label>
+          <input id="he-title" name="title" class="form-control" required maxlength="255"
+                 value="{{ article.title }}">
         </div>
-      </fieldset>
-    {% endif %}
-    <div class="mb-3">
-      <label for="he-photos" class="form-label">Add photos</label>
-      <input id="he-photos" type="file" name="photos" class="form-control"
-             accept="image/png,image/jpeg,image/gif" multiple>
+        <div class="mb-3">
+          <label for="he-cat" class="form-label">Category</label>
+          <select id="he-cat" name="category_id" class="form-select">
+            {% for c in categories %}
+              <option value="{{ c.category_id }}" {% if article.category_id == c.category_id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="he-sum" class="form-label">Summary</label>
+          <input id="he-sum" name="summary" class="form-control" maxlength="500"
+                 value="{{ article.summary or '' }}">
+        </div>
+        <div class="mb-3">
+          <label for="he-body" class="form-label">Body <span class="text-danger" aria-hidden="true">*</span></label>
+          <textarea id="he-body" name="body" class="form-control" rows="10" required>{{ article.body }}</textarea>
+        </div>
+        {% if photos %}
+          <fieldset class="border rounded p-3 mb-3">
+            <legend class="float-none w-auto px-2 h6">Existing photos</legend>
+            <div class="row g-2">
+              {% for p in photos %}
+              <div class="col-sm-4">
+                <img src="{{ url_for('static', filename='images/uploads/' ~ p.photo_path) }}"
+                     alt="" class="img-fluid rounded mb-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                         name="delete_photo_id" value="{{ p.photo_id }}"
+                         id="dp-{{ p.photo_id }}">
+                  <label class="form-check-label small" for="dp-{{ p.photo_id }}">Remove on save</label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </fieldset>
+        {% endif %}
+        <div class="mb-3">
+          <label for="he-photos" class="form-label">Add photos</label>
+          <input id="he-photos" type="file" name="photos" class="form-control"
+                 accept="image/png,image/jpeg,image/gif" multiple>
+        </div>
+        <div class="mb-4">
+          <label for="he-note" class="form-label">Change note (recorded in history)</label>
+          <input id="he-note" name="note" class="form-control" maxlength="500"
+                 placeholder="e.g. updated trap-spec section after new product release">
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <a class="btn-pf-outline" href="{{ url_for('hub_article', article_id=article.article_id) }}">Cancel</a>
+          <button class="btn-pf" type="submit">
+            <i class="bi bi-check2 me-1" aria-hidden="true"></i>Save new version
+          </button>
+        </div>
+      </form>
     </div>
-    <div class="mb-3">
-      <label for="he-note" class="form-label">Change note (recorded in history)</label>
-      <input id="he-note" name="note" class="form-control" maxlength="500"
-             placeholder="e.g. updated trap-spec section after new product release">
-    </div>
-    <div class="d-flex gap-2">
-      <button class="btn-pf" type="submit"><i class="bi bi-check2"></i> Save new version</button>
-      <a class="btn btn-link" href="{{ url_for('hub_article', article_id=article.article_id) }}">Cancel</a>
-    </div>
-  </form>
+  </div>
 </div>
 {% endblock %}

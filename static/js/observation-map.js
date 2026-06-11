@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const linzApiKey = mapElement.dataset.linzApiKey;
 
-  // ── Initialise bounded Lincoln map (shared with trap line pages) ────────
-  const map = createLincolnMap('observation-map', linzApiKey);
+  // ── Initialise bounded NZ map (shared with trap line pages) ─────────────
+  const map = createNzMap('observation-map', linzApiKey);
 
   // Default view: Lincoln University area (or server-provided center)
   const centerLat = parseFloat(mapElement.dataset.centerLat);

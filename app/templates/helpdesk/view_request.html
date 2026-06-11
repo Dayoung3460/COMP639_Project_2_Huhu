@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block header_actions %}
-  <a href="{{ url_for('helpdesk_submit') }}" class="btn btn-primary btn-sm">
+  <a href="{{ url_for('helpdesk_submit') }}" class="btn-sm-pf">
     <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>New Request
   </a>
 {% endblock %}
@@ -156,7 +156,7 @@
                     placeholder="Add more detail, a follow-up question, or an update…"
                     required></textarea>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm">
+        <button type="submit" class="btn-sm-pf">
           <i class="bi bi-send me-1" aria-hidden="true"></i>Send
         </button>
       </form>
@@ -191,7 +191,7 @@
   </div>
   {% endif %}
 
-  <a href="{{ url_for('helpdesk_my_requests') }}" class="btn btn-outline-secondary">
+  <a href="{{ url_for('helpdesk_my_requests') }}" class="btn-pf-outline">
     <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to my requests
   </a>
 

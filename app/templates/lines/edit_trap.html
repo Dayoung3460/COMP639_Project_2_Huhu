@@ -1,9 +1,29 @@
 {% extends 'base.html' %}
 {% block title %}Edit Trap{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon amber" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-pencil-square"></i>
+  </div>
+  Edit Trap
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('lines_index') }}">Lines</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('line_detail', line_id=line_id) }}">Line</a></li>
+    <li class="breadcrumb-item active">Edit trap</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:560px;">
-  <h2 class="mb-4">Edit Trap</h2>
-  
+<div class="container py-2" style="max-width:560px;">
+
   <form method="POST" action="{{ url_for('edit_trap', line_id=line_id, trap_id=trap.trap_id) }}">
     <div class="mb-3">
       <label for="trapCode" class="form-label">Trap Code</label>

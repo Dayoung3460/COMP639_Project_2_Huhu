@@ -31,7 +31,7 @@ from app.utils import role_required
 
 logger = logging.getLogger(__name__)
 
-VIEW_ROLES = ('Observer', 'Operator', 'Group Coordinator', 'Super Admin')
+VIEW_ROLES = ('Observer', 'Operator', 'Group Coordinator', 'Super Admin', 'Support Technician')
 
 
 # ---- Helpers --------------------------------------------------------------
@@ -47,11 +47,13 @@ def _active_group_id():
 def _data_group_id():
     """Group id for the JSON data endpoints.
 
-    Normal roles are scoped to their active session group. Super Admins have
-    no session group (they operate cross-group), so -- like the reports page --
-    they pass ?group_id= and may view any group's map.
+    Normal roles are scoped to their active session group. Cross-group
+    staff (Super Admin + Support Technician) have no session group, so
+    -- like the reports page -- they pass ?group_id= and may view any
+    group's map. Without this, the JS fetch gets redirected to
+    /select-group and the stage hangs at "loading elevation…" forever.
     """
-    if session.get('group_role') == 'Super Admin':
+    if session.get('group_role') in ('Super Admin', 'Support Technician'):
         gid = request.args.get('group_id', type=int)
         if not gid:
             abort(400)
@@ -100,12 +102,17 @@ def _activity_colour(catch_count):
 @app.route('/map3d')
 @role_required(*VIEW_ROLES)
 def map3d_index():
-    is_super_admin = session.get('group_role') == 'Super Admin'
+    role = session.get('group_role')
+    is_super_admin = role == 'Super Admin'
+    # Cross-group staff (Super Admin + Support Technician) have no
+    # session group, so they get the same `?group_id=` picker. The
+    # template's existing `is_super_admin` flag drives that picker —
+    # treat TS as super-admin-equivalent for this view only.
+    is_cross_group = role in ('Super Admin', 'Support Technician')
     prefs = _load_prefs(session['user_id'])
 
-    # Super Admins have no session group; they pick one via ?group_id=.
     all_groups = []
-    if is_super_admin:
+    if is_cross_group:
         with db.get_cursor() as cursor:
             cursor.execute(
                 'SELECT group_id, name FROM groups WHERE is_active = TRUE ORDER BY name'
@@ -158,7 +165,10 @@ def map3d_index():
         lines=lines,
         assigned_lines=assigned_lines,
         is_operator=session.get('group_role') == 'Operator',
-        is_super_admin=is_super_admin,
+        # `is_super_admin` here gates the group-picker dropdown in the
+        # template — Support Technician needs the same picker (no session
+        # group), so flip it true for any cross-group viewer.
+        is_super_admin=is_cross_group,
         all_groups=all_groups,
         selected_group_id=group_id,
         group_name=group_name,

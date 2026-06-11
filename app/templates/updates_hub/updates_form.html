@@ -1,8 +1,28 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'Edit update' if update and update.update_id else 'New update' }}{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon {{ 'amber' if update and update.update_id else 'green' }}"
+       style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-{{ 'pencil-square' if update and update.update_id else 'megaphone' }}"></i>
+  </div>
+  {{ 'Edit update' if update and update.update_id else 'New group update' }}
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('updates_list') }}">Updates</a></li>
+    <li class="breadcrumb-item active">{{ 'Edit' if update and update.update_id else 'New' }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:760px;">
-  <h2 class="mb-3">{{ 'Edit update' if update and update.update_id else 'New group update' }}</h2>
+<div class="container py-2" style="max-width:760px;">
   <form method="post" enctype="multipart/form-data" novalidate>
     <div class="mb-3">
       <label for="u-title" class="form-label">Title <span class="text-danger" aria-hidden="true">*</span></label>
@@ -49,7 +69,7 @@
       <button class="btn-pf" type="submit" name="action" value="publish">
         <i class="bi bi-megaphone"></i> Publish
       </button>
-      <a class="btn btn-link" href="{{ url_for('updates_list') }}">Cancel</a>
+      <a class="btn-pf-outline" href="{{ url_for('updates_list') }}">Cancel</a>
     </div>
   </form>
 </div>

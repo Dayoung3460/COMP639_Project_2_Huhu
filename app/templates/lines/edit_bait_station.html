@@ -1,10 +1,29 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_button, pf_link_button %}
 {% block title %}Edit Bait Station — {{ data.get('code', station.code) }}{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon amber" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-pencil-square"></i>
+  </div>
+  Edit Bait Station
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('lines_index') }}">Lines</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('line_detail', line_id=line_id) }}">Line</a></li>
+    <li class="breadcrumb-item active">Edit station</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:600px;">
-  {{ pf_link_button(url_for('line_detail', line_id=line_id), 'Back to Line', variant='btn-sm-outline', icon='bi-arrow-left', extra_classes='mb-3') }}
-  <h2 class="mb-4">Edit Bait Station</h2>
+<div class="container py-2" style="max-width:600px;">
 
   <form method="POST" action="{{ url_for('edit_bait_station', line_id=line_id, station_id=station.station_id) }}" aria-label="Edit bait station">
     <div class="mb-3">

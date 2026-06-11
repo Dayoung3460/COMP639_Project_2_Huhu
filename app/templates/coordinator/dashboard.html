@@ -1,46 +1,335 @@
 {% extends 'base.html' %}
 {% block title %}Coordinator Dashboard{% endblock %}
-{% block content %}
-<div class="container py-4">
-  <h2 class="mb-1">Group Coordinator Dashboard</h2>
-  <p class="text-muted mb-4" style="font-size:14px;">{{ session.get('group_name', '') }}</p>
 
-  <div class="row g-3">
-    <div class="col-md-4">
-      <div class="panel text-center py-4">
-        <i class="bi bi-geo-alt fs-2 text-success"></i>
-        <div class="mt-2" style="font-size:13px; color:#6b7c72;">Lines &amp; Traps</div>
-        <a href="{{ url_for('lines_index') }}" class="btn-sm-pf mt-2 d-inline-block">View Lines</a>
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-house"></i>
+  </div>
+  Coordinator Dashboard
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+{{ session.get('group_name', '') }}
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item active">Dashboard</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2">
+
+  {# ── Row 1: Group stat cards ─────────────────────────────────────── #}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-people" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_members }}</div>
+          <div class="stat-label">Members</div>
+          <div class="stat-trend" style="color:#6b7c72; margin-top:6px; font-size:11px;">
+            {{ stats.observers }} Observer &middot; {{ stats.operators }} Operator
+          </div>
+        </div>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="panel text-center py-4">
-        <i class="bi bi-people fs-2 text-success"></i>
-        <div class="mt-2" style="font-size:13px; color:#6b7c72;">Operators</div>
-        <a href="{{ url_for('coordinator_lines_assign') }}" class="btn-sm-pf mt-2 d-inline-block">Assign Operators</a>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-geo-alt" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_lines - stats.retired_lines }}</div>
+          <div class="stat-label">Active Lines</div>
+          {% if stats.retired_lines %}
+            <div class="stat-trend" style="color:#6b7c72; margin-top:6px; font-size:11px;">
+              {{ stats.retired_lines }} retired
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="panel text-center py-4">
-        <i class="bi bi-graph-up fs-2 text-success"></i>
-        <div class="mt-2" style="font-size:13px; color:#6b7c72;">Reports</div>
-        <a href="{{ url_for('reports') }}" class="btn-sm-pf mt-2 d-inline-block">View Reports</a>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="bi bi-cpu" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.total_traps - stats.retired_traps }}</div>
+          <div class="stat-label">Active Traps</div>
+          {% if stats.retired_traps %}
+            <div class="stat-trend" style="color:#6b7c72; margin-top:6px; font-size:11px;">
+              {{ stats.retired_traps }} retired
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="panel text-center py-4">
-        <i class="bi bi-bounding-box fs-2 text-success"></i>
-        <div class="mt-2 coordinator-card-label">Operational Area</div>
-        <a href="{{ url_for('coordinator_operational_area') }}" class="btn-sm-pf mt-2 d-inline-block">Manage Area</a>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="panel text-center py-4">
-        <i class="bi bi-box fs-2 text-success"></i>
-        <div class="mt-2" style="font-size:13px; color:#6b7c72;">3D Map</div>
-        <a href="{{ url_for('map3d_index') }}" class="btn-sm-pf mt-2 d-inline-block">Explore Map</a>
+    <div class="col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-bug" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value">{{ stats.catches_month }}</div>
+          <div class="stat-label">Catches This Month</div>
+          <div class="stat-trend" style="color:#6b7c72; margin-top:6px; font-size:11px;">
+            {{ stats.total_catches }} total all time
+          </div>
+        </div>
       </div>
     </div>
   </div>
+
+  {# ── Row 2: Alerts + Quick actions ───────────────────────────────── #}
+  <div class="row g-3 mb-4">
+
+    {# Alerts #}
+    <div class="col-lg-6">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-bell me-2" aria-hidden="true"></i>Alerts</div>
+        </div>
+        <div class="panel-body d-flex flex-column gap-3">
+
+          {# Maintenance #}
+          <div class="insight-card"
+               style="{{ 'background:#fdecea; border-color:#f5c6cb;' if stats.maintenance_traps else '' }}">
+            <div class="insight-icon"
+                 style="{{ 'background:#f8d7da; color:#c0392b;' if stats.maintenance_traps else '' }}">
+              <i class="bi bi-tools" aria-hidden="true"></i>
+            </div>
+            <div>
+              <div class="insight-title"
+                   style="{{ 'color:#c0392b;' if stats.maintenance_traps else '' }}">
+                Traps Needing Maintenance
+              </div>
+              <p class="insight-text">
+                {% if stats.maintenance_traps %}
+                  {{ stats.maintenance_traps }} trap{{ 's' if stats.maintenance_traps != 1 }}
+                  flagged for maintenance in the last 30 days.
+                {% else %}
+                  No traps flagged for maintenance recently. ✓
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          {# Pending join requests #}
+          <div class="insight-card"
+               style="{{ 'background:#fef3dc; border-color:#fde8b0;' if stats.pending_requests else '' }}">
+            <div class="insight-icon"
+                 style="{{ 'background:#fde8b0; color:#e8920a;' if stats.pending_requests else '' }}">
+              <i class="bi bi-person-plus" aria-hidden="true"></i>
+            </div>
+            <div>
+              <div class="insight-title"
+                   style="{{ 'color:#e8920a;' if stats.pending_requests else '' }}">
+                Pending Join Requests
+              </div>
+              <p class="insight-text">
+                {% if stats.pending_requests %}
+                  {{ stats.pending_requests }} request{{ 's' if stats.pending_requests != 1 }}
+                  awaiting your review.
+                  <a href="{{ url_for('coordinator_requests') }}" style="color:var(--pf-700); font-weight:500;">
+                    Review now &rarr;
+                  </a>
+                {% else %}
+                  No pending requests. ✓
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          {# Retired lines summary #}
+          <div class="insight-card" style="background:#f8fafc; border-color:#cbd5e1;">
+            <div class="insight-icon" style="background:#e2e8f0; color:#64748b;">
+              <i class="bi bi-archive" aria-hidden="true"></i>
+            </div>
+            <div>
+              <div class="insight-title" style="color:#475569;">Retired Lines</div>
+              <p class="insight-text">
+                {% if stats.retired_lines %}
+                  {{ stats.retired_lines }} line{{ 's' if stats.retired_lines != 1 }} retired
+                  out of {{ stats.total_lines }} total.
+                {% else %}
+                  No lines have been retired in this group yet.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# Quick actions #}
+    <div class="col-lg-6">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><i class="bi bi-lightning me-2" aria-hidden="true"></i>Quick Actions</div>
+        </div>
+        <div class="panel-body d-flex flex-column gap-2">
+
+          <a href="{{ url_for('coordinator_members') }}"
+             class="dashboard-quick-action">
+            <div class="dashboard-quick-action__icon"><i class="bi bi-people" aria-hidden="true"></i></div>
+            <div>
+              <div class="dashboard-quick-action__title">Manage Members</div>
+              <div class="dashboard-quick-action__sub">Roles and group membership</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
+          </a>
+
+          <a href="{{ url_for('coordinator_lines_assign') }}"
+             class="dashboard-quick-action">
+            <div class="dashboard-quick-action__icon"><i class="bi bi-person-lines-fill" aria-hidden="true"></i></div>
+            <div>
+              <div class="dashboard-quick-action__title">Assign Operators to Lines</div>
+              <div class="dashboard-quick-action__sub">Pair operators with trap lines</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
+          </a>
+
+          <a href="{{ url_for('new_line') }}"
+             class="dashboard-quick-action">
+            <div class="dashboard-quick-action__icon"><i class="bi bi-plus-circle-dotted" aria-hidden="true"></i></div>
+            <div>
+              <div class="dashboard-quick-action__title">Create New Line</div>
+              <div class="dashboard-quick-action__sub">Add a trap or bait station line</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
+          </a>
+
+          <a href="{{ url_for('coordinator_operational_area') }}"
+             class="dashboard-quick-action">
+            <div class="dashboard-quick-action__icon"><i class="bi bi-bounding-box" aria-hidden="true"></i></div>
+            <div>
+              <div class="dashboard-quick-action__title">Operational Area</div>
+              <div class="dashboard-quick-action__sub">Define the group&rsquo;s map boundary</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
+          </a>
+
+          <a href="{{ url_for('reports') }}"
+             class="dashboard-quick-action">
+            <div class="dashboard-quick-action__icon"><i class="bi bi-graph-up" aria-hidden="true"></i></div>
+            <div>
+              <div class="dashboard-quick-action__title">Group Analytics</div>
+              <div class="dashboard-quick-action__sub">Charts and catch data for your group</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
+          </a>
+
+          <a href="{{ url_for('map3d_index') }}"
+             class="dashboard-quick-action">
+            <div class="dashboard-quick-action__icon"><i class="bi bi-box" aria-hidden="true"></i></div>
+            <div>
+              <div class="dashboard-quick-action__title">3D Terrain Map</div>
+              <div class="dashboard-quick-action__sub">Terrain view of lines and traps</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto" style="color:var(--pf-400);" aria-hidden="true"></i>
+          </a>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Row 3: Recent members + Recent catches ──────────────────────── #}
+  <div class="row g-3">
+
+    <div class="col-lg-5 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Recent Members</div>
+          <a href="{{ url_for('coordinator_members') }}"
+             style="font-size:11px; color:var(--pf-600); text-decoration:none;">
+            View all &rarr;
+          </a>
+        </div>
+        {% if recent_members %}
+          <div class="pf-table-responsive">
+            <table class="pf-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Role</th>
+                  <th>Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in recent_members %}
+                <tr>
+                  <td>
+                    <div style="font-weight:500; font-size:13px;">{{ m.username }}</div>
+                    <div style="font-size:11px; color:#6b7c72;">
+                      {{ m.first_name }} {{ m.last_name }}
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge-role-{{ m.role|lower|replace(' ', '-') }}">{{ m.role }}</span>
+                  </td>
+                  <td class="table-cell-meta">
+                    {{ m.date_joined.strftime('%d %b %Y') if m.date_joined else '—' }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="panel-body text-center py-4 text-muted">
+            No members in this group yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-7 d-flex">
+      <div class="panel w-100">
+        <div class="panel-header">
+          <div class="panel-title">Recent Catches</div>
+          <a href="{{ url_for('catch_records') }}"
+             style="font-size:11px; color:var(--pf-600); text-decoration:none;">
+            View all &rarr;
+          </a>
+        </div>
+        {% if recent_catches %}
+          <div class="pf-table-responsive">
+            <table class="pf-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Line</th>
+                  <th>Trap</th>
+                  <th>Species</th>
+                  <th>By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for catch in recent_catches %}
+                <tr>
+                  <td class="table-cell-meta">{{ catch.date.strftime('%d %b %Y') }}</td>
+                  <td style="font-size:12px;">{{ catch.line_name }}</td>
+                  <td class="table-cell-mono">{{ catch.trap_code }}</td>
+                  <td><span class="badge-species">{{ catch.species_caught }}</span></td>
+                  <td class="table-cell-meta">{{ catch.recorded_by or '—' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="panel-body text-center py-4 text-muted">
+            No catches recorded for this group yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
 </div>
 {% endblock %}

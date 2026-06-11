@@ -7,12 +7,10 @@ This fork implements every Jira story under the P2-107 epic exactly as written, 
 ```bash
 psql -d tiaki -f sql/create_tables.sql
 psql -d tiaki -f sql/populate_tables.sql
-psql -d tiaki -f sql/seed_data.sql
-psql -d tiaki -f sql/group_updates_hub_migration.sql
 python run.py
 ```
 
-The migration is idempotent and add-only. It creates 8 new tables (`group_updates`, `group_update_photos`, `group_update_likes`, `group_update_comments`, `knowledge_categories`, `knowledge_articles`, `knowledge_article_photos`, `knowledge_article_versions`, `knowledge_moderation_log`) and 3 enums.
+The epic's schema (8 tables: `group_updates`, `group_update_photos`, `group_update_likes`, `group_update_comments`, `knowledge_categories`, `knowledge_articles`, `knowledge_article_photos`, `knowledge_article_versions`, `knowledge_moderation_log`, plus 3 enums) is now created directly inside `create_tables.sql` — the separate `group_updates_hub_migration.sql` file has been folded in.
 
 ## Story-by-story implementation map
 

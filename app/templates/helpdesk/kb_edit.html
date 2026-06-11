@@ -1,42 +1,54 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'New Article' if is_new else 'Edit Article' }}{% endblock %}
 
-{% block page_head_icon %}<i class="bi bi-pencil-square"></i>{% endblock %}
-{% block page_title %}{{ 'New Article' if is_new else 'Edit Article' }}{% endblock %}
-{% block page_subtitle %}Saved as draft — Super Admin can publish{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon {{ 'green' if is_new else 'amber' }}"
+       style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-{{ 'plus-square' if is_new else 'pencil-square' }}"></i>
+  </div>
+  {{ 'New Article' if is_new else 'Edit Article' }}
+</div>
+{% endblock %}
 
-{% block breadcrumb %}
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item">
-        <a href="{{ url_for('kb_index') }}">Knowledge Base</a>
-      </li>
-      {% if not is_new %}
-      <li class="breadcrumb-item">
-        <a href="{{ url_for('kb_article', article_id=article.article_id) }}">{{ article.title }}</a>
-      </li>
-      {% endif %}
-      <li class="breadcrumb-item active" aria-current="page">{{ 'New' if is_new else 'Edit' }}</li>
-    </ol>
-  </nav>
+{% block page_subtitle %}
+Saved as draft &mdash; Super Admin can publish.
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('kb_index') }}">Knowledge Base</a>
+    </li>
+    {% if not is_new %}
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('kb_article', article_id=article.article_id) }}">{{ article.title }}</a>
+    </li>
+    {% endif %}
+    <li class="breadcrumb-item active">{{ 'New' if is_new else 'Edit' }}</li>
+  </ol>
+</nav>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:760px;">
+<div class="container py-2" style="max-width:760px;">
   <form method="POST"
         action="{{ url_for('kb_new') if is_new else url_for('kb_edit', article_id=article.article_id) }}">
 
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Article Details</div>
-      <div class="card-body">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Article Details</div>
+      </div>
+      <div class="panel-body p-4">
         <div class="mb-3">
           <label class="form-label fw-medium" for="category_id">
-            Category <span class="text-danger">*</span>
+            Category <span class="text-danger" aria-hidden="true">*</span>
           </label>
           <select name="category_id" id="category_id"
                   class="form-select {% if errors.get('category_id') %}is-invalid{% endif %}"
                   required>
-            <option value="">— select —</option>
+            <option value="">&mdash; select &mdash;</option>
             {% for cat in categories %}
               <option value="{{ cat.category_id }}"
                       {% if data.get('category_id')|string == cat.category_id|string %}selected{% endif %}>
@@ -51,7 +63,7 @@
 
         <div class="mb-3">
           <label class="form-label fw-medium" for="title">
-            Title <span class="text-danger">*</span>
+            Title <span class="text-danger" aria-hidden="true">*</span>
           </label>
           <input type="text" name="title" id="title"
                  class="form-control {% if errors.get('title') %}is-invalid{% endif %}"
@@ -65,11 +77,11 @@
 
         <div class="mb-0">
           <label class="form-label fw-medium" for="body">
-            Body <span class="text-danger">*</span>
+            Body <span class="text-danger" aria-hidden="true">*</span>
           </label>
           <textarea name="body" id="body" rows="14"
                     class="form-control {% if errors.get('body') %}is-invalid{% endif %}"
-                    placeholder="Write the article content here…"
+                    placeholder="Write the article content here&hellip;"
                     required>{{ data.get('body', '') }}</textarea>
           {% if errors.get('body') %}
             <div class="invalid-feedback">{{ errors.body }}</div>
@@ -78,16 +90,15 @@
       </div>
     </div>
 
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary">
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      {% if not is_new %}
+        <a href="{{ url_for('kb_article', article_id=article.article_id) }}" class="btn-pf-outline">Cancel</a>
+      {% else %}
+        <a href="{{ url_for('kb_index') }}" class="btn-pf-outline">Cancel</a>
+      {% endif %}
+      <button type="submit" class="btn-pf">
         <i class="bi bi-floppy me-1" aria-hidden="true"></i>Save Draft
       </button>
-      {% if not is_new %}
-        <a href="{{ url_for('kb_article', article_id=article.article_id) }}"
-           class="btn btn-outline-secondary">Cancel</a>
-      {% else %}
-        <a href="{{ url_for('kb_index') }}" class="btn btn-outline-secondary">Cancel</a>
-      {% endif %}
     </div>
 
   </form>

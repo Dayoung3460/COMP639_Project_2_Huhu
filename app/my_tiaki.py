@@ -124,8 +124,8 @@ def _rel_time(dt):
         return 'yesterday'
     if days < 7:
         return f'{days} days ago'
-    return dt.strftime('%-d %b %Y') if dt.year != datetime.now().year \
-        else dt.strftime('%-d %b')
+    return dt.strftime('%d %b %Y').lstrip('0') if dt.year != datetime.now().year \
+        else dt.strftime('%d %b').lstrip('0')
 
 
 @app.route('/my-tiaki')

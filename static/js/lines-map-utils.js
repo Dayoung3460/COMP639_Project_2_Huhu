@@ -169,16 +169,39 @@ function orderPointsByNearestNeighbor(points) {
 }
 
 /**
- * Scroll so container is visible below the sticky navbar, then focus the first
- * interactive element inside it.
+ * Scroll the minimum amount needed for the container to be fully visible
+ * between the sticky navbar (top) and the viewport bottom, then focus the
+ * first interactive element inside it. Doesn't scroll at all when the
+ * container already fits in the visible area.
  * @param {HTMLElement} container
  */
 function scrollAndFocusForm(container) {
   const rootStyle = getComputedStyle(document.documentElement);
   const navbarH = parseFloat(rootStyle.getPropertyValue('--navbar-h')) || 58;
   const ribbonH = parseFloat(rootStyle.getPropertyValue('--ribbon-h')) || 0;
-  const scrollTarget = container.getBoundingClientRect().top + window.scrollY - navbarH - ribbonH - 8;
-  window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+  const topGuard    = navbarH + ribbonH + 8;
+  const bottomGuard = 16;
+
+  const rect = container.getBoundingClientRect();
+  const viewBottom = window.innerHeight;
+  let delta = 0;
+
+  if (rect.bottom > viewBottom - bottomGuard) {
+    // Row bottom sits below the fold — scroll just enough to expose it.
+    delta = rect.bottom - (viewBottom - bottomGuard);
+  }
+  if (rect.top - delta < topGuard) {
+    // After the bottom fix, the row top would slip under the sticky nav —
+    // clamp so the top is just below it instead.
+    delta = rect.top - topGuard;
+  }
+
+  if (Math.abs(delta) > 1) {
+    window.scrollTo({
+      top: Math.max(0, window.scrollY + delta),
+      behavior: 'smooth',
+    });
+  }
 
   const firstInput = container.querySelector('input, select, button, a[href]');
   if (firstInput) firstInput.focus({ preventScroll: true });

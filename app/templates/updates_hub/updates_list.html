@@ -1,56 +1,87 @@
 {% extends 'base.html' %}
 {% block title %}Group updates{% endblock %}
-{% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h2 class="mb-0"><i class="bi bi-megaphone"></i> Group updates</h2>
-    {% if can_post %}
-    <a href="{{ url_for('updates_new') }}" class="btn-pf btn-sm">
-      <i class="bi bi-plus-circle"></i> New update
-    </a>
-    {% endif %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-megaphone"></i>
   </div>
-  <p class="text-muted">
-    Announcements, seasonal notices, and operational news from
-    {{ session.get('group_name', 'your group') }}. Visible only to members of this group.
-  </p>
+  Group updates
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Announcements, seasonal notices, and operational news from
+{{ session.get('group_name', 'your group') }}. Visible only to members of this group.
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Updates</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2">
+
+  {% if can_post %}
+  <div class="d-flex justify-content-end mb-3">
+    <a href="{{ url_for('updates_new') }}" class="btn-sm-pf">
+      <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>New update
+    </a>
+  </div>
+  {% endif %}
 
   {% if updates %}
   <div class="row g-3">
     {% for u in updates %}
-    <div class="col-md-6">
-      <article class="panel h-100 d-flex flex-column" aria-labelledby="upd-{{ u.update_id }}-t">
+    <div class="col-md-6 col-lg-4 d-flex">
+      <article class="hub-card flex-fill" aria-labelledby="upd-{{ u.update_id }}-t">
         {% if u.thumb and u.thumb[0] %}
           <img src="{{ url_for('static', filename='images/uploads/' ~ u.thumb[0]) }}"
-               alt="" class="img-fluid mb-2 rounded">
+               alt="" class="hub-card__thumb">
         {% endif %}
-        <h3 id="upd-{{ u.update_id }}-t" class="h5 mb-1">
-          <a href="{{ url_for('updates_detail', update_id=u.update_id) }}">{{ u.title }}</a>
+        <div class="hub-card__body">
           {% if u.status == 'draft' %}
-            <span class="badge bg-secondary ms-1">Draft</span>
+          <div class="hub-card__meta-row">
+            <span class="hub-status-badge draft">Draft</span>
+          </div>
           {% endif %}
-        </h3>
-        <p class="small text-muted mb-2">
-          {{ u.first_name }} {{ u.last_name }} ·
-          {{ (u.published_at or u.created_at) | nz_datetime }}
-        </p>
-        <p class="flex-grow-1">{{ u.body[:240] }}{% if u.body|length > 240 %}…{% endif %}</p>
-        <div class="d-flex justify-content-between align-items-center">
-          <span class="small text-muted">
-            <i class="bi bi-heart{% if u.liked_by_me %}-fill text-danger{% endif %}"></i> {{ u.like_count }}
-            · <i class="bi bi-chat"></i> {{ u.comment_count }}
-          </span>
-          <a href="{{ url_for('updates_detail', update_id=u.update_id) }}"
-             class="btn btn-sm btn-outline-secondary">Read</a>
+          <h3 id="upd-{{ u.update_id }}-t" class="hub-card__title">
+            <a href="{{ url_for('updates_detail', update_id=u.update_id) }}">{{ u.title }}</a>
+          </h3>
+          <p class="hub-card__sub">
+            {{ u.first_name }} {{ u.last_name }} &middot;
+            {{ (u.published_at or u.created_at) | nz_datetime }}
+          </p>
+          <p class="hub-card__excerpt">{{ u.body[:240] }}{% if u.body|length > 240 %}…{% endif %}</p>
+          <div class="hub-card__footer">
+            <span class="hub-card__sub">
+              <i class="bi bi-heart{% if u.liked_by_me %}-fill text-danger{% endif %}" aria-hidden="true"></i> {{ u.like_count }}
+              &middot; <i class="bi bi-chat" aria-hidden="true"></i> {{ u.comment_count }}
+            </span>
+            <a href="{{ url_for('updates_detail', update_id=u.update_id) }}" class="btn-sm-pf-soft">
+              Read <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+            </a>
+          </div>
         </div>
       </article>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="alert alert-info">
-    No updates yet.
-    {% if can_post %}<a href="{{ url_for('updates_new') }}">Post the first one.</a>{% endif %}
+  <div class="panel">
+    <div class="panel-body text-center py-5">
+      <i class="bi bi-megaphone" aria-hidden="true" style="font-size: 32px; color: var(--pf-300);"></i>
+      <p class="mt-3 mb-1 fw-semibold">No updates yet</p>
+      <p class="text-muted small mb-3">Nothing has been posted to your group yet.</p>
+      {% if can_post %}
+        <a href="{{ url_for('updates_new') }}" class="btn-sm-pf">Post the first one</a>
+      {% endif %}
+    </div>
   </div>
   {% endif %}
 </div>

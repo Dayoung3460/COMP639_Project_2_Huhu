@@ -25,8 +25,10 @@
      aria-labelledby="topbarMenuBtn"
      hidden>
 
-  {# Super Admin system + manage lists. #}
-  {% if session.get('group_role') == 'Super Admin' %}
+  {# Super Admin + Support Technician system + manage lists.
+     TS gets the same items as Super Admin except "Support Technicians"
+     itself (grant/revoke is a role change — Super Admin only per spec). #}
+  {% if session.get('group_role') in ('Super Admin', 'Support Technician') %}
     <a role="menuitem" tabindex="-1"
        href="{{ url_for('admin_reports') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint == 'admin_reports' }}">
@@ -53,11 +55,13 @@
        class="topbar-overflow-item {{ 'active' if request.endpoint in ['reference_data', 'manage_lookup'] }}">
       <i class="bi bi-database-gear" aria-hidden="true"></i> Reference Data
     </a>
+    {% if session.get('group_role') == 'Super Admin' %}
     <a role="menuitem" tabindex="-1"
        href="{{ url_for('admin_support_technicians') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint in ['admin_support_technicians', 'admin_support_tech_grant', 'admin_support_tech_revoke'] }}">
       <i class="bi bi-headset" aria-hidden="true"></i> Support Technicians
     </a>
+    {% endif %}
   {% endif %}
 
   {# Coordinator-only overflow. #}
@@ -110,11 +114,13 @@
         <i class="bi bi-clock-history" aria-hidden="true"></i> History
       </a>
     {% endif %}
+    {% if session.get('group_role') != 'Super Admin' %}
     <a role="menuitem" tabindex="-1"
        href="{{ url_for('coordinator_group_identity') }}"
        class="topbar-overflow-item {{ 'active' if request.endpoint == 'coordinator_group_identity' }}">
       <i class="bi bi-image" aria-hidden="true"></i> Group Identity
     </a>
+    {% endif %}
   {% endif %}
 
   {# Operator overflow — Data + Reports. Their primary slots are the
@@ -154,12 +160,12 @@
   <a role="menuitem" tabindex="-1"
      href="{{ url_for('helpdesk_queue') }}"
      class="topbar-overflow-item {{ 'active' if request.endpoint in ('helpdesk_queue', 'helpdesk_ticket') }}">
-    <i class="bi bi-inbox-fill" aria-hidden="true"></i> All Requests
+    <i class="bi bi-inbox-fill" aria-hidden="true"></i> Support Queue
   </a>
   <a role="menuitem" tabindex="-1"
      href="{{ url_for('helpdesk_user_search') }}"
      class="topbar-overflow-item {{ 'active' if request.endpoint in ('helpdesk_user_search', 'helpdesk_user_profile') }}">
-    <i class="bi bi-search" aria-hidden="true"></i> User Search
+    <i class="bi bi-person-gear" aria-hidden="true"></i> Account Management
   </a>
   {% endif %}
   {% if session.get('group_role') not in ('Support Technician', 'Super Admin') %}
@@ -178,7 +184,7 @@
   {# Account — all roles. Divider above signals a section change. #}
   <div class="topbar-overflow-divider" role="separator" aria-hidden="true"></div>
   <a role="menuitem" tabindex="-1"
-     href="{{ url_for('profile') }}"
+     href="{{ url_for('profile', ctx='app') }}"
      class="topbar-overflow-item {{ 'active' if request.endpoint == 'profile' }}">
     <i class="bi bi-person" aria-hidden="true"></i> My Profile
   </a>

@@ -1,33 +1,53 @@
 {% extends 'base.html' %}
 {% block title %}{{ article.title }}{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-journal-text"></i>
+  </div>
+  {{ article.title }}
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('hub_index') }}">Knowledge Hub</a></li>
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('hub_index', category=article.category_slug) }}">{{ article.category_name }}</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">{{ article.title }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:780px;">
-  <nav aria-label="breadcrumb" class="small mb-2">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{{ url_for('hub_index') }}">Knowledge Hub</a></li>
-      <li class="breadcrumb-item"><a href="{{ url_for('hub_index', category=article.category_slug) }}">{{ article.category_name }}</a></li>
-      <li class="breadcrumb-item active" aria-current="page">{{ article.title }}</li>
-    </ol>
-  </nav>
-  <article aria-labelledby="art-title">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <span class="badge bg-success">{{ article.category_name }}</span>
-      <span class="small text-muted">
-        v{{ article.current_version }} ·
+<div class="container py-2">
+  <article class="hub-article" aria-labelledby="art-title">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <span class="hub-article__category">{{ article.category_name }}</span>
+      <span class="hub-article__meta">
+        v{{ article.current_version }} &middot;
         {% if article.status == 'published' %}
           last updated {{ article.updated_at | nz_datetime }}
         {% else %}
-          status: {{ article.status }}
+          status: <span class="hub-status-badge {{ article.status }}">{{ article.status|replace('_', ' ')|capitalize }}</span>
         {% endif %}
       </span>
     </div>
-    <h1 id="art-title" class="h3">{{ article.title }}</h1>
-    <p class="small text-muted">
+
+    <h1 id="art-title" class="hub-article__title">{{ article.title }}</h1>
+    <p class="hub-article__meta">
       {{ article.first_name }} {{ article.last_name }}
-      {% if article.author_group_name %} · {{ article.author_group_name }}{% endif %}
-      · created {{ article.created_at | nz_datetime }}
+      {% if article.author_group_name %} &middot; {{ article.author_group_name }}{% endif %}
+      &middot; created {{ article.created_at | nz_datetime }}
     </p>
-    {% if article.summary %}<p class="lead">{{ article.summary }}</p>{% endif %}
+
+    {% if article.summary %}
+      <p class="hub-article__lead">{{ article.summary }}</p>
+    {% endif %}
+
     {% if photos %}
       <div class="row g-2 mb-3">
         {% for p in photos %}
@@ -37,18 +57,19 @@
         {% endfor %}
       </div>
     {% endif %}
-    <div style="white-space:pre-wrap;">{{ article.body }}</div>
+
+    <div class="hub-article__body">{{ article.body }}</div>
   </article>
 
   {% if can_moderate or is_author %}
-  <div class="mt-3 d-flex gap-2 flex-wrap">
-    <a class="btn-pf-outline btn-sm" href="{{ url_for('hub_edit', article_id=article.article_id) }}">
-      <i class="bi bi-pencil"></i> Edit (creates new version)
+  <div class="hub-article mt-4 d-flex gap-2 flex-wrap">
+    <a class="btn-sm-outline" href="{{ url_for('hub_edit', article_id=article.article_id) }}">
+      <i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit (creates new version)
     </a>
     {% if can_moderate and article.status == 'published' %}
     <form method="post" action="{{ url_for('hub_toggle_feature', article_id=article.article_id) }}">
-      <button class="btn btn-outline-warning btn-sm" type="submit">
-        <i class="bi bi-star{% if article.is_featured %}-fill{% endif %}"></i>
+      <button class="btn-sm-amber" type="submit">
+        <i class="bi bi-star{% if article.is_featured %}-fill{% endif %} me-1" aria-hidden="true"></i>
         {{ 'Unfeature' if article.is_featured else 'Feature' }}
       </button>
     </form>
@@ -57,24 +78,22 @@
   {% endif %}
 
   {% if history %}
-  <details class="mt-4">
-    <summary>Version history ({{ history|length }})</summary>
+  <details class="hub-article mt-4">
+    <summary class="fw-semibold">Version history ({{ history|length }})</summary>
     <ul class="list-group mt-2">
       {% for v in history %}
         <li class="list-group-item d-flex justify-content-between align-items-start gap-3">
           <div>
             <strong>v{{ v.version_no }}</strong>
             {% if v.version_no == article.current_version %}
-              <span class="badge bg-secondary ms-1">current</span>
+              <span class="badge-active ms-1">current</span>
             {% endif %}
-            ·
-            {{ v.first_name }} {{ v.last_name }} ·
-            {{ v.edited_at | nz_datetime }}
+            &middot; {{ v.first_name }} {{ v.last_name }} &middot; {{ v.edited_at | nz_datetime }}
             {% if v.note %}<div class="small text-muted">{{ v.note }}</div>{% endif %}
           </div>
-          <a class="btn btn-outline-secondary btn-sm"
+          <a class="btn-sm-outline"
              href="{{ url_for('hub_article_version', article_id=article.article_id, version_no=v.version_no) }}">
-            <i class="bi bi-eye"></i> View
+            <i class="bi bi-eye me-1" aria-hidden="true"></i>View
           </a>
         </li>
       {% endfor %}
@@ -83,13 +102,13 @@
   {% endif %}
 
   {% if mod_log and can_moderate %}
-  <details class="mt-3">
-    <summary>Moderation log ({{ mod_log|length }})</summary>
+  <details class="hub-article mt-3">
+    <summary class="fw-semibold">Moderation log ({{ mod_log|length }})</summary>
     <ul class="list-group mt-2">
       {% for m in mod_log %}
         <li class="list-group-item small">
           {{ m.action|capitalize }} by {{ m.first_name }} {{ m.last_name }}
-          · {{ m.created_at | nz_datetime }}
+          &middot; {{ m.created_at | nz_datetime }}
           {% if m.note %}<div class="text-muted">{{ m.note }}</div>{% endif %}
         </li>
       {% endfor %}

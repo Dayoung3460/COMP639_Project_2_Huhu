@@ -1187,7 +1187,7 @@ def kb_edit(article_id):
 
 
 @app.route('/helpdesk/kb/<int:article_id>/publish', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def kb_publish(article_id):
     """Publish a draft KB article."""
     with db.get_cursor() as cursor:
@@ -1202,7 +1202,7 @@ def kb_publish(article_id):
 
 
 @app.route('/helpdesk/kb/<int:article_id>/unpublish', methods=['POST'])
-@role_required('Super Admin')
+@role_required('Super Admin', 'Support Technician')
 def kb_unpublish(article_id):
     """Unpublish a KB article (returns it to draft)."""
     with db.get_cursor() as cursor:

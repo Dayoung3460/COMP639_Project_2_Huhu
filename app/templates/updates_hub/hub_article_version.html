@@ -1,54 +1,77 @@
 {% extends 'base.html' %}
 {% block title %}{{ version.title }} (v{{ version.version_no }}){% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-clock-history"></i>
+  </div>
+  {{ version.title }} <span class="text-muted fw-normal" style="font-size: 16px;">v{{ version.version_no }}</span>
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('hub_index') }}">Knowledge Hub</a></li>
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('hub_index', category=article.category_slug) }}">{{ article.category_name }}</a>
+    </li>
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('hub_article', article_id=article.article_id) }}">{{ version.title }}</a>
+    </li>
+    <li class="breadcrumb-item active">v{{ version.version_no }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="max-width:780px;">
-  <nav aria-label="breadcrumb" class="small mb-2">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{{ url_for('hub_index') }}">Knowledge Hub</a></li>
-      <li class="breadcrumb-item"><a href="{{ url_for('hub_index', category=article.category_slug) }}">{{ article.category_name }}</a></li>
-      <li class="breadcrumb-item"><a href="{{ url_for('hub_article', article_id=article.article_id) }}">{{ version.title }}</a></li>
-      <li class="breadcrumb-item active" aria-current="page">v{{ version.version_no }}</li>
-    </ol>
-  </nav>
+<div class="container py-2">
 
   {% if is_current %}
-    <div class="alert alert-info" role="status" style="font-size:13px; border-radius:8px;">
-      <i class="bi bi-info-circle"></i>
-      This is the current version (v{{ version.version_no }}). The
-      <a href="{{ url_for('hub_article', article_id=article.article_id) }}">live article page</a>
-      shows the same content with comments + actions.
+    <div class="notice blue mb-3" style="max-width: 760px;">
+      <i class="bi bi-info-circle" aria-hidden="true"></i>
+      <span>
+        This is the current version (v{{ version.version_no }}). The
+        <a href="{{ url_for('hub_article', article_id=article.article_id) }}">live article page</a>
+        shows the same content with comments + actions.
+      </span>
     </div>
   {% else %}
-    <div class="alert alert-warning" role="status" style="font-size:13px; border-radius:8px;">
-      <i class="bi bi-clock-history"></i>
-      You're viewing a historical version (v{{ version.version_no }}). The current version is
-      v{{ article.current_version }} —
-      <a href="{{ url_for('hub_article', article_id=article.article_id) }}">view current</a>.
+    <div class="notice amber mb-3" style="max-width: 760px;">
+      <i class="bi bi-clock-history" aria-hidden="true"></i>
+      <span>
+        You&rsquo;re viewing a historical version (v{{ version.version_no }}). Current is
+        v{{ article.current_version }} &mdash;
+        <a href="{{ url_for('hub_article', article_id=article.article_id) }}">view current</a>.
+      </span>
     </div>
   {% endif %}
 
-  <article aria-labelledby="art-title">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <span class="badge bg-success">{{ article.category_name }}</span>
-      <span class="small text-muted">
-        v{{ version.version_no }} · edited {{ version.edited_at | nz_datetime }}
+  <article class="hub-article" aria-labelledby="art-title">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <span class="hub-article__category">{{ article.category_name }}</span>
+      <span class="hub-article__meta">
+        v{{ version.version_no }} &middot; edited {{ version.edited_at | nz_datetime }}
       </span>
     </div>
-    <h1 id="art-title" class="h3">{{ version.title }}</h1>
-    <p class="small text-muted">
+    <h1 id="art-title" class="hub-article__title">{{ version.title }}</h1>
+    <p class="hub-article__meta">
       Edited by {{ version.first_name }} {{ version.last_name }}
-      {% if article.author_group_name %} · {{ article.author_group_name }}{% endif %}
+      {% if article.author_group_name %} &middot; {{ article.author_group_name }}{% endif %}
     </p>
     {% if version.note %}
-      <p class="small text-muted fst-italic">Note: {{ version.note }}</p>
+      <p class="hub-article__meta fst-italic">Note: {{ version.note }}</p>
     {% endif %}
-    {% if version.summary %}<p class="lead">{{ version.summary }}</p>{% endif %}
-    <div style="white-space:pre-wrap;">{{ version.body }}</div>
+    {% if version.summary %}
+      <p class="hub-article__lead">{{ version.summary }}</p>
+    {% endif %}
+    <div class="hub-article__body">{{ version.body }}</div>
   </article>
 
-  <div class="mt-4">
-    <a class="btn-pf-outline btn-sm" href="{{ url_for('hub_article', article_id=article.article_id) }}">
-      <i class="bi bi-arrow-left"></i> Back to article
+  <div class="hub-article mt-4">
+    <a class="btn-sm-outline" href="{{ url_for('hub_article', article_id=article.article_id) }}">
+      <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to article
     </a>
   </div>
 </div>

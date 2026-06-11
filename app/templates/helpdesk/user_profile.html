@@ -9,7 +9,7 @@
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb mb-0">
       <li class="breadcrumb-item">
-        <a href="{{ url_for('helpdesk_user_search') }}">User Search</a>
+        <a href="{{ url_for('helpdesk_user_search') }}">Account Management</a>
       </li>
       <li class="breadcrumb-item active" aria-current="page">{{ user.first_name }} {{ user.last_name }}</li>
     </ol>
@@ -243,8 +243,8 @@
     </div>
   </div>
 
-  <a href="{{ url_for('helpdesk_user_search') }}" class="btn btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to search
+  <a href="{{ url_for('helpdesk_user_search') }}" class="btn-pf-outline">
+    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to Account Management
   </a>
 
 </div>

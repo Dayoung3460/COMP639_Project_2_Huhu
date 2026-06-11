@@ -2,13 +2,30 @@
 {% from '_ui_macros.html' import pf_button %}
 {% block title %}Join Requests{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-
-  <div class="d-flex align-items-center gap-3 mb-4">
-    <h4 class="fw-semibold mb-0">Join Requests</h4>
-    <span class="badge bg-success" style="font-size:12px;">{{ session.get('group_name') }}</span>
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon amber" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-person-plus"></i>
   </div>
+  Join Requests
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+{{ session.get('group_name') }}
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Requests</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2">
 
   {% if join_requests %}
 

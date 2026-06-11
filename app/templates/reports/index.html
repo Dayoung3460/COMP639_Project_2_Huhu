@@ -145,33 +145,6 @@
   </div>
   {% else %}
 
-  {# ── Group context banner ── #}
-  {% if group_name %}
-  <div style="background:linear-gradient(135deg,#1a5c38 0%,#2d7a4f 100%);
-              color:#fff; border-radius:10px; padding:14px 20px;
-              margin-bottom:20px; display:flex; align-items:center; gap:14px;">
-    <i class="bi bi-people" aria-hidden="true"
-       style="font-size:24px; flex-shrink:0; opacity:0.85;"></i>
-    <div>
-      <div style="font-family:'Cabin',sans-serif; font-size:14px; font-weight:700;">
-        {{ group_name }} — Group Analytics{% if is_super_admin %} <span style="opacity:0.7; font-weight:400;">(Super Admin view)</span>{% endif %}
-      </div>
-      <div style="font-size:12px; opacity:0.8; margin-top:2px;">
-        {% if is_super_admin %}Viewing as Super Admin.{% else %}Showing data for your group only.{% endif %} Period:
-        {% if selected_period == 'custom' and date_from and date_to %}
-          {{ date_from }} to {{ date_to }}
-        {% elif selected_period == 'all' %}All Time
-        {% elif selected_period == '1' %}Last Month
-        {% elif selected_period == '3' %}Last 3 Months
-        {% elif selected_period == '6' %}Last 6 Months
-        {% elif selected_period == '12' %}Last Year
-        {% else %}{{ selected_period }} months
-        {% endif %}.
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
   {# ── Stat cards ── #}
   <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">

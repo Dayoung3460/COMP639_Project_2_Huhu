@@ -1,12 +1,27 @@
 {% extends 'base.html' %}
 {% from '_ui_macros.html' import pf_button, pf_link_button, pf_panel %}
 {% block title %}Operational Area{% endblock %}
-{% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Group Operational Area</h2>
-    {{ pf_link_button(url_for('coordinator_dashboard'), 'Back to Dashboard', variant='btn-sm-outline', icon='bi-arrow-left') }}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-geo-alt"></i>
   </div>
+  Operational Area
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('coordinator_dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Operational Area</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2">
 
   {% call pf_panel(title='Draw Operational Area') %}
     {% if not area_geojson %}

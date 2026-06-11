@@ -1,39 +1,101 @@
 {% extends 'base.html' %}
 {% block title %}Knowledge Hub{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 18px;">
+    <i class="bi bi-mortarboard"></i>
+  </div>
+  Knowledge Hub
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Curated guidance across the platform. Published entries are visible to any group's members.
+{% endblock %}
+
+{% block header_actions %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ nav_dashboard_url }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Knowledge Hub</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h2 class="mb-0"><i class="bi bi-mortarboard"></i> Shared Knowledge Hub</h2>
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('hub_submit') }}" class="btn-pf btn-sm">
-        <i class="bi bi-plus-circle"></i> Submit article
-      </a>
-      <a href="{{ url_for('hub_my_submissions') }}" class="btn-pf-outline btn-sm">
-        <i class="bi bi-list-check"></i> My submissions
-      </a>
-      {% if can_moderate %}
-      <a href="{{ url_for('hub_moderation') }}" class="btn-pf-outline btn-sm">
-        <i class="bi bi-hourglass-split"></i> Moderation queue
-      </a>
+<div class="container py-2">
+
+  {# ── Toolbar: actions + search/filter ── #}
+  <div class="d-flex flex-wrap gap-2 mb-3 justify-content-end">
+    <a href="{{ url_for('hub_submit') }}" class="btn-sm-pf">
+      <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Submit article
+    </a>
+    <a href="{{ url_for('hub_my_submissions') }}" class="btn-sm-outline">
+      <i class="bi bi-list-check me-1" aria-hidden="true"></i>My submissions
+    </a>
+    {% if can_moderate %}
+    <a href="{{ url_for('hub_moderation') }}" class="btn-sm-outline">
+      <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Moderation queue
+    </a>
+    {% endif %}
+  </div>
+
+  <form method="get" class="lines-filter-shell mb-3" role="search" aria-label="Search the Knowledge Hub">
+    <div class="d-flex align-items-end gap-3 flex-wrap">
+      <div style="flex: 1 1 280px;">
+        <label for="q-search" class="form-label mb-1">Search</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+          <input id="q-search" type="text" name="q" value="{{ query }}" class="form-control"
+                 placeholder="Title, body or summary text..." maxlength="80">
+        </div>
+      </div>
+      <div style="flex: 0 1 220px;">
+        <label for="q-cat" class="form-label mb-1">Category</label>
+        <select id="q-cat" name="category" class="form-select">
+          <option value="">All categories</option>
+          {% for c in categories %}
+            <option value="{{ c.slug }}" {% if selected_category == c.slug %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn-pf" type="submit" style="min-height: 44px;">Apply</button>
+      {% if query or selected_category %}
+        <a href="{{ url_for('hub_index') }}" class="btn-pf-outline" style="min-height: 44px;">Clear</a>
       {% endif %}
     </div>
-  </div>
-  <p class="text-muted">
-    Curated guidance across the platform. Published entries are visible to any group's members.
-  </p>
+  </form>
 
+  {# ── Featured strip — same grid breakpoints as the article grid below
+        so featured and regular cards visually align. The heading sits
+        above an unwrapped row (no background strip) so the column
+        gutters and card widths line up across both sections. #}
   {% if featured %}
   <section class="mb-4" aria-labelledby="featured-h">
-    <h3 id="featured-h" class="h5"><i class="bi bi-star-fill text-warning"></i> Featured</h3>
+    <h2 id="featured-h" class="h6 d-flex align-items-center gap-2 mb-3" style="color: var(--pf-800);">
+      <i class="bi bi-star-fill" aria-hidden="true" style="color: var(--amber);"></i>
+      Featured
+    </h2>
     <div class="row g-3">
       {% for f in featured %}
-      <div class="col-md-4">
-        <article class="panel h-100">
-          <h4 class="h6">
-            <a href="{{ url_for('hub_article', article_id=f.article_id) }}">{{ f.title }}</a>
-          </h4>
-          <p class="small text-muted">{{ f.category_name }}</p>
-          <p class="small">{{ f.summary or (f.body[:140] ~ '…') }}</p>
+      <div class="col-md-6 col-lg-4 d-flex">
+        <article class="hub-card flex-fill">
+          <div class="hub-card__body">
+            <div class="hub-card__meta-row">
+              <span class="hub-card__category">{{ f.category_name }}</span>
+              <i class="bi bi-star-fill hub-card__featured" aria-label="Featured"></i>
+            </div>
+            <h3 class="hub-card__title">
+              <a href="{{ url_for('hub_article', article_id=f.article_id) }}">{{ f.title }}</a>
+            </h3>
+            <p class="hub-card__excerpt">{{ f.summary or (f.body[:140] ~ '…') }}</p>
+            <div class="hub-card__footer">
+              <a href="{{ url_for('hub_article', article_id=f.article_id) }}" class="btn-sm-pf-soft">
+                Read <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+              </a>
+            </div>
+          </div>
         </article>
       </div>
       {% endfor %}
@@ -41,64 +103,62 @@
   </section>
   {% endif %}
 
-  <form method="get" class="row g-2 mb-3" role="search" aria-label="Search the Knowledge Hub">
-    <div class="col-md-6">
-      <label for="q-search" class="form-label small">Search</label>
-      <input id="q-search" type="text" name="q" value="{{ query }}" class="form-control form-control-sm"
-             placeholder="Title, body or summary text..." maxlength="80">
-    </div>
-    <div class="col-md-4">
-      <label for="q-cat" class="form-label small">Category</label>
-      <select id="q-cat" name="category" class="form-select form-select-sm">
-        <option value="">All categories</option>
-        {% for c in categories %}
-          <option value="{{ c.slug }}" {% if selected_category == c.slug %}selected{% endif %}>{{ c.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2 d-flex align-items-end">
-      <button class="btn-pf-outline btn-sm w-100">Apply</button>
-    </div>
-  </form>
-
+  {# ── Article grid ── #}
   {% if articles %}
   <div class="row g-3">
     {% for a in articles %}
-    <div class="col-md-6">
-      <article class="panel h-100 d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-start mb-1">
-          <span class="badge bg-success">{{ a.category_name }}</span>
-          {% if a.is_featured %}<i class="bi bi-star-fill text-warning" aria-label="Featured"></i>{% endif %}
-        </div>
+    <div class="col-md-6 col-lg-4 d-flex">
+      <article class="hub-card flex-fill">
         {% if a.thumb and a.thumb[0] %}
           <img src="{{ url_for('static', filename='images/uploads/' ~ a.thumb[0]) }}"
-               alt="" class="img-fluid mb-2 rounded">
+               alt="" class="hub-card__thumb">
         {% endif %}
-        <h3 class="h5">
-          <a href="{{ url_for('hub_article', article_id=a.article_id) }}">{{ a.title }}</a>
-        </h3>
-        <p class="small text-muted mb-1">
-          v{{ a.current_version }} · {{ a.published_at | nz_datetime if a.published_at else '' }}
-          {% if a.author_group_name %} · {{ a.author_group_name }}{% endif %}
-        </p>
-        <p class="flex-grow-1">{{ a.summary or (a.body[:200] ~ '…') }}</p>
-        <a href="{{ url_for('hub_article', article_id=a.article_id) }}"
-           class="btn btn-sm btn-outline-secondary align-self-start">Read</a>
+        <div class="hub-card__body">
+          <div class="hub-card__meta-row">
+            <span class="hub-card__category">{{ a.category_name }}</span>
+            {% if a.is_featured %}
+              <i class="bi bi-star-fill hub-card__featured" aria-label="Featured"></i>
+            {% endif %}
+          </div>
+          <h3 class="hub-card__title">
+            <a href="{{ url_for('hub_article', article_id=a.article_id) }}">{{ a.title }}</a>
+          </h3>
+          <p class="hub-card__sub">
+            v{{ a.current_version }}
+            {% if a.published_at %} &middot; {{ a.published_at | nz_datetime }}{% endif %}
+            {% if a.author_group_name %} &middot; {{ a.author_group_name }}{% endif %}
+          </p>
+          <p class="hub-card__excerpt">{{ a.summary or (a.body[:200] ~ '…') }}</p>
+          <div class="hub-card__footer">
+            <a href="{{ url_for('hub_article', article_id=a.article_id) }}" class="btn-sm-pf-soft">
+              Read <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+            </a>
+          </div>
+        </div>
       </article>
     </div>
     {% endfor %}
   </div>
   {% else %}
-    {# Explicit empty state -- AC: "A search with no matches shows a clear empty state." #}
-    <div class="alert alert-info">
-      {% if query or selected_category %}
-        No articles match
-        {% if query %}<em>"{{ query }}"</em>{% endif %}
-        {% if selected_category %}in this category{% endif %}.
-        <a href="{{ url_for('hub_index') }}">Clear filters</a> to see all published entries.
-      {% else %}
-        No published articles yet. Be the first to <a href="{{ url_for('hub_submit') }}">submit one</a>.
-      {% endif %}
+    <div class="panel">
+      <div class="panel-body text-center py-5">
+        <i class="bi bi-journal-text" aria-hidden="true" style="font-size: 32px; color: var(--pf-300);"></i>
+        <p class="mt-3 mb-1 fw-semibold">No articles found</p>
+        <p class="text-muted small mb-3">
+          {% if query or selected_category %}
+            No articles match
+            {% if query %}<em>&ldquo;{{ query }}&rdquo;</em>{% endif %}
+            {% if selected_category %}in this category{% endif %}.
+          {% else %}
+            No published articles yet.
+          {% endif %}
+        </p>
+        {% if query or selected_category %}
+          <a href="{{ url_for('hub_index') }}" class="btn-sm-outline">Clear filters</a>
+        {% else %}
+          <a href="{{ url_for('hub_submit') }}" class="btn-sm-pf">Submit the first one</a>
+        {% endif %}
+      </div>
     </div>
   {% endif %}
 </div>
