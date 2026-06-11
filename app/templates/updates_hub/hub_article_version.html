@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}{{ version.title }} (v{{ version.version_no }}){% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:780px;">
+  <nav aria-label="breadcrumb" class="small mb-2">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('hub_index') }}">Knowledge Hub</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('hub_index', category=article.category_slug) }}">{{ article.category_name }}</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('hub_article', article_id=article.article_id) }}">{{ version.title }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">v{{ version.version_no }}</li>
+    </ol>
+  </nav>
+
+  {% if is_current %}
+    <div class="alert alert-info" role="status" style="font-size:13px; border-radius:8px;">
+      <i class="bi bi-info-circle"></i>
+      This is the current version (v{{ version.version_no }}). The
+      <a href="{{ url_for('hub_article', article_id=article.article_id) }}">live article page</a>
+      shows the same content with comments + actions.
+    </div>
+  {% else %}
+    <div class="alert alert-warning" role="status" style="font-size:13px; border-radius:8px;">
+      <i class="bi bi-clock-history"></i>
+      You're viewing a historical version (v{{ version.version_no }}). The current version is
+      v{{ article.current_version }} —
+      <a href="{{ url_for('hub_article', article_id=article.article_id) }}">view current</a>.
+    </div>
+  {% endif %}
+
+  <article aria-labelledby="art-title">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="badge bg-success">{{ article.category_name }}</span>
+      <span class="small text-muted">
+        v{{ version.version_no }} · edited {{ version.edited_at | nz_datetime }}
+      </span>
+    </div>
+    <h1 id="art-title" class="h3">{{ version.title }}</h1>
+    <p class="small text-muted">
+      Edited by {{ version.first_name }} {{ version.last_name }}
+      {% if article.author_group_name %} · {{ article.author_group_name }}{% endif %}
+    </p>
+    {% if version.note %}
+      <p class="small text-muted fst-italic">Note: {{ version.note }}</p>
+    {% endif %}
+    {% if version.summary %}<p class="lead">{{ version.summary }}</p>{% endif %}
+    <div style="white-space:pre-wrap;">{{ version.body }}</div>
+  </article>
+
+  <div class="mt-4">
+    <a class="btn-pf-outline btn-sm" href="{{ url_for('hub_article', article_id=article.article_id) }}">
+      <i class="bi bi-arrow-left"></i> Back to article
+    </a>
+  </div>
+</div>
+{% endblock %}

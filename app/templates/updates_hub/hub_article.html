@@ -61,11 +61,21 @@
     <summary>Version history ({{ history|length }})</summary>
     <ul class="list-group mt-2">
       {% for v in history %}
-        <li class="list-group-item">
-          <strong>v{{ v.version_no }}</strong> ·
-          {{ v.first_name }} {{ v.last_name }} ·
-          {{ v.edited_at | nz_datetime }}
-          {% if v.note %}<div class="small text-muted">{{ v.note }}</div>{% endif %}
+        <li class="list-group-item d-flex justify-content-between align-items-start gap-3">
+          <div>
+            <strong>v{{ v.version_no }}</strong>
+            {% if v.version_no == article.current_version %}
+              <span class="badge bg-secondary ms-1">current</span>
+            {% endif %}
+            ·
+            {{ v.first_name }} {{ v.last_name }} ·
+            {{ v.edited_at | nz_datetime }}
+            {% if v.note %}<div class="small text-muted">{{ v.note }}</div>{% endif %}
+          </div>
+          <a class="btn btn-outline-secondary btn-sm"
+             href="{{ url_for('hub_article_version', article_id=article.article_id, version_no=v.version_no) }}">
+            <i class="bi bi-eye"></i> View
+          </a>
         </li>
       {% endfor %}
     </ul>

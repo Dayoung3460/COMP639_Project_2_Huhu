@@ -98,7 +98,11 @@ def _user_in_any_group(user_id):
 def updates_list():
     group_id = session.get('group_id')
     if not group_id:
-        flash('Pick a group to view updates.', 'warning')
+        flash(
+            'Group updates are scoped to one group at a time. '
+            'Pick the group whose updates you want to view.',
+            'info'
+        )
         return redirect(url_for('select_group'))
     role = session.get('group_role')
     with db.get_cursor() as cursor:
@@ -137,6 +141,11 @@ def updates_list():
 def updates_detail(update_id):
     group_id = session.get('group_id')
     if not group_id:
+        flash(
+            'Group updates are scoped to one group at a time. '
+            'Pick the group whose updates you want to view.',
+            'info'
+        )
         return redirect(url_for('select_group'))
     role = session.get('group_role')
     with db.get_cursor() as cursor:
@@ -592,6 +601,57 @@ def hub_article(article_id):
         article=article, photos=photos, history=history, mod_log=mod_log,
         can_moderate=role in ('Group Coordinator', 'Super Admin'),
         is_author=(article['author_id'] == session['user_id']),
+    )
+
+
+@app.route('/hub/article/<int:article_id>/version/<int:version_no>')
+@role_required()
+def hub_article_version(article_id, version_no):
+    """Read-only view of a historical version of a knowledge article.
+
+    Visibility mirrors hub_article: published articles are visible to
+    any logged-in user; drafts/pending are only visible to the author
+    or to moderators (Group Coordinator / Super Admin).
+    """
+    role = session.get('group_role')
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT a.article_id, a.author_id, a.status, a.current_version,
+                   a.category_id, a.created_at,
+                   c.name AS category_name, c.slug AS category_slug,
+                   g.name AS author_group_name
+              FROM knowledge_articles a
+              JOIN knowledge_categories c ON c.category_id = a.category_id
+              LEFT JOIN groups g ON g.group_id = a.author_group_id
+             WHERE a.article_id = %s
+            """,
+            (article_id,)
+        )
+        article = cursor.fetchone()
+        if not article:
+            abort(404)
+        if article['status'] != 'published' and role not in ('Group Coordinator', 'Super Admin') \
+                and article['author_id'] != session['user_id']:
+            abort(404)
+        cursor.execute(
+            """
+            SELECT v.version_id, v.article_id, v.version_no, v.title, v.body,
+                   v.summary, v.edited_at, v.note,
+                   u.first_name, u.last_name, u.username
+              FROM knowledge_article_versions v
+              LEFT JOIN users u ON u.user_id = v.edited_by
+             WHERE v.article_id = %s AND v.version_no = %s
+            """,
+            (article_id, version_no)
+        )
+        version = cursor.fetchone()
+        if not version:
+            abort(404)
+    is_current = (version_no == article['current_version'])
+    return render_template(
+        'updates_hub/hub_article_version.html',
+        article=article, version=version, is_current=is_current,
     )
 
 
