@@ -1,108 +1,67 @@
 {# templates/auth/profile.html
    Route: GET /profile  →  profile()
+   Personal, cross-group page — lives on the marketing surface
+   (base_marketing.html), same as My Tiaki. The tenant user-pill
+   links here; the platform ribbon takes you back into a group.
 #}
-{% extends 'base.html' %}
-{% block title %}My Profile{% endblock %}
-{% block page_title %}My Profile{% endblock %}
+{% extends 'base_marketing.html' %}
 
-{% block header_actions %}
-  <a href="{{ url_for('edit_profile') }}" class="btn-sm-pf">
-    <i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit Profile
-  </a>
-  <a href="{{ url_for('change_password') }}" class="btn-sm-outline">
-    <i class="bi bi-key me-1" aria-hidden="true"></i>Change Password
-  </a>
-{% endblock %}
+{% block title %}My Profile · Tiaki{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div class="container profile-page">
 
-  {# ── Profile header ── #}
-  <div class="col-12">
-    <div class="profile-header-card">
-      <div style="width:80px; height:80px; border-radius:50%;
-                  background:var(--pf-600); border:3px solid rgba(255,255,255,0.3);
-                  display:flex; align-items:center; justify-content:center;
-                  font-size:28px; color:#fff; font-family:'Cabin',sans-serif;
-                  font-weight:700; flex-shrink:0; overflow:hidden;">
-        {% if user.profile_photo %}
-          <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}"
-               style="width:100%; height:100%; object-fit:cover;"
-               alt="{{ user.first_name }} {{ user.last_name }}'s profile photo">
-        {% else %}
-          {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
+  {# ── Header ─────────────────────────────────────────────── #}
+  <p class="section-eyebrow">Account</p>
+  <div class="profile-head">
+    <span class="you-avatar profile-avatar" aria-hidden="true">
+      {% if user.profile_photo %}
+        <img src="{{ url_for('static', filename='images/uploads/' + user.profile_photo) }}" alt="">
+      {% else %}
+        {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
+      {% endif %}
+    </span>
+    <div>
+      <h1 class="feed-title">
+        {{ user.first_name }} {{ user.last_name }}
+        {% if session.get('group_role') %}
+          <span class="group-tag">{{ session.group_role }}</span>
         {% endif %}
-      </div>
-      <div style="flex:1;">
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <div class="profile-name">{{ user.first_name }} {{ user.last_name }}</div>
-          {% set role = session.get('group_role') %}
-          {% if role == 'Super Admin' %}
-            <span class="badge-role-admin">Super Admin</span>
-          {% elif role == 'Group Coordinator' %}
-            <span class="badge-role-admin">Group Coordinator</span>
-          {% elif role == 'Operator' %}
-            <span class="badge-role-operator">Operator</span>
-          {% else %}
-            <span class="badge-role-observer">Observer</span>
-          {% endif %}
-        </div>
-        <div style="font-size:13px; color:var(--pf-300); margin-top:4px;">
-          @{{ user.username }}
-        </div>
-        {% if user.date_joined %}
-          <div style="font-size:12px; color:#c4ffdc; margin-top:6px;">
-            <i class="bi bi-calendar3 me-1"></i>
-            Joined {{ user.date_joined.strftime('%d %B %Y') }}
-          </div>
-        {% endif %}
-      </div>
+      </h1>
+      <p class="you-handle">@{{ user.username }}</p>
+      {% if user.date_joined %}
+        <p class="aside-row-meta">Joined {{ user.date_joined.strftime('%-d %B %Y') }}</p>
+      {% endif %}
     </div>
   </div>
 
-  {# ── Info panels ── #}
-  <div class="col-md-6">
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title"><i class="bi bi-person me-2" aria-hidden="true"></i>Personal Details</div>
-      </div>
-      <div class="panel-body">
-        <table style="width:100%; font-size:13px; border-collapse:collapse;">
-          <tr>
-            <td style="color:#4f5b54; padding:8px 0; width:40%;">Email</td>
-            <td style="padding:8px 0; font-weight:500;">{{ user.email }}</td>
-          </tr>
-          <tr style="border-top:1px solid #f0f5f2;">
-            <td style="color:#4f5b54; padding:8px 0;">Phone</td>
-            <td style="padding:8px 0;">{{ user.phone or '—' }}</td>
-          </tr>
-          <tr style="border-top:1px solid #f0f5f2;">
-            <td style="color:#4f5b54; padding:8px 0;">Address</td>
-            <td style="padding:8px 0;">{{ user.address or '—' }}</td>
-          </tr>
-        </table>
-      </div>
-    </div>
+  <div class="profile-actions">
+    <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary btn-sm">Edit profile</a>
+    <a href="{{ url_for('change_password') }}" class="btn btn-ghost btn-sm">Change password</a>
   </div>
 
-  <div class="col-md-6">
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title"><i class="bi bi-heart-pulse me-2" aria-hidden="true"></i>Emergency Contact</div>
-      </div>
-      <div class="panel-body">
-        <table style="width:100%; font-size:13px; border-collapse:collapse;">
-          <tr>
-            <td style="color:#4f5b54; padding:8px 0; width:40%;">Name</td>
-            <td style="padding:8px 0; font-weight:500;">{{ user.emergency_contact_name or '—' }}</td>
-          </tr>
-          <tr style="border-top:1px solid #f0f5f2;">
-            <td style="color:#4f5b54; padding:8px 0;">Phone</td>
-            <td style="padding:8px 0;">{{ user.emergency_contact_phone or '—' }}</td>
-          </tr>
-        </table>
-      </div>
-    </div>
+  {# ── Info panels ────────────────────────────────────────── #}
+  <div class="profile-stack">
+    <section class="aside-card" aria-labelledby="profile-personal-title">
+      <header class="aside-card-head">
+        <h2 id="profile-personal-title" class="aside-card-title">Personal details</h2>
+      </header>
+      <dl class="feed-data">
+        <div><dt>Email</dt><dd>{{ user.email }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ user.phone or '—' }}</dd></div>
+        <div><dt>Address</dt><dd>{{ user.address or '—' }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="aside-card" aria-labelledby="profile-emergency-title">
+      <header class="aside-card-head">
+        <h2 id="profile-emergency-title" class="aside-card-title">Emergency contact</h2>
+      </header>
+      <dl class="feed-data">
+        <div><dt>Name</dt><dd>{{ user.emergency_contact_name or '—' }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ user.emergency_contact_phone or '—' }}</dd></div>
+      </dl>
+    </section>
   </div>
 
 </div>

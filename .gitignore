@@ -58,6 +58,7 @@ todo.md
 # ── Local reference files ───────────────────────────────────────
 *.pdf
 Jira.csv
+design-reference/
 
 # ── User-uploaded files in dev — keep only seed images ──────────
 static/images/uploads/*

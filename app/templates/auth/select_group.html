@@ -13,6 +13,9 @@
 
   {# ── Hero ─────────────────────────────────────────────── #}
   <header class="picker-hero">
+    <a href="{{ url_for('index') }}" class="picker-logo" aria-label="Tiaki home">
+      <img src="{{ url_for('static', filename='images/logo-mobile.png') }}" alt="">
+    </a>
     <p class="section-eyebrow picker-greeting">
       Welcome back, {{ nav_first_name or session.username }}
     </p>
