@@ -109,8 +109,44 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 }
 
 /* ═══════════════════════════════════════════════
-   Navbar
+   Platform ribbon + Navbar
    ═══════════════════════════════════════════════ */
+/* Tiaki-branded strip above the group chrome. Fixed ink colours
+   (NOT --pf-*: those re-stain with the group theme; the ribbon is
+   the platform's, not the group's). Height comes from --ribbon-h,
+   set in base.html's inline theme block (32px logged in, 0 logged
+   out) — every sticky offset below keys off it with a 0px fallback
+   so other surfaces loading this file are unaffected. */
+.platform-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 2001;             /* one above .pf-navbar */
+  height: var(--ribbon-h, 32px);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 24px;
+  background: #14181a;
+  color: #cdd6d1;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.platform-ribbon a {
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.platform-ribbon a:hover,
+.platform-ribbon a:focus-visible { color: #fff; }
+.platform-ribbon-logo {
+  height: 16px;
+  width: auto;
+  filter: brightness(0) invert(1);   /* dark-ink mark → white */
+  opacity: 0.9;
+}
+
 .pf-navbar {
   background: var(--pf-800);
   padding: 0 24px;
@@ -119,7 +155,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   align-items: center;
   justify-content: space-between;
   position: sticky;
-  top: 0;
+  top: var(--ribbon-h, 0px);
   z-index: 2000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
@@ -399,7 +435,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
    ═══════════════════════════════════════════════ */
 .app-layout {
   display: flex;
-  min-height: calc(100vh - var(--navbar-h));
+  min-height: calc(100vh - var(--navbar-h) - var(--ribbon-h, 0px));
 }
 
 /* ═══════════════════════════════════════════════
@@ -412,8 +448,8 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
   display: flex;
   flex-direction: column;
   position: sticky;
-  top: var(--navbar-h);
-  height: calc(100vh - var(--navbar-h));
+  top: calc(var(--navbar-h) + var(--ribbon-h, 0px));
+  height: calc(100vh - var(--navbar-h) - var(--ribbon-h, 0px));
   overflow-y: auto;
 }
 .sidebar-user {
@@ -1476,7 +1512,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
   .lines-map-panel-shell {
     position: sticky;
-    top: var(--navbar-h);
+    top: calc(var(--navbar-h) + var(--ribbon-h, 0px));
     z-index: 100;
   }
 
@@ -1575,7 +1611,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title {
 
 /* ── Print / PDF styles ─────────────────────────────────── */
 @media print {
-  .pf-navbar, .sidebar, .content-header,
+  .platform-ribbon, .pf-navbar, .sidebar, .content-header,
   .btn-sm-pf, .btn-sm-outline, .btn-pf, .btn-pf-outline, form { display: none !important; }
   .app-layout { display: block !important; }
   .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
@@ -2576,7 +2612,7 @@ body.layout-width-wrap .app-wrap {
    feel for a wrap/card layout, where the card itself is the
    bounded surface. */
 body.layout-width-wrap .app-layout {
-  min-height: calc(100vh - var(--navbar-h) - var(--wrap-pad-y) * 2);
+  min-height: calc(100vh - var(--navbar-h) - var(--ribbon-h, 0px) - var(--wrap-pad-y) * 2);
 }
 body.layout-width-wrap .sidebar {
   height: auto;

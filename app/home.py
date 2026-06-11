@@ -1,7 +1,25 @@
 """home.py — Public home page route."""
 
-from flask import render_template
+import os
+
+from flask import render_template, url_for
 from app import app, db
+
+linz_api_key = os.getenv('LINZ_API_KEY', '')
+
+# NZ bounding box for the schematic homepage map. Real trap coordinates
+# are projected linearly into 0–100% positions inside the map panel.
+_NZ_LNG_MIN, _NZ_LNG_MAX = 166.0, 179.0
+_NZ_LAT_MIN, _NZ_LAT_MAX = -47.5, -34.5
+
+
+def _map_position(lat, lng):
+    """Project a lat/lng into schematic-map percentages (x right, y down)."""
+    if lat is None or lng is None:
+        return None, None
+    x = (float(lng) - _NZ_LNG_MIN) / (_NZ_LNG_MAX - _NZ_LNG_MIN) * 100
+    y = (_NZ_LAT_MAX - float(lat)) / (_NZ_LAT_MAX - _NZ_LAT_MIN) * 100
+    return round(max(0, min(100, x)), 1), round(max(0, min(100, y)), 1)
 
 
 @app.route('/')
@@ -16,11 +34,12 @@ def index():
     """
     stats = {
         'total_groups':  0,
-        'total_lines':   0,
+        'total_traps':   0,
         'total_catches': 0,
     }
     public_groups = []
-    featured_groups = []
+    latest_catches = []
+    line_names = []
 
     try:
         with db.get_cursor() as cursor:
@@ -35,11 +54,14 @@ def index():
 
             cursor.execute('''
                 SELECT COUNT(*) AS count
-                FROM lines l
+                FROM traps t
+                JOIN lines l ON t.line_id = l.line_id
                 JOIN groups g ON l.group_id = g.group_id
-                WHERE g.is_public = TRUE AND l.is_retired = FALSE
+                WHERE g.is_public = TRUE
+                  AND t.is_retired = FALSE
+                  AND l.is_retired = FALSE
             ''')
-            stats['total_lines'] = cursor.fetchone()['count']
+            stats['total_traps'] = cursor.fetchone()['count']
 
             cursor.execute('''
                 SELECT COUNT(*) AS count
@@ -60,6 +82,7 @@ def index():
                     g.group_id,
                     g.name,
                     g.description,
+                    g.location,
                     g.is_public,
                     g.tile_image,
                     g.color_theme,
@@ -67,24 +90,53 @@ def index():
                     (SELECT COUNT(*) FROM group_memberships
                        WHERE group_id = g.group_id) AS member_count,
                     (SELECT COUNT(*) FROM lines
-                       WHERE group_id = g.group_id AND is_retired = FALSE) AS line_count
+                       WHERE group_id = g.group_id AND is_retired = FALSE) AS line_count,
+                    (SELECT COUNT(*)
+                       FROM trap_catches tc
+                       JOIN traps t ON tc.trap_id = t.trap_id
+                       JOIN lines l ON t.line_id = l.line_id
+                      WHERE l.group_id = g.group_id
+                        AND tc.species_caught != 'None') AS catch_count,
+                    (SELECT AVG(t.latitude)
+                       FROM traps t
+                       JOIN lines l ON t.line_id = l.line_id
+                      WHERE l.group_id = g.group_id) AS avg_lat,
+                    (SELECT AVG(t.longitude)
+                       FROM traps t
+                       JOIN lines l ON t.line_id = l.line_id
+                      WHERE l.group_id = g.group_id) AS avg_lng
                 FROM groups g
-                ORDER BY g.is_public DESC, g.created_at ASC
+                ORDER BY member_count DESC, g.created_at ASC
             ''')
             public_groups = cursor.fetchall()
 
-            # ── Featured groups — top 3 PUBLIC groups for the hero cards ─
+            # ── Latest catches — real events for the hero ticker ─────────
             cursor.execute('''
                 SELECT
-                    g.name,
-                    (SELECT COUNT(*) FROM group_memberships
-                       WHERE group_id = g.group_id) AS member_count
-                FROM groups g
+                    tc.species_caught,
+                    tc.date,
+                    l.name AS line_name
+                FROM trap_catches tc
+                JOIN traps t ON tc.trap_id = t.trap_id
+                JOIN lines l ON t.line_id = l.line_id
+                JOIN groups g ON l.group_id = g.group_id
                 WHERE g.is_public = TRUE
-                ORDER BY member_count DESC, g.created_at ASC
-                LIMIT 3
+                  AND tc.species_caught != 'None'
+                ORDER BY tc.date DESC
+                LIMIT 6
             ''')
-            featured_groups = cursor.fetchall()
+            latest_catches = cursor.fetchall()
+
+            # ── Line names — label the decorative hero canvas lines ──────
+            cursor.execute('''
+                SELECT l.name
+                FROM lines l
+                JOIN groups g ON l.group_id = g.group_id
+                WHERE g.is_public = TRUE AND l.is_retired = FALSE
+                ORDER BY l.line_id ASC
+                LIMIT 6
+            ''')
+            line_names = [row['name'] for row in cursor.fetchall()]
 
     except Exception:
         # Leave defaults if DB is unavailable; page still renders.
@@ -94,12 +146,50 @@ def index():
     # regardless of how many private ones exist.
     has_public_groups = any(g['is_public'] for g in public_groups)
 
+    # ── Browse data for the client-side filter/sort/map controls ─────────
+    # Region = the part of the free-text location after the last comma
+    # ("Lincoln, Canterbury" → "Canterbury").
+    groups_json = []
+    for g in public_groups:
+        location = (g['location'] or '').strip()
+        region = location.rsplit(',', 1)[-1].strip() if location else ''
+        x, y = _map_position(g['avg_lat'], g['avg_lng'])
+        groups_json.append({
+            'id':      g['group_id'],
+            'name':    g['name'],
+            'blurb':   g['description'] or 'A volunteer-led conservation group.',
+            'location': location,
+            'region':  region,
+            'vis':     'public' if g['is_public'] else 'private',
+            'members': g['member_count'],
+            'lines':   g['line_count'],
+            'catches': g['catch_count'],
+            'founded': g['created_at'].year if g['created_at'] else None,
+            'x':       x,
+            'y':       y,
+            'lat':     round(float(g['avg_lat']), 5) if g['avg_lat'] is not None else None,
+            'lng':     round(float(g['avg_lng']), 5) if g['avg_lng'] is not None else None,
+            'tile':    (url_for('static', filename='images/uploads/' + g['tile_image'])
+                        if g['tile_image'] else None),
+            'accent':  g['color_theme'],
+            'url':     url_for('group_landing', group_id=g['group_id']),
+        })
+
+    ticker_json = [{
+        'species': c['species_caught'],
+        'line':    c['line_name'],
+        'at':      c['date'].isoformat(),
+    } for c in latest_catches]
+
     return render_template(
         'home.html',
         stats=stats,
         public_groups=public_groups,
         has_public_groups=has_public_groups,
-        featured_groups=featured_groups,
+        groups_json=groups_json,
+        ticker_json=ticker_json,
+        line_names=line_names,
+        linz_api_key=linz_api_key,
     )
 
 

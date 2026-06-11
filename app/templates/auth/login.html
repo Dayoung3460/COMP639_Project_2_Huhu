@@ -16,7 +16,9 @@
 
   {# ── Left: editorial brand panel ─────────────────────── #}
   <aside class="auth-aside" aria-hidden="true">
-    <a href="{{ url_for('index') }}" class="auth-aside-mark">Tiaki</a>
+    <a href="{{ url_for('index') }}" class="auth-aside-mark">
+      <img class="auth-aside-logo" src="{{ url_for('static', filename='images/logo-mobile.png') }}" alt="Tiaki">
+    </a>
     <div class="auth-aside-quote">
       <h2>Welcome back to the work.</h2>
       <p>Every check matters. Every record counts.</p>
