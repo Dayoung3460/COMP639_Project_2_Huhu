@@ -15,7 +15,7 @@
     return;
   }
 
-  const CFG  = window.M3D_CONFIG || {};
+  const CFG = window.M3D_CONFIG || {};
   const stage = document.getElementById('m3d-stage');
   if (!stage) return;
 
@@ -37,7 +37,7 @@
   const imageryReloadBtn = document.getElementById('m3d-imagery-reload');
   const lineSelect = document.getElementById('m3d-line');
   const typeSelect = document.getElementById('m3d-type');
-  const daysInput  = document.getElementById('m3d-days');
+  const daysInput = document.getElementById('m3d-days');
   const detailSelect = document.getElementById('m3d-detail');
   const elevationSelect = document.getElementById('m3d-elevation');
   const imagerySelect = document.getElementById('m3d-imagery');
@@ -75,7 +75,7 @@
   }
 
   // Lights
-  const sun  = new THREE.DirectionalLight(0xffffff, 0.9);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
   sun.position.set(200, 400, 250);
   scene.add(sun);
   scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -87,14 +87,22 @@
     camera.updateProjectionMatrix();
   });
 
-  // Size the stage directly to fill viewport-minus-everything-above. Setting
-  // `style.height` with !important bypasses any CSS height (including
-  // Bootstrap's container constraints) -- no flex container, no guessing the
-  // nav height.
+  // Size the stage directly to fill viewport-minus-everything-above (+ extra,
+  // so it extends past the viewport bottom and pushes the footer below the
+  // fold). Setting `style.height` with !important bypasses any CSS height
+  // (Bootstrap container constraints etc.) -- no flex container, no guessing
+  // the nav height.
+  //
+  // *** ADJUST HERE *** how much further than the visible viewport the stage
+  // reaches. Higher = bigger 3D canvas, more scroll needed to see the footer.
+  const STAGE_EXTRA_HEIGHT_PX = -20;
   function fitStageHeight() {
     if (!stage) return;
-    const top = stage.getBoundingClientRect().top + window.scrollY;
-    const h = Math.max(400, window.innerHeight - top - 4);   // 4px breathing room
+    // getBoundingClientRect().top is viewport-relative -- don't add scrollY,
+    // that double-counts and shrinks the stage when the page is reloaded
+    // while scrolled.
+    const top = stage.getBoundingClientRect().top;
+    const h = Math.max(400, window.innerHeight - top + STAGE_EXTRA_HEIGHT_PX);
     stage.style.setProperty('height', h + 'px', 'important');
     renderer.setSize(stage.clientWidth, stage.clientHeight);
     camera.aspect = stage.clientWidth / Math.max(stage.clientHeight, 1);
@@ -149,7 +157,7 @@
     if (e.button === 2) suppressCtx = true;
     stage.setPointerCapture(e.pointerId);
   });
-  stage.addEventListener('pointerup',   (e) => {
+  stage.addEventListener('pointerup', (e) => {
     isDown = false; stage.releasePointerCapture(e.pointerId);
     if (moved) scheduleDetail();   // refresh the high-detail patch after a drag
   });
@@ -161,10 +169,10 @@
       // Grab-to-pan: the point under the cursor stays under the cursor, so
       // dragging the map left moves your viewpoint right.
       const panScale = dist * 0.0011;
-      const right    = new THREE.Vector3(Math.cos(azim), 0, -Math.sin(azim));  // screen-right on ground
+      const right = new THREE.Vector3(Math.cos(azim), 0, -Math.sin(azim));  // screen-right on ground
       const screenUp = new THREE.Vector3(-Math.sin(azim), 0, -Math.cos(azim)); // screen-up on ground
-      target.addScaledVector(right,    -dx * panScale);
-      target.addScaledVector(screenUp,  dy * panScale);
+      target.addScaledVector(right, -dx * panScale);
+      target.addScaledVector(screenUp, dy * panScale);
     } else {
       // Damp the orbit when zoomed in so a small drag doesn't whip the view.
       const rot = 0.004 * Math.max(0.2, Math.min(1, dist / (sceneExtent * 0.5 + 1)));
@@ -193,10 +201,10 @@
   // Keyboard: arrows pan the target (click the map first to give it focus).
   stage.addEventListener('keydown', (e) => {
     const step = Math.max(25, dist * 0.04);
-    if (e.key === 'ArrowLeft')  { target.x -= step; updateCam(); }
+    if (e.key === 'ArrowLeft') { target.x -= step; updateCam(); }
     if (e.key === 'ArrowRight') { target.x += step; updateCam(); }
-    if (e.key === 'ArrowUp')    { target.z -= step; updateCam(); }
-    if (e.key === 'ArrowDown')  { target.z += step; updateCam(); }
+    if (e.key === 'ArrowUp') { target.z -= step; updateCam(); }
+    if (e.key === 'ArrowDown') { target.z += step; updateCam(); }
   });
   const _look = new THREE.Vector3();
   function updateCam() {
@@ -311,7 +319,7 @@
     for (let i = 0; i < qgrid; i++) {
       for (let j = 0; j < qgrid; j++) {
         locations.push({
-          latitude:  src.minLat + (i / (qgrid - 1)) * (src.maxLat - src.minLat),
+          latitude: src.minLat + (i / (qgrid - 1)) * (src.maxLat - src.minLat),
           longitude: src.minLon + (j / (qgrid - 1)) * (src.maxLon - src.minLon),
         });
       }
@@ -434,7 +442,7 @@
       (Math.max(1e-6, bb.maxLon - bb.minLon) * TILE_PX)));
     z = Math.max(2, Math.min(19, z));
     let px0, px1, py0, py1, w, h;
-    for (;;) {
+    for (; ;) {
       px0 = lon2px(bb.minLon, z); px1 = lon2px(bb.maxLon, z);
       py0 = lat2px(bb.maxLat, z); py1 = lat2px(bb.minLat, z); // top, bottom
       w = Math.max(1, Math.round(px1 - px0));
@@ -679,7 +687,7 @@
     camera.far = Math.max(5000, maxDist * 2.5); // keep the far plane behind it
     camera.updateProjectionMatrix();
     scene.fog.near = extent * 3;                // haze only well beyond the map
-    scene.fog.far  = extent * 8;
+    scene.fog.far = extent * 8;
     // ...but only auto-frame on the FIRST build, so a retry/quality change
     // doesn't snap the user back to the initial overview view.
     if (!didAutoFrame) {
@@ -707,7 +715,7 @@
     for (let i = 0; i < TERRAIN_GRID; i++)
       for (let j = 0; j < TERRAIN_GRID; j++) minH = Math.min(minH, terrainHeights[i][j]);
     const h = (h00 * (1 - dx) + h01 * dx) * (1 - dy) +
-              (h10 * (1 - dx) + h11 * dx) * dy;
+      (h10 * (1 - dx) + h11 * dx) * dy;
     return (h - minH) * VERT_EXAGGERATION;
   }
 
@@ -836,7 +844,7 @@
     empty.hidden = true;
     const trapGeo = new THREE.BoxGeometry(2.2, 2.2, 2.2);
     trapGeo.translate(0, 1.1, 0);   // origin at the base so it sits on the
-    const bsGeo   = new THREE.CylinderGeometry(1.2, 1.2, 3.0, 12);
+    const bsGeo = new THREE.CylinderGeometry(1.2, 1.2, 3.0, 12);
     bsGeo.translate(0, 1.5, 0);     // ground no matter how it's scaled
     const sel = (lineSelect && lineSelect.value) ? parseInt(lineSelect.value, 10) : null;
     const typeFilter = typeSelect ? typeSelect.value : '';
@@ -886,8 +894,8 @@
     if (e.target !== renderer.domElement && e.target !== stage) return;
     if (moved) return;   // this was a drag (orbit/pan), not a marker click
     const rect = stage.getBoundingClientRect();
-    ndc.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
-    ndc.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+    ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(ndc, camera);
     const hit = raycaster.intersectObjects(assetMeshes, false)[0];
     if (!hit) return;
@@ -899,7 +907,7 @@
       `Operators: ${ops}<br>` +
       `Line: <strong>${a.line_name}</strong><br>` +
       `Activity last ${days} days: ${a.activity}<br>` +
-      `Last check: ${a.last_check ? a.last_check.substring(0,10) : '-'}<br>` +
+      `Last check: ${a.last_check ? a.last_check.substring(0, 10) : '-'}<br>` +
       `<a href="${CFG.detailUrlTpl}/${a.line_id}" class="btn btn-sm btn-outline-success mt-1">Open line records</a>`;
     popup.classList.add('show');
   });
@@ -1029,6 +1037,12 @@
   const FLYBY_MIN_HEIGHT_M = 5;      // can't drop the camera into the ground
   const FLYBY_DURATION_MS = 30000;   // total wall-clock duration at 1× speed
   const FLYBY_SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5];   // ± buttons step through this ladder
+  // Mouse-driven look limits during flyby. Move the cursor anywhere on the
+  // canvas: horizontal offset from centre → yaw, vertical offset → pitch.
+  const FLYBY_MAX_YAW = Math.PI / 3;   // ±60° look left/right
+  const FLYBY_MAX_PITCH_UP = Math.PI / 4;   // 45° look up
+  const FLYBY_MAX_PITCH_DOWN = Math.PI / 6;   // 30° look down
+  const FLYBY_LOOK_SMOOTH = 0.18;          // EMA weight; lower = lazier head
   let flybyActive = false;
   let flybyPaused = false;
   let flybyProgress = 0;                // 0..1 along the path; advances per-frame by dt × speed
@@ -1037,6 +1051,8 @@
   let flybyAltitude = FLYBY_HEIGHT_M;   // real metres -- wheel scroll adjusts this while flying
   let flybyPath = [];                   // [{x, z}, ...] interpolated centre-line at ~10 m spacing
   let flybySmoothedGround = null;       // low-passed ground height for jitter-free vertical motion
+  let flybyTargetYaw = 0, flybyTargetPitch = 0;   // where the mouse says to look (radians)
+  let flybyYaw = 0, flybyPitch = 0;         // smoothed values actually applied to the camera
 
   function buildFlybyPathForLine(lineId) {
     const stns = assetData
@@ -1092,6 +1108,8 @@
     flybySpeedIdx = 3;                 // reset to 1×
     flybyAltitude = FLYBY_HEIGHT_M;    // start at the max; user can wheel down lower
     flybySmoothedGround = null;        // smoothing seeds on the first tick
+    flybyTargetYaw = flybyTargetPitch = 0;   // start looking dead ahead
+    flybyYaw = flybyPitch = 0;
     flybyActive = true;
     setFlyButtonState();
     updateFlyPauseLabel();
@@ -1105,7 +1123,7 @@
     setFlyButtonState();
     // Snap the orbit state to where the camera ended so normal controls resume cleanly.
     target.set(camera.position.x, surfaceHeightXZ(camera.position.x, camera.position.z, 0),
-               camera.position.z);
+      camera.position.z);
     dist = 300;
     elev = 0.85;
     azim = -0.6;
@@ -1144,13 +1162,50 @@
     const altitude = flybyAltitude * VERT_EXAGGERATION;
     camera.position.set(x, flybySmoothedGround + altitude, z);
 
-    // Look straight forward (level horizon): look-point at the same Y as the
-    // camera, just down the path. No tilt up/down regardless of terrain.
+    // Look-point starts dead-ahead along the path (level horizon, same Y as
+    // the camera). The user can pan the head with the mouse: cursor offset
+    // from canvas centre drives yaw + pitch targets, EMA-smoothed each frame
+    // so the head turns lazily instead of snapping.
+    flybyYaw += (flybyTargetYaw - flybyYaw) * FLYBY_LOOK_SMOOTH;
+    flybyPitch += (flybyTargetPitch - flybyPitch) * FLYBY_LOOK_SMOOTH;
+
     const lookIdx = Math.min(flybyPath.length - 1, i0 + 30);
     const lpt = flybyPath[lookIdx];
-    _flyLook.set(lpt.x, camera.position.y, lpt.z);
+    // Yaw: rotate the forward vector around world Y.
+    const fx = lpt.x - x;
+    const fz = lpt.z - z;
+    const cy = Math.cos(flybyYaw), sy = Math.sin(flybyYaw);
+    const rfx = fx * cy + fz * sy;
+    const rfz = -fx * sy + fz * cy;
+    // Pitch: vertical offset is tan(pitch) × horizontal distance to look-point.
+    const horizDist = Math.sqrt(rfx * rfx + rfz * rfz) || 1;
+    const verticalOffset = Math.tan(flybyPitch) * horizDist;
+    _flyLook.set(x + rfx, camera.position.y + verticalOffset, z + rfz);
     camera.lookAt(_flyLook);
   }
+
+  // Mouse-driven look during flyby. Hover the canvas: horizontal cursor offset
+  // from centre → yaw, vertical → pitch. Leaving the canvas relaxes the head
+  // back to forward. Uses a dedicated listener so it doesn't collide with the
+  // existing isDown-gated orbit/pan handler.
+  stage.addEventListener('pointermove', (e) => {
+    if (!flybyActive) return;
+    if (e.target !== renderer.domElement) return;   // ignore hovers over the overlay UI
+    const rect = renderer.domElement.getBoundingClientRect();
+    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;   // -1..1
+    const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+    const clampedX = Math.max(-1, Math.min(1, nx));
+    const clampedY = Math.max(-1, Math.min(1, ny));
+    flybyTargetYaw = -clampedX * FLYBY_MAX_YAW;
+    // Up in screen-space is -Y; positive pitch means look up.
+    const p = -clampedY;
+    flybyTargetPitch = p >= 0 ? p * FLYBY_MAX_PITCH_UP : p * FLYBY_MAX_PITCH_DOWN;
+  });
+  stage.addEventListener('pointerleave', () => {
+    if (!flybyActive) return;
+    flybyTargetYaw = 0;
+    flybyTargetPitch = 0;
+  });
 
   if (flyBtn) {
     flyBtn.addEventListener('click', () => startFlyby());
