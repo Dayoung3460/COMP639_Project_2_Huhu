@@ -2713,6 +2713,45 @@ INSERT INTO groups (name, description, location, is_public, color_theme) VALUES
    'Temuka',     FALSE, '#236b43')
 ON CONFLICT (name) DO NOTHING;
 
+-- ══════════════════════════════════════════════════════
+-- GROUP IMAGERY (SVG placeholders served from static/images/uploads/)
+-- ══════════════════════════════════════════════════════
+UPDATE groups SET
+  profile_photo = 'group_predator_free_lincoln_university_avatar.svg',
+  tile_image    = 'group_predator_free_lincoln_university_tile.svg',
+  cover_photo   = 'group_predator_free_lincoln_university_cover.svg'
+  WHERE name = 'Predator Free Lincoln University';
+UPDATE groups SET
+  profile_photo = 'group_christchurch_city_trappers_avatar.svg',
+  tile_image    = 'group_christchurch_city_trappers_tile.svg',
+  cover_photo   = 'group_christchurch_city_trappers_cover.svg'
+  WHERE name = 'Christchurch City Trappers';
+UPDATE groups SET
+  profile_photo = 'group_banks_peninsula_restoration_avatar.svg',
+  tile_image    = 'group_banks_peninsula_restoration_tile.svg',
+  cover_photo   = 'group_banks_peninsula_restoration_cover.svg'
+  WHERE name = 'Banks Peninsula Restoration';
+UPDATE groups SET
+  profile_photo = 'group_wellington_town_belt_trappers_avatar.svg',
+  tile_image    = 'group_wellington_town_belt_trappers_tile.svg',
+  cover_photo   = 'group_wellington_town_belt_trappers_cover.svg'
+  WHERE name = 'Wellington Town Belt Trappers';
+UPDATE groups SET
+  profile_photo = 'group_otago_peninsula_conservation_trust_avatar.svg',
+  tile_image    = 'group_otago_peninsula_conservation_trust_tile.svg',
+  cover_photo   = 'group_otago_peninsula_conservation_trust_cover.svg'
+  WHERE name = 'Otago Peninsula Conservation Trust';
+UPDATE groups SET
+  profile_photo = 'group_routeburn_tramping_trapping_avatar.svg',
+  tile_image    = 'group_routeburn_tramping_trapping_tile.svg',
+  cover_photo   = 'group_routeburn_tramping_trapping_cover.svg'
+  WHERE name = 'Routeburn Tramping & Trapping';
+UPDATE groups SET
+  profile_photo = 'group_tumanako_wetland_restoration_avatar.svg',
+  tile_image    = 'group_tumanako_wetland_restoration_tile.svg',
+  cover_photo   = 'group_tumanako_wetland_restoration_cover.svg'
+  WHERE name = 'Tūmanako Wetland Restoration';
+
 INSERT INTO users (username, email, password_hash, first_name, last_name, is_super_admin, account_status, phone, date_joined, last_login) VALUES
   ('nharris', 'nharris@example.nz', '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Nikau', 'Harris', FALSE, 'active', '021 695 4190', NOW() - INTERVAL '291 days', NOW() - INTERVAL '30 days'),
   ('oroberts', 'oroberts@example.nz', '$2b$12$UgOAbgTWVU08KBBX85L0h.yFdWzm.tFv99mt/C/7uF62jxBfzUtbS', 'Olivia', 'Roberts', FALSE, 'active', '021 467 8653', NOW() - INTERVAL '39 days', NOW() - INTERVAL '22 days'),
