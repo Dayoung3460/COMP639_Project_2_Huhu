@@ -10,103 +10,246 @@
     padding-bottom: 0 !important;
     margin-bottom: 0 !important;
   }
+
   /* Stage height is set directly from JS (fitStageHeight) with !important so
      it always fills viewport-minus-everything-above, no matter the nav size. */
   /* #m3d-fullscreen + #m3d-flybtn now styled via #m3d-topbar above */
   #m3d-stage {
     position: relative;
-    width: 100%; min-height: 400px;
+    width: 100%;
+    min-height: 400px;
     background: #0b1622;
     border-radius: 8px;
     overflow: hidden;
   }
-  #m3d-stage:fullscreen { height: 100vh; border-radius: 0; }
+
+  #m3d-stage:fullscreen {
+    height: 100vh;
+    border-radius: 0;
+  }
+
   /* Top bar overlaid on the stage; holds all controls + buttons inline */
   #m3d-topbar {
-    position: absolute; top: 8px; left: 10px; right: 10px;
-    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-    background: rgba(255,255,255,0.92); color: #222;
-    padding: 6px 10px; border-radius: 8px;
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.92);
+    color: #222;
+    padding: 6px 10px;
+    border-radius: 8px;
     font-size: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     z-index: 5;
   }
+
   #m3d-topbar label {
-    display: inline-flex; align-items: center; gap: 4px;
-    margin: 0; color: #444; font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    color: #444;
+    font-weight: 500;
   }
-  #m3d-topbar select, #m3d-topbar input {
-    font-size: 12px; padding: 1px 4px; height: 22px;
-    border: 1px solid #bbb; border-radius: 4px;
-    background: #fff; max-width: 180px;
+
+  #m3d-topbar select,
+  #m3d-topbar input {
+    font-size: 12px;
+    padding: 1px 4px;
+    height: 22px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: #fff;
+    max-width: 180px;
   }
-  #m3d-topbar input { width: 60px; }
+
+  #m3d-topbar input {
+    width: 60px;
+  }
+
   #m3d-topbar button {
-    font-size: 12px; padding: 2px 8px; height: 22px;
-    border: 1px solid rgba(0,0,0,0.2); border-radius: 4px;
-    background: #fff; color: #222; cursor: pointer;
+    font-size: 12px;
+    padding: 2px 8px;
+    height: 22px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
   }
-  #m3d-topbar button:hover { background: #f3f3f3; }
-  #m3d-topbar button:disabled { color: #999; cursor: not-allowed; background: #eee; }
-  #m3d-topbar .m3d-retry { background: #ffc107; }
-  #m3d-topbar .m3d-retry:hover { background: #ffca2c; }
-  #m3d-topbar .m3d-reload { background: #6c757d; color: #fff; }
-  #m3d-topbar .m3d-reload:hover { background: #5a6268; }
+
+  #m3d-topbar button:hover {
+    background: #f3f3f3;
+  }
+
+  #m3d-topbar button:disabled {
+    color: #999;
+    cursor: not-allowed;
+    background: #eee;
+  }
+
+  #m3d-topbar .m3d-retry {
+    background: #ffc107;
+  }
+
+  #m3d-topbar .m3d-retry:hover {
+    background: #ffca2c;
+  }
+
+  #m3d-topbar .m3d-reload {
+    background: #6c757d;
+    color: #fff;
+  }
+
+  #m3d-topbar .m3d-reload:hover {
+    background: #5a6268;
+  }
+
   #m3d-topbar .m3d-sep {
-    display: inline-block; width: 1px; height: 16px;
-    background: #ccc; margin: 0 2px;
+    display: inline-block;
+    width: 1px;
+    height: 16px;
+    background: #ccc;
+    margin: 0 2px;
   }
+
   /* Flyby controls -- floating overlay, bottom-centre of the stage. */
   #m3d-fly-ctrls {
-    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.94); color: #222;
-    padding: 8px 14px; border-radius: 10px;
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    color: #222;
+    padding: 8px 14px;
+    border-radius: 10px;
     font-size: 13px;
-    box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.25);
     z-index: 7;
   }
-  #m3d-fly-ctrls[hidden] { display: none; }
-  #m3d-fly-ctrls .m3d-fly-speed-lbl { color: #444; font-weight: 500; padding: 0 4px; }
-  #m3d-fly-ctrls #m3d-fly-speed { min-width: 36px; text-align: center; font-weight: 600; color: #222; }
-  #m3d-fly-ctrls button {
-    font-size: 13px; padding: 4px 10px; height: 28px;
-    border: 1px solid rgba(0,0,0,0.2); border-radius: 6px;
-    background: #fff; color: #222; cursor: pointer;
-  }
-  #m3d-fly-ctrls button:hover { background: #f1f1f1; }
-  #m3d-fly-ctrls #m3d-fly-slow,
-  #m3d-fly-ctrls #m3d-fly-fast { width: 30px; padding: 0; font-weight: 700; }
-  #m3d-stage canvas { display: block; outline: none; }
-  .m3d-legend {
-    position: absolute; bottom: 10px; left: 10px; right: auto;
-    background: rgba(255,255,255,0.92); color: #222;
-    padding: 8px 12px; border-radius: 8px;
-    font-size: 12px; max-width: 280px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  }
-  .m3d-legend ul { list-style: none; padding: 0; margin: 4px 0 0; }
-  .m3d-legend li { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
-  .m3d-legend .sw {
-    display: inline-block; width: 14px; height: 14px; border-radius: 3px;
-    border: 1px solid rgba(0,0,0,0.2);
-  }
-  .m3d-popup {
-    position: absolute; top: 50px; right: 10px; max-width: 280px;
-    background: rgba(255,255,255,0.96); color: #222;
-    padding: 12px; border-radius: 8px; font-size: 13px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+
+  #m3d-fly-ctrls[hidden] {
     display: none;
   }
-  .m3d-popup.show { display: block; }
-  .m3d-popup .close {
-    float: right; border: 0; background: transparent; font-size: 18px;
-    line-height: 1; cursor: pointer;
+
+  #m3d-fly-ctrls .m3d-fly-speed-lbl {
+    color: #444;
+    font-weight: 500;
+    padding: 0 4px;
   }
+
+  #m3d-fly-ctrls #m3d-fly-speed {
+    min-width: 36px;
+    text-align: center;
+    font-weight: 600;
+    color: #222;
+  }
+
+  #m3d-fly-ctrls button {
+    font-size: 13px;
+    padding: 4px 10px;
+    height: 28px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+  }
+
+  #m3d-fly-ctrls button:hover {
+    background: #f1f1f1;
+  }
+
+  #m3d-fly-ctrls #m3d-fly-slow,
+  #m3d-fly-ctrls #m3d-fly-fast {
+    width: 30px;
+    padding: 0;
+    font-weight: 700;
+  }
+
+  #m3d-stage canvas {
+    display: block;
+    outline: none;
+  }
+
+  .m3d-legend {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: auto;
+    background: rgba(255, 255, 255, 0.92);
+    color: #222;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    max-width: 280px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .m3d-legend ul {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 0;
+  }
+
+  .m3d-legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0;
+  }
+
+  .m3d-legend .sw {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+
+  .m3d-popup {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    max-width: 280px;
+    background: rgba(255, 255, 255, 0.96);
+    color: #222;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: none;
+  }
+
+  .m3d-popup.show {
+    display: block;
+  }
+
+  .m3d-popup .close {
+    float: right;
+    border: 0;
+    background: transparent;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
   .m3d-empty {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    color: #c8e0ff; text-align: center; padding: 32px;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c8e0ff;
+    text-align: center;
+    padding: 32px;
   }
 </style>
 {% endblock %}
@@ -116,17 +259,17 @@
     <div>
       <h2 class="mb-0"><i class="bi bi-box"></i> 3D Terrain Map</h2>
       <p class="text-muted mb-0" style="font-size:14px;">
-        {{ group_name or session.get('group_name', '') }} -- terrain, vegetation, and your trap network in 3D.
+        {{ group_name or session.get('group_name', '') }} -- terrain and your trap network in 3D.
       </p>
     </div>
     {% if is_super_admin %}
     <form method="get" id="m3d-group-form">
       <label for="m3d-group" class="form-label small mb-1">Group</label>
-      <select id="m3d-group" name="group_id" class="form-select form-select-sm"
-              onchange="this.form.submit()" aria-label="Select a group">
+      <select id="m3d-group" name="group_id" class="form-select form-select-sm" onchange="this.form.submit()"
+        aria-label="Select a group">
         <option value="">-- select a group --</option>
         {% for g in all_groups %}
-          <option value="{{ g.group_id }}" {% if g.group_id == selected_group_id %}selected{% endif %}>{{ g.name }}</option>
+        <option value="{{ g.group_id }}" {% if g.group_id==selected_group_id %}selected{% endif %}>{{ g.name }}</option>
         {% endfor %}
       </select>
     </form>
@@ -141,27 +284,29 @@
 
   <div id="m3d-stage" tabindex="0" aria-label="3D terrain map of {{ session.get('group_name', '') }}">
     <div id="m3d-topbar" aria-label="3D map controls">
-      <button id="m3d-fullscreen" type="button" title="Toggle fullscreen" aria-label="Toggle fullscreen">⛶ Fullscreen</button>
-      <button id="m3d-flybtn" type="button" title="Fly along the focused line at 200 m altitude" aria-label="Fly along the focused line">✈ Fly the line</button>
+      <button id="m3d-fullscreen" type="button" title="Toggle fullscreen" aria-label="Toggle fullscreen">⛶
+        Fullscreen</button>
+      <button id="m3d-flybtn" type="button" title="Fly along the focused line at 200 m altitude"
+        aria-label="Fly along the focused line">✈ Fly the line</button>
       <span class="m3d-sep"></span>
       <label>Focus
         <select id="m3d-line" aria-label="Focus a line">
           <option value="">-- whole network --</option>
           {% if is_operator and assigned_lines %}
-            <optgroup label="Your assigned lines">
-              {% for l in assigned_lines %}
-                <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
-              {% endfor %}
-            </optgroup>
-            <optgroup label="All group lines">
-              {% for l in lines %}
-                <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
-              {% endfor %}
-            </optgroup>
-          {% else %}
-            {% for l in lines %}
-              <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
+          <optgroup label="Your assigned lines">
+            {% for l in assigned_lines %}
+            <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
             {% endfor %}
+          </optgroup>
+          <optgroup label="All group lines">
+            {% for l in lines %}
+            <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
+            {% endfor %}
+          </optgroup>
+          {% else %}
+          {% for l in lines %}
+          <option value="{{ l.line_id }}" data-type="{{ l.type }}">{{ l.name }} ({{ l.type }})</option>
+          {% endfor %}
           {% endif %}
         </select>
       </label>
@@ -205,7 +350,8 @@
       <button id="m3d-imagery-reload" type="button" class="m3d-reload">Reload</button>
     </div>
     <div id="m3d-fly-ctrls" hidden role="group" aria-label="Flyby controls">
-      <button id="m3d-fly-pause" type="button" title="Pause / continue the flyby" aria-label="Pause flyby">⏸ Pause</button>
+      <button id="m3d-fly-pause" type="button" title="Pause / continue the flyby" aria-label="Pause flyby">⏸
+        Pause</button>
       <span class="m3d-fly-speed-lbl">Speed</span>
       <button id="m3d-fly-slow" type="button" title="Slow down" aria-label="Slow down flyby">−</button>
       <span id="m3d-fly-speed">1×</span>
@@ -233,14 +379,14 @@
 {% if not no_group_selected %}
 <script>
   window.M3D_CONFIG = {
-    dataUrl:          {{ url_for('map3d_group_data') | tojson }},
-    lineDataUrl:      {{ url_for('map3d_line_data', line_id=0) | tojson }},
+    dataUrl:            {{ url_for('map3d_group_data') | tojson }},
+    lineDataUrl:        {{ url_for('map3d_line_data', line_id=0) | tojson }},
     operationalAreaUrl: {{ url_for('map3d_operational_area') | tojson }},
-    prefsUrl:         {{ url_for('map3d_save_prefs') | tojson }},
-    detailUrlTpl:     "/lines",
-    initialDays:      {{ prefs.activity_days }},
-    showVegetation:   {{ 'true' if prefs.show_vegetation else 'false' }},
-    groupId:          {{ selected_group_id | tojson }},
+    prefsUrl:           {{ url_for('map3d_save_prefs') | tojson }},
+    detailUrlTpl:       "/lines",
+    initialDays:        {{ prefs.activity_days }},
+    showVegetation:     {{ 'true' if prefs.show_vegetation else 'false' }},
+    groupId:            {{ selected_group_id | tojson }},
   };
 </script>
 <script src="{{ url_for('static', filename='js/map3d.js') }}"></script>

@@ -915,9 +915,27 @@
     renderLegend(j.legend || []);
     if (setBboxFromAssets(assetData)) {
       await fetchTerrain();   // builds terrain + markers; trees appear once zoomed in
+      maybeApplyInitialLineFromUrl();
     } else {
       empty.hidden = false;
     }
+  }
+
+  // If the user landed here via "View in 3D" on a Line detail page, the URL
+  // carries ?line=<id>. Pre-select the focus dropdown and frame that line.
+  // Guarded so changing the Days input (which re-runs loadGroupData) does
+  // not yank the camera back to the deep-linked line every time.
+  let initialLineApplied = false;
+  function maybeApplyInitialLineFromUrl() {
+    if (initialLineApplied) return;
+    initialLineApplied = true;
+    const params = new URLSearchParams(window.location.search);
+    const lineId = params.get('line');
+    if (!lineId) return;
+    const opt = lineSelect.querySelector(`option[value="${CSS.escape(lineId)}"]`);
+    if (!opt) return;
+    lineSelect.value = lineId;
+    focusLine(lineId);
   }
 
   async function focusLine(lineId) {
