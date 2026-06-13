@@ -26,6 +26,7 @@ from app.helpers.dbHelper import (
     save_operational_area,
     delete_operational_area,
 )
+from app.helpers.linesHelper import fetch_line_for_group
 
 logger = logging.getLogger(__name__)
 
@@ -202,18 +203,12 @@ def coordinator_lines_assign():
 @role_required('Group Coordinator')
 def coordinator_assign_operators(line_id):
     """Show assigned and available operators for one line."""
-    group_id = session['group_id']
-
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT * FROM lines WHERE line_id = %s AND group_id = %s',
-            (line_id, group_id)
-        )
-        line = cursor.fetchone()
-
+    line = fetch_line_for_group(db, line_id)
     if not line:
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('coordinator_lines_assign'))
+
+    group_id = line['group_id']
 
     with db.get_cursor() as cursor:
         cursor.execute(
@@ -250,23 +245,20 @@ def coordinator_assign_operators(line_id):
 @role_required('Group Coordinator')
 def coordinator_operator_add(line_id):
     """Assign a single operator to a line."""
-    group_id    = session['group_id']
     operator_id = request.form.get('operator_id', type=int)
 
     if not operator_id:
         flash('Invalid operator.', 'danger')
         return redirect(url_for('coordinator_assign_operators', line_id=line_id))
 
-    with db.get_cursor() as cursor:
-        # Verify line belongs to this group
-        cursor.execute(
-            'SELECT line_id FROM lines WHERE line_id = %s AND group_id = %s',
-            (line_id, group_id)
-        )
-        if not cursor.fetchone():
-            flash('Line not found in your group.', 'danger')
-            return redirect(url_for('coordinator_lines_assign'))
+    line = fetch_line_for_group(db, line_id)
+    if not line:
+        flash('Line not found in your group.', 'danger')
+        return redirect(url_for('coordinator_lines_assign'))
 
+    group_id = line['group_id']
+
+    with db.get_cursor() as cursor:
         # Verify operator is an Operator in this group
         cursor.execute(
             """
@@ -296,22 +288,17 @@ def coordinator_operator_add(line_id):
 @role_required('Group Coordinator')
 def coordinator_operator_remove(line_id):
     """Remove a single operator from a line."""
-    group_id    = session['group_id']
     operator_id = request.form.get('operator_id', type=int)
 
     if not operator_id:
         flash('Invalid operator.', 'danger')
         return redirect(url_for('coordinator_assign_operators', line_id=line_id))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT line_id FROM lines WHERE line_id = %s AND group_id = %s',
-            (line_id, group_id)
-        )
-        if not cursor.fetchone():
-            flash('Line not found in your group.', 'danger')
-            return redirect(url_for('coordinator_lines_assign'))
+    if not fetch_line_for_group(db, line_id):
+        flash('Line not found in your group.', 'danger')
+        return redirect(url_for('coordinator_lines_assign'))
 
+    with db.get_cursor() as cursor:
         cursor.execute(
             'DELETE FROM operator_lines WHERE operator_id = %s AND line_id = %s',
             (operator_id, line_id)
