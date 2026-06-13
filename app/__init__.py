@@ -136,6 +136,7 @@ from app import identity_defaults  # noqa: F401 — registers /identity/default/
 from app import helpdesk
 from app import updates_hub  # noqa: F401 -- Updates + Knowledge Hub (P2-107)
 from app import map3d  # noqa: F401 -- Innovation epic: 3D terrain map (P2-106)
+from app import agent  # noqa: F401 -- AI assistant proxy (Microsoft Foundry)
 
 # ── Template globals ──────────────────────────────────────────────────────────
 

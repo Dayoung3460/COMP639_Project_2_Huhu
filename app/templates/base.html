@@ -664,6 +664,11 @@
 
 {% block scripts %}{% endblock %}
 
+{% if session.get('user_id') %}
+  {% include 'partials/_agent_chat.html' %}
+  <script src="{{ url_for('static', filename='js/agent-chat.js') }}"></script>
+{% endif %}
+
 </div>{# end .app-wrap #}
 </body>
 </html>
