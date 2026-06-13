@@ -453,10 +453,7 @@ def edit_bait_record(record_id):
         flash('You can only edit your own records.', 'danger')
         return redirect(url_for('bait_records'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute('SELECT name FROM species WHERE is_active = TRUE ORDER BY name')
-        species_list = [r['name'] for r in cursor.fetchall()]
-
+    species_list = fetch_active_lookup(db, 'species', include_value=record['target_species'])
     active_ingredients = fetch_active_lookup(db, 'active_ingredients', include_value=record['active_ingredient'])
     formulations = fetch_active_lookup(db, 'bait_formulations', include_value=record['formulation'])
 
