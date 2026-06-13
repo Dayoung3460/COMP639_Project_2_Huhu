@@ -1,9 +1,13 @@
 """auth.py — Register, login, logout, change password, profile."""
 
+import logging
+import os
+
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db, bcrypt, mail
 from app.utils import is_valid_password, redirect_by_role, save_uploaded_image, delete_upload
-import os
+
+logger = logging.getLogger(__name__)
 
 
 def _flash_pending_notifications(user_id):
@@ -545,7 +549,7 @@ def forgot_password():
                 mail.send(msg)
                 flash('Password reset link sent! Check your email.', 'success')
             except Exception as e:
-                app.logger.error(f'Mail send failed: {e}')
+                logger.error('Mail send failed: %s', e)
                 flash('Failed to send reset email. Please try again later.', 'danger')
             return redirect(url_for('forgot_password'))
 

@@ -1,8 +1,10 @@
 """operator.py — Operator dashboard, add/edit catch records, observations."""
 
+import logging
+import os
+
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
-import os
 from app.utils import (
     role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE,
     LINCOLN_NZ_CENTER, is_super_admin_mode,
@@ -14,6 +16,8 @@ from app.helpers.dbHelper import (
     fetch_operator_bait_lines, fetch_operator_bait_station_ids,
     insert_bait_station_record, update_bait_station_record, fetch_active_lookup,
 )
+
+logger = logging.getLogger(__name__)
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
 
@@ -106,7 +110,7 @@ def operator_dashboard():
             recent_records = cursor.fetchall()
  
     except Exception as e:
-        app.logger.error(f'Operator dashboard error: {e}')
+        logger.error('Operator dashboard error: %s', e)
  
     return render_template('operator/dashboard.html',
                            assigned_lines=assigned_lines,

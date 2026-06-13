@@ -1,8 +1,12 @@
 """observer.py — Observer dashboard."""
 
+import logging
+
 from flask import render_template, session
 from app import app, db
 from app.utils import role_required, is_super_admin_mode
+
+logger = logging.getLogger(__name__)
 
 
 @app.route('/observer/dashboard')
@@ -86,7 +90,7 @@ def observer_dashboard():
             recent_catches = cursor.fetchall()
  
     except Exception as e:
-        app.logger.error(f'Observer dashboard error: {e}')
+        logger.error('Observer dashboard error: %s', e)
  
     return render_template('observer/dashboard.html',
                            stats=stats,

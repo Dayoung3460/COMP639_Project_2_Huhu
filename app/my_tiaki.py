@@ -16,11 +16,14 @@ processor's nav_notifications; the greeting and 'You' card use
 nav_first_name / nav_full_name / nav_profile_photo.
 """
 
+import logging
 from datetime import datetime
 
 from flask import render_template, session
 from app import app, db, _compute_initials
 from app.utils import role_required
+
+logger = logging.getLogger(__name__)
 
 FEED_LIMIT = 30
 
@@ -175,7 +178,7 @@ def my_tiaki():
             my_requests = cursor.fetchall()
 
     except Exception:
-        app.logger.exception('my_tiaki: failed to load feed data')
+        logger.exception('my_tiaki: failed to load feed data')
         # Render the page with whatever loaded; empty states cover gaps.
 
     # ── Shape feed rows for the template ─────────────────────────────
