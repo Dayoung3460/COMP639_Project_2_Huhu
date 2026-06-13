@@ -65,6 +65,8 @@ PLATFORM_DEFAULT_THEME = {
     'content_width':    'wrap',
 }
 
+DEFAULT_GROUP_COLOR = PLATFORM_DEFAULT_THEME['primary_color']
+
 # Whitelists of font families a Coordinator may pick in the custom theme
 # editor. Two lists because the heading + body split (2026-05-15) wants
 # semantically appropriate options on each picker — display serifs/sans

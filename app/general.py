@@ -4,10 +4,7 @@ from flask import render_template, request, session
 from app import app, db
 from app.utils import role_required, is_super_admin_mode, is_support_tech_mode
 from app.helpers.dbHelper import fetch_enum_values
-from app.themes import PLATFORM_DEFAULT_THEME
-
-# Fallback badge colour for groups with no custom theme row.
-DEFAULT_GROUP_COLOR = PLATFORM_DEFAULT_THEME['primary_color']
+from app.themes import DEFAULT_GROUP_COLOR
 
 def get_catch_records(recorded_by_id=None):
     """Query catch records with optional filter by recorded_by_id.
