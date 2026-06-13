@@ -1,0 +1,48 @@
+{#
+  _agent_chat.html — Floating AI assistant chat widget.
+  Included in base.html for all logged-in users.
+  JS lives in static/js/agent-chat.js.
+#}
+
+<button class="agent-chat-trigger" id="agentChatTrigger"
+        aria-label="Open Tiaki Assistant" title="Tiaki Assistant">
+  <i class="bi bi-stars" aria-hidden="true"></i>
+</button>
+
+<div class="agent-chat-panel" id="agentChatPanel" aria-hidden="true" role="dialog"
+     aria-label="Tiaki Assistant">
+
+  <div class="agent-chat-header">
+    <span class="agent-chat-title">
+      <i class="bi bi-stars" aria-hidden="true"></i>
+      Tiaki Assistant
+    </span>
+    <div class="agent-chat-header-actions">
+      <button id="agentChatReset" title="New conversation" aria-label="Start new conversation">
+        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+      </button>
+      <button id="agentChatClose" aria-label="Close assistant">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="agent-chat-messages" id="agentChatMessages">
+    <div class="agent-chat-welcome">
+      <i class="bi bi-stars agent-chat-welcome-icon" aria-hidden="true"></i>
+      <p>Hi! I'm Tiaki Assistant. Ask me about your group's catch data, how to use the app, or anything about predator trapping in New Zealand.</p>
+    </div>
+  </div>
+
+  <div class="agent-chat-input-area">
+    <form class="agent-chat-form" id="agentChatForm" autocomplete="off">
+      <input type="text" class="agent-chat-input" id="agentChatInput"
+             placeholder="Ask a question…" maxlength="1000" aria-label="Message">
+      <button type="submit" class="btn-pf agent-chat-send" id="agentChatSend"
+              aria-label="Send message">
+        <i class="bi bi-send" aria-hidden="true"></i>
+      </button>
+    </form>
+  </div>
+
+</div>
