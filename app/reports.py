@@ -1,8 +1,12 @@
 """reports.py — Reports and chart data routes (all logged-in roles)."""
 
+import logging
+
 from flask import render_template, request, session, redirect, url_for
 from app import app, db
 from app.utils import role_required
+
+logger = logging.getLogger(__name__)
 
 
 @app.route('/reports')
@@ -21,7 +25,7 @@ def reports():
                 )
                 all_groups = cursor.fetchall()
         except Exception as e:
-            app.logger.error(f'Reports group list error: {e}')
+            logger.error('Reports group list error: %s', e)
 
         selected_group_id = request.args.get('group_id', '')
         group_id   = int(selected_group_id) if selected_group_id else None
@@ -175,7 +179,7 @@ def reports():
                 stats['top_species'] = row['species_caught']
 
     except Exception as e:
-        app.logger.error(f'Reports stats error: {e}')
+        logger.error('Reports stats error: %s', e)
 
     # ── Chart data ────────────────────────────────────────────
     trend_labels    = []
@@ -456,7 +460,7 @@ def reports():
             member_colors = [member_palette[i % len(member_palette)] for i in range(len(member_rows))]
 
     except Exception as e:
-        app.logger.error(f'Reports chart data error: {e}')
+        logger.error('Reports chart data error: %s', e)
 
     # ── Auto-summaries for Project 1 charts ──────────────────
 
@@ -861,7 +865,7 @@ def admin_reports():
             group_rows = cursor.fetchall()
 
     except Exception as e:
-        app.logger.error(f'Admin reports error: {e}')
+        logger.error('Admin reports error: %s', e)
 
     # ── Auto-generated chart summaries ───────────────────────
     # Computed from live data — never hard-coded.
