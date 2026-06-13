@@ -1,5 +1,7 @@
 """admin.py — Admin dashboard, user management, lines, traps, operator assignment, lookups."""
 
+import logging
+
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 from app.utils import (
@@ -15,6 +17,8 @@ from app.utils import (
 )
 from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, fetch_membership_role, update_user_role, insert_notification, fetch_active_lookup
 from app.helpers.linesHelper import fetch_line_for_group, fetch_trap_for_group, fetch_bait_station_for_group
+
+logger = logging.getLogger(__name__)
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -131,7 +135,7 @@ def admin_dashboard():
             recent_catches = cursor.fetchall()
  
     except Exception as e:
-        app.logger.error(f'Admin dashboard error: {e}')
+        logger.error('Admin dashboard error: %s', e)
  
     return render_template('admin/dashboard.html',
                            stats=stats,
@@ -1678,9 +1682,6 @@ def manage_bait_types():
 
 # ── Support Technician role management ───────────────────────────────────────
 
-import logging as _logging
-_admin_logger = _logging.getLogger(__name__)
-
 @app.route('/admin/support-technicians')
 @role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_support_technicians():
@@ -1767,7 +1768,7 @@ def admin_support_tech_grant(user_id):
         )
 
     full_name = f"{user['first_name']} {user['last_name']}"
-    _admin_logger.info('Super Admin %s granted Support Technician role to user %d (%s)',
+    logger.info('Super Admin %s granted Support Technician role to user %d (%s)',
                        session['user_id'], user_id, full_name)
     flash(f'{full_name} granted Support Technician role.', 'success')
     return redirect(url_for('admin_support_technicians'))
@@ -1799,7 +1800,7 @@ def admin_support_tech_revoke(user_id):
         )
 
     full_name = f"{user['first_name']} {user['last_name']}"
-    _admin_logger.info('Super Admin %s revoked Support Technician role from user %d (%s)',
+    logger.info('Super Admin %s revoked Support Technician role from user %d (%s)',
                        session['user_id'], user_id, full_name)
     flash(f'{full_name} Support Technician role revoked.', 'success')
     return redirect(url_for('admin_support_technicians'))
