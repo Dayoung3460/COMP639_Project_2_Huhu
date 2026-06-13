@@ -285,7 +285,8 @@ def fetch_user_info(db, user_id):
     """Fetch user info for permission checks. Role comes from group_memberships."""
     with db.get_cursor() as cursor:
         cursor.execute("""
-            SELECT user_id, username, email, first_name, last_name, account_status
+            SELECT user_id, username, email, first_name, last_name,
+                   account_status, is_super_admin
             FROM users
             WHERE user_id = %s
         """, (user_id,))

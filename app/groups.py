@@ -13,7 +13,7 @@ Visibility logic (per the brief):
 from flask import render_template, request, redirect, url_for, flash, session, abort, jsonify
 from app import app, db
 from app.utils import role_required, save_uploaded_image, redirect_by_role
-from app.helpers.dbHelper import fetch_membership_role, insert_notification
+from app.helpers.dbHelper import fetch_user_info, fetch_membership_role, insert_notification
 
 
 @app.route('/groups/<int:group_id>')
@@ -38,8 +38,7 @@ def group_landing(group_id):
         # ── Super admin check ─────────────────────────────────────
         is_super_admin = False
         if user_id:
-            cursor.execute('SELECT is_super_admin FROM users WHERE user_id = %s', (user_id,))
-            u = cursor.fetchone()
+            u = fetch_user_info(db, user_id)
             is_super_admin = bool(u and u['is_super_admin'])
 
         # ── Membership check — fetch role for "Go to Group" button ─
@@ -219,8 +218,7 @@ def request_join_group():
 
     with db.get_cursor() as cursor:
         # 2. Super Admin → 403
-        cursor.execute('SELECT is_super_admin FROM users WHERE user_id = %s', (user_id,))
-        u = cursor.fetchone()
+        u = fetch_user_info(db, user_id)
         if u and u['is_super_admin']:
             abort(403)
 
