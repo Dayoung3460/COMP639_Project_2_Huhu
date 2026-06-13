@@ -11,7 +11,6 @@ from app.utils import (
     allowed_file,
     save_uploaded_image,
     delete_upload,
-    UPLOAD_FOLDER,
     is_super_admin_mode,
 )
 from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, update_user_role, insert_notification, fetch_active_lookup

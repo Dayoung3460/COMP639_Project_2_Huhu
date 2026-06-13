@@ -95,11 +95,6 @@ app.config['MAIL_DEFAULT_SENDER'] = ('Tiaki System',
 
 mail = Mail(app)
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-
-UPLOAD_FOLDER = os.path.join(app.root_path, '..', 'static', 'images', 'uploads')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
 # ── Before request ────────────────────────────────────────────────────────────
 
 from app.utils import check_user_status
