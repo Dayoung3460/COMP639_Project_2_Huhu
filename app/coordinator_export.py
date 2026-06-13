@@ -2,11 +2,14 @@
 
 import csv
 import io
+import logging
 from datetime import datetime
 
 from flask import render_template, request, session, Response, jsonify
 from app import app, db
 from app.utils import role_required
+
+logger = logging.getLogger(__name__)
 
 
 @app.route('/coordinator/export', methods=['GET', 'POST'])
@@ -254,7 +257,7 @@ def coordinator_export():
                     filename = f'{safe_name}_bait_station_records_{date_str}.csv'
 
         except Exception as e:
-            app.logger.error(f'CSV export error: {e}')
+            logger.error('CSV export error: %s', e)
 
         # Build CSV in memory
         output = io.StringIO()
@@ -338,7 +341,7 @@ def coordinator_export():
             bait_record_count = cursor.fetchone()['cnt']
 
     except Exception as e:
-        app.logger.error(f'CSV export count error: {e}')
+        logger.error('CSV export count error: %s', e)
 
     return render_template('coordinator/export.html',
                            trap_line_count=trap_line_count,
@@ -370,7 +373,7 @@ def api_traps_by_line():
                 ''', (line_id, group_id))
                 traps = [dict(r) for r in cursor.fetchall()]
         except Exception as e:
-            app.logger.error(f'api_traps_by_line error: {e}')
+            logger.error('api_traps_by_line error: %s', e)
     return jsonify(traps)
 
 
@@ -393,5 +396,5 @@ def api_stations_by_line():
                 ''', (line_id, group_id))
                 stations = [dict(r) for r in cursor.fetchall()]
         except Exception as e:
-            app.logger.error(f'api_stations_by_line error: {e}')
+            logger.error('api_stations_by_line error: %s', e)
     return jsonify(stations)
