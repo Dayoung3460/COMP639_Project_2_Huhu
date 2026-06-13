@@ -141,8 +141,6 @@ def apply_for_group():
             )
             pending_count = cursor.fetchone()
 
-            print(f"User {user_id} has {pending_count['count']} pending applications.")  # Debug log
-
             if pending_count['count'] > 0:
                 flash('You already have a pending conservation application. Please wait for it to be reviewed before submitting another.', 'warning')
                 return redirect(url_for('apply_for_group'))

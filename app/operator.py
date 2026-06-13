@@ -389,10 +389,7 @@ def add_bait_record():
     bait_lines = fetch_operator_bait_lines(db, user_id, group_id)
     valid_station_ids = fetch_operator_bait_station_ids(db, user_id, group_id)
 
-    with db.get_cursor() as cursor:
-        cursor.execute('SELECT name FROM species WHERE is_active = TRUE ORDER BY name')
-        species_list = [r['name'] for r in cursor.fetchall()]
-
+    species_list = fetch_active_lookup(db, 'species')
     active_ingredients = fetch_active_lookup(db, 'active_ingredients')
     formulations = fetch_active_lookup(db, 'bait_formulations')
 
@@ -500,10 +497,7 @@ def edit_bait_record(record_id):
 
         update_bait_station_record(db, {**request.form, 'record_id': record_id}, user_id)
         flash('Record updated.', 'success')
-        redirect_to = url_for('bait_records')
-        if role == 'Operator':
-            redirect_to = url_for('bait_records')
-        return redirect(redirect_to)
+        return redirect(url_for('bait_records'))
 
     return render_template('operator/edit_bait_record.html',
                            record=record,
