@@ -1,8 +1,6 @@
 """admin.py — Admin dashboard, user management, lines, traps, operator assignment, lookups."""
 
 from flask import render_template, request, redirect, url_for, flash, session
-import os
-import uuid
 from app import app, db
 from app.utils import (
     role_required,
@@ -11,6 +9,8 @@ from app.utils import (
     LINCOLN_NZ_LON_RANGE,
     LINE_COLOURS,
     allowed_file,
+    save_uploaded_image,
+    delete_upload,
     UPLOAD_FOLDER,
     is_super_admin_mode,
 )
@@ -1292,10 +1292,7 @@ def admin_group_create():
         # Optional image upload
         filename = None
         if file and file.filename:
-            ext = file.filename.rsplit('.', 1)[1].lower()
-            filename = f"group_{uuid.uuid4().hex}.{ext}"
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-            file.save(os.path.join(UPLOAD_FOLDER, filename))
+            filename, _ = save_uploaded_image(file, 'group')
 
         with db.get_cursor() as cursor:
             cursor.execute('''
@@ -1496,23 +1493,12 @@ def admin_group_update_image(group_id):
         return redirect(url_for('admin_groups'))
 
     file = request.files.get('image')
-    if not file or not file.filename:
-        flash('No file selected.', 'danger')
+    filename, img_err = save_uploaded_image(file, f'group_{group_id}')
+    if not filename:
+        flash(img_err or 'No file selected.', 'danger')
         return redirect(url_for('admin_group_detail', group_id=group_id))
 
-    if not allowed_file(file.filename):
-        flash('Image must be PNG, JPG, JPEG, or GIF.', 'danger')
-        return redirect(url_for('admin_group_detail', group_id=group_id))
-
-    if group['tile_image']:
-        old_path = os.path.join(UPLOAD_FOLDER, group['tile_image'])
-        if os.path.exists(old_path):
-            os.remove(old_path)
-
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    filename = f"group_{group_id}_{uuid.uuid4().hex[:8]}.{ext}"
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    file.save(os.path.join(UPLOAD_FOLDER, filename))
+    delete_upload(group['tile_image'])
 
     with db.get_cursor() as cursor:
         cursor.execute('UPDATE groups SET tile_image = %s WHERE group_id = %s',
@@ -1535,9 +1521,7 @@ def admin_group_remove_image(group_id):
         return redirect(url_for('admin_groups'))
 
     if group['tile_image']:
-        old_path = os.path.join(UPLOAD_FOLDER, group['tile_image'])
-        if os.path.exists(old_path):
-            os.remove(old_path)
+        delete_upload(group['tile_image'])
         with db.get_cursor() as cursor:
             cursor.execute('UPDATE groups SET tile_image = NULL WHERE group_id = %s', (group_id,))
         flash('Group tile image removed.', 'success')

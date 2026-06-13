@@ -12,10 +12,8 @@ Visibility logic (per the brief):
 
 from flask import render_template, request, redirect, url_for, flash, session, abort, jsonify
 from app import app, db
-from app.utils import role_required, allowed_file, UPLOAD_FOLDER, redirect_by_role
+from app.utils import role_required, save_uploaded_image, redirect_by_role
 from app.helpers.dbHelper import insert_notification
-import os
-import uuid
 
 
 @app.route('/groups/<int:group_id>')
@@ -174,18 +172,10 @@ def apply_for_group():
             return redirect(url_for('apply_for_group'))
         
         # ── Handle profile photo upload ────────────────────────
-        profile_photo = None
-        file = request.files.get('group_image_input')
-        if file and file.filename:
-            if allowed_file(file.filename):
-                ext = file.filename.rsplit('.', 1)[1].lower()
-                filename = f"group_{uuid.uuid4().hex[:10]}.{ext}"
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
-                profile_photo = filename
-            else:
-                flash('Profile photo must be a PNG, JPG, JPEG, or GIF.', 'danger')
-                return redirect(url_for('apply_for_group'))
+        profile_photo, img_err = save_uploaded_image(request.files.get('group_image_input'), 'group')
+        if img_err:
+            flash(img_err, 'danger')
+            return redirect(url_for('apply_for_group'))
 
         with db.get_cursor() as cursor:
             if profile_photo:

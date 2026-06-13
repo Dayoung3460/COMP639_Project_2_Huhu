@@ -2,9 +2,8 @@
 
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db, bcrypt, mail
-from app.utils import is_valid_password, redirect_by_role, allowed_file, UPLOAD_FOLDER
+from app.utils import is_valid_password, redirect_by_role, save_uploaded_image, delete_upload
 import os
-import uuid
 
 
 def _flash_pending_notifications(user_id):
@@ -48,18 +47,10 @@ def register():
             return render_template('auth/register.html')
 
         # ── Handle profile photo upload ────────────────────────────
-        profile_photo = None
-        file = request.files.get('profile_photo')
-        if file and file.filename:
-            if allowed_file(file.filename):
-                ext = file.filename.rsplit('.', 1)[1].lower()
-                filename = f"avatar_{uuid.uuid4().hex[:10]}.{ext}"
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
-                profile_photo = filename
-            else:
-                flash('Profile photo must be a PNG, JPG, JPEG, or GIF.', 'danger')
-                return render_template('auth/register.html')
+        profile_photo, img_err = save_uploaded_image(request.files.get('profile_photo'), 'avatar')
+        if img_err:
+            flash(img_err, 'danger')
+            return render_template('auth/register.html')
 
         with db.get_cursor() as cursor:
             # Check username/email not already taken
@@ -394,23 +385,18 @@ def edit_profile():
             return redirect(url_for('edit_profile'))
 
         # ── Handle profile photo upload ────────────────────────
-        profile_photo = None
-        file = request.files.get('profile_photo')
-        if file and file.filename:
-            if allowed_file(file.filename):
-                ext = file.filename.rsplit('.', 1)[1].lower()
-                filename = f"avatar_{uuid.uuid4().hex[:10]}.{ext}"
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
-                profile_photo = filename
-            else:
-                flash('Profile photo must be a PNG, JPG, JPEG, or GIF.', 'danger')
-                return redirect(url_for('edit_profile'))
+        profile_photo, img_err = save_uploaded_image(request.files.get('profile_photo'), 'avatar')
+        if img_err:
+            flash(img_err, 'danger')
+            return redirect(url_for('edit_profile'))
 
         # ── Update DB ──────────────────────────────────────────
         with db.get_cursor() as cursor:
+            cursor.execute('SELECT profile_photo FROM users WHERE user_id = %s', (session['user_id'],))
+            old_photo = (cursor.fetchone() or {}).get('profile_photo')
+
             if profile_photo:
-                # New photo uploaded
+                # New photo uploaded — overwrite DB, then clean up old file
                 cursor.execute('''
                     UPDATE users
                     SET username = %s, first_name = %s, last_name = %s, email = %s,
@@ -422,8 +408,9 @@ def edit_profile():
                       phone or None, address or None,
                       emergency_name or None, emergency_phone or None,
                       profile_photo, session['user_id']))
+                delete_upload(old_photo)
             elif remove_photo:
-                # Remove photo — set to NULL
+                # Remove photo — NULL out DB, then clean up old file
                 cursor.execute('''
                     UPDATE users
                     SET username = %s, first_name = %s, last_name = %s, email = %s,
@@ -435,6 +422,7 @@ def edit_profile():
                       phone or None, address or None,
                       emergency_name or None, emergency_phone or None,
                       session['user_id']))
+                delete_upload(old_photo)
             else:
                 # No photo change
                 cursor.execute('''

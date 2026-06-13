@@ -8,6 +8,7 @@ from functools import wraps
 from flask import session, flash, redirect, url_for, request, abort
 import re
 import os
+import uuid
 
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -114,6 +115,37 @@ def allowed_file(filename):
     """
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def save_uploaded_image(file, prefix):
+    """Validate extension and save an uploaded image to UPLOAD_FOLDER.
+
+    Returns:
+        (filename, None)    on success
+        (None, error_str)   on invalid extension
+        (None, None)        when no file was provided
+    """
+    if not file or not file.filename:
+        return None, None
+    if not allowed_file(file.filename):
+        return None, 'Image must be a PNG, JPG, JPEG, or GIF.'
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"{prefix}_{uuid.uuid4().hex[:10]}.{ext}"
+    try:
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        file.save(os.path.join(UPLOAD_FOLDER, filename))
+    except OSError:
+        return None, 'Could not save the file. Please try again.'
+    return filename, None
+
+
+def delete_upload(filename):
+    """Delete a file from UPLOAD_FOLDER if it exists. No-op when filename is None."""
+    if not filename:
+        return
+    path = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.exists(path):
+        os.remove(path)
 
 
 def sniff_image_kind(head_bytes):
