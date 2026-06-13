@@ -3,6 +3,7 @@
 from flask import render_template, request, session
 from app import app, db
 from app.utils import role_required, is_super_admin_mode, is_support_tech_mode
+from app.helpers.dbHelper import fetch_enum_values
 from app.themes import PLATFORM_DEFAULT_THEME
 
 # Fallback badge colour for groups with no custom theme row.
@@ -116,22 +117,22 @@ def get_catch_records(recorded_by_id=None):
             )
             lines = cursor.fetchall()
 
+    with db.get_cursor() as cursor:
         cursor.execute("SELECT name FROM species ORDER BY name")
         species = [r['name'] for r in cursor.fetchall()]
 
         cursor.execute("SELECT name FROM trap_statuses ORDER BY name")
         statuses = [r['name'] for r in cursor.fetchall()]
 
-        cursor.execute("SELECT unnest(enum_range(NULL::trap_condition_type)) AS condition")
-        conditions = [r['condition'] for r in cursor.fetchall()]
+    conditions = fetch_enum_values(db, 'trap_condition_type')
 
-        filter_data = {
-            'trap_codes': trap_codes,
-            'lines': lines,
-            'species': species,
-            'statuses': statuses,
-            'conditions': conditions
-        }
+    filter_data = {
+        'trap_codes': trap_codes,
+        'lines': lines,
+        'species': species,
+        'statuses': statuses,
+        'conditions': conditions
+    }
 
     return records, filters, filter_data
 
