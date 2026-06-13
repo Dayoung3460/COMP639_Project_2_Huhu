@@ -19,6 +19,7 @@ from app.utils import (
     sniff_image_kind,
 )
 from app.helpers.dbHelper import (
+    fetch_membership_role,
     insert_notification,
     insert_user_role,
     update_user_role,
@@ -350,12 +351,7 @@ def coordinator_member_change_role(user_id):
         flash('You cannot change your own role.', 'danger')
         return redirect(url_for('coordinator_members'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT role FROM group_memberships WHERE user_id = %s AND group_id = %s',
-            (user_id, group_id)
-        )
-        membership = cursor.fetchone()
+    membership = fetch_membership_role(db, user_id, group_id)
 
     if not membership:
         flash('Member not found in your group.', 'danger')
@@ -384,12 +380,7 @@ def coordinator_member_remove(user_id):
         flash('You cannot remove yourself from the group.', 'danger')
         return redirect(url_for('coordinator_members'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT role FROM group_memberships WHERE user_id = %s AND group_id = %s',
-            (user_id, group_id)
-        )
-        membership = cursor.fetchone()
+    membership = fetch_membership_role(db, user_id, group_id)
 
     if not membership:
         flash('Member not found in your group.', 'danger')

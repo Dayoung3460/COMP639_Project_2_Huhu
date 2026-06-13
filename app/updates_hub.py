@@ -37,7 +37,7 @@ from flask import (
 
 from app import app, db
 from app.utils import role_required, allowed_file, UPLOAD_FOLDER
-from app.helpers.dbHelper import insert_notification
+from app.helpers.dbHelper import fetch_membership_role, insert_notification
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +72,7 @@ def _save_photos(files):
 
 
 def _user_in_group(user_id, group_id):
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT 1 FROM group_memberships WHERE user_id = %s AND group_id = %s LIMIT 1',
-            (user_id, group_id)
-        )
-        return cursor.fetchone() is not None
+    return fetch_membership_role(db, user_id, group_id) is not None
 
 
 def _user_in_any_group(user_id):

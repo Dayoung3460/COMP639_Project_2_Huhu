@@ -13,7 +13,7 @@ from app.utils import (
     delete_upload,
     is_super_admin_mode,
 )
-from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, update_user_role, insert_notification, fetch_active_lookup
+from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, fetch_membership_role, update_user_role, insert_notification, fetch_active_lookup
 from app.helpers.linesHelper import fetch_line_for_group, fetch_trap_for_group, fetch_bait_station_for_group
 
 
@@ -348,12 +348,7 @@ def edit_role(user_id):
         return redirect(url_for('admin_users'))
 
     # Attach current role from group_memberships so the template can pre-select it
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            "SELECT role FROM group_memberships WHERE user_id = %s AND group_id = %s",
-            (user_id, session.get('group_id'))
-        )
-        gm_row = cursor.fetchone()
+    gm_row = fetch_membership_role(db, user_id, session.get('group_id'))
     user = dict(user)
     user['role'] = gm_row['role'] if gm_row else None
 
@@ -1436,18 +1431,11 @@ def admin_group_add_coordinator(group_id):
         flash('Invalid user.', 'danger')
         return redirect(url_for('admin_group_detail', group_id=group_id))
 
-    with db.get_cursor() as cursor:
-        cursor.execute('SELECT role FROM group_memberships WHERE user_id = %s AND group_id = %s',
-                       (user_id, group_id))
-        membership = cursor.fetchone()
-        if not membership:
-            flash('User is not a member of this group.', 'danger')
-            return redirect(url_for('admin_group_detail', group_id=group_id))
+    if not fetch_membership_role(db, user_id, group_id):
+        flash('User is not a member of this group.', 'danger')
+        return redirect(url_for('admin_group_detail', group_id=group_id))
 
-        cursor.execute(
-            "UPDATE group_memberships SET role = 'Group Coordinator' WHERE user_id = %s AND group_id = %s",
-            (user_id, group_id)
-        )
+    update_user_role(db, user_id, group_id, 'Group Coordinator')
 
     flash('Member promoted to Group Coordinator.', 'success')
     return redirect(url_for('admin_group_detail', group_id=group_id))

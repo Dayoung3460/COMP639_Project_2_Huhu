@@ -13,7 +13,7 @@ Visibility logic (per the brief):
 from flask import render_template, request, redirect, url_for, flash, session, abort, jsonify
 from app import app, db
 from app.utils import role_required, save_uploaded_image, redirect_by_role
-from app.helpers.dbHelper import insert_notification
+from app.helpers.dbHelper import fetch_membership_role, insert_notification
 
 
 @app.route('/groups/<int:group_id>')
@@ -46,11 +46,7 @@ def group_landing(group_id):
         is_member = False
         member_role = None
         if user_id:
-            cursor.execute('''
-                SELECT role FROM group_memberships
-                WHERE user_id = %s AND group_id = %s
-            ''', (user_id, group_id))
-            membership = cursor.fetchone()
+            membership = fetch_membership_role(db, user_id, group_id)
             if membership:
                 is_member = True
                 member_role = membership['role']
@@ -240,11 +236,7 @@ def request_join_group():
             abort(404)
 
         # 4. Already a member → 400
-        cursor.execute(
-            'SELECT 1 FROM group_memberships WHERE user_id = %s AND group_id = %s',
-            (user_id, group_id)
-        )
-        if cursor.fetchone():
+        if fetch_membership_role(db, user_id, group_id):
             return jsonify({'error': 'You are already a member of this group'}), 400
 
         # 5. Duplicate pending request → 400

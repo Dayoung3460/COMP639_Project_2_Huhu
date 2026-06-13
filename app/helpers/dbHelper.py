@@ -291,6 +291,15 @@ def fetch_user_info(db, user_id):
         """, (user_id,))
         return cursor.fetchone()
 
+def fetch_membership_role(db, user_id, group_id):
+    """Fetch the membership role for a user in a group, or None if not a member."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'SELECT role FROM group_memberships WHERE user_id = %s AND group_id = %s',
+            (user_id, group_id)
+        )
+        return cursor.fetchone()
+
 def update_user_role(db, user_id, group_id, role):
     """Update a user's role within a specific group."""
     with db.get_cursor() as cursor:
