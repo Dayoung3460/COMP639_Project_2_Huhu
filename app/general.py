@@ -2,7 +2,7 @@
 
 from flask import render_template, request, session
 from app import app, db
-from app.utils import role_required, is_super_admin_mode, is_support_tech_mode
+from app.utils import role_required, is_cross_group_mode
 from app.helpers.dbHelper import fetch_enum_values
 from app.themes import DEFAULT_GROUP_COLOR
 
@@ -28,7 +28,7 @@ def get_catch_records(recorded_by_id=None):
     query_params = []
 
     # Super Admin (platform-wide) and Support Technician see every group.
-    bypass_group = is_super_admin_mode() or is_support_tech_mode()
+    bypass_group = is_cross_group_mode()
 
     if not bypass_group:
         where_clauses.append("l.group_id = %s")
@@ -145,7 +145,7 @@ def catch_records():
         # Trap state lookup for the inline edit-action gate. Scope to the
         # active group unless acting platform-wide (Super Admin / Support Tech).
         with db.get_cursor() as cursor:
-            if is_super_admin_mode() or is_support_tech_mode():
+            if is_cross_group_mode():
                 cursor.execute("SELECT trap_id, is_retired FROM traps")
             else:
                 cursor.execute(
@@ -167,7 +167,7 @@ def catch_records():
         selected_filters=filters,
         filter_data=filter_data,
         trap_map=trap_map,
-        cross_group=is_super_admin_mode() or is_support_tech_mode()
+        cross_group=is_cross_group_mode()
     )
 
 
@@ -191,7 +191,7 @@ def get_observations(operator_id=None):
     query_params = []
 
     # Super Admin (platform-wide) and Support Technician see every group.
-    bypass_group = is_super_admin_mode() or is_support_tech_mode()
+    bypass_group = is_cross_group_mode()
 
     if not bypass_group:
         where_clauses.append("l.group_id = %s")
@@ -293,7 +293,7 @@ def observations():
         records=records,
         selected_filters=filters,
         filter_data=filter_data,
-        cross_group=is_super_admin_mode() or is_support_tech_mode()
+        cross_group=is_cross_group_mode()
     )
 
 
@@ -306,7 +306,7 @@ def bait_records():
     platform-wide sees records from every group.
     """
     # Super Admin (platform-wide) and Support Technician see every group.
-    bypass_group = is_super_admin_mode() or is_support_tech_mode()
+    bypass_group = is_cross_group_mode()
     group_id = session.get('group_id')
     user_id = session['user_id']
     role = session.get('group_role')

@@ -223,6 +223,15 @@ def is_support_tech_mode():
     return session.get('group_role') == 'Support Technician'
 
 
+def is_cross_group_mode():
+    """True when the user has cross-group visibility (Super Admin or Support Technician).
+
+    Use this instead of `is_super_admin_mode() or is_support_tech_mode()` to
+    express the combined check in a single readable call.
+    """
+    return is_super_admin_mode() or is_support_tech_mode()
+
+
 # ── Role-based redirect ───────────────────────────────────────────────────────
 
 def redirect_by_role():
