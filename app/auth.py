@@ -400,45 +400,26 @@ def edit_profile():
             old_photo = (cursor.fetchone() or {}).get('profile_photo')
 
             if profile_photo:
-                # New photo uploaded — overwrite DB, then clean up old file
-                cursor.execute('''
-                    UPDATE users
-                    SET username = %s, first_name = %s, last_name = %s, email = %s,
-                        phone = %s, address = %s,
-                        emergency_contact_name = %s, emergency_contact_phone = %s,
-                        profile_photo = %s
-                    WHERE user_id = %s
-                ''', (username, first_name, last_name, email,
-                      phone or None, address or None,
-                      emergency_name or None, emergency_phone or None,
-                      profile_photo, session['user_id']))
-                delete_upload(old_photo)
+                new_photo = profile_photo
             elif remove_photo:
-                # Remove photo — NULL out DB, then clean up old file
-                cursor.execute('''
-                    UPDATE users
-                    SET username = %s, first_name = %s, last_name = %s, email = %s,
-                        phone = %s, address = %s,
-                        emergency_contact_name = %s, emergency_contact_phone = %s,
-                        profile_photo = NULL
-                    WHERE user_id = %s
-                ''', (username, first_name, last_name, email,
-                      phone or None, address or None,
-                      emergency_name or None, emergency_phone or None,
-                      session['user_id']))
-                delete_upload(old_photo)
+                new_photo = None
             else:
-                # No photo change
-                cursor.execute('''
-                    UPDATE users
-                    SET username = %s, first_name = %s, last_name = %s, email = %s,
-                        phone = %s, address = %s,
-                        emergency_contact_name = %s, emergency_contact_phone = %s
-                    WHERE user_id = %s
-                ''', (username, first_name, last_name, email,
-                      phone or None, address or None,
-                      emergency_name or None, emergency_phone or None,
-                      session['user_id']))
+                new_photo = old_photo
+
+            cursor.execute('''
+                UPDATE users
+                SET username = %s, first_name = %s, last_name = %s, email = %s,
+                    phone = %s, address = %s,
+                    emergency_contact_name = %s, emergency_contact_phone = %s,
+                    profile_photo = %s
+                WHERE user_id = %s
+            ''', (username, first_name, last_name, email,
+                  phone or None, address or None,
+                  emergency_name or None, emergency_phone or None,
+                  new_photo, session['user_id']))
+
+            if new_photo != old_photo:
+                delete_upload(old_photo)
 
         # ── Update session username if it changed ──────────────
         session['username'] = username
