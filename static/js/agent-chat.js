@@ -1,16 +1,44 @@
 (function () {
   'use strict';
 
-  var trigger  = document.getElementById('agentChatTrigger');
-  var panel    = document.getElementById('agentChatPanel');
-  var messages = document.getElementById('agentChatMessages');
-  var form     = document.getElementById('agentChatForm');
-  var input    = document.getElementById('agentChatInput');
-  var resetBtn = document.getElementById('agentChatReset');
-  var closeBtn = document.getElementById('agentChatClose');
-  var sendBtn  = document.getElementById('agentChatSend');
+  var trigger     = document.getElementById('agentChatTrigger');
+  var panel       = document.getElementById('agentChatPanel');
+  var messages    = document.getElementById('agentChatMessages');
+  var form        = document.getElementById('agentChatForm');
+  var input       = document.getElementById('agentChatInput');
+  var resetBtn    = document.getElementById('agentChatReset');
+  var closeBtn    = document.getElementById('agentChatClose');
+  var sendBtn     = document.getElementById('agentChatSend');
+  var confirmBar  = document.getElementById('agentChatConfirm');
+  var confirmYes  = document.getElementById('agentChatConfirmYes');
+  var confirmNo   = document.getElementById('agentChatConfirmNo');
 
   if (!trigger || !panel) return;
+
+  var groupId    = panel.dataset.groupId || 'default';
+  var storageKey = 'tiaki_chat_' + groupId;
+
+  // ── sessionStorage helpers ───────────────────────────────────
+
+  function loadHistory() {
+    try {
+      return JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHistory(history) {
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(history));
+    } catch (e) {}
+  }
+
+  function clearHistory() {
+    try {
+      sessionStorage.removeItem(storageKey);
+    } catch (e) {}
+  }
 
   // ── Open / close ────────────────────────────────────────────
 
@@ -31,15 +59,9 @@
   trigger.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && panel.classList.contains('is-open')) {
-      close();
-    }
-  });
-
   // ── Message rendering ────────────────────────────────────────
 
-  function appendMessage(role, text, isError) {
+  function appendMessage(role, text, isError, skipSave) {
     var wrapper = document.createElement('div');
     wrapper.className = 'agent-chat-msg agent-chat-msg--' + role;
 
@@ -50,6 +72,13 @@
     wrapper.appendChild(bubble);
     messages.appendChild(wrapper);
     messages.scrollTop = messages.scrollHeight;
+
+    if (!skipSave && !isError) {
+      var history = loadHistory();
+      history.push({ role: role, text: text });
+      saveHistory(history);
+    }
+
     return wrapper;
   }
 
@@ -72,10 +101,20 @@
     if (el) el.remove();
   }
 
+  // ── Restore history on page load ─────────────────────────────
+
+  var history = loadHistory();
+  if (history.length > 0) {
+    messages.innerHTML = '';
+    history.forEach(function (entry) {
+      appendMessage(entry.role, entry.text, false, true);
+    });
+  }
+
   // ── Input state ──────────────────────────────────────────────
 
   function setLoading(loading) {
-    input.disabled  = loading;
+    input.disabled   = loading;
     sendBtn.disabled = loading;
   }
 
@@ -87,7 +126,7 @@
     if (!msg) return;
 
     input.value = '';
-    appendMessage('user', msg, false);
+    appendMessage('user', msg, false, false);
     appendTyping();
     setLoading(true);
 
@@ -101,14 +140,14 @@
       .then(function (data) {
         removeTyping();
         if (data.error) {
-          appendMessage('agent', data.error, true);
+          appendMessage('agent', data.error, true, false);
         } else {
-          appendMessage('agent', data.reply, false);
+          appendMessage('agent', data.reply, false, false);
         }
       })
       .catch(function () {
         removeTyping();
-        appendMessage('agent', 'Something went wrong. Please try again.', true);
+        appendMessage('agent', 'Something went wrong. Please try again.', true, false);
       })
       .finally(function () {
         setLoading(false);
@@ -116,14 +155,34 @@
       });
   });
 
-  // ── Reset conversation ───────────────────────────────────────
+  // ── Reset confirmation bar ───────────────────────────────────
 
-  resetBtn.addEventListener('click', function () {
+  function showConfirm() {
+    confirmBar.classList.add('is-visible');
+    confirmBar.setAttribute('aria-hidden', 'false');
+    confirmYes.focus();
+  }
+
+  function hideConfirm() {
+    confirmBar.classList.remove('is-visible');
+    confirmBar.setAttribute('aria-hidden', 'true');
+  }
+
+  resetBtn.addEventListener('click', showConfirm);
+  confirmNo.addEventListener('click', function () {
+    hideConfirm();
+    input.focus();
+  });
+
+  confirmYes.addEventListener('click', function () {
+    hideConfirm();
+
     fetch('/agent/reset', {
       method: 'POST',
       credentials: 'same-origin'
     }).catch(function () {});
 
+    clearHistory();
     messages.innerHTML =
       '<div class="agent-chat-welcome">' +
         '<i class="bi bi-stars agent-chat-welcome-icon" aria-hidden="true"></i>' +

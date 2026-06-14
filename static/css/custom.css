@@ -4109,6 +4109,40 @@ body.layout-width-full .site-footer {
   color: var(--pf-50);
 }
 
+.agent-chat-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--pf-50);
+  border-bottom: 1px solid var(--pf-200);
+  flex-shrink: 0;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: max-height 0.2s ease, opacity 0.2s ease, padding 0.2s ease;
+}
+.agent-chat-confirm.is-visible {
+  max-height: 52px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  opacity: 1;
+  pointer-events: all;
+}
+.agent-chat-confirm-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pf-900);
+  white-space: nowrap;
+}
+.agent-chat-confirm-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .agent-chat-messages {
   flex: 1;
   overflow-y: auto;
