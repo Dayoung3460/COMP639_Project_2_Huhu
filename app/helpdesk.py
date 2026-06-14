@@ -39,6 +39,24 @@ def _change_status(ticket_id, old_status, new_status, changed_by, note=None):
     return True
 
 
+def _fetch_ticket_replies(db, ticket_id):
+    """Return all replies for a ticket, ordered oldest-first."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT tr.reply_id, tr.body, tr.created_at,
+                   u.first_name || ' ' || u.last_name AS author_name,
+                   u.user_id AS author_id
+            FROM   ticket_replies tr
+            JOIN   users u ON u.user_id = tr.author_id
+            WHERE  tr.ticket_id = %s
+            ORDER BY tr.created_at ASC
+            """,
+            (ticket_id,)
+        )
+        return cursor.fetchall()
+
+
 def _screenshot_dir(ticket_id):
     return os.path.join(app.root_path, '..', 'static', 'uploads', 'tickets', str(ticket_id))
 
@@ -278,23 +296,7 @@ def helpdesk_view(ticket_id):
             flash('Reply added.', 'success')
         return redirect(url_for('helpdesk_view', ticket_id=ticket_id))
 
-    # Fetch replies
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT tr.reply_id,
-                   tr.body,
-                   tr.created_at,
-                   u.first_name || ' ' || u.last_name AS author_name,
-                   u.user_id AS author_id
-            FROM   ticket_replies tr
-            JOIN   users u ON u.user_id = tr.author_id
-            WHERE  tr.ticket_id = %s
-            ORDER BY tr.created_at ASC
-            """,
-            (ticket_id,)
-        )
-        replies = cursor.fetchall()
+    replies = _fetch_ticket_replies(db, ticket_id)
 
     # Fetch status history
     with db.get_cursor() as cursor:
@@ -435,20 +437,7 @@ def helpdesk_ticket(ticket_id):
     if not ticket:
         abort(404)
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT tr.reply_id, tr.body, tr.created_at,
-                   u.first_name || ' ' || u.last_name AS author_name,
-                   u.user_id AS author_id
-            FROM   ticket_replies tr
-            JOIN   users u ON u.user_id = tr.author_id
-            WHERE  tr.ticket_id = %s
-            ORDER BY tr.created_at ASC
-            """,
-            (ticket_id,)
-        )
-        replies = cursor.fetchall()
+    replies = _fetch_ticket_replies(db, ticket_id)
 
     with db.get_cursor() as cursor:
         cursor.execute(
