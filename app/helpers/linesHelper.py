@@ -1,5 +1,5 @@
 from flask import session
-from app.utils import is_super_admin_mode
+from app.utils import is_cross_group_mode
 
 
 def build_map_traps(trap_rows, station_rows, make_detail_url):
@@ -38,11 +38,11 @@ def build_map_traps(trap_rows, station_rows, make_detail_url):
 def _effective_group_id():
     """Return the group_id to use for ownership checks, or None to skip filtering.
 
-    Returns None only for Super Admin in platform-wide mode (no group context).
-    For all other roles with no group_id (e.g. Support Technician), returns a
-    sentinel that forces the SQL filter to match nothing, denying access.
+    Returns None for Super Admin and Support Technician — both have cross-group
+    visibility and the fetch helpers should return the requested row regardless
+    of group. For all other roles, scopes to the session group_id.
     """
-    if is_super_admin_mode():
+    if is_cross_group_mode():
         return None
     return session.get('group_id')
 
