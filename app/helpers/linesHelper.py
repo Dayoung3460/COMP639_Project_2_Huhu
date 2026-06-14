@@ -101,3 +101,32 @@ def fetch_bait_station_for_group(db, station_id):
             (station_id, group_id, group_id)
         )
         return cursor.fetchone()
+
+
+_RETIRABLE_TABLES = {
+    'lines': 'line_id',
+    'traps': 'trap_id',
+    'bait_stations': 'station_id',
+}
+
+
+def retire_asset(db, table, pk_col, pk_val, user_id):
+    """Set is_retired = TRUE with timestamp and actor on the given row."""
+    if _RETIRABLE_TABLES.get(table) != pk_col:
+        raise ValueError(f'retire_asset: unknown table/pk_col: {table!r}/{pk_col!r}')
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            f'UPDATE {table} SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s WHERE {pk_col} = %s',
+            (user_id, pk_val)
+        )
+
+
+def unretire_asset(db, table, pk_col, pk_val):
+    """Clear is_retired, retired_at, and retired_by on the given row."""
+    if _RETIRABLE_TABLES.get(table) != pk_col:
+        raise ValueError(f'unretire_asset: unknown table/pk_col: {table!r}/{pk_col!r}')
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            f'UPDATE {table} SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE {pk_col} = %s',
+            (pk_val,)
+        )

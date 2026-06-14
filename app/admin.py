@@ -16,7 +16,10 @@ from app.utils import (
     is_super_admin_mode,
 )
 from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, fetch_membership_role, update_user_role, insert_notification, fetch_active_lookup
-from app.helpers.linesHelper import fetch_line_for_group, fetch_trap_for_group, fetch_bait_station_for_group
+from app.helpers.linesHelper import (
+    fetch_line_for_group, fetch_trap_for_group, fetch_bait_station_for_group,
+    retire_asset, unretire_asset,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -520,31 +523,15 @@ def retire_line(line_id):
 
     retired_by = session['user_id']
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            UPDATE lines
-            SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
-            WHERE line_id = %s
-            """,
-            (retired_by, line_id)
-        )
-
-        if has_active_traps:
+    retire_asset(db, 'lines', 'line_id', line_id, retired_by)
+    if has_active_traps:
+        with db.get_cursor() as cursor:
             cursor.execute(
-                """
-                UPDATE traps
-                SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
-                WHERE line_id = %s AND is_retired = FALSE
-                """,
+                'UPDATE traps SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s WHERE line_id = %s AND is_retired = FALSE',
                 (retired_by, line_id)
             )
             cursor.execute(
-                """
-                UPDATE bait_stations
-                SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
-                WHERE line_id = %s AND is_retired = FALSE
-                """,
+                'UPDATE bait_stations SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s WHERE line_id = %s AND is_retired = FALSE',
                 (retired_by, line_id)
             )
 
@@ -560,11 +547,7 @@ def unretire_line(line_id):
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE lines SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE line_id = %s',
-            (line_id,)
-        )
+    unretire_asset(db, 'lines', 'line_id', line_id)
 
     flash('Line unretired.', 'success')
     return redirect(url_for('lines_index'))
@@ -715,15 +698,7 @@ def retire_trap(line_id):
 
     retired_by = session['user_id']
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            UPDATE traps
-            SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
-            WHERE trap_id = %s
-            """,
-            (retired_by, trap_id)
-        )
+    retire_asset(db, 'traps', 'trap_id', trap_id, retired_by)
 
     flash('Trap retired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
@@ -737,11 +712,7 @@ def unretire_trap(line_id, trap_id):
         flash('Trap not found.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE traps SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE trap_id = %s',
-            (trap_id,)
-        )
+    unretire_asset(db, 'traps', 'trap_id', trap_id)
 
     flash('Trap unretired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
@@ -897,11 +868,7 @@ def deactivate_bait_station(line_id):
         flash('Station not found.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE bait_stations SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s WHERE station_id = %s',
-            (session['user_id'], station_id)
-        )
+    retire_asset(db, 'bait_stations', 'station_id', station_id, session['user_id'])
 
     flash('Bait station retired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
@@ -915,11 +882,7 @@ def activate_bait_station(line_id, station_id):
         flash('Station not found.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE bait_stations SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE station_id = %s',
-            (station_id,)
-        )
+    unretire_asset(db, 'bait_stations', 'station_id', station_id)
 
     flash('Bait station unretired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
