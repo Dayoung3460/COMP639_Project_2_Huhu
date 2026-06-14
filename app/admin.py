@@ -1532,18 +1532,26 @@ def admin_group_applications():
                            counts=counts)
 
 
-@app.route('/admin/group-applications/<int:application_id>/approve', methods=['POST'])
-@role_required('Super Admin', 'Support Technician')
-def admin_group_application_approve(application_id):
-    """Approve a group application — creates the group and assigns the applicant as coordinator."""
+def _fetch_application(db, application_id):
+    """Return the group application row joined with applicant name, or None if not found."""
     with db.get_cursor() as cursor:
-        cursor.execute('''
+        cursor.execute(
+            '''
             SELECT ga.*, u.first_name, u.last_name
             FROM group_applications ga
             JOIN users u ON ga.user_id = u.user_id
             WHERE ga.application_id = %s
-        ''', (application_id,))
-        application = cursor.fetchone()
+            ''',
+            (application_id,)
+        )
+        return cursor.fetchone()
+
+
+@app.route('/admin/group-applications/<int:application_id>/approve', methods=['POST'])
+@role_required('Super Admin', 'Support Technician')
+def admin_group_application_approve(application_id):
+    """Approve a group application — creates the group and assigns the applicant as coordinator."""
+    application = _fetch_application(db, application_id)
 
     if not application:
         flash('Application not found.', 'danger')
@@ -1600,14 +1608,7 @@ def admin_group_application_reject(application_id):
     """Reject a group application with an optional reason."""
     reason = request.form.get('reason', '').strip()
 
-    with db.get_cursor() as cursor:
-        cursor.execute('''
-            SELECT ga.*, u.first_name, u.last_name
-            FROM group_applications ga
-            JOIN users u ON ga.user_id = u.user_id
-            WHERE ga.application_id = %s
-        ''', (application_id,))
-        application = cursor.fetchone()
+    application = _fetch_application(db, application_id)
 
     if not application:
         flash('Application not found.', 'danger')
