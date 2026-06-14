@@ -6,6 +6,39 @@ from app.utils import role_required, is_cross_group_mode
 from app.helpers.dbHelper import fetch_enum_values
 from app.themes import DEFAULT_GROUP_COLOR
 
+def _fetch_trap_filter_options(db, bypass_group):
+    """Return (trap_codes, lines) for trap catch / observation filter dropdowns.
+
+    Scopes to the session group unless bypass_group is True (Super Admin or
+    Support Technician), in which case all groups are included.
+    """
+    with db.get_cursor() as cursor:
+        if bypass_group:
+            cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
+            trap_codes = [r['code'] for r in cursor.fetchall()]
+            cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
+            lines = cursor.fetchall()
+        else:
+            group_id = session.get('group_id')
+            cursor.execute(
+                """
+                SELECT DISTINCT t.code
+                FROM traps t
+                JOIN lines l ON l.line_id = t.line_id
+                WHERE l.group_id = %s
+                ORDER BY t.code
+                """,
+                (group_id,)
+            )
+            trap_codes = [r['code'] for r in cursor.fetchall()]
+            cursor.execute(
+                "SELECT line_id, name FROM lines WHERE group_id = %s ORDER BY name",
+                (group_id,)
+            )
+            lines = cursor.fetchall()
+    return trap_codes, lines
+
+
 def get_catch_records(recorded_by_id=None):
     """Query catch records with optional filter by recorded_by_id.
 
@@ -87,32 +120,7 @@ def get_catch_records(recorded_by_id=None):
         """, tuple(query_params))
         records = cursor.fetchall()
 
-        # Scope filter dropdowns the same way as the record query.
-        if bypass_group:
-            cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
-            trap_codes = [r['code'] for r in cursor.fetchall()]
-
-            cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
-            lines = cursor.fetchall()
-        else:
-            active_group = session.get('group_id')
-            cursor.execute(
-                """
-                SELECT DISTINCT t.code
-                FROM traps t
-                JOIN lines l ON l.line_id = t.line_id
-                WHERE l.group_id = %s
-                ORDER BY t.code
-                """,
-                (active_group,)
-            )
-            trap_codes = [r['code'] for r in cursor.fetchall()]
-
-            cursor.execute(
-                "SELECT line_id, name FROM lines WHERE group_id = %s ORDER BY name",
-                (active_group,)
-            )
-            lines = cursor.fetchall()
+    trap_codes, lines = _fetch_trap_filter_options(db, bypass_group)
 
     with db.get_cursor() as cursor:
         cursor.execute("SELECT name FROM species ORDER BY name")
@@ -244,41 +252,16 @@ def get_observations(operator_id=None):
         """, tuple(query_params))
         records = cursor.fetchall()
 
-        # Scope filter dropdowns the same way as the record query.
-        if bypass_group:
-            cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
-            trap_codes = [r['code'] for r in cursor.fetchall()]
-
-            cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
-            lines = cursor.fetchall()
-        else:
-            active_group = session.get('group_id')
-            cursor.execute(
-                """
-                SELECT DISTINCT t.code
-                FROM traps t
-                JOIN lines l ON l.line_id = t.line_id
-                WHERE l.group_id = %s
-                ORDER BY t.code
-                """,
-                (active_group,)
-            )
-            trap_codes = [r['code'] for r in cursor.fetchall()]
-
-            cursor.execute(
-                "SELECT line_id, name FROM lines WHERE group_id = %s ORDER BY name",
-                (active_group,)
-            )
-            lines = cursor.fetchall()
-
         cursor.execute("SELECT unnest(enum_range(NULL::observation_type_enum)) AS obs_type")
         observation_types = [r['obs_type'] for r in cursor.fetchall()]
 
-        filter_data = {
-            'trap_codes': trap_codes,
-            'lines': lines,
-            'observation_types': observation_types
-        }
+    trap_codes, lines = _fetch_trap_filter_options(db, bypass_group)
+
+    filter_data = {
+        'trap_codes': trap_codes,
+        'lines': lines,
+        'observation_types': observation_types
+    }
 
     return records, filters, filter_data
 
