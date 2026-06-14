@@ -10,7 +10,8 @@
 </button>
 
 <div class="agent-chat-panel" id="agentChatPanel" aria-hidden="true" role="dialog"
-     aria-label="Tiaki Assistant">
+     aria-label="Tiaki Assistant"
+     data-group-id="{{ session.get('group_id', '') }}">
 
   <div class="agent-chat-header">
     <span class="agent-chat-title">
@@ -24,6 +25,14 @@
       <button id="agentChatClose" aria-label="Close assistant">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
+    </div>
+  </div>
+
+  <div class="agent-chat-confirm" id="agentChatConfirm" aria-hidden="true">
+    <span class="agent-chat-confirm-text">Clear chat history?</span>
+    <div class="agent-chat-confirm-actions">
+      <button class="btn-sm-danger" id="agentChatConfirmYes">Clear</button>
+      <button class="btn-sm-outline" id="agentChatConfirmNo">Cancel</button>
     </div>
   </div>
 
