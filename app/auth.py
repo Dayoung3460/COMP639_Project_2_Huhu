@@ -529,8 +529,8 @@ def forgot_password():
                 '''
                 mail.send(msg)
                 flash('Password reset link sent! Check your email.', 'success')
-            except Exception as e:
-                logger.error('Mail send failed: %s', e)
+            except Exception:
+                logger.exception('Mail send failed')
                 flash('Failed to send reset email. Please try again later.', 'danger')
             return redirect(url_for('forgot_password'))
 

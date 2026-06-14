@@ -256,8 +256,8 @@ def coordinator_export():
                     rows = cursor.fetchall()
                     filename = f'{safe_name}_bait_station_records_{date_str}.csv'
 
-        except Exception as e:
-            logger.error('CSV export error: %s', e)
+        except Exception:
+            logger.exception('CSV export error')
 
         # Build CSV in memory
         output = io.StringIO()
@@ -340,8 +340,8 @@ def coordinator_export():
             ''', (group_id,))
             bait_record_count = cursor.fetchone()['cnt']
 
-    except Exception as e:
-        logger.error('CSV export count error: %s', e)
+    except Exception:
+        logger.exception('CSV export count error')
 
     return render_template('coordinator/export.html',
                            trap_line_count=trap_line_count,
@@ -372,8 +372,8 @@ def api_traps_by_line():
                     ORDER BY t.code
                 ''', (line_id, group_id))
                 traps = [dict(r) for r in cursor.fetchall()]
-        except Exception as e:
-            logger.error('api_traps_by_line error: %s', e)
+        except Exception:
+            logger.exception('api_traps_by_line error')
     return jsonify(traps)
 
 
@@ -395,6 +395,6 @@ def api_stations_by_line():
                     ORDER BY bs.code
                 ''', (line_id, group_id))
                 stations = [dict(r) for r in cursor.fetchall()]
-        except Exception as e:
-            logger.error('api_stations_by_line error: %s', e)
+        except Exception:
+            logger.exception('api_stations_by_line error')
     return jsonify(stations)

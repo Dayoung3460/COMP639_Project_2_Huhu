@@ -162,8 +162,8 @@ def coordinator_dashboard():
             """, (group_id,))
             recent_catches = cursor.fetchall()
 
-    except Exception as e:
-        logger.error('Coordinator dashboard error: %s', e)
+    except Exception:
+        logger.exception('Coordinator dashboard error')
 
     return render_template('coordinator/dashboard.html',
                            stats=stats,

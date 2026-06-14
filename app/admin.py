@@ -135,8 +135,8 @@ def admin_dashboard():
             """)
             recent_catches = cursor.fetchall()
  
-    except Exception as e:
-        logger.error('Admin dashboard error: %s', e)
+    except Exception:
+        logger.exception('Admin dashboard error')
  
     return render_template('admin/dashboard.html',
                            stats=stats,

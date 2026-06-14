@@ -109,8 +109,8 @@ def operator_dashboard():
             ''', (user_id, group_id))
             recent_records = cursor.fetchall()
  
-    except Exception as e:
-        logger.error('Operator dashboard error: %s', e)
+    except Exception:
+        logger.exception('Operator dashboard error')
  
     return render_template('operator/dashboard.html',
                            assigned_lines=assigned_lines,
