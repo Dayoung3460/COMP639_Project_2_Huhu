@@ -132,8 +132,8 @@ def get_catch_records(recorded_by_id=None):
 
     trap_codes, lines = _fetch_trap_filter_options(db, bypass_group)
 
-    species = fetch_active_lookup(db, 'species')
-    statuses = fetch_active_lookup(db, 'trap_statuses')
+    species = fetch_active_lookup(db, 'species', include_value=filters['species_caught'])
+    statuses = fetch_active_lookup(db, 'trap_statuses', include_value=filters['status'])
     conditions = fetch_enum_values(db, 'trap_condition_type')
 
     filter_data = {
