@@ -6,7 +6,7 @@ import os
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 from app.utils import (
-    role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE,
+    role_required, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE,
     LINCOLN_NZ_CENTER, is_super_admin_mode,
 )
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields

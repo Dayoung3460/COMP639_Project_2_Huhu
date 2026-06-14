@@ -29,8 +29,6 @@ import os
 import re
 import uuid
 from datetime import datetime
-from werkzeug.utils import secure_filename
-
 from flask import (
     abort, flash, jsonify, redirect, render_template, request, session, url_for,
 )

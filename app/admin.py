@@ -7,8 +7,6 @@ from app import app, db
 from app.utils import (
     role_required,
     validate_lincoln_nz_coordinates,
-    LINCOLN_NZ_LAT_RANGE,
-    LINCOLN_NZ_LON_RANGE,
     LINE_COLOURS,
     allowed_file,
     save_uploaded_image,

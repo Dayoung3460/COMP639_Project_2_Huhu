@@ -2,7 +2,7 @@
 
 import logging
 
-from flask import render_template, request, session, redirect, url_for
+from flask import render_template, request, session
 from app import app, db
 from app.utils import role_required
 
