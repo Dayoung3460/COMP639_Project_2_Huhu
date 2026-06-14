@@ -93,26 +93,41 @@ def _build_data_context(group_id):
 
     try:
         with db.get_cursor() as cursor:
-            cursor.execute(
-                'SELECT name FROM lines WHERE group_id = %s AND is_retired = FALSE ORDER BY name',
-                (group_id,)
-            )
-            lines = [r['name'] for r in cursor.fetchall()]
-            if lines:
-                parts.append(f"Active trap lines: {', '.join(lines)}")
-
-        with db.get_cursor() as cursor:
+            # Per-line trap counts
             cursor.execute(
                 """
-                SELECT COUNT(*) AS n FROM traps t
-                JOIN lines l ON l.line_id = t.line_id
-                WHERE l.group_id = %s AND t.is_retired = FALSE
+                SELECT l.name, COUNT(t.trap_id) AS n
+                FROM lines l
+                LEFT JOIN traps t ON t.line_id = l.line_id AND t.is_retired = FALSE
+                WHERE l.group_id = %s AND l.is_retired = FALSE
+                GROUP BY l.line_id, l.name
+                ORDER BY l.name
                 """,
                 (group_id,)
             )
-            row = cursor.fetchone()
-            if row:
-                parts.append(f"Total active traps: {row['n']}")
+            trap_lines = cursor.fetchall()
+            if trap_lines:
+                summary = '; '.join(f"{r['name']}: {r['n']} traps" for r in trap_lines)
+                parts.append(f"Active trap lines with trap counts: {summary}")
+
+        with db.get_cursor() as cursor:
+            # Per-line bait station counts
+            cursor.execute(
+                """
+                SELECT l.name, COUNT(bs.station_id) AS n
+                FROM lines l
+                LEFT JOIN bait_stations bs ON bs.line_id = l.line_id AND bs.is_retired = FALSE
+                WHERE l.group_id = %s AND l.is_retired = FALSE
+                GROUP BY l.line_id, l.name
+                HAVING COUNT(bs.station_id) > 0
+                ORDER BY l.name
+                """,
+                (group_id,)
+            )
+            bait_lines = cursor.fetchall()
+            if bait_lines:
+                summary = '; '.join(f"{r['name']}: {r['n']} bait stations" for r in bait_lines)
+                parts.append(f"Active bait station lines with station counts: {summary}")
 
         with db.get_cursor() as cursor:
             cursor.execute(
