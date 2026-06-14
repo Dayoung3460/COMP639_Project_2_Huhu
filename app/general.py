@@ -14,9 +14,16 @@ def _fetch_trap_filter_options(db, bypass_group):
     """
     with db.get_cursor() as cursor:
         if bypass_group:
-            cursor.execute("SELECT DISTINCT code FROM traps ORDER BY code")
+            cursor.execute(
+                "SELECT DISTINCT t.code FROM traps t"
+                " JOIN lines l ON l.line_id = t.line_id"
+                " WHERE t.is_retired = FALSE AND l.is_retired = FALSE"
+                " ORDER BY t.code"
+            )
             trap_codes = [r['code'] for r in cursor.fetchall()]
-            cursor.execute("SELECT line_id, name FROM lines ORDER BY name")
+            cursor.execute(
+                "SELECT line_id, name FROM lines WHERE is_retired = FALSE ORDER BY name"
+            )
             lines = cursor.fetchall()
         else:
             group_id = session.get('group_id')
@@ -26,13 +33,16 @@ def _fetch_trap_filter_options(db, bypass_group):
                 FROM traps t
                 JOIN lines l ON l.line_id = t.line_id
                 WHERE l.group_id = %s
+                  AND t.is_retired = FALSE
+                  AND l.is_retired = FALSE
                 ORDER BY t.code
                 """,
                 (group_id,)
             )
             trap_codes = [r['code'] for r in cursor.fetchall()]
             cursor.execute(
-                "SELECT line_id, name FROM lines WHERE group_id = %s ORDER BY name",
+                "SELECT line_id, name FROM lines"
+                " WHERE group_id = %s AND is_retired = FALSE ORDER BY name",
                 (group_id,)
             )
             lines = cursor.fetchall()
