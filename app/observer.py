@@ -89,8 +89,8 @@ def observer_dashboard():
             """, group_params)
             recent_catches = cursor.fetchall()
  
-    except Exception as e:
-        logger.error('Observer dashboard error: %s', e)
+    except Exception:
+        logger.exception('Observer dashboard error')
  
     return render_template('observer/dashboard.html',
                            stats=stats,

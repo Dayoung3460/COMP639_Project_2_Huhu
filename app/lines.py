@@ -3,7 +3,7 @@ import os
 
 from flask import render_template, request, url_for, flash, redirect, session
 from app import app, db
-from app.utils import role_required, LINE_COLOURS, is_super_admin_mode, is_support_tech_mode
+from app.utils import role_required, LINE_COLOURS, is_cross_group_mode, is_support_tech_mode
 from app.helpers.dbHelper import fetch_active_lookup, fetch_operational_area
 from app.helpers.linesHelper import build_map_traps
 from app.themes import DEFAULT_GROUP_COLOR
@@ -23,7 +23,7 @@ def lines_index():
 
     # Super Admins and Support Technicians operate without group context —
     # drop the WHERE l.group_id filter so they see data across every group.
-    bypass_group = is_super_admin_mode() or is_support_tech_mode()
+    bypass_group = is_cross_group_mode()
     group_id = session.get('group_id')
     group_clause = '' if bypass_group else 'l.group_id = %s AND'
     group_params = () if bypass_group else (group_id,)
@@ -343,7 +343,7 @@ def line_detail(line_id):
         )
         line = cursor.fetchone()
 
-    if line and not is_super_admin_mode() and not is_support_tech_mode() \
+    if line and not is_cross_group_mode() \
             and line['group_id'] != session.get('group_id'):
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))

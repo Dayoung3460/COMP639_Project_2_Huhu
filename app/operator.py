@@ -6,7 +6,7 @@ import os
 from flask import render_template, request, redirect, url_for, flash, session
 from app import app, db
 from app.utils import (
-    role_required, LINE_COLOURS, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE,
+    role_required, LINCOLN_NZ_LAT_RANGE, LINCOLN_NZ_LON_RANGE,
     LINCOLN_NZ_CENTER, is_super_admin_mode,
 )
 from app.helpers.trapCatchHelper import validate_all_catch_record_fields, validate_all_observation_fields
@@ -109,8 +109,8 @@ def operator_dashboard():
             ''', (user_id, group_id))
             recent_records = cursor.fetchall()
  
-    except Exception as e:
-        logger.error('Operator dashboard error: %s', e)
+    except Exception:
+        logger.exception('Operator dashboard error')
  
     return render_template('operator/dashboard.html',
                            assigned_lines=assigned_lines,

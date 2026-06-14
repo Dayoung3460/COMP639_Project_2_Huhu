@@ -24,13 +24,12 @@ KNOWLEDGE HUB
 - Update and version a knowledge entry            -> hub_edit (+ versions table)
 """
 
+import html
 import logging
 import os
 import re
 import uuid
 from datetime import datetime
-from werkzeug.utils import secure_filename
-
 from flask import (
     abort, flash, jsonify, redirect, render_template, request, session, url_for,
 )
@@ -55,14 +54,14 @@ def _save_photos(files):
         if not f or not f.filename:
             continue
         if not allowed_file(f.filename):
-            errors.append(f.filename + ': unsupported file type')
+            errors.append(html.escape(f.filename) + ': unsupported file type')
             continue
         # Size check (cheap, before save)
         f.stream.seek(0, 2)
         size = f.stream.tell()
         f.stream.seek(0)
         if size > PHOTO_MAX_BYTES:
-            errors.append(f.filename + ': exceeds 4 MB limit')
+            errors.append(html.escape(f.filename) + ': exceeds 4 MB limit')
             continue
         ext = f.filename.rsplit('.', 1)[1].lower()
         fname = f'{uuid.uuid4().hex}.{ext}'

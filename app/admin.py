@@ -7,8 +7,6 @@ from app import app, db
 from app.utils import (
     role_required,
     validate_lincoln_nz_coordinates,
-    LINCOLN_NZ_LAT_RANGE,
-    LINCOLN_NZ_LON_RANGE,
     LINE_COLOURS,
     allowed_file,
     save_uploaded_image,
@@ -16,7 +14,10 @@ from app.utils import (
     is_super_admin_mode,
 )
 from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, fetch_membership_role, update_user_role, insert_notification, fetch_active_lookup
-from app.helpers.linesHelper import fetch_line_for_group, fetch_trap_for_group, fetch_bait_station_for_group
+from app.helpers.linesHelper import (
+    fetch_line_for_group, fetch_trap_for_group, fetch_bait_station_for_group,
+    retire_asset, unretire_asset,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -134,8 +135,8 @@ def admin_dashboard():
             """)
             recent_catches = cursor.fetchall()
  
-    except Exception as e:
-        logger.error('Admin dashboard error: %s', e)
+    except Exception:
+        logger.exception('Admin dashboard error')
  
     return render_template('admin/dashboard.html',
                            stats=stats,
@@ -520,31 +521,15 @@ def retire_line(line_id):
 
     retired_by = session['user_id']
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            UPDATE lines
-            SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
-            WHERE line_id = %s
-            """,
-            (retired_by, line_id)
-        )
-
-        if has_active_traps:
+    retire_asset(db, 'lines', 'line_id', line_id, retired_by)
+    if has_active_traps:
+        with db.get_cursor() as cursor:
             cursor.execute(
-                """
-                UPDATE traps
-                SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
-                WHERE line_id = %s AND is_retired = FALSE
-                """,
+                'UPDATE traps SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s WHERE line_id = %s AND is_retired = FALSE',
                 (retired_by, line_id)
             )
             cursor.execute(
-                """
-                UPDATE bait_stations
-                SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
-                WHERE line_id = %s AND is_retired = FALSE
-                """,
+                'UPDATE bait_stations SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s WHERE line_id = %s AND is_retired = FALSE',
                 (retired_by, line_id)
             )
 
@@ -560,11 +545,7 @@ def unretire_line(line_id):
         flash('Line not found in your group.', 'danger')
         return redirect(url_for('lines_index'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE lines SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE line_id = %s',
-            (line_id,)
-        )
+    unretire_asset(db, 'lines', 'line_id', line_id)
 
     flash('Line unretired.', 'success')
     return redirect(url_for('lines_index'))
@@ -715,15 +696,7 @@ def retire_trap(line_id):
 
     retired_by = session['user_id']
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            """
-            UPDATE traps
-            SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s
-            WHERE trap_id = %s
-            """,
-            (retired_by, trap_id)
-        )
+    retire_asset(db, 'traps', 'trap_id', trap_id, retired_by)
 
     flash('Trap retired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
@@ -737,11 +710,7 @@ def unretire_trap(line_id, trap_id):
         flash('Trap not found.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE traps SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE trap_id = %s',
-            (trap_id,)
-        )
+    unretire_asset(db, 'traps', 'trap_id', trap_id)
 
     flash('Trap unretired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
@@ -897,11 +866,7 @@ def deactivate_bait_station(line_id):
         flash('Station not found.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE bait_stations SET is_retired = TRUE, retired_at = CURRENT_TIMESTAMP, retired_by = %s WHERE station_id = %s',
-            (session['user_id'], station_id)
-        )
+    retire_asset(db, 'bait_stations', 'station_id', station_id, session['user_id'])
 
     flash('Bait station retired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
@@ -915,11 +880,7 @@ def activate_bait_station(line_id, station_id):
         flash('Station not found.', 'danger')
         return redirect(url_for('line_detail', line_id=line_id))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE bait_stations SET is_retired = FALSE, retired_at = NULL, retired_by = NULL WHERE station_id = %s',
-            (station_id,)
-        )
+    unretire_asset(db, 'bait_stations', 'station_id', station_id)
 
     flash('Bait station unretired.', 'success')
     return redirect(url_for('line_detail', line_id=line_id))
@@ -1742,12 +1703,7 @@ def admin_support_technicians():
 @role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_support_tech_grant(user_id):
     """Grant the Support Technician role to a user."""
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT username, first_name, last_name, is_super_admin FROM users WHERE user_id = %s',
-            (user_id,)
-        )
-        user = cursor.fetchone()
+    user = fetch_user_info(db, user_id)
 
     if not user:
         flash('User not found.', 'danger')
@@ -1778,12 +1734,7 @@ def admin_support_tech_grant(user_id):
 @role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_support_tech_revoke(user_id):
     """Revoke the Support Technician role from a user."""
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT username, first_name, last_name FROM users WHERE user_id = %s',
-            (user_id,)
-        )
-        user = cursor.fetchone()
+    user = fetch_user_info(db, user_id)
 
     if not user:
         flash('User not found.', 'danger')
