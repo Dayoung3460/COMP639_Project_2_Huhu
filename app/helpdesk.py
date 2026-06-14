@@ -276,18 +276,11 @@ def helpdesk_view(ticket_id):
                     'UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE ticket_id = %s',
                     (ticket_id,)
                 )
-                # Notify assigned technician if there is one and they are not the commenter
-                cursor.execute(
-                    'SELECT assigned_to, title FROM support_tickets WHERE ticket_id = %s',
-                    (ticket_id,)
-                )
-                row = cursor.fetchone()
-
-            if row and row['assigned_to'] and row['assigned_to'] != user_id:
+            if ticket['assigned_to'] and ticket['assigned_to'] != user_id:
                 insert_notification(
                     db,
-                    row['assigned_to'],
-                    f'New comment on support request #{ticket_id}: "{row["title"]}"',
+                    ticket['assigned_to'],
+                    f'New comment on support request #{ticket_id}: "{ticket["title"]}"',
                     'info',
                     url=url_for('helpdesk_ticket', ticket_id=ticket_id)
                 )
