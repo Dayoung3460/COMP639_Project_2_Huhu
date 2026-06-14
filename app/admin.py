@@ -13,7 +13,7 @@ from app.utils import (
     delete_upload,
     is_super_admin_mode,
 )
-from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, fetch_membership_role, update_user_role, insert_notification, fetch_active_lookup
+from app.helpers.dbHelper import update_user_active, update_user_support_tech, fetch_lookup_data, fetch_user_info, fetch_membership_role, update_user_role, insert_notification, fetch_active_lookup
 from app.helpers.linesHelper import (
     fetch_line_for_group, fetch_trap_for_group, fetch_bait_station_for_group,
     retire_asset, unretire_asset,
@@ -1713,15 +1713,7 @@ def admin_support_tech_grant(user_id):
         flash('Super Admins already have elevated access.', 'warning')
         return redirect(url_for('admin_support_technicians'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE users SET is_support_tech = TRUE WHERE user_id = %s',
-            (user_id,)
-        )
-        cursor.execute(
-            'INSERT INTO support_tech_audit_log (target_user_id, actor_user_id, action) VALUES (%s, %s, %s)',
-            (user_id, session['user_id'], 'granted')
-        )
+    update_user_support_tech(db, user_id, session['user_id'], True)
 
     full_name = f"{user['first_name']} {user['last_name']}"
     logger.info('Super Admin %s granted Support Technician role to user %d (%s)',
@@ -1740,15 +1732,7 @@ def admin_support_tech_revoke(user_id):
         flash('User not found.', 'danger')
         return redirect(url_for('admin_support_technicians'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE users SET is_support_tech = FALSE WHERE user_id = %s',
-            (user_id,)
-        )
-        cursor.execute(
-            'INSERT INTO support_tech_audit_log (target_user_id, actor_user_id, action) VALUES (%s, %s, %s)',
-            (user_id, session['user_id'], 'revoked')
-        )
+    update_user_support_tech(db, user_id, session['user_id'], False)
 
     full_name = f"{user['first_name']} {user['last_name']}"
     logger.info('Super Admin %s revoked Support Technician role from user %d (%s)',
