@@ -1705,12 +1705,7 @@ def admin_support_technicians():
 @role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_support_tech_grant(user_id):
     """Grant the Support Technician role to a user."""
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT username, first_name, last_name, is_super_admin FROM users WHERE user_id = %s',
-            (user_id,)
-        )
-        user = cursor.fetchone()
+    user = fetch_user_info(db, user_id)
 
     if not user:
         flash('User not found.', 'danger')
@@ -1741,12 +1736,7 @@ def admin_support_tech_grant(user_id):
 @role_required('Super Admin')  # role changes — Super Admin only per spec
 def admin_support_tech_revoke(user_id):
     """Revoke the Support Technician role from a user."""
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'SELECT username, first_name, last_name FROM users WHERE user_id = %s',
-            (user_id,)
-        )
-        user = cursor.fetchone()
+    user = fetch_user_info(db, user_id)
 
     if not user:
         flash('User not found.', 'danger')
