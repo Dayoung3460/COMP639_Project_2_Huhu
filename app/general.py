@@ -262,10 +262,8 @@ def get_observations(operator_id=None):
         """, tuple(query_params))
         records = cursor.fetchall()
 
-        cursor.execute("SELECT unnest(enum_range(NULL::observation_type_enum)) AS obs_type")
-        observation_types = [r['obs_type'] for r in cursor.fetchall()]
-
     trap_codes, lines = _fetch_trap_filter_options(db, bypass_group)
+    observation_types = fetch_enum_values(db, 'observation_type_enum')
 
     filter_data = {
         'trap_codes': trap_codes,
