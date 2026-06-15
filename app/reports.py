@@ -9,6 +9,19 @@ from app.utils import role_required
 logger = logging.getLogger(__name__)
 
 
+def _build_period_sql(period, date_from, date_to):
+    """Return (SQL WHERE fragment, params list) for the date range filter."""
+    if period == 'custom' and date_from and date_to:
+        return f"AND tc.date BETWEEN '{date_from}' AND '{date_to} 23:59:59'", []
+    if period not in ('', 'all'):
+        try:
+            months = int(period)
+            return f"AND tc.date >= NOW() - INTERVAL '{months} months'", []
+        except (ValueError, TypeError):
+            pass
+    return '', []
+
+
 @app.route('/reports')
 @role_required()
 def reports():
@@ -62,11 +75,7 @@ def reports():
         line_id     = ''
 
     # ── Build date filter ─────────────────────────────────────
-    period_sql = ''
-    if period == 'custom' and date_from and date_to:
-        period_sql = f"AND tc.date BETWEEN '{date_from}' AND '{date_to} 23:59:59'"
-    elif period != 'all':
-        period_sql = f"AND tc.date >= NOW() - INTERVAL '{period} months'"
+    period_sql, period_params = _build_period_sql(period, date_from, date_to)
 
     # ── Build group filter ────────────────────────────────────
     # group_id / group_name already set above (session for normal roles,
@@ -128,7 +137,7 @@ def reports():
             operators = cursor.fetchall()
 
             # Combined params for filtered queries
-            all_params = group_params + line_params + operator_params
+            all_params = period_params + group_params + line_params + operator_params
 
             # Total captures (species != None)
             cursor.execute(f'''
@@ -211,7 +220,7 @@ def reports():
     try:
         with db.get_cursor() as cursor:
 
-            all_params = group_params + line_params + operator_params
+            all_params = period_params + group_params + line_params + operator_params
 
             # ── Catch trend — grouped by week ─────────────────
             cursor.execute(f'''
@@ -669,11 +678,7 @@ def admin_reports():
     date_to   = request.args.get('date_to', '')
 
     # ── Build date filter ─────────────────────────────────────
-    period_sql = ''
-    if period == 'custom' and date_from and date_to:
-        period_sql = f"AND tc.date BETWEEN '{date_from}' AND '{date_to} 23:59:59'"
-    elif period != 'all':
-        period_sql = f"AND tc.date >= NOW() - INTERVAL '{period} months'"
+    period_sql, period_params = _build_period_sql(period, date_from, date_to)
 
     stats = {
         'total_captures': 0,
@@ -706,7 +711,7 @@ def admin_reports():
                 JOIN lines l ON t.line_id = l.line_id
                 WHERE tc.species_caught != 'None'
                 {period_sql}
-            ''')
+            ''', period_params)
             stats['total_captures'] = cursor.fetchone()['count']
 
             # Total active groups
@@ -735,7 +740,7 @@ def admin_reports():
                 GROUP BY tc.species_caught
                 ORDER BY cnt DESC
                 LIMIT 1
-            ''')
+            ''', period_params)
             row = cursor.fetchone()
             if row:
                 stats['top_species'] = row['species_caught']
@@ -752,7 +757,7 @@ def admin_reports():
                 {period_sql}
                 GROUP BY DATE_TRUNC('week', tc.date)
                 ORDER BY DATE_TRUNC('week', tc.date)
-            ''')
+            ''', period_params)
             trend_rows   = cursor.fetchall()
             trend_labels = [r['week_label'] for r in trend_rows]
             trend_values = [r['cnt'] for r in trend_rows]
@@ -767,7 +772,7 @@ def admin_reports():
                 {period_sql}
                 GROUP BY tc.species_caught
                 ORDER BY cnt DESC
-            ''')
+            ''', period_params)
             species_rows  = cursor.fetchall()
             total_catches = sum(r['cnt'] for r in species_rows)
             threshold     = total_catches * 0.05 if total_catches > 0 else 0
@@ -802,7 +807,7 @@ def admin_reports():
                 {period_sql}
                 GROUP BY g.group_id, g.name
                 ORDER BY cnt DESC
-            ''')
+            ''', period_params)
             gbar_rows    = cursor.fetchall()
             group_labels = [r['group_name'] for r in gbar_rows]
             group_values = [r['cnt'] for r in gbar_rows]
@@ -861,7 +866,7 @@ def admin_reports():
                 ) stats ON g.group_id = stats.group_id
                 WHERE g.is_active = TRUE
                 ORDER BY catch_count DESC, g.name
-            ''')
+            ''', period_params)
             group_rows = cursor.fetchall()
 
     except Exception:
