@@ -10,9 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 def _build_period_sql(period, date_from, date_to):
-    """Return (SQL WHERE fragment, params list) for the date range filter."""
+    """Return (SQL WHERE fragment, params list) for the date range filter.
+
+    Uses parameterised placeholders for date values to prevent SQL injection.
+    The `period` value is cast to int before embedding to guard against injection.
+    """
     if period == 'custom' and date_from and date_to:
-        return f"AND tc.date BETWEEN '{date_from}' AND '{date_to} 23:59:59'", []
+        return 'AND tc.date BETWEEN %s AND %s', [date_from, date_to + ' 23:59:59']
     if period not in ('', 'all'):
         try:
             months = int(period)
