@@ -165,15 +165,13 @@ def add_catch():
 @role_required('Operator', 'Super Admin', 'Group Coordinator')
 def edit_catch(catch_id):
     """Edit an existing catch record (own records only for Operators)."""
-    # Fetch record + owning group/line so we can authorize before doing
-    # anything else. Trusting the form's recorded_by_id is NOT safe — a
-    # malicious operator could POST their own user_id and edit someone
-    # else's record. The DB row is the only source of truth here.
+    # Fetch full record + owning group/line for auth and form pre-fill.
+    # Trusting the form's recorded_by_id is NOT safe — a malicious operator
+    # could POST their own user_id to edit someone else's record.
     with db.get_cursor() as cursor:
         cursor.execute(
             """
-            SELECT tc.catch_id, tc.recorded_by_id, tc.trap_id,
-                   t.line_id, l.group_id
+            SELECT tc.*, t.line_id, l.group_id
             FROM trap_catches tc
             JOIN traps t ON t.trap_id = tc.trap_id
             JOIN lines l ON l.line_id = t.line_id
@@ -201,38 +199,29 @@ def edit_catch(catch_id):
         flash('You can only edit your own catch records.', 'danger')
         return redirect(url_for('my_records'))
 
+    if role in ('Super Admin', 'Group Coordinator'):
+        lines = fetch_all_lines(db)
+    else:
+        lines = fetch_operator_lines(db, user_id, group_id=session.get('group_id'))
+
     if request.method == 'POST':
-        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, session['user_id'], role=session.get('group_role'), group_id=session.get('group_id'))
+        pass_check, errors, lookup = validate_all_catch_record_fields(request.form, db, user_id, role=role, group_id=session.get('group_id'))
 
         # Additional check for lookup tables, in case the data inconsistency of database values
         lookup_valid_msg = validate_lookup_table_values(db, request.form)
 
         if lookup_valid_msg:
             flash(lookup_valid_msg, 'error')
-            lines = fetch_all_lines(db) if session.get('group_role') in ('Super Admin', 'Group Coordinator') else fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
             return render_template('operator/edit_catch.html', record=record, catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         if not pass_check:
             flash('Please fix the errors below before submitting.', 'error')
-            lines = fetch_all_lines(db) if session.get('group_role') in ('Super Admin', 'Group Coordinator') else fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
             return render_template('operator/edit_catch.html', record=record, catch_id=catch_id, errors=errors, data=request.form, lines=lines, lookup=lookup)
 
         # Update the catch record in the database
         update_catch_record(db, data={**request.form, 'catch_id': catch_id}, user_id=record['recorded_by_id'])
         flash('Catch record updated successfully.', 'success')
-        return redirect(url_for('my_records') if session.get('group_role') == 'Operator' else url_for('catch_records'))
-
-
-    lines = fetch_operator_lines(db, session['user_id'], group_id=session.get('group_id'))
-
-    if session.get('group_role') in ('Super Admin', 'Group Coordinator'):
-        lines = fetch_all_lines(db)
-
-    with db.get_cursor() as cursor:
-        cursor.execute("SELECT * FROM trap_catches WHERE catch_id = %s", (catch_id,))
-        record = cursor.fetchone()
-        cursor.execute("SELECT line_id FROM traps WHERE trap_id = %s", (record['trap_id'],))
-        line_id = cursor.fetchone()['line_id']
+        return redirect(url_for('my_records') if role == 'Operator' else url_for('catch_records'))
 
     lookup = fetch_lookup_data(db, include_values={
         'species_caught': record['species_caught'],
@@ -245,8 +234,8 @@ def edit_catch(catch_id):
         record=record,
         lines=lines,
         lookup=lookup,
-        data={ # Pre-fill the form fields
-            'line_id': str(line_id),
+        data={
+            'line_id': str(record['line_id']),
             'trap_id': str(record['trap_id']),
             'date': record['date'],
             'species_caught': record['species_caught'],
