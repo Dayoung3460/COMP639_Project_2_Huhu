@@ -398,7 +398,6 @@ CREATE TABLE "public"."theme_presets" (
 );
 
 DROP TABLE IF EXISTS "public"."group_themes" CASCADE;
-
 -- Table Definition
 CREATE TABLE "public"."group_themes" (
     "group_id" int4 NOT NULL,
