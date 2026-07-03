@@ -4,7 +4,9 @@ Tiaki is a web platform for volunteer predator-control groups in New Zealand. Gr
 
 This started as a university group project built with my teammates. The course has since wrapped up, and this fork is my personal continuation of the project — polishing, refactoring, and extending it at my own pace.
 
-**Live URL:** http://tiaki.pythonanywhere.com
+**Live URL:** https://tiaki.onrender.com
+
+> Hosted on Render's free tier — the first request after a period of inactivity can take ~30 seconds while the service wakes up.
 
 ---
 
