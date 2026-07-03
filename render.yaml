@@ -6,6 +6,7 @@ services:
     name: tiaki
     runtime: python
     plan: free
+    region: oregon  # keep the DB (Neon us-west-2) in the same region
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn 'app:app' --workers 2 --timeout 120
     envVars:
