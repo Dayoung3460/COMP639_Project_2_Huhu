@@ -133,6 +133,7 @@
     </div>
   </footer>
 
+  <script src="{{ url_for('static', filename='js/img-fallback.js') }}"></script>
   {% block scripts %}{% endblock %}
   <script>
     document.querySelectorAll('.flash').forEach(function(el) {
