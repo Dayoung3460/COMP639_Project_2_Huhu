@@ -81,7 +81,8 @@ db.init_db(app,
            os.environ.get('DB_PASSWORD'),
            os.environ.get('DB_HOST'),
            os.environ.get('DB_NAME'),
-           int(os.environ.get('DB_PORT', 5432)))
+           int(os.environ.get('DB_PORT', 5432)),
+           sslmode=os.environ.get('DB_SSLMODE'))
 
 # ── Mail (Gmail SMTP) ─────────────────────────────────────────────────────────
 

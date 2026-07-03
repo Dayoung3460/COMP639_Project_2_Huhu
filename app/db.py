@@ -57,7 +57,7 @@ connection_params = {}
 
 
 def init_db(app: Flask, user: str, password: str, host: str, database: str,
-            port: int = 5432, autocommit: bool = True):
+            port: int = 5432, autocommit: bool = True, sslmode: str = None):
     """Sets up PostgreSQL connectivity for the specified Flask app.
 
     This must be called once while initialising your Flask web app, before any
@@ -71,6 +71,8 @@ def init_db(app: Flask, user: str, password: str, host: str, database: str,
         database: Name of the database to connect to on the PostgreSQL server.
         port: Port used to connect to the PostgreSQL server (default `5432`).
         autocommit: Whether or not to enable auto-commit (default `True`).
+        sslmode: libpq sslmode, e.g. `'require'` for hosted providers such as
+            Neon or Supabase (default `None` — libpq's own default applies).
     """
     connection_params['user'] = user
     connection_params['password'] = password
@@ -78,6 +80,7 @@ def init_db(app: Flask, user: str, password: str, host: str, database: str,
     connection_params['database'] = database
     connection_params['port'] = port
     connection_params['autocommit'] = autocommit
+    connection_params['sslmode'] = sslmode
 
     app.teardown_appcontext(close_db)
 
@@ -92,13 +95,16 @@ def get_db():
         A psycopg2 `Connection` instance.
     """
     if 'db' not in g:
-        conn = psycopg2.connect(
+        connect_kwargs = dict(
             user=connection_params['user'],
             password=connection_params['password'],
             host=connection_params['host'],
             dbname=connection_params['database'],
             port=connection_params['port']
         )
+        if connection_params.get('sslmode'):
+            connect_kwargs['sslmode'] = connection_params['sslmode']
+        conn = psycopg2.connect(**connect_kwargs)
         conn.autocommit = connection_params.get('autocommit', True)
         g.db = conn
 
