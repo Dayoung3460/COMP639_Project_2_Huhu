@@ -2,6 +2,8 @@
 
 This is a fork of the COMP639 Project 2 baseline with both the **P2-107** epic (Group Updates + Knowledge Hub) and the **Innovation Epic - 3D Terrain Map (P2-106)** implemented on top.
 
+**Live URL:** http://tiaki.pythonanywhere.com
+
 ## Run order
 
 ```bash
