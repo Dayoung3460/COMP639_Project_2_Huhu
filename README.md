@@ -241,9 +241,16 @@ The active group and role live in the session after login (or group selection) a
 
 ---
 
-## Deployment (PythonAnywhere)
+## Deployment (Render + Neon)
 
-1. Pull the repository via the PythonAnywhere console or Files tab
-2. Point the WSGI configuration file at the app (`from app import app as application`)
-3. Create the `.env` file in the project root with production DB credentials and a secure `SECRET_KEY`
-4. Reload the web app from the Web tab
+The app deploys to [Render](https://render.com) as a web service (see `render.yaml`), with the database hosted on [Neon](https://neon.tech).
+
+1. **Neon** — create a project, then load the schema and seed data from your machine:
+   ```bash
+   psql "<neon-connection-string>" -v ON_ERROR_STOP=1 -f sql/create_tables.sql
+   psql "<neon-connection-string>" -v ON_ERROR_STOP=1 -f sql/populate_tables.sql
+   ```
+2. **Render** — create a new **Blueprint** from this repository (it picks up `render.yaml`), then set the `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` environment variables from the Neon connection details. `DB_SSLMODE=require` and a generated `SECRET_KEY` are configured by the blueprint.
+3. Optional env vars: `MAIL_USERNAME`/`MAIL_PASSWORD` (password-reset emails) and the `AZURE_AI_AGENT_*` trio (AI assistant).
+
+Note: the free Render tier has an ephemeral filesystem — user-uploaded images under `static/images/uploads/` are lost on each deploy or restart.
