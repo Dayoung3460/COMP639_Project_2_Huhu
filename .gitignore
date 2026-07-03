@@ -82,3 +82,6 @@ static/uploads/*
 # Claude Code
 .claude/
 CLAUDE.md
+.agents/
+.neon
+skills-lock.json
