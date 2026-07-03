@@ -10,6 +10,7 @@ stored per-group in the Flask session.
 
 import logging
 import os
+import time
 from datetime import date
 
 import requests as http
@@ -20,9 +21,10 @@ from app.utils import role_required
 
 logger = logging.getLogger(__name__)
 
-_ENDPOINT = os.environ.get('AZURE_AI_AGENT_ENDPOINT', '').rstrip('/')
-_KEY      = os.environ.get('AZURE_AI_AGENT_KEY', '')
-_TIMEOUT  = 60  # seconds — Foundry responses can be slow
+_ENDPOINT    = os.environ.get('AZURE_AI_AGENT_ENDPOINT', '').rstrip('/')
+_KEY         = os.environ.get('AZURE_AI_AGENT_KEY', '')
+_TIMEOUT     = 60   # seconds — Foundry responses can be slow
+_RATE_LIMIT  = 20   # max requests per session per minute
 
 
 def _configured():
@@ -49,6 +51,19 @@ def _set_previous_response_id(response_id):
 
 def _clear_previous_response_id():
     session.pop(_response_id_key(), None)
+
+
+def _check_rate_limit():
+    """Allow up to _RATE_LIMIT requests per session per 60-second window."""
+    now = time.time()
+    if now - session.get('agent_rl_window', 0) >= 60:
+        session['agent_rl_window'] = now
+        session['agent_rl_count'] = 1
+        return True
+    if session.get('agent_rl_count', 0) >= _RATE_LIMIT:
+        return False
+    session['agent_rl_count'] = session.get('agent_rl_count', 0) + 1
+    return True
 
 
 # ── Foundry API call ──────────────────────────────────────────────────────────
@@ -232,6 +247,9 @@ def agent_chat():
     if not _configured():
         return jsonify({'error': 'The AI assistant is not configured yet.'}), 503
 
+    if not _check_rate_limit():
+        return jsonify({'error': 'Too many requests. Please wait a moment before trying again.'}), 429
+
     data    = request.get_json(silent=True) or {}
     message = (data.get('message') or '').strip()
     if not message:
@@ -242,14 +260,15 @@ def agent_chat():
     group_id   = session.get('group_id')
     group_name = session.get('group_name', 'your group')
     role       = session.get('group_role', 'member')
+    role_line  = f'[User role: {role} in group "{group_name}"]'
 
     is_new_thread = _get_previous_response_id() is None
-    data_context = _build_data_context(group_id) if is_new_thread else ''
+    data_context  = _build_data_context(group_id) if is_new_thread else ''
 
     parts = []
     if data_context:
         parts.append(data_context)
-    parts.append(f'[User role: {role} in group "{group_name}"]')
+    parts.append(role_line)
     parts.append(message)
     full_message = '\n'.join(parts)
 
@@ -260,8 +279,27 @@ def agent_chat():
         return jsonify({'reply': reply})
 
     except http.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 400 and not is_new_thread:
+            # Stale previous_response_id — clear it and retry as a fresh thread
+            logger.warning('Stale thread for group %s; retrying as new thread', group_id)
+            _clear_previous_response_id()
+            fresh_context = _build_data_context(group_id)
+            fresh_parts = ([fresh_context] if fresh_context else []) + [role_line, message]
+            try:
+                response_id, reply = _call_agent('\n'.join(fresh_parts))
+                if response_id:
+                    _set_previous_response_id(response_id)
+                return jsonify({'reply': reply})
+            except (http.HTTPError, http.RequestException) as retry_exc:
+                logger.exception('Foundry API error after stale-thread retry: %s', retry_exc)
+                return jsonify({'error': 'Could not reach the AI assistant. Please try again later.'}), 502
         logger.exception('Foundry API HTTP error: %s', exc)
         return jsonify({'error': 'Could not reach the AI assistant. Please try again later.'}), 502
+
+    except http.Timeout:
+        logger.warning('Foundry API timed out for group %s', group_id)
+        return jsonify({'error': 'The assistant is taking too long to respond. Please try again.'}), 504
+
     except http.RequestException as exc:
         logger.exception('Foundry API connection error: %s', exc)
         return jsonify({'error': 'Connection to the AI assistant failed. Please try again later.'}), 502
