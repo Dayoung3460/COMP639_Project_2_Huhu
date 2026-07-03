@@ -3,7 +3,7 @@
 from flask import render_template, request, session
 from app import app, db
 from app.utils import role_required, is_cross_group_mode
-from app.helpers.dbHelper import fetch_enum_values
+from app.helpers.dbHelper import fetch_enum_values, fetch_active_lookup
 from app.themes import DEFAULT_GROUP_COLOR
 
 def _fetch_trap_filter_options(db, bypass_group):
@@ -132,13 +132,8 @@ def get_catch_records(recorded_by_id=None):
 
     trap_codes, lines = _fetch_trap_filter_options(db, bypass_group)
 
-    with db.get_cursor() as cursor:
-        cursor.execute("SELECT name FROM species ORDER BY name")
-        species = [r['name'] for r in cursor.fetchall()]
-
-        cursor.execute("SELECT name FROM trap_statuses ORDER BY name")
-        statuses = [r['name'] for r in cursor.fetchall()]
-
+    species = fetch_active_lookup(db, 'species', include_value=filters['species_caught'])
+    statuses = fetch_active_lookup(db, 'trap_statuses', include_value=filters['status'])
     conditions = fetch_enum_values(db, 'trap_condition_type')
 
     filter_data = {

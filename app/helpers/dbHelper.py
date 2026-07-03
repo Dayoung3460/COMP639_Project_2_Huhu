@@ -281,6 +281,19 @@ def update_user_active(db, user_id, status):
             WHERE user_id = %s
         """, (status, user_id))
 
+def update_user_support_tech(db, target_user_id, actor_user_id, grant):
+    """Set or clear the is_support_tech flag and write an audit log entry."""
+    with db.get_cursor() as cursor:
+        cursor.execute(
+            'UPDATE users SET is_support_tech = %s WHERE user_id = %s',
+            (grant, target_user_id)
+        )
+        cursor.execute(
+            'INSERT INTO support_tech_audit_log (target_user_id, actor_user_id, action)'
+            ' VALUES (%s, %s, %s)',
+            (target_user_id, actor_user_id, 'granted' if grant else 'revoked')
+        )
+
 def fetch_user_info(db, user_id):
     """Fetch user info for permission checks. Role comes from group_memberships."""
     with db.get_cursor() as cursor:

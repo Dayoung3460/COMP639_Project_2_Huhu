@@ -59,12 +59,22 @@ def register():
         with db.get_cursor() as cursor:
             # Check username/email not already taken
             cursor.execute(
-                'SELECT user_id FROM users WHERE username = %s OR email = %s',
+                '''
+                SELECT
+                    EXISTS(SELECT 1 FROM users WHERE username = %s) AS username_taken,
+                    EXISTS(SELECT 1 FROM users WHERE email    = %s) AS email_taken
+                ''',
                 (username, email)
             )
-            if cursor.fetchone():
-                flash('Username or email is already in use.', 'danger')
-                return render_template('auth/register.html')
+            taken = cursor.fetchone()
+        if taken['username_taken']:
+            flash('That username is already taken. Please choose a different one.', 'danger')
+            return render_template('auth/register.html')
+        if taken['email_taken']:
+            flash('An account with that email address already exists.', 'danger')
+            return render_template('auth/register.html')
+
+        with db.get_cursor() as cursor:
 
             password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
@@ -370,22 +380,17 @@ def edit_profile():
         # ── Check username/email not already taken ──────────────
         with db.get_cursor() as cursor:
             cursor.execute('''
-                SELECT user_id FROM users
-                WHERE (username = %s OR email = %s)
-                AND user_id != %s
-            ''', (username, email, session['user_id']))
+                SELECT
+                    EXISTS(SELECT 1 FROM users WHERE username = %s AND user_id != %s) AS username_taken,
+                    EXISTS(SELECT 1 FROM users WHERE email    = %s AND user_id != %s) AS email_taken
+            ''', (username, session['user_id'], email, session['user_id']))
             conflict = cursor.fetchone()
 
-        if conflict:
-            with db.get_cursor() as cursor:
-                cursor.execute(
-                    'SELECT user_id FROM users WHERE username = %s AND user_id != %s',
-                    (username, session['user_id'])
-                )
-                if cursor.fetchone():
-                    flash('That username is already taken. Please choose a different one.', 'danger')
-                else:
-                    flash('That email address is already in use by another account.', 'danger')
+        if conflict['username_taken']:
+            flash('That username is already taken. Please choose a different one.', 'danger')
+            return redirect(url_for('edit_profile'))
+        if conflict['email_taken']:
+            flash('That email address is already in use by another account.', 'danger')
             return redirect(url_for('edit_profile'))
 
         # ── Handle profile photo upload ────────────────────────

@@ -13,7 +13,7 @@ from app.utils import (
     delete_upload,
     is_super_admin_mode,
 )
-from app.helpers.dbHelper import update_user_active, fetch_lookup_data, fetch_user_info, fetch_membership_role, update_user_role, insert_notification, fetch_active_lookup
+from app.helpers.dbHelper import update_user_active, update_user_support_tech, fetch_lookup_data, fetch_user_info, fetch_membership_role, update_user_role, insert_notification, fetch_active_lookup
 from app.helpers.linesHelper import (
     fetch_line_for_group, fetch_trap_for_group, fetch_bait_station_for_group,
     retire_asset, unretire_asset,
@@ -1532,18 +1532,26 @@ def admin_group_applications():
                            counts=counts)
 
 
-@app.route('/admin/group-applications/<int:application_id>/approve', methods=['POST'])
-@role_required('Super Admin', 'Support Technician')
-def admin_group_application_approve(application_id):
-    """Approve a group application — creates the group and assigns the applicant as coordinator."""
+def _fetch_application(db, application_id):
+    """Return the group application row joined with applicant name, or None if not found."""
     with db.get_cursor() as cursor:
-        cursor.execute('''
+        cursor.execute(
+            '''
             SELECT ga.*, u.first_name, u.last_name
             FROM group_applications ga
             JOIN users u ON ga.user_id = u.user_id
             WHERE ga.application_id = %s
-        ''', (application_id,))
-        application = cursor.fetchone()
+            ''',
+            (application_id,)
+        )
+        return cursor.fetchone()
+
+
+@app.route('/admin/group-applications/<int:application_id>/approve', methods=['POST'])
+@role_required('Super Admin', 'Support Technician')
+def admin_group_application_approve(application_id):
+    """Approve a group application — creates the group and assigns the applicant as coordinator."""
+    application = _fetch_application(db, application_id)
 
     if not application:
         flash('Application not found.', 'danger')
@@ -1600,14 +1608,7 @@ def admin_group_application_reject(application_id):
     """Reject a group application with an optional reason."""
     reason = request.form.get('reason', '').strip()
 
-    with db.get_cursor() as cursor:
-        cursor.execute('''
-            SELECT ga.*, u.first_name, u.last_name
-            FROM group_applications ga
-            JOIN users u ON ga.user_id = u.user_id
-            WHERE ga.application_id = %s
-        ''', (application_id,))
-        application = cursor.fetchone()
+    application = _fetch_application(db, application_id)
 
     if not application:
         flash('Application not found.', 'danger')
@@ -1713,15 +1714,7 @@ def admin_support_tech_grant(user_id):
         flash('Super Admins already have elevated access.', 'warning')
         return redirect(url_for('admin_support_technicians'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE users SET is_support_tech = TRUE WHERE user_id = %s',
-            (user_id,)
-        )
-        cursor.execute(
-            'INSERT INTO support_tech_audit_log (target_user_id, actor_user_id, action) VALUES (%s, %s, %s)',
-            (user_id, session['user_id'], 'granted')
-        )
+    update_user_support_tech(db, user_id, session['user_id'], True)
 
     full_name = f"{user['first_name']} {user['last_name']}"
     logger.info('Super Admin %s granted Support Technician role to user %d (%s)',
@@ -1740,15 +1733,7 @@ def admin_support_tech_revoke(user_id):
         flash('User not found.', 'danger')
         return redirect(url_for('admin_support_technicians'))
 
-    with db.get_cursor() as cursor:
-        cursor.execute(
-            'UPDATE users SET is_support_tech = FALSE WHERE user_id = %s',
-            (user_id,)
-        )
-        cursor.execute(
-            'INSERT INTO support_tech_audit_log (target_user_id, actor_user_id, action) VALUES (%s, %s, %s)',
-            (user_id, session['user_id'], 'revoked')
-        )
+    update_user_support_tech(db, user_id, session['user_id'], False)
 
     full_name = f"{user['first_name']} {user['last_name']}"
     logger.info('Super Admin %s revoked Support Technician role from user %d (%s)',
