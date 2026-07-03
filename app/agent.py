@@ -10,6 +10,8 @@ stored per-group in the Flask session.
 
 import logging
 import os
+import time
+from datetime import date
 
 import requests as http
 from flask import jsonify, request, session
@@ -19,9 +21,10 @@ from app.utils import role_required
 
 logger = logging.getLogger(__name__)
 
-_ENDPOINT = os.environ.get('AZURE_AI_AGENT_ENDPOINT', '').rstrip('/')
-_KEY      = os.environ.get('AZURE_AI_AGENT_KEY', '')
-_TIMEOUT  = 60  # seconds — Foundry responses can be slow
+_ENDPOINT    = os.environ.get('AZURE_AI_AGENT_ENDPOINT', '').rstrip('/')
+_KEY         = os.environ.get('AZURE_AI_AGENT_KEY', '')
+_TIMEOUT     = 60   # seconds — Foundry responses can be slow
+_RATE_LIMIT  = 20   # max requests per session per minute
 
 
 def _configured():
@@ -48,6 +51,19 @@ def _set_previous_response_id(response_id):
 
 def _clear_previous_response_id():
     session.pop(_response_id_key(), None)
+
+
+def _check_rate_limit():
+    """Allow up to _RATE_LIMIT requests per session per 60-second window."""
+    now = time.time()
+    if now - session.get('agent_rl_window', 0) >= 60:
+        session['agent_rl_window'] = now
+        session['agent_rl_count'] = 1
+        return True
+    if session.get('agent_rl_count', 0) >= _RATE_LIMIT:
+        return False
+    session['agent_rl_count'] = session.get('agent_rl_count', 0) + 1
+    return True
 
 
 # ── Foundry API call ──────────────────────────────────────────────────────────
@@ -136,7 +152,9 @@ def _build_data_context(group_id):
                 FROM trap_catches tc
                 JOIN traps t ON t.trap_id  = tc.trap_id
                 JOIN lines l ON l.line_id  = t.line_id
-                WHERE l.group_id = %s AND tc.date >= NOW() - INTERVAL '90 days'
+                WHERE l.group_id = %s
+                  AND tc.date >= NOW() - INTERVAL '90 days'
+                  AND tc.species_caught != 'None'
                 GROUP BY tc.species_caught ORDER BY n DESC LIMIT 10
                 """,
                 (group_id,)
@@ -152,12 +170,14 @@ def _build_data_context(group_id):
                 SELECT COUNT(*) AS n FROM trap_catches tc
                 JOIN traps t ON t.trap_id = tc.trap_id
                 JOIN lines l ON l.line_id = t.line_id
-                WHERE l.group_id = %s AND tc.date >= NOW() - INTERVAL '30 days'
+                WHERE l.group_id = %s
+                  AND tc.date >= NOW() - INTERVAL '30 days'
+                  AND tc.species_caught != 'None'
                 """,
                 (group_id,)
             )
             row = cursor.fetchone()
-            if row:
+            if row and row['n']:
                 parts.append(f"Catches in the last 30 days: {row['n']}")
 
         with db.get_cursor() as cursor:
@@ -166,13 +186,47 @@ def _build_data_context(group_id):
                 SELECT MAX(tc.date) AS last_date FROM trap_catches tc
                 JOIN traps t ON t.trap_id = tc.trap_id
                 JOIN lines l ON l.line_id = t.line_id
-                WHERE l.group_id = %s
+                WHERE l.group_id = %s AND tc.species_caught != 'None'
                 """,
                 (group_id,)
             )
             row = cursor.fetchone()
             if row and row['last_date']:
                 parts.append(f"Most recent catch recorded: {row['last_date'].strftime('%Y-%m-%d')}")
+
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS n, MAX(bsr.date) AS last_date
+                FROM bait_station_records bsr
+                JOIN bait_stations bs ON bs.station_id = bsr.station_id
+                JOIN lines l ON l.line_id = bs.line_id
+                WHERE l.group_id = %s AND bsr.date >= NOW() - INTERVAL '90 days'
+                """,
+                (group_id,)
+            )
+            row = cursor.fetchone()
+            if row and row['n']:
+                parts.append(
+                    f"Bait station checks in the last 90 days: {row['n']}"
+                    f" (most recent: {row['last_date'].strftime('%Y-%m-%d')})"
+                )
+
+        with db.get_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT io.observation_type, COUNT(*) AS n
+                FROM incidental_observations io
+                JOIN lines l ON l.line_id = io.line_id
+                WHERE l.group_id = %s AND io.date >= NOW() - INTERVAL '90 days'
+                GROUP BY io.observation_type ORDER BY n DESC
+                """,
+                (group_id,)
+            )
+            obs_rows = cursor.fetchall()
+            if obs_rows:
+                summary = ', '.join(f"{r['observation_type']}: {r['n']}" for r in obs_rows)
+                parts.append(f"Incidental observations in the last 90 days by type: {summary}")
 
     except Exception:
         logger.exception('Failed to build data context for group %s', group_id)
@@ -181,7 +235,8 @@ def _build_data_context(group_id):
         return ''
 
     group_name = session.get('group_name', 'your group')
-    return f'[Live data snapshot for group "{group_name}"]\n' + '\n'.join(parts)
+    today = date.today().strftime('%d %B %Y')
+    return f'[Live data snapshot for group "{group_name}" as at {today}]\n' + '\n'.join(parts)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -191,6 +246,9 @@ def _build_data_context(group_id):
 def agent_chat():
     if not _configured():
         return jsonify({'error': 'The AI assistant is not configured yet.'}), 503
+
+    if not _check_rate_limit():
+        return jsonify({'error': 'Too many requests. Please wait a moment before trying again.'}), 429
 
     data    = request.get_json(silent=True) or {}
     message = (data.get('message') or '').strip()
@@ -202,13 +260,15 @@ def agent_chat():
     group_id   = session.get('group_id')
     group_name = session.get('group_name', 'your group')
     role       = session.get('group_role', 'member')
+    role_line  = f'[User role: {role} in group "{group_name}"]'
 
-    data_context = _build_data_context(group_id)
+    is_new_thread = _get_previous_response_id() is None
+    data_context  = _build_data_context(group_id) if is_new_thread else ''
 
     parts = []
     if data_context:
         parts.append(data_context)
-    parts.append(f'[User role: {role} in group "{group_name}"]')
+    parts.append(role_line)
     parts.append(message)
     full_message = '\n'.join(parts)
 
@@ -219,8 +279,27 @@ def agent_chat():
         return jsonify({'reply': reply})
 
     except http.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 400 and not is_new_thread:
+            # Stale previous_response_id — clear it and retry as a fresh thread
+            logger.warning('Stale thread for group %s; retrying as new thread', group_id)
+            _clear_previous_response_id()
+            fresh_context = _build_data_context(group_id)
+            fresh_parts = ([fresh_context] if fresh_context else []) + [role_line, message]
+            try:
+                response_id, reply = _call_agent('\n'.join(fresh_parts))
+                if response_id:
+                    _set_previous_response_id(response_id)
+                return jsonify({'reply': reply})
+            except (http.HTTPError, http.RequestException) as retry_exc:
+                logger.exception('Foundry API error after stale-thread retry: %s', retry_exc)
+                return jsonify({'error': 'Could not reach the AI assistant. Please try again later.'}), 502
         logger.exception('Foundry API HTTP error: %s', exc)
         return jsonify({'error': 'Could not reach the AI assistant. Please try again later.'}), 502
+
+    except http.Timeout:
+        logger.warning('Foundry API timed out for group %s', group_id)
+        return jsonify({'error': 'The assistant is taking too long to respond. Please try again.'}), 504
+
     except http.RequestException as exc:
         logger.exception('Foundry API connection error: %s', exc)
         return jsonify({'error': 'Connection to the AI assistant failed. Please try again later.'}), 502

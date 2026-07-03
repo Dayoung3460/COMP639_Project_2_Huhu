@@ -59,6 +59,17 @@
   trigger.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
 
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && panel.classList.contains('is-open')) {
+      if (confirmBar.classList.contains('is-visible')) {
+        hideConfirm();
+        input.focus();
+      } else {
+        close();
+      }
+    }
+  });
+
   // ── Message rendering ────────────────────────────────────────
 
   function appendMessage(role, text, isError, skipSave) {
