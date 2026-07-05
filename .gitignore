@@ -45,15 +45,8 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-.clinerules/
-CLAUDE.md
-.claude/
-GEMINI.md
-.gemini/
-
-run_local.py
 prompt.md
-todo.md
+
 
 # ── Local reference files ───────────────────────────────────────
 *.pdf
