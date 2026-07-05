@@ -62,7 +62,7 @@
                     onclick="document.getElementById('img-input').click()"
                     title="Click to change tile image" aria-label="Change group tile image">
               {% if group.tile_image %}
-                <img src="{{ url_for('static', filename='images/uploads/' ~ group.tile_image) }}"
+                <img src="{{ upload_url('images/uploads/' ~ group.tile_image) }}"
                      alt="{{ group.name }}"
                      style="width:100%;height:100%;object-fit:cover;display:block;">
               {% else %}

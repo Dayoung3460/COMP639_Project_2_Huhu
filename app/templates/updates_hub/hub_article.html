@@ -52,7 +52,7 @@
       <div class="row g-2 mb-3">
         {% for p in photos %}
         <div class="col-sm-6 col-lg-4">
-          <img src="{{ url_for('static', filename='images/uploads/' ~ p) }}" alt="" class="img-fluid rounded">
+          <img src="{{ upload_url('images/uploads/' ~ p) }}" alt="" class="img-fluid rounded">
         </div>
         {% endfor %}
       </div>

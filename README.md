@@ -52,7 +52,8 @@ This started as a university group project built with my teammates. The course h
 | Maps | Leaflet.js (2D), Three.js + Open-Elevation API (3D) |
 | AI assistant | Azure AI Foundry agent (OpenAI Responses API) |
 | Email | Flask-Mail (Gmail SMTP) |
-| Hosting | PythonAnywhere |
+| Hosting | Render (web) + Neon (PostgreSQL) |
+| Uploads | Cloudflare R2 (falls back to local `static/` in dev) |
 
 ---
 
@@ -253,6 +254,13 @@ The app deploys to [Render](https://render.com) as a web service (see `render.ya
    psql "<neon-connection-string>" -v ON_ERROR_STOP=1 -f sql/populate_tables.sql
    ```
 2. **Render** — create a new **Blueprint** from this repository (it picks up `render.yaml`), then set the `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` environment variables from the Neon connection details. `DB_SSLMODE=require` and a generated `SECRET_KEY` are configured by the blueprint.
-3. Optional env vars: `MAIL_USERNAME`/`MAIL_PASSWORD` (password-reset emails) and the `AZURE_AI_AGENT_*` trio (AI assistant).
-
-Note: the free Render tier has an ephemeral filesystem — user-uploaded images under `static/images/uploads/` are lost on each deploy or restart.
+3. **Cloudflare R2 (uploads)** — the free Render tier has an ephemeral filesystem, so user uploads must live in object storage:
+   - Create an R2 bucket, enable public access (r2.dev subdomain or a custom domain), and create an API token with object read/write.
+   - Set the five `R2_*` environment variables on Render (see `.env.example` for what each one is).
+   - Copy the seed images into the bucket once:
+     ```bash
+     python scripts/sync_uploads_to_r2.py --dry-run   # preview
+     python scripts/sync_uploads_to_r2.py             # upload
+     ```
+   - If the `R2_*` variables are not set, the app falls back to local-disk uploads, which do not survive a deploy or restart.
+4. Optional env vars: `MAIL_USERNAME`/`MAIL_PASSWORD` (password-reset emails) and the `AZURE_AI_AGENT_*` trio (AI assistant).

@@ -13,7 +13,6 @@ import uuid
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Group identity photos (P2-44) — narrower than ALLOWED_EXTENSIONS.
@@ -101,13 +100,15 @@ def allowed_file(filename):
 
 
 def save_uploaded_image(file, prefix):
-    """Validate extension and save an uploaded image to UPLOAD_FOLDER.
+    """Validate extension and store an uploaded image under images/uploads/.
 
     Returns:
         (filename, None)    on success
         (None, error_str)   on invalid extension
         (None, None)        when no file was provided
     """
+    from app.helpers import storageHelper
+
     if not file or not file.filename:
         return None, None
     if not allowed_file(file.filename):
@@ -115,20 +116,19 @@ def save_uploaded_image(file, prefix):
     ext = file.filename.rsplit('.', 1)[1].lower()
     filename = f"{prefix}_{uuid.uuid4().hex[:10]}.{ext}"
     try:
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
+        storageHelper.save_file(file, f'images/uploads/{filename}')
     except OSError:
         return None, 'Could not save the file. Please try again.'
     return filename, None
 
 
 def delete_upload(filename):
-    """Delete a file from UPLOAD_FOLDER if it exists. No-op when filename is None."""
+    """Delete a stored images/uploads/ file. No-op when filename is None."""
+    from app.helpers import storageHelper
+
     if not filename:
         return
-    path = os.path.join(UPLOAD_FOLDER, filename)
-    if os.path.exists(path):
-        os.remove(path)
+    storageHelper.delete_file(f'images/uploads/{filename}')
 
 
 def sniff_image_kind(head_bytes):

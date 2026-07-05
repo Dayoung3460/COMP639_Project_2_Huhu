@@ -28,3 +28,16 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      # Cloudflare R2 — durable upload storage (Render's disk is ephemeral).
+      # Set all five in the dashboard; if any is missing the app falls back
+      # to local-disk uploads, which do not survive a deploy or restart.
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_PUBLIC_BASE_URL
+        sync: false

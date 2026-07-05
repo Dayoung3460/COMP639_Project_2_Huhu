@@ -166,7 +166,7 @@
       <a href="{{ url_for('profile', ctx='app') }}" class="user-pill">
         <div class="user-pill__avatar">
           {% if nav_profile_photo %}
-            <img src="{{ url_for('static', filename='images/uploads/' + nav_profile_photo) }}"
+            <img src="{{ upload_url('images/uploads/' + nav_profile_photo) }}"
                  alt="{{ nav_first_name or session.get('username') }}'s profile photo">
           {% else %}
             {{ nav_initials }}

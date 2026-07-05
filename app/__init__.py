@@ -141,6 +141,13 @@ from app import agent  # noqa: F401 -- AI assistant proxy (Microsoft Foundry)
 
 # ── Template globals ──────────────────────────────────────────────────────────
 
+from app.helpers.storageHelper import upload_url
+
+# Uploads live in R2 (production) or static/ (dev) — templates call
+# upload_url(key) instead of url_for('static', ...) so the right base
+# is used either way.
+app.jinja_env.globals['upload_url'] = upload_url
+
 _ROLE_TO_DASHBOARD = {
     'Super Admin':         'admin_dashboard',
     'Group Coordinator':   'coordinator_dashboard',

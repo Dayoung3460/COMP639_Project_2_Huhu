@@ -40,7 +40,7 @@
           {% for p in photos %}
           <div class="col-sm-4">
             <div class="position-relative">
-              <img src="{{ url_for('static', filename='images/uploads/' ~ p.photo_path) }}"
+              <img src="{{ upload_url('images/uploads/' ~ p.photo_path) }}"
                    alt="" class="img-fluid rounded mb-1">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox"

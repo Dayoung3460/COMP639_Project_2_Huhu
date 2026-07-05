@@ -1,9 +1,9 @@
 /*
  * static/js/img-fallback.js — swap broken uploaded images for bundled defaults.
  *
- * Files under /static/images/uploads/ are user uploads and are not guaranteed
- * to exist (the hosting filesystem is ephemeral, and seed data may reference
- * files that were never deployed). Any <img> pointing there can 404.
+ * Uploads are served from R2 in production (URLs containing /images/uploads/
+ * or /uploads/) or from /static/ in local dev. Either way a stale DB
+ * reference can 404, so any <img> pointing at an upload can break.
  *
  * Avatar-style images (wrapper class contains "avatar", or alt mentions
  * "profile photo") fall back to the default profile picture; everything else
@@ -12,12 +12,12 @@
  * Loaded from base.html and base_marketing.html.
  */
 (function () {
-  var UPLOADS_PATH = '/static/images/uploads/';
   var DEFAULT_PROFILE = '/static/images/default-profile.png';
   var DEFAULT_COVER = '/static/images/default-cover.jpg';
 
   function isUploadImg(img) {
-    return img.src.indexOf(UPLOADS_PATH) !== -1;
+    return img.src.indexOf('/images/uploads/') !== -1 ||
+           img.src.indexOf('/uploads/') !== -1;
   }
 
   function isAvatarImg(img) {

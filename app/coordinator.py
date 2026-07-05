@@ -1,6 +1,5 @@
 """coordinator.py — Group Coordinator dashboard, lines, traps, bait stations, group settings."""
 
-import glob
 import json
 import logging
 import os
@@ -28,6 +27,7 @@ from app.helpers.dbHelper import (
     delete_operational_area,
 )
 from app.helpers.linesHelper import fetch_line_for_group
+from app.helpers import storageHelper
 
 logger = logging.getLogger(__name__)
 
@@ -1349,19 +1349,14 @@ def coordinator_theme_history_delete(history_id):
 #
 # Same role gate as the themes routes (Coordinator + Super Admin). Each slot
 # is a separate endpoint so the form actions stay simple and intent is clear
-# at the URL level. Storage convention: static/uploads/group_<id>/cover.<ext>
-# (and profile.<ext>) — relative path is what lands in groups.cover_photo /
+# at the URL level. Storage convention: uploads/group_<id>/cover.<ext>
+# (and profile.<ext>) — that key is what lands in groups.cover_photo /
 # groups.profile_photo so the existing identity cascade picks it up
-# automatically on next render.
+# automatically on next render. Files live in R2 (or static/ in local dev)
+# via storageHelper.
 
-def _identity_group_dir(group_id):
-    """Absolute filesystem path for a group's identity upload directory."""
-    return os.path.join(app.root_path, '..', 'static',
-                        'uploads', f'group_{group_id}')
-
-
-def _identity_rel_path(group_id, filename):
-    """DB-storable path, relative to /static/."""
+def _identity_key(group_id, filename):
+    """Storage key (and DB-storable path) for a group identity file."""
     return f'uploads/group_{group_id}/{filename}'
 
 
@@ -1429,11 +1424,11 @@ def _upload_identity_slot(slot):
     """Shared handler for the cover/profile upload POST routes.
 
     `slot` is 'cover' or 'profile' and is used as both the form field
-    name and the on-disk filename stem.
+    name and the stored filename stem.
 
     Transactional order: write file → UPDATE groups → cleanup stale
     siblings. If DB fails, best-effort delete the just-written file so
-    we don't leak orphans into the new directory.
+    we don't leak orphans into the new prefix.
     """
     group_id = session['group_id']
     file = request.files.get(f'{slot}_photo')
@@ -1443,48 +1438,34 @@ def _upload_identity_slot(slot):
         flash(err, 'danger')
         return redirect(url_for('coordinator_group_identity'))
 
-    group_dir     = _identity_group_dir(group_id)
-    new_filename  = f'{slot}.{ext}'
-    new_disk_path = os.path.join(group_dir, new_filename)
-    new_rel_path  = _identity_rel_path(group_id, new_filename)
+    new_key = _identity_key(group_id, f'{slot}.{ext}')
 
-    # 1. Filesystem write — first, so we never point the DB at a missing file.
+    # 1. Storage write — first, so we never point the DB at a missing file.
     try:
-        os.makedirs(group_dir, exist_ok=True)
-        file.save(new_disk_path)
+        storageHelper.save_file(file, new_key)
     except OSError:
         logger.exception('Failed to write %s for group %s', slot, group_id)
         flash('Could not save the file. Please try again.', 'danger')
         return redirect(url_for('coordinator_group_identity'))
 
-    # 2. DB write — if this fails, roll back the filesystem side.
+    # 2. DB write — if this fails, roll back the storage side.
     db_column = 'cover_photo' if slot == 'cover' else 'profile_photo'
     try:
         with db.get_cursor() as cursor:
             cursor.execute(
                 f'UPDATE groups SET {db_column} = %s WHERE group_id = %s',
-                (new_rel_path, group_id),
+                (new_key, group_id),
             )
     except Exception:
         logger.exception('DB update failed for %s group %s', slot, group_id)
-        try:
-            if os.path.exists(new_disk_path):
-                os.remove(new_disk_path)
-        except OSError:
-            logger.exception(
-                'Filesystem rollback also failed for %s', new_disk_path
-            )
+        storageHelper.delete_file(new_key)
         flash('Could not save the file. Please try again.', 'danger')
         return redirect(url_for('coordinator_group_identity'))
 
     # 3. Cleanup — when extension changes (cover.jpg → cover.webp), the
     #    stale sibling would orphan otherwise. Only after DB confirms.
-    for stale in glob.glob(os.path.join(group_dir, f'{slot}.*')):
-        if os.path.abspath(stale) != os.path.abspath(new_disk_path):
-            try:
-                os.remove(stale)
-            except OSError:
-                logger.warning('Could not delete stale %s file %s', slot, stale)
+    storageHelper.delete_prefix(_identity_key(group_id, f'{slot}.'),
+                                keep=new_key)
 
     flash(
         'Cover photo updated.' if slot == 'cover' else 'Profile photo updated.',
@@ -1529,17 +1510,10 @@ def _remove_identity_slot(slot):
         flash('Could not remove the photo. Please try again.', 'danger')
         return redirect(url_for('coordinator_group_identity'))
 
-    # 2. Filesystem cleanup — best effort. Sweep the whole slot.* set
+    # 2. Storage cleanup — best effort. Sweep the whole slot.* set
     #    (paranoia about extension drift). User sees success regardless;
     #    orphan files are cleanup work, not a user-facing bug.
-    group_dir = _identity_group_dir(group_id)
-    for stale in glob.glob(os.path.join(group_dir, f'{slot}.*')):
-        try:
-            os.remove(stale)
-        except OSError:
-            logger.warning(
-                'Could not delete %s file %s on remove', slot, stale
-            )
+    storageHelper.delete_prefix(_identity_key(group_id, f'{slot}.'))
 
     flash(
         'Cover photo removed. Using fallback.' if slot == 'cover'

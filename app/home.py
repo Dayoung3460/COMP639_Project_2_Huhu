@@ -4,6 +4,7 @@ import os
 
 from flask import render_template, url_for
 from app import app, db
+from app.helpers import storageHelper
 
 linz_api_key = os.getenv('LINZ_API_KEY', '')
 
@@ -169,7 +170,7 @@ def index():
             'y':       y,
             'lat':     round(float(g['avg_lat']), 5) if g['avg_lat'] is not None else None,
             'lng':     round(float(g['avg_lng']), 5) if g['avg_lng'] is not None else None,
-            'tile':    (url_for('static', filename='images/uploads/' + g['tile_image'])
+            'tile':    (storageHelper.upload_url('images/uploads/' + g['tile_image'])
                         if g['tile_image'] else None),
             'accent':  g['color_theme'],
             'url':     url_for('group_landing', group_id=g['group_id']),

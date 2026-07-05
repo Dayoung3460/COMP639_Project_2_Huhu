@@ -41,7 +41,7 @@ Announcements, seasonal notices, and operational news from
     <div class="col-md-6 col-lg-4 d-flex">
       <article class="hub-card flex-fill" aria-labelledby="upd-{{ u.update_id }}-t">
         {% if u.thumb and u.thumb[0] %}
-          <img src="{{ url_for('static', filename='images/uploads/' ~ u.thumb[0]) }}"
+          <img src="{{ upload_url('images/uploads/' ~ u.thumb[0]) }}"
                alt="" class="hub-card__thumb">
         {% endif %}
         <div class="hub-card__body">

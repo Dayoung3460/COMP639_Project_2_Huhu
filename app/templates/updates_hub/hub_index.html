@@ -110,7 +110,7 @@ Curated guidance across the platform. Published entries are visible to any group
     <div class="col-md-6 col-lg-4 d-flex">
       <article class="hub-card flex-fill">
         {% if a.thumb and a.thumb[0] %}
-          <img src="{{ url_for('static', filename='images/uploads/' ~ a.thumb[0]) }}"
+          <img src="{{ upload_url('images/uploads/' ~ a.thumb[0]) }}"
                alt="" class="hub-card__thumb">
         {% endif %}
         <div class="hub-card__body">

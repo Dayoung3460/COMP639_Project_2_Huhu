@@ -35,7 +35,8 @@ from flask import (
 )
 
 from app import app, db
-from app.utils import role_required, allowed_file, UPLOAD_FOLDER
+from app.utils import role_required, allowed_file
+from app.helpers import storageHelper
 from app.helpers.dbHelper import fetch_membership_role, insert_notification
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,6 @@ def _save_photos(files):
     errors = []
     if not files:
         return saved, errors
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     for f in files:
         if not f or not f.filename:
             continue
@@ -65,7 +65,11 @@ def _save_photos(files):
             continue
         ext = f.filename.rsplit('.', 1)[1].lower()
         fname = f'{uuid.uuid4().hex}.{ext}'
-        f.save(os.path.join(UPLOAD_FOLDER, fname))
+        try:
+            storageHelper.save_file(f, f'images/uploads/{fname}')
+        except OSError:
+            errors.append(html.escape(f.filename) + ': could not be saved')
+            continue
         saved.append(fname)
     return saved, errors
 

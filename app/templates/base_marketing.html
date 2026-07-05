@@ -103,7 +103,7 @@
           <a class="user-avatar" href="{{ url_for('profile') }}"
              aria-label="Open your profile">
             {% if nav_profile_photo %}
-              <img src="{{ url_for('static', filename='images/uploads/' ~ nav_profile_photo) }}" alt="">
+              <img src="{{ upload_url('images/uploads/' ~ nav_profile_photo) }}" alt="">
             {% else %}
               <span aria-hidden="true">{{ _initials }}</span>
             {% endif %}

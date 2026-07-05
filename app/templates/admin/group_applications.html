@@ -121,7 +121,7 @@
                 <!-- Image preview -->
                 {% if app.image %}
                   <div class="flex-shrink-0">
-                    <img src="{{ url_for('static', filename='images/uploads/' ~ app.image) }}"
+                    <img src="{{ upload_url('images/uploads/' ~ app.image) }}"
                          alt="Proposed group image"
                          style="width: 120px; height: 80px; object-fit: cover; border-radius: 8px;">
                   </div>

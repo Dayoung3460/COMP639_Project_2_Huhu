@@ -7,6 +7,7 @@ from flask import flash, redirect, render_template, request, session, url_for, a
 from app import app, db
 from app.utils import role_required, sniff_image_kind
 from app.helpers.dbHelper import insert_notification
+from app.helpers import storageHelper
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +58,6 @@ def _fetch_ticket_replies(db, ticket_id):
         return cursor.fetchall()
 
 
-def _screenshot_dir(ticket_id):
-    return os.path.join(app.root_path, '..', 'static', 'uploads', 'tickets', str(ticket_id))
-
-
 def _validate_screenshot(file):
     """Returns (ext, err). On success err is None and file stream is seeked to 0."""
     if not file or not file.filename:
@@ -90,13 +87,10 @@ def _validate_screenshot(file):
 
 
 def _save_screenshot(ticket_id, file, ext):
-    """Writes the uploaded file and returns the DB-storable relative path."""
-    ticket_dir = _screenshot_dir(ticket_id)
-    os.makedirs(ticket_dir, exist_ok=True)
-    filename  = f'screenshot.{ext}'
-    disk_path = os.path.join(ticket_dir, filename)
-    file.save(disk_path)
-    return f'uploads/tickets/{ticket_id}/{filename}'
+    """Stores the uploaded file and returns the DB-storable key."""
+    key = f'uploads/tickets/{ticket_id}/screenshot.{ext}'
+    storageHelper.save_file(file, key)
+    return key
 
 
 # ── Submit form ───────────────────────────────────────────────────────────────

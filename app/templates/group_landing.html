@@ -9,8 +9,11 @@
       background-size: contain;
       background-position: center;
       background-repeat: no-repeat;
+      {# cover_photo holds either a bare seed filename (under images/uploads/)
+         or a full storage key (uploads/group_<id>/...) written by the
+         coordinator identity upload — only the bare form needs the prefix. #}
       {% if group.cover_photo %}
-        background-image: url("{{ url_for('static', filename='images/uploads/' ~ group.cover_photo) }}");
+        background-image: url("{{ upload_url(group.cover_photo if '/' in group.cover_photo else 'images/uploads/' ~ group.cover_photo) }}");
       {% else %}
         background-image: none;
       {% endif %}

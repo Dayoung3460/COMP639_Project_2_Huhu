@@ -78,7 +78,7 @@
                     {% if item.kind == 'member_joined' and not item.is_mine %}
                       +
                     {% elif item.profile_photo %}
-                      <img src="{{ url_for('static', filename='images/uploads/' ~ item.profile_photo) }}" alt="">
+                      <img src="{{ upload_url('images/uploads/' ~ item.profile_photo) }}" alt="">
                     {% else %}
                       {{ item.initials }}
                     {% endif %}
@@ -262,7 +262,7 @@
         <div class="you-row">
           <span class="you-avatar" aria-hidden="true">
             {% if nav_profile_photo %}
-              <img src="{{ url_for('static', filename='images/uploads/' ~ nav_profile_photo) }}" alt="">
+              <img src="{{ upload_url('images/uploads/' ~ nav_profile_photo) }}" alt="">
             {% else %}
               {{ nav_initials }}
             {% endif %}

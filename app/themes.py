@@ -30,12 +30,12 @@ All photo paths are relative to `/static/`. Templates always wrap
 the returned string with `url_for('static', filename=…)`.
 """
 
-import os
 import re
 
-from flask import url_for, current_app
+from flask import url_for
 
 from app import db
+from app.helpers import storageHelper
 
 
 # Legacy static placeholders. Kept for the DB-unreachable exception
@@ -176,23 +176,17 @@ def _default_profile_url(group_id=None):
 
 
 def _static_url(rel_path):
-    """url_for('static', filename=rel_path) — wrapped so callers stay
-    out of url_for ergonomics. Returns None if rel_path is falsy OR
-    points at a file that no longer exists on disk (broken-image
+    """Public URL for a stored upload. Returns None if rel_path is falsy
+    OR points at a file that verifiably no longer exists (broken-image
     fallback: missing uploads collapse to None so the caller's `or`
     chain resolves to the generated SVG default instead of serving a
     404 image that renders as the ugly browser placeholder)."""
-    if not rel_path:
-        return None
     try:
-        abs_path = os.path.join(current_app.static_folder, rel_path)
-        if not os.path.isfile(abs_path):
-            return None
+        return storageHelper.upload_url_if_exists(rel_path)
     except Exception:
         # No app context or unexpected path issue — fall back to the
         # SVG default rather than risk a broken <img src>.
         return None
-    return url_for('static', filename=rel_path)
 
 
 def get_active_identity(group_id=None):
