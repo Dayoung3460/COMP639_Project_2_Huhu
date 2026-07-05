@@ -127,6 +127,14 @@ def delete_prefix(prefix, keep=None):
                 delete_file(key)
 
 
+def _normalize_key(key):
+    """Legacy DB rows (seed data) store a bare filename for files that
+    live under images/uploads/; newer rows store the full key
+    ('uploads/group_3/cover.webp'). Treat any slash-less key as the
+    legacy form so both resolve to a valid URL."""
+    return key if '/' in key else f'images/uploads/{key}'
+
+
 def upload_url(key):
     """Public URL for a stored upload, or None when `key` is falsy.
 
@@ -135,6 +143,7 @@ def upload_url(key):
     """
     if not key:
         return None
+    key = _normalize_key(key)
     if storage_enabled():
         return f"{os.environ['R2_PUBLIC_BASE_URL'].rstrip('/')}/{key}"
     return url_for('static', filename=key)
@@ -151,6 +160,7 @@ def upload_url_if_exists(key):
     """
     if not key:
         return None
+    key = _normalize_key(key)
     if not storage_enabled() and not os.path.isfile(_local_path(key)):
         return None
     return upload_url(key)
